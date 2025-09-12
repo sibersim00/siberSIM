@@ -1,0 +1,121 @@
+const cron = require("node-cron");
+const MailJob = require("./services/mail_service");
+const NotiJob = require("./services/noti_service");
+const autoTerminateExpiredEvents =
+  require("../src/components/eventlearner/dao").autoTerminateExpiredEvents;
+const updateCompleteTerminate =
+  require("../src/components/eventlearner/dao").updateCompleteTerminate;
+const updateCompleteTerminatelearner =
+  require("../src/components/vmconfigs/dao").updateCompleteTerminatelearner;
+const  autoTerminateFailedScenarios  =
+  require("../src/components/vmconfigs/dao").autoTerminateFailedScenarios;
+
+class initJob {
+  constructor() {
+    this.isEmailJobRunning = false;
+  }
+
+  async notirun({ db }) {
+    const notiJob = new NotiJob(db);
+    const notiList = await notiJob.getUnprocessedNotifications();
+    console.log("notiList==========>", notiList);
+    for (const noti of notiList) {
+      await notiJob.triggerNoti(noti);
+      await notiJob.markAsProcessedNotifications(noti.log_id);
+    }
+  }
+
+  async mailrun({ db }) {
+    if (this.isEmailJobRunning) return;
+    this.isEmailJobRunning = true;
+    const mailJob = new MailJob(db);
+    const emailList = await mailJob.getUnprocessedEmails();
+    for (const email of emailList) {
+      if (email.payload.attachments && email.payload.attachments.length > 0) {
+        if (email.payload.attachments[0] == null) {
+          email.payload.attachments = email.attachments;
+        }
+      }
+      await mailJob.triggerEmail(email);
+    }
+    this.isEmailJobRunning = false;
+  }
+
+  async terminateExpiredEvents({ db }) {
+    const ipAddress = "127.0.0.1";
+    const job = autoTerminateExpiredEvents({
+      db,
+      ipAddress,
+      updateCompleteTerminate,
+    });
+    const result = await job();
+    console.log("Midnight Auto-Terminate Result:", result.message);
+  }
+
+  async terminateFailedScenarios({ db }) {
+    const ipAddress = "127.0.0.1"; // local IP
+    const job = autoTerminateFailedScenarios({
+      db,
+      ipAddress,
+      updateCompleteTerminatelearner,
+    });
+    const result = await job();
+    console.log("🕛 Operation Failed Scenario Cleanup Result:", result.message);
+  }
+}
+
+const commonCronConfig = {
+  scheduled: true,
+  timezone: "Asia/Kolkata",
+};
+
+const startJob = async ({ db }) => {
+  const jobs = new initJob();
+
+  // Process notifications every 10 sec
+  cron.schedule(
+    "* * * * * *",
+    () => {
+      console.log("PROCESS NOTIFICATION IN EVERY 10 SEC.");
+      jobs.notirun({ db }).catch((e) => {
+        console.log(e);
+      });
+    },
+    commonCronConfig
+  );
+
+  // Send queued mails every 10 sec (uncomment if needed)
+  cron.schedule('*/10 * * * * *', () => {
+    console.log("SEND QUEUED MAILS EVERY 10 SEC.");
+    jobs.mailrun({ db }).catch(e => {
+      console.log(e);
+      jobs.isEmailJobRunning = false;
+    });
+  }, commonCronConfig);
+
+  // 🕛 Run auto-terminate job every midnight
+  cron.schedule(
+    "0 0 * * *",
+    () => {
+      console.log("Running midnight auto-terminate job...");
+      jobs.terminateExpiredEvents({ db }).catch((e) => {
+        console.error("Auto-terminate job failed:", e);
+      });
+    },
+    commonCronConfig
+  );
+  cron.schedule(
+    "0 0 * * *", // every day at midnight
+    () => {
+      console.log(
+        "🔁 Running auto-cleanup for Operation Failed scenario sessions..."
+      );
+      jobs.terminateFailedScenarios({ db }).catch((err) => {
+        console.error("Auto-cleanup cron failed:", err);
+      });
+    },
+    commonCronConfig
+  );
+};
+
+module.exports = startJob;

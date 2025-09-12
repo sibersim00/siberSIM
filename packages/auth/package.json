@@ -1,0 +1,28 @@
+{
+  "name": "lms-auth",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon src/index.js",
+    "dev": "nodemon --delay 0 --watchm ././config --watch src src/index.js --max-http-header-size=80000"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "bcryptjs": "^3.0.2",
+    "bluebird": "^3.7.2",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.1",
+    "mysql2": "^3.6.5",
+    "nodemon": "^3.0.1",
+    "pg-promise": "^11.5.3",
+    "sequelize": "^6.35.1"
+  }
+}

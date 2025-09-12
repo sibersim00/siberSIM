@@ -1,0 +1,123 @@
+const joi = require("joi");
+
+const startScenarioSchema = joi.object({
+  scenarioid: joi.number().integer().required().messages({
+    "any.required": "Scenario ID is required.",
+    "number.base": "Scenario ID must be a number.",
+  }),
+  timer: joi.string().regex(/^\d{2}:\d{2}:\d{2}$/).required().messages({
+    "any.required": "Timer is required.",
+    "string.pattern.base": "Timer must be in HH:MM:SS format.",
+  }),
+  status: joi.string().valid("Initializing", "Start").required().messages({
+    "any.required": "Status is required.",
+    "string.base": "Status must be a string.",
+    "any.only": "Invalid status value.",
+  }),
+});
+
+const updateSessionStatusSchema = joi.object({
+  scenariolearnersessionid: joi.number().integer().required().messages({
+    "any.required": "Session ID is required.",
+    "number.base": "Session ID must be a number.",
+  }),
+  scenarioid: joi.number().integer().required().messages({
+    "any.required": "Scenario ID is required.",
+    "number.base": "Scenario ID must be a number.",
+  }),
+  scenariolearnerid: joi.number().integer().required().messages({
+    "any.required": "Scenario Learner ID is required.",
+    "number.base": "Scenario Learner ID must be a number.",
+  }),
+  status: joi
+    .string()
+    .valid("Start", "Pause", "Resume", "Completed", "Terminated")
+    .required()
+    .messages({
+      "any.required": "Status is required.",
+      "any.only": "Invalid status value.",
+    }),
+  timer: joi.string().regex(/^\d{2}:\d{2}:\d{2}$/).when("status", {
+    is: joi.valid("Pause", "Completed", "Terminated"),
+    then: joi.required(),
+    otherwise: joi.optional(),
+  }).messages({
+    "string.pattern.base": "Timer must be in HH:MM:SS format.",
+  }),
+});
+
+const getMessagesSchema = joi.object({
+  scenariolearnerid: joi.number().integer().required().messages({
+    "any.required": "Scenario Learner ID is required.",
+    "number.base": "Scenario Learner ID must be a number.",
+  }),
+});
+
+const sendMessageSchema = joi.object({
+  scenariolearnerid: joi.number().integer().required().messages({
+    "any.required": "Scenario Learner ID is required.",
+  }),
+  scenarioid: joi.number().integer().required().messages({
+    "any.required": "Scenario ID is required.",
+  }),
+  learner_id: joi.number().integer().required().messages({
+    "any.required": "Learner ID is required.",
+  }),
+  instructor_id: joi.number().integer().required().messages({
+    "any.required": "Instructor ID is required.",
+  }),
+  sender_type: joi.string().valid("Instructor", "Admin", "Learner").required().messages({
+    "any.required": "Sender type is required.",
+    "any.only": "Sender type must be Instructor, Admin, or Learner.",
+  }),
+  message: joi.string().trim().required().messages({
+    "any.required": "Message content is required.",
+    "string.empty": "Message cannot be empty.",
+  }),
+  attachment: joi.string().uri().allow(null, "").messages({
+    "string.uri": "Attachment must be a valid URL if provided.",
+  }),
+});
+
+const markSeenSchema = joi.object({
+  scenarioid: joi.number().integer().required().messages({
+    "any.required": "Scenario ID is required.",
+  }),
+  learner_id: joi.number().integer().required().messages({
+    "any.required": "Learner ID is required.",
+  }),
+  instructor_id: joi.number().integer().required().messages({
+    "any.required": "Instructor ID is required.",
+  }),
+});
+
+const messages = {
+  SERVER_ERROR: 'Server error. Please try again later.',
+  ONE_ACTIVE_SCENARIO: 'You already have an active running scenario. Please terminate or complete it before starting a new one.',
+  CONFIGURATION_STARTED: 'Scenario configuration initiated successfully.',
+  NOT_FOUND: 'Scenario not found.',
+  MESSAGE_SENT: 'Message sent successfully.',
+  MARK_SEEN_FAILED: 'Failed to mark messages as seen.',
+  MARK_SEEN: 'Success to mark messages as seen.',
+  FETCH_ERROR: 'Error fetching messages.',
+  MISSING_SCENARIOLEARNERID: 'Missing required parameter: scenariolearnerid.',
+  INTERNAL_SERVER_ERROR: 'An error occurred while processing your request. Please try again later.',
+  GET_ALL_SUCCESS: 'Fetched all scenarios successfully.',
+  GET_ALL_ERROR: 'Failed to fetch all scenarios.',
+  GET_BY_ID_SUCCESS: 'Scenario retrieved successfully.',
+  GET_BY_ID_ERROR: 'Failed to retrieve scenario.',
+  SESSION_STATUS_SUCCESS: 'Session status fetched successfully.',
+  SESSION_NOT_FOUND: 'Session not found.',
+  SESSION_STATUS_ERROR: 'Error fetching session status.',
+  LOGS_FETCH_SUCCESS: 'Scenario logs fetched successfully.',
+  LOGS_FETCH_ERROR: 'Failed to fetch scenario logs.',
+};
+
+module.exports = {
+  startScenarioSchema,
+  updateSessionStatusSchema,
+  getMessagesSchema,
+  sendMessageSchema,
+  markSeenSchema,
+  messages,
+};

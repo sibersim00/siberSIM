@@ -1,0 +1,471 @@
+const ProxMoxService = require("../services/proxmox/ProxMoxService");
+const ERROR_MESSAGES = require("../jobs/jobsConstants");
+
+async function componentSetupJob(db, ipAddress, { scenarioid, learnerid, eventlearnerid }) {
+  console.log(`Starting component setup job for Scenario: ${scenarioid}, Learner: ${learnerid}`);
+  const statusVal = "Initializing";
+  try {
+    const componentConfig = await db.sequelize.query(`SELECT vmconfigurationid, componentid, \`order\`, vmid AS clone_vmid, componentname AS name, duration, componenttype, master_vmid AS source_vmid FROM vm_configuration WHERE eventlearnerid = ? AND status = ?`,
+      {
+        replacements: [eventlearnerid, statusVal],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (componentConfig.length == 0) {
+      console.error(ERROR_MESSAGES.CONFIG_NOT_FOUND);
+      await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, ERROR_MESSAGES.CONFIG_NOT_FOUND);
+      return {success: false, message: ERROR_MESSAGES.CONFIG_NOT_FOUND};
+    }
+    const initiationRemark = `Component setup initiated for Scenario: ${scenarioid}, Learner: ${learnerid}`;
+    await db.sequelize.query(`INSERT INTO event_learner_logs (eventlearnerid,eventid, learner_id, type, remark, status, createdon) SELECT el.eventlearnerid,el.eventid, el.learner_id, 'System', ?, 'Initiated', NOW() FROM event_learners el WHERE el.eventlearnerid = ?`,
+      {
+        replacements: [initiationRemark, eventlearnerid],
+        type: db.sequelize.QueryTypes.INSERT,
+      }
+    );
+    for (const component of componentConfig) {
+      try {
+        console.log(`Starting component Clonning:`, component);
+        await cloneComponentVM(db, ipAddress, component, eventlearnerid);
+      } catch (err) {
+        const reason = `${ERROR_MESSAGES.UNHANDLED_SETUP_ERROR}: ${err.message}`;
+        console.error(reason);
+        await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, reason
+        );
+      }
+    }
+    const ids = componentConfig.map((c) => c.vmconfigurationid);
+    await db.sequelize.query(`UPDATE vm_configuration SET status = 'Cloning', modifiedon = NOW() WHERE vmconfigurationid IN (:ids)`,
+      {
+        replacements: { ids },
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    await db.sequelize.query(`UPDATE event_learners SET vm_steps = 'Cloning', modifiedon = NOW() WHERE eventlearnerid = ?`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    const updatedComponents = await db.sequelize.query(`SELECT vmconfigurationid, vmid, componenttype, componentname AS name, network_bridge_json, status FROM vm_configuration WHERE eventlearnerid = ? AND status = 'Cloning'`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+    await configureComponentVM(db, ipAddress, {scenarioid, learnerid, eventlearnerid, components: updatedComponents});
+    const updatedids = updatedComponents.map((c) => c.vmconfigurationid);
+    await db.sequelize.query(`UPDATE vm_configuration SET status = 'Bridge Configuration', modifiedon = NOW() WHERE vmconfigurationid IN (:ids)`,
+      {
+        replacements: { ids: updatedids },
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    const componentsForStart = await db.sequelize.query(`SELECT vmconfigurationid, vmid, componenttype, componentname AS name, network_bridge_json, status FROM vm_configuration WHERE eventlearnerid = ? AND status = 'Bridge Configuration'`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+    await startComponentVM(db, ipAddress, { scenarioid, learnerid, eventlearnerid, components: componentsForStart });
+  } catch (err) {
+    const reason = `Unhandled error in component setup: ${err.message}`;
+    console.error(reason);
+    await stopAndDestroyComponentVM(db, ipAddress, {scenarioid, learnerid, eventlearnerid });
+    await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, reason);
+  }
+}
+
+async function cloneComponentVM( db, ipAddress, component, eventlearnerid) {
+  const { clone_vmid, name, componenttype, source_vmid, scenarioid, learner_id} = component;
+  const vmType = componenttype.toLowerCase();
+  const statusVal = "Cloning";
+  if (!clone_vmid || !source_vmid) {
+    const missing = !clone_vmid ? ERROR_MESSAGES.MISSING_TARGET_VMID : ERROR_MESSAGES.MISSING_MASTER_VMID;
+    const reason = `${missing} (Component: '${name}')`;
+    console.error(reason);
+    await handleComponentFailure(db, scenarioid, learner_id, eventlearnerid, statusVal, reason);
+    throw new Error(reason); // for stack trace clarity
+  }
+  try {
+    const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+    await proxmoxService.generateAccessTicket();
+    const result = await proxmoxService.cloneVM(vmType, clone_vmid, name, source_vmid);
+    if (result?.status !== 200 || !result?.data) {
+      const errorMsg = `${ERROR_MESSAGES.CLONE_FAILED}: '${name}' (status: ${result?.status})`;
+      throw new Error(errorMsg);
+    }
+    if (!result) {
+      throw new Error(`${ERROR_MESSAGES.CLONE_FAILED}: '${name}'`);
+    }
+    console.log(`Clone succeeded for '${name}'`);
+    return true;
+  } catch (err) {
+    await handleComponentFailure(db, scenarioid,learner_id, eventlearnerid, statusVal, `${ERROR_MESSAGES.CLONE_FAILED} (${name}): ${err.message}`);
+    throw err;
+  }
+}
+
+async function configureComponentVM(db, ipAddress, { scenarioid, learnerid, eventlearnerid, components }) {
+  const statusVal = "Cloning";
+  try {
+    const filteredComponents = components.filter((c) => c.status === "Cloning");
+    if (!filteredComponents || filteredComponents.length === 0) {
+      await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, ERROR_MESSAGES.NO_COMPONENTS_FOR_STATUS
+      );
+      return {success: false, message: ERROR_MESSAGES.NO_COMPONENTS_FOR_STATUS};
+    }
+    for (const component of filteredComponents) {
+      console.log(`Starting component Configure Bridge:`, component);
+      try {
+        const { vmid, componenttype, network_bridge_json, name } = component;
+        const vmType = componenttype.toLowerCase();
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+        await proxmoxService.generateAccessTicket();
+        const bridgeJson = JSON.parse(network_bridge_json || "{}");
+        const result = await proxmoxService.configureVM(vmid, vmType, bridgeJson);
+        if (result?.status !== 200 || !result?.data) {
+          const errorMsg = `${ERROR_MESSAGES.CONFIGURATION_FAILED}: '${name}' (status: ${result?.status})`;
+          throw new Error(errorMsg);
+        }
+        console.log(`Configured '${name}' successfully.`);
+      } catch (err) {
+        await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.CONFIGURATION_ERROR} (${component.name}): ${err.message}`);
+        return {success: false, message: ERROR_MESSAGES.CONFIGURATION_ERROR,};
+      }
+    }
+    await db.sequelize.query(`UPDATE vm_configuration SET status = 'Bridge Configuration', modifiedon = NOW() WHERE scenarioid = ? AND learner_id = ? AND status = ?`,
+      {
+        replacements: [scenarioid, learnerid, statusVal],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    await db.sequelize.query(`UPDATE event_learners SET vm_steps = 'Bridge Configuration', modifiedon = NOW() WHERE eventlearnerid = ?`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    console.log(`All components configured. Session updated to 'Bridge Configuration'.`);
+  } catch (err) {
+    await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.UNHANDLED_CONFIGURE_ERROR}: ${err.message}`);
+  }
+}
+
+async function startComponentVM(db, ipAddress, { scenarioid, learnerid, eventlearnerid, components }) {
+  const statusVal = "Bridge Configuration";
+  try {
+    const filteredComponents = components.filter((c) => c.status === "Bridge Configuration");
+    if (!filteredComponents || filteredComponents.length === 0) {
+      await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, ERROR_MESSAGES.NO_COMPONENTS_FOR_STATUS);
+      return {success: false, message: ERROR_MESSAGES.NO_COMPONENTS_FOR_STATUS,
+      };
+    }
+    for (const component of filteredComponents) {
+      console.log(`Starting component Starting:`, component);
+      try {
+        const { vmid, componenttype, name, vmconfigurationid } = component;
+        const vmType = componenttype.toLowerCase();
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+        await proxmoxService.generateAccessTicket();
+        const result = await proxmoxService.startVM(vmid, vmType);
+        if (result?.status !== 200 || !result?.data) {
+          const errorMsg = `${ERROR_MESSAGES.START_FAILED}: '${name}' (status: ${result?.status})`;
+          throw new Error(errorMsg);
+        }
+        console.log(`Started '${name}' successfully.`);
+        await db.sequelize.query(`UPDATE vm_configuration SET status = 'Starting', modifiedon = NOW() WHERE vmconfigurationid = ?`,
+          {
+            replacements: [vmconfigurationid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+        const [scenarioRow] = await db.sequelize.query(`SELECT component_config FROM scenarios WHERE scenarioid = ?`,
+          {
+            replacements: [scenarioid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        let durationInSeconds = 0;
+        if (scenarioRow && scenarioRow.component_config) {
+          try {
+            const configArray = JSON.parse(scenarioRow.component_config);
+            const matchedComponent = configArray.find((c) => c.vmid === vmid);
+            const rawDuration = matchedComponent?.duration || "0";
+            const parsedDuration = parseInt(rawDuration, 10);
+            durationInSeconds = isNaN(parsedDuration) ? 0 : parsedDuration;
+          } catch (e) {
+            console.error( "Error parsing component_config or duration:",e.message);
+          }
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, durationInSeconds * 1000)
+        );
+      } catch (err) {
+        await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.START_ERROR} (${component.name}): ${err.message}`);
+        return {success: false, message: ERROR_MESSAGES.START_ERROR};
+      }
+    }
+    await db.sequelize.query(`UPDATE vm_configuration SET status = 'Running', modifiedon = NOW() WHERE scenarioid = ? AND learner_id = ? AND status = 'Starting'`,
+      {
+        replacements: [scenarioid, learnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    await db.sequelize.query(`UPDATE event_learners SET vm_steps = 'Running', modifiedon = NOW(),startedon = CURRENT_TIMESTAMP WHERE eventlearnerid = ?`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+
+    console.log(`All components started. Session and components updated to 'Running'.`);
+    const [session] = await db.sequelize.query(`SELECT network_bridges FROM event_learners WHERE eventlearnerid = ? AND learner_id = ?`,
+      {
+        replacements: [eventlearnerid, learnerid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (session && session.network_bridges) {
+      const bridgeArray = JSON.parse(session.network_bridges || "[]");
+      const bridgeNames = bridgeArray.map((b) => b.networkname);
+      if (bridgeNames.length > 0) {
+        console.log("Bridge names to update:", bridgeNames);
+        await db.sequelize.query(`UPDATE networks SET status = 'In Use', modifiedon = NOW() WHERE networkname IN (:bridges) AND status = 'Occupied'`,
+          {
+            replacements: { bridges: bridgeNames },
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+      }
+    }
+    await db.sequelize.query(`UPDATE event_learners SET status = 'Start', modifiedon = NOW() WHERE eventlearnerid = ? AND vm_steps = 'Running'`,
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+    await db.sequelize.query(`UPDATE scenario_learner SET status = 'Running', modifiedon = NOW() WHERE scenarioid = ? AND learner_id = ?`,
+      {
+        replacements: [scenarioid, learnerid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
+
+    const [scenarioData] = await db.sequelize.query(`SELECT scenariodiagram FROM scenarios WHERE scenarioid = ?`,
+      {
+        replacements: [scenarioid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (scenarioData && scenarioData.scenariodiagram) {
+      let diagram;
+      try {
+        diagram = JSON.parse(scenarioData.scenariodiagram);
+      } catch (parseError) {
+        console.error("Error parsing scenario diagram:", parseError);
+        await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.UNHANDLED_START_ERROR}: Failed to parse scenario diagram`);
+        return;
+      }
+
+      const [webSettings] = await db.sequelize.query(`SELECT qemu_url, lxc_url FROM web_settings WHERE company_id = 1 LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+      const qemuUrl = webSettings?.qemu_url || "https://default-qemu-url.com/";
+      const lxcUrl = webSettings?.lxc_url || "https://default-lxc-url.com/";
+      const componentDetails = await db.sequelize.query( `SELECT vmid, componentname,nodeid,componenttype  FROM vm_configuration WHERE eventlearnerid = ? AND scenarioid = ? AND learner_id = ?`,
+        {
+          replacements: [eventlearnerid, scenarioid, learnerid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+      const vmMap = {};
+      componentDetails.forEach((comp) => {
+        vmMap[comp.nodeid] = {vmid: comp.vmid, componenttype: comp.componenttype?.toLowerCase(), componentname: comp.componentname};
+      });
+
+      if (Array.isArray(diagram.nodes)) {
+        diagram.nodes = diagram.nodes.map((node) => {
+          const nodeid = node.id;
+          const vmData = vmMap[nodeid];
+
+          if (vmData?.vmid) {
+            const { vmid, componenttype, componentname } = vmData;
+            node.data.label = `${vmid} - ${componentname}`;
+            node.data.isOnline = "Yes";
+            if (componenttype === "qemu") {
+              node.data.url = qemuUrl.replace("{vmid}", vmid).replace("{vmname}", componentname);
+            } else if (componenttype === "lxc") {
+              node.data.url = lxcUrl.replace("{vmid}", vmid).replace("{vmname}", componentname);
+            }
+          }
+          return node;
+        });
+      }
+
+      if (typeof session.network_bridges === "string") {
+        try {
+          session.network_bridges = JSON.parse(session.network_bridges);
+        } catch (e) {
+          console.error("Failed to parse network_bridges:", e);
+          session.network_bridges = [];
+        }
+      }
+      if (Array.isArray(session.network_bridges)) {
+        const networkBridges = JSON.parse(JSON.stringify(session.network_bridges));
+        diagram.edges = diagram.edges.map((edge) => {
+          const currentLabel = edge.data?.label?.toString();
+          const matchedBridge = networkBridges.find((bridge) => bridge.networkkey?.toString() === currentLabel);
+
+          if (matchedBridge) {
+            edge.data.label = matchedBridge.networkname;
+          } else {
+            console.log(`No match found for label ${currentLabel}`);
+          }
+          return edge;
+        });
+      }
+
+      await db.sequelize.query(`UPDATE event_learners SET scenariodiagram = ?, modifiedon = NOW() WHERE eventlearnerid = ?`,
+        {
+          replacements: [JSON.stringify(diagram), eventlearnerid],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+      console.log("Scenario diagram updated in session.");
+    } else {
+      console.error("Scenario diagram not found in scenarios table.");
+      await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.UNHANDLED_START_ERROR}: Scenario diagram not found`);
+    }
+  } catch (err) {
+    console.error("Unhandled error in startComponentVM:", err);
+    await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, `${ERROR_MESSAGES.UNHANDLED_START_ERROR}: ${err.message}`);
+  }
+}
+
+async function stopAndDestroyComponentVM(db, ipAddress, { scenarioid, learnerid, eventlearnerid }) {
+  const statusVal = "Starting";
+  try {
+    const components = await db.sequelize.query(`SELECT vmconfigurationid, vmid AS clone_vmid, componenttype, componentname AS name FROM vm_configuration WHERE scenarioid = ? AND learner_id = ? AND status = ?`,
+      {
+        replacements: [scenarioid, learnerid, statusVal],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (!components || components.length === 0) {
+      console.error("No components with status 'Starting' found.");
+      return {success: false, message: "No components with status 'Starting' found."};
+    }
+    console.log("Components to stop and destroy:", components);
+    for (const component of components) {
+      const { clone_vmid, componenttype, name } = component;
+      try {
+        const vmType = componenttype.toLowerCase();
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+        await proxmoxService.generateAccessTicket();
+        const result = await proxmoxService.stopVM(clone_vmid, vmType);
+        if (result?.status !== 200 || !result?.data) {
+          const errorMsg = `${ERROR_MESSAGES.STOP_ERROR}: '${name}' (status: ${result?.status})`;
+          throw new Error(errorMsg);
+        }
+        console.log(`Stopped '${name}' (VMID: ${clone_vmid})`);
+        const resultdestroy = await proxmoxService.destroyVM(clone_vmid, vmType);
+        if (resultdestroy?.status !== 200 || !resultdestroy?.data) {
+          const errorMsg = `${ERROR_MESSAGES.DESTROY_ERROR}: '${name}' (status: ${resultdestroy?.status})`;
+          throw new Error(errorMsg);
+        }
+        console.log(`Destroyed '${name}' (VMID: ${clone_vmid})`);
+      } catch (err) {
+        await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, ERROR_MESSAGES.COMPONENT_OPERATION_FAILED);
+        throw err;
+      }
+    }
+    await handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, statusVal, ERROR_MESSAGES.CLEANUP_COMPLETED_WITH_FAILURE);
+    console.log("All applicable VMs stopped, destroyed, and marked as Failed.");
+  } catch (err) {
+    console.error(`Unhandled error in stopAndDestroyComponentVM: ${err.message}`);
+  }
+}
+
+async function handleComponentFailure(db, scenarioid, learnerid, eventlearnerid, currentStatus, reason) {
+  console.error(`Marking all components and session as 'Failed'. Reason: ${reason}`);
+  await db.sequelize.query(`UPDATE vm_configuration SET status = 'Failed', modifiedon = NOW() WHERE scenarioid = ? AND learner_id = ? AND status = ?`,
+    {
+      replacements: [scenarioid, learnerid, currentStatus],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
+
+  await db.sequelize.query(`UPDATE event_learners SET vm_steps = 'Failed', modifiedon = NOW(),failedon  = NOW() WHERE eventlearnerid = ?`,
+    {
+      replacements: [eventlearnerid],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
+  await db.sequelize.query(`UPDATE event_learners SET status = 'Failed', modifiedon = NOW() WHERE eventlearnerid = ?`,
+    {
+      replacements: [eventlearnerid],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
+  await db.sequelize.query(`UPDATE scenario_learner SET status = 'Terminated', modifiedon = NOW() WHERE scenariolearnerid = ( SELECT scenariolearnerid FROM event_learners WHERE eventlearnerid = ?)`,
+    {
+      replacements: [eventlearnerid],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
+
+  await db.sequelize.query(`INSERT INTO event_learner_logs (eventlearnerid,eventid, learner_id, type, remark, status, createdon) SELECT el.eventlearnerid,el.eventid, el.learner_id, 'System', ?, 'Failed', NOW() FROM event_learners el WHERE el.eventlearnerid = ?`,
+    {
+      replacements: [reason, eventlearnerid],
+      type: db.sequelize.QueryTypes.INSERT,
+    }
+  );
+  
+  const components = await db.sequelize.query(`SELECT network_bridge_json FROM vm_configuration WHERE scenarioid = ? AND learner_id = ?`,
+    {
+      replacements: [scenarioid, learnerid],
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const bridgesToFree = new Set();
+  for (const component of components) {
+    if (!component.network_bridge_json) continue;
+    let bridgeMap = {};
+    try {
+      bridgeMap = JSON.parse(component.network_bridge_json);
+    } catch (err) {
+      console.warn(`Invalid JSON in network_bridge_json for a component:`,err.message);
+      continue;
+    }
+
+    const bridges = Object.values(bridgeMap).map((val) => {
+        const match = val.match(/bridge=([^,"]+)/);
+        return match ? match[1] : null;
+      }).filter((bridge) => !!bridge);
+
+    for (const bridge of bridges) {
+      bridgesToFree.add(bridge);
+    }
+  }
+
+  if (bridgesToFree.size > 0) {
+    for (const bridge of bridgesToFree) {
+      await db.sequelize.query(`UPDATE networks SET status = 'Available', modifiedon = NOW() WHERE networkjson LIKE ?`,
+        {
+          replacements: [`%\"iface\":\"${bridge}\"%`],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+    }
+  }
+}
+
+module.exports = {
+  componentSetupJob,
+  handleComponentFailure,
+};

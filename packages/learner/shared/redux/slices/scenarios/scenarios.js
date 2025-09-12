@@ -1,0 +1,466 @@
+import { createSlice } from "@reduxjs/toolkit";
+import axios from "../../axios/axiosLearner";
+import api from "../../api_urls";
+
+
+// ----------------------------------------------------------------------
+
+const initialState = {
+  isLoading: false,
+  error: null,
+  getScenariosListData: [],
+  singleScenarios: [],
+  saveScenarios: [],
+  getChatMessagesListData: [],
+  saveChatMessage: [],
+  saveChatMessageSeen: [],
+  updateSessionStatus: [],
+  getSessionStatusListData: [],
+  getConfigurationsData: [],
+  updateCompletedTerminatedData: [],
+  getLogsData: [],
+  getToken: [],
+  getvmStartScenario: [],
+  getvmRestartScenario: [],
+  getVncProxyConsole:[],
+};
+
+
+
+const slice = createSlice({
+  name: "scenarios",
+  initialState,
+  reducers: {
+    // START LOADING
+    startLoading(state) {
+      state.isLoading = true;
+    },
+    hasGetScenariosListData(state, action) {
+      state.isLoading = false,
+        state.getScenariosListData = action.payload;
+    },
+
+    hasGetSingleScenariosSucc(state, action) {
+      state.isLoading = false,
+        state.singleScenarios = action.payload;
+    },
+
+    hasGetSaveScenariosSucc(state, action) {
+      state.isLoading = false,
+        state.saveScenarios = action.payload;
+
+    },
+
+    hasGetGetChatMessagesSucc(state, action) {
+      state.isLoading = false,
+        state.getChatMessagesListData = action.payload;
+
+    },
+    hasGetvmRestartScenario(state, action) {
+      state.isLoading = false,
+        state.getvmRestartScenario = action.payload;
+
+    },
+
+    hasGetSaveChatMessageSucc(state, action) {
+      state.isLoading = false,
+        state.saveChatMessage = action.payload;
+
+    },
+
+    hasGetChatMessageSeenSucc(state, action) {
+      state.isLoading = false,
+        state.saveChatMessageSeen = action.payload;
+
+    },
+    hasGetUpdateSessionStatusSucc(state, action) {
+      state.isLoading = false,
+        state.updateSessionStatus = action.payload;
+
+    },
+    hasGetSessionStatusListData(state, action) {
+      state.isLoading = false,
+        state.getSessionStatusListData = action.payload;
+
+    },
+    hasGetConfigurationsSucc(state, action) {
+      state.isLoading = false,
+        state.getConfigurationsData = action.payload;
+
+    },
+    hasGetvmStartScenario(state, action) {
+      state.isLoading = false,
+        state.getvmStartScenario = action.payload;
+
+    },
+    hasUpdateCompletedTerminatedSucc(state, action) {
+      state.isLoading = false,
+        state.updateCompletedTerminatedData = action.payload;
+    },
+
+    hasGetLogsListData(state, action) {
+      state.isLoading = false,
+        state.getLogsData = action.payload;
+    },
+    hasGetToken(state, action) {
+      state.isLoading = false,
+        state.getToken = action.payload;
+    },
+    hasGetVncProxyConsole(state, action) {
+      state.isLoading = false,
+        state.getVncProxyConsole = action.payload;
+    },
+    // HAS ERROR
+    hasError(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+  },
+});
+
+
+
+
+// Reducer
+export default slice.reducer;
+// Actions
+export const { openModal, closeModal, selectEvent } = slice.actions;
+
+// ----------------------------------------------------------------------
+
+
+export function getScenariosList() {
+
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+
+      const response = await axios.get(`${api.scenarios_get}`);
+      dispatch(slice.actions.hasGetScenariosListData(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function getSingleScenarios(id) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.scenarios_single}/${id}`);
+      dispatch(slice.actions.hasGetSingleScenariosSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+
+export function getConfigurations(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.get_configurations}`, payload);
+      dispatch(slice.actions.hasGetConfigurationsSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function vmStartScenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.vm_start_scenario}`, payload);
+      dispatch(slice.actions.hasGetvmStartScenario(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearvmStartScenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetvmStartScenario([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function vmRestartScenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.vm_restart_scenario}`, payload);
+      dispatch(slice.actions.hasGetvmRestartScenario(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearvmRestartScenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetvmRestartScenario([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearGetConfigurations() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetConfigurationsSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function updateCompletedTerminated(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.update_completed_terminated}`, payload);
+      dispatch(slice.actions.hasUpdateCompletedTerminatedSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function clearUpdateCompletedTerminated() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasUpdateCompletedTerminatedSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearSingleScenarios() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSingleScenariosSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+
+export function saveScenarios(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenarios_save}`, payload);
+      dispatch(slice.actions.hasGetSaveScenariosSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function updateSessionStatus(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenario_status_update}`, payload);
+      dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function getSessionStatusList(id) {
+
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+
+      const response = await axios.get(`${api.get_session_status}/${id}`);
+      dispatch(slice.actions.hasGetSessionStatusListData(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearGetSessionStatusList() {
+
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSessionStatusListData([]));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function clearSaveScenarios() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveScenariosSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getChatMessages(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.chatmessage_get}`, payload);
+      dispatch(slice.actions.hasGetGetChatMessagesSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearGetChatMessages() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetGetChatMessagesSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function saveChatMessage(payload) {
+  console.log("-----------------------------------------")
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.chat_save}`, payload);
+      dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
+
+      console.log("response", response)
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearSaveChatMessage() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveChatMessageSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function chatMessageSeen(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.chat_markseen}`, payload);
+      dispatch(slice.actions.hasGetChatMessageSeenSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearchatMessageSeen() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetChatMessageSeenSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getLogs(payload) {
+  console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+
+      const response = await axios.post(`${api.get_logs}`, payload);
+
+      dispatch(slice.actions.hasGetLogsListData(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getAccessToken() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+
+      const response = await axios.post(`${api.generate_access_token}`);
+
+      dispatch(slice.actions.hasGetToken(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function cleargetAccessToken() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetToken([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function vncProxyConsole(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+
+      const response = await axios.post(`${api.vnc_proxy_console}`,payload);
+
+      dispatch(slice.actions.hasGetVncProxyConsole(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearHasError() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasError([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}

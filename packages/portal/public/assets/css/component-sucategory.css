@@ -1,0 +1,110 @@
+/* Custom card styling  for component subcateegory*/
+.custom-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    border: none;
+    background-color: #ffffff;
+  }
+
+  /* Styling for Card body */
+  .blog-details {
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* Title styles */
+  .font-weight-semibold {
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+
+  /* Text styling for category name and description */
+  .text-muted {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .text-primary {
+    color: #007bff;
+  }
+
+  .text {
+    font-size: 1rem;
+    color: #333;
+  }
+
+  /* Button styling */
+  .btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+    background-color: transparent;
+  }
+
+  .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+  }
+
+  .fe-arrow-left {
+    margin-right: 8px;
+  }
+
+  /* Image styles */
+  .img-fluid {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .rounded {
+    border-radius: 10px;
+  }
+
+  /* List Group styling */
+  .list-group {
+    margin-top: 20px;
+    padding: 0;
+  }
+
+  .list-group-item {
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+  }
+
+  .list-group-item.disabled {
+    background-color: #f1f1f1;
+    color: #6c757d;
+  }
+
+  .list-group-item-action:hover {
+    background-color: #007bff;
+    color: white;
+  }
+
+  /* Margin for the top of rows */
+  .mg-t-10 {
+    margin-top: 10px;
+  }
+
+  /* For responsiveness */
+  @media (max-width: 768px) {
+    .custom-card {
+      margin: 10px;
+    }
+
+    .blog-details {
+      padding: 15px;
+    }
+
+    .font-weight-semibold {
+      font-size: 1.25rem;
+    }
+
+    .btn-outline-secondary {
+      width: 100%;
+    }
+  }
