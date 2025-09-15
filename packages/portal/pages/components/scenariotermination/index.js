@@ -19,7 +19,7 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 const ManageScenarioTermination = () => {
   const dispatch = useDispatch();
 
-  const [logs, setLogs] = useState([]);
+  // const [logs, setLogs] = useState([]);
   const [activeTab, setActiveTab] = useState("scenario");
 
   // Separate loading states
@@ -43,29 +43,44 @@ const ManageScenarioTermination = () => {
   }));
 
   // Fetch logs when tab changes
-  useEffect(() => {
-    if (activeTab === "scenario") {
-      setLoadingScenarioTab(true);
-      dispatch(terminateFailedLogs()).finally(() =>
-        setLoadingScenarioTab(false)
-      );
-    } else {
-      setLoadingEventTab(true);
-      dispatch(terminateFailedEventLogs()).finally(() =>
-        setLoadingEventTab(false)
-      );
-    }
-  }, [dispatch, activeTab]);
+  // useEffect(() => {
+  //   if (activeTab === "scenario") {
+  //     setLoadingScenarioTab(true);
+  //     dispatch(terminateFailedLogs()).finally(() =>
+  //       setLoadingScenarioTab(false)
+  //     );
+  //   } else {
+  //     setLoadingEventTab(true);
+  //     dispatch(terminateFailedEventLogs()).finally(() =>
+  //       setLoadingEventTab(false)
+  //     );
+  //   }
+  // }, [dispatch, activeTab]);
 
-  // Update logs
   useEffect(() => {
-    if (activeTab === "scenario") {
-      setLogs(hasGetterminateFailedLogs || []);
+  const fetchLogs = async () => {
+    try {
+      if (activeTab === "scenario") {
+        setLoadingScenarioTab(true);
+        await dispatch(terminateFailedLogs());
+      } else {
+        setLoadingEventTab(true);
+        await dispatch(terminateFailedEventLogs());
+      }
+    } finally {
+      setLoadingScenarioTab(false);
+      setLoadingEventTab(false);
     }
-    if (activeTab === "event") {
-      setLogs(hasGetterminateFailedEventLogs || []);
-    }
-  }, [hasGetterminateFailedLogs, hasGetterminateFailedEventLogs, activeTab]);
+  };
+  fetchLogs();
+}, [dispatch, activeTab]);
+
+
+  // Derive logs directly, no local state
+const logs = activeTab === "scenario"
+  ? hasGetterminateFailedLogs || []
+  : hasGetterminateFailedEventLogs || [];
+
 
   // Success toast for Scenario
   useEffect(() => {
@@ -171,9 +186,6 @@ const columnDefs = useMemo(() => {
   return baseColumns;
 }, [activeTab]);
 
-
-
-
   const defaultColDef = useMemo(
     () => ({
       sortable: true,
@@ -183,8 +195,6 @@ const columnDefs = useMemo(() => {
     }),
     []
   );
-
-
 
 const frameworkComponents = {
     srNoRender: (props) => props.node.rowIndex + 1,
@@ -212,7 +222,6 @@ const frameworkComponents = {
       />
     ),
   };
-
 
   return (
     <>

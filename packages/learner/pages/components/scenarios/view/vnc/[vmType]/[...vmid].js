@@ -150,6 +150,9 @@ export default function ProxmoxConsole() {
   }, []);
 
   const handleStartClick = () => {
+     if (document.fullscreenElement) {
+    document.exitFullscreen();
+  }
     Swal.fire({
       title: "Are you sure?",
       text: `Do you really want to start VM/CT ${vmid}?`,
@@ -182,6 +185,9 @@ export default function ProxmoxConsole() {
   };
 
   const handleRestartClick = () => {
+     if (document.fullscreenElement) {
+    document.exitFullscreen();
+  }
     Swal.fire({
       title: "Are you sure?",
       text: `Do you really want to reset VM/CT ${vmid}?`,

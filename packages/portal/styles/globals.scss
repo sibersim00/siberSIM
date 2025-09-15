@@ -792,7 +792,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 }
 
 .main-signin-wrapper {
-  background-image: url('../public/assets/img/pngs/siberSIM-Landing-Page.png');
+  flex: 1;
+    display: flex;
+    justify-content: center;
+  background: url('../public/assets/img/pngs/siberSIM-Landing-Page.png') center 50%;
   background-size: cover;
   background-repeat: no-repeat;
 }
