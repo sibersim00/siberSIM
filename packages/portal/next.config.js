@@ -80,6 +80,7 @@ const nextConfig = withTM({
   async rewrites() {
     return  [
          { source: '/admin-login', destination: '/admin-login'},
+         { source: '/instructor-login', destination: '/'},
          { source: '/dashboard', destination: '/components/dashboard'},
          { source: '/components', destination: '/components/components' },
          { source: '/scenarios', destination: '/components/scenarios' },
@@ -125,7 +126,7 @@ const nextConfig = withTM({
         { source: '/normalusers_view/:slug*', destination: '/components/users/view/:slug*' },
         { source: '/instructors_view/:slug*', destination: '/components/instructors/view/:slug*'},
         { source: '/event-dashboard', destination: '/components/eventdashboard'},
-        { source: '/scenario-termination', destination: '/components/scenariotermination'},
+        { source: '/scenariotermination', destination: '/components/scenariotermination'},
         { source: '/notifications', destination: '/components/notifications/notificationList'},
         
         //  { source: '/masters', destination: '/components/masters' },

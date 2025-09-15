@@ -428,13 +428,13 @@ const Dashboard = () => {
                   ))
                 ) : (
                   <p className="text-muted text-center">
-                    No Web Browser Widgets found.
+                    {/* No Web Browser Widgets found. */}
                   </p>
                 )}
               </Col>
             </Row>
 
-            <Row className="d-flex flex-column align-items-center ">
+            {/* <Row className="d-flex flex-column align-items-center ">
               {mockEvents.length === 0 ? (
                 <Col md={12}>
                   <Card className="custom-card shadow-lg rounded-lg border-0 p-4 text-center">
@@ -455,7 +455,7 @@ const Dashboard = () => {
                     <Card className="custom-card shadow-lg rounded-lg border-0 p-4">
                       <Card.Body>
                         <Row>
-                          {/* Left Column – Event Info */}
+                        
                           <Col md={8}>
                             <Card.Title className="font-weight-bold">
                               {event.title}
@@ -484,12 +484,12 @@ const Dashboard = () => {
                             </div>
                           </Col>
 
-                          {/* Right Column – Badges & Buttons */}
+                        
                           <Col
                             md={4}
                             className="d-flex flex-column justify-content-between align-items-end h-100"
                           >
-                            {/* Top Right - Badges */}
+                       
                             <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
                               <Badge
                                 bg={
@@ -508,7 +508,7 @@ const Dashboard = () => {
                               </Badge>
                             </div>
 
-                            {/* Bottom Right - Buttons */}
+                           
                             <div className="d-flex flex-column align-items-end mt-4">
                               <div className="mb-2">
                                 {event.registrationStatus === "Open" ? (
@@ -538,7 +538,7 @@ const Dashboard = () => {
                   </Col>
                 ))
               )}
-            </Row>
+            </Row> */}
           </Col>
         </Row>
       </Container>

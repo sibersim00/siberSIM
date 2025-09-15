@@ -44,7 +44,7 @@ const FormFaqs = (props) => {
     type: yup
       .string()
       .required(error.required)
-      .oneOf(["Learner", "Instructor", "Admin"], "Type must be Learner, Instructor, or Admin"),
+      .oneOf(["User", "Instructor", "Admin"], "Type must be User, Instructor, or Admin"),
   });
 
 
@@ -52,7 +52,7 @@ const FormFaqs = (props) => {
     question: rowValues?.question || "",
     answer: rowValues?.answer || "",
     order_by: rowValues?.order_by || "",
-    type: rowValues?.type || "Learner",
+    type: rowValues?.type || "User",
   };
 
   const getSelectStyles = (fieldName, formik) => {
@@ -208,7 +208,7 @@ const FormFaqs = (props) => {
                     <Select
                       name="type"
                       options={[
-                        { label: "Learner", value: "Learner" },
+                        { label: "User", value: "User" },
                         { label: "Instructor", value: "Instructor" },
                         { label: "Admin", value: "Admin" },
                       ]}

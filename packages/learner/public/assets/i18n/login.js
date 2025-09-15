@@ -1,8 +1,8 @@
-let title = "STUDENT LOGIN";
+let title = "USER LOGIN";
 let otp = "OTP";
 
 export const login_en = {
-  "meta_title": "siberSIM-Student",
+  "meta_title": "siberSIM-User",
   'title_student': title,
   'title-forget': "FORGOT PASSWORD",
   "labels": {
