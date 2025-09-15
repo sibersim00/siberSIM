@@ -13,8 +13,8 @@ const nextConfig = withTM({
   reactStrictMode: true,
   trailingSlash: true,
   swcMinify: true,
-  basePath: "/uat/learner",
-  assetPrefix : "/uat/learner/",
+  basePath: "",
+  assetPrefix : "",
   images: {
     loader:"default", 
     path:"../../../assets"
@@ -27,7 +27,7 @@ const nextConfig = withTM({
     EVENTLEARNER_API_URL : `http://sibersim.battlerangers.com/jobapi`,
     API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
     CRYPTO_SECURITY_KEY : 'techno5202jarus',
-    BASE_PATH : `http://sibersim.battlerangers.com/uat/learner/`,
+    BASE_PATH : `http://sibersim.battlerangers.com`,
     VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
   },
      async headers() {    

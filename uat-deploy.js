@@ -11,7 +11,7 @@ const services = [
   { name: 'jobs', build: false },
 ];
 
-const baseDir = 'C:/Projects/UAT/battle-rangers/packages';
+const baseDir = 'C:/Projects/siberSIM/packages';
 
 function run(command, cwd) {
   console.log(`\n🔷 Running: ${command} in ${cwd}`);
