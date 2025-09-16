@@ -27,7 +27,7 @@ const nextConfig = withTM({
     EVENTLEARNER_API_URL : `http://sibersim.battlerangers.com/jobapi`,
     API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
     CRYPTO_SECURITY_KEY : 'techno5202jarus',
-    BASE_PATH : `http://sibersim.battlerangers.com`,
+    BASE_PATH : `http://sibersim.battlerangers.com/`,
     VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
   },
      async headers() {    
