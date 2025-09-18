@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-} from "react-bootstrap";
+import { Row, Col, Card, Button, Form } from "react-bootstrap";
 import { useFormik } from "formik";
 import "../../../../shared/utils/i18n.js";
 import Select from "react-select";
@@ -82,8 +76,6 @@ const Userperformance = () => {
     }
   }, [hasGetScenarioListSuccess]);
 
-
-
   useEffect(() => {
     const payload = {
       instructor_id: hasGetInstructorListSucc?.instructor_id,
@@ -112,11 +104,9 @@ const Userperformance = () => {
     initialValues: {
       instructor_id: [],
       scenario_id: [],
-
     },
   });
 
-  
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
       ...styles,
@@ -160,7 +150,7 @@ const Userperformance = () => {
       cellRenderer: "srNoRender",
       headerTooltip: "Sr No.",
     },
-     {
+    {
       headerName: "Full Name",
       field: "instructor_name",
       headerTooltip: "Full Name",
@@ -221,7 +211,6 @@ const Userperformance = () => {
       // minWidth: 250,
     },
   ];
-
 
   const handleExport = () => {
     const data = Array.isArray(hasinstructorperformancelist)
@@ -380,13 +369,25 @@ const Userperformance = () => {
                         },
                       })}
                       isMulti
+                      styles={{
+                        ...customStyles,
+                        multiValue: (base) => ({
+                          ...base,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          borderRadius: "2px",
+                          fontSize: "85%",
+                          padding: "3px 3px 3px 6px",
+                          boxSizing: "border-box",
+                        }),
+                      }}
                       name="instructor_id"
                       value={formValidation.values.instructor_id}
                       options={InstructorDropdown}
                       getOptionLabel={(x) => x.name}
                       getOptionValue={(x) => x.instructor_id}
                       placeholder="Select Instructors"
-                      
                       onChange={(selectedOptions) => {
                         formValidation.setFieldValue(
                           "instructor_id",
@@ -419,6 +420,19 @@ const Userperformance = () => {
                   <Form.Group as={Col} md="4" className="">
                     <Select
                       isMulti
+                      styles={{
+                        ...customStyles,
+                        multiValue: (base) => ({
+                          ...base,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          borderRadius: "2px",
+                          fontSize: "85%",
+                          padding: "3px 3px 3px 6px",
+                          boxSizing: "border-box",
+                        }),
+                      }}
                       theme={(theme) => ({
                         ...theme,
                         colors: {
@@ -428,7 +442,7 @@ const Userperformance = () => {
                         },
                       })}
                       name="scenario_id"
-                      styles={getSelectStyles("scenario_id")}
+                      // styles={getSelectStyles("scenario_id")}
                       value={formValidation.values.scenario_id}
                       options={scenarioDropdown}
                       getOptionLabel={(x) => x.scenariotitle}
@@ -451,7 +465,6 @@ const Userperformance = () => {
 
                         dispatch(instructorPerformanceList(payload));
                       }}
-                     
                       menuPosition="fixed"
                     />
                     <div
@@ -471,35 +484,31 @@ const Userperformance = () => {
                     >
                       <i className="fa fa-file-excel-o"></i> Generate Report
                     </Button>
-
-                    
                   </div>
                 </div>
               </Col>
               <Col md={12}>
-                
-                  <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
-                  >
-                    <AgGridReact
-                      id="cat_grid"
-                      headerHeight={35}
-                      rowHeight={40}
-                      gridOptions={gridOptions}
-                      rowData={rowData}
-                      columnDefs={columnDefs}
-                      pagination={true}
-                      onGridReady={onGridReady}
-                      components={frameworkComponents}
-                      defaultColDef={defaultColDef}
-                    ></AgGridReact>
-                  </div>
-                
+                <div
+                  className="ag-theme-alpine mt-2"
+                  style={{ height: "40em", width: "100%" }}
+                >
+                  <AgGridReact
+                    id="cat_grid"
+                    headerHeight={35}
+                    rowHeight={40}
+                    gridOptions={gridOptions}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    onGridReady={onGridReady}
+                    components={frameworkComponents}
+                    defaultColDef={defaultColDef}
+                  ></AgGridReact>
+                </div>
               </Col>
             </Card.Body>
           </Card>
-        </Col>   
+        </Col>
       </Row>
     </>
   );

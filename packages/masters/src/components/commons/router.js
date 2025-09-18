@@ -47,5 +47,6 @@ module.exports = (iocContainer) => {
   router.post("/diagramlist", controller.scenariodiagramlist(iocContainer));
   router.get("/faqlist", controller.faqlist(iocContainer));
   router.get("/getallscenario", controller.eventScenarioList(iocContainer));
+    router.get("/theme", controller.theme(iocContainer));
   return router;
 };

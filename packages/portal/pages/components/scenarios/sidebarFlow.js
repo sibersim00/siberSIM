@@ -232,7 +232,7 @@ return (
  <div
   style={{
     padding: '10px',
-    backgroundColor: '#F4F4F4',
+    // backgroundColor: '#F4F4F4',
     height: '100%',
     maxHeight: '560px',
     overflowY: 'auto',
@@ -309,7 +309,19 @@ return (
           }
       }}
       isMulti
-      styles={customStyles}
+  styles={{
+    ...customStyles,
+    multiValue: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      borderRadius: "2px",
+      fontSize: "85%",
+      padding: "3px 3px 3px 6px",
+      boxSizing: "border-box",
+    }),
+  }}
   /> 
   </div>
 
@@ -347,7 +359,7 @@ return (
         <span
           style={{
             fontSize: '10px',
-            color: '#333',
+            color: '#a1a1a1ff',
             fontWeight: 'bold',
             marginTop: '6px',
             textAlign: 'center',

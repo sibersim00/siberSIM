@@ -413,6 +413,43 @@ const eventScenarioList = ({ db }) => async () => {
   }
 };
 
+// dao/user.js
+const theme = ({ db }) => async (userid, themeParam) => {
+  try {
+    // If themeParam is provided -> sanitize and update
+    if (typeof themeParam !== "undefined" && themeParam !== null) {
+      const t = String(themeParam).toLowerCase() === "dark" ? "dark" : "light";
+
+      await db.sequelize.query(
+        `UPDATE ad_users SET theme_preference = :_theme WHERE userid = :_userid`,
+        {
+          replacements: { _userid: userid, _theme: t },
+          // no need to set type for UPDATE
+        }
+      );
+
+      return t;
+    }
+
+    // Otherwise fetch current theme
+    const rows = await db.sequelize.query(
+      `SELECT theme_preference FROM ad_users WHERE userid = :_userid`,
+      {
+        replacements: { _userid: userid },
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    // rows is an array of results; return first or fallback to 'dark'
+    if (rows && rows.length > 0) {
+      return rows[0].theme_preference || "dark";
+    }
+    return "dark";
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 
@@ -434,6 +471,7 @@ module.exports = {
   scenariodiagramlist,
   faqlist,
   eventScenarioList,
-  studentlist
+  studentlist,
+  theme
   
 };

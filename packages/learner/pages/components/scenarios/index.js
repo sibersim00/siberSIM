@@ -20,7 +20,7 @@ const Scenarios = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { scenariosListData } = useSelector((state) => ({
-    scenariosListData: state?.scenarios?.getScenariosListData?.data,
+    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? [],
   }));
 
   const [view, setView] = useState("card");
@@ -158,6 +158,31 @@ const Scenarios = () => {
       setFilteredData(filtered);
     }
   }, [scenariosListData, selectedCategory, selectedSubcategory]);
+  useEffect(() => {
+  if (!scenariosListData) return;
+
+  // Restore category
+  if (router.query.categoryId) {
+    const category = scenariosListData.find(
+      (item) => item.scenariocategoryid === Number(router.query.categoryId)
+    );
+    if (category) setSelectedCategory(category);
+  }
+
+  // Restore subcategory
+  if (router.query.subcategoryName) {
+    const subcategory = scenariosListData.find(
+      (item) => item.scenariosubcategory_name === router.query.subcategoryName
+    );
+    if (subcategory) setSelectedSubcategory(subcategory);
+  }
+
+  // Restore view type (card / list)
+  if (router.query.view) {
+    setView(router.query.view);
+  }
+}, [router.query, scenariosListData]);
+
 
   const columnDefs = [
     {
@@ -352,8 +377,19 @@ const Scenarios = () => {
   };
 
   const handleReturnView = (props) => {
-    router.push(`/scenarios_view/${props?.scenariouuid}?backView=${view}`);
-  };
+  const categoryId = selectedCategory?.scenariocategoryid || "";
+  const subcategoryName = selectedSubcategory?.scenariosubcategory_name || "";
+
+  router.push({
+    pathname: `/scenarios_view/${props?.scenariouuid}`,
+    query: {
+      backView: view,
+      categoryId,
+      subcategoryName,
+    },
+  });
+};
+
 
   const frameworkComponents = {
     srNoRender: function (props) {
@@ -438,25 +474,24 @@ const Scenarios = () => {
 
             <Col md={12}>
               {view == "list" ? (
-                <div
-                  className="ag-theme-alpine mt-2"
-                  style={{ height: "40em", width: "100%" }}
-                >
-                  <AgGridReact
-                    id="cat_grid"
-                    // className="ag-theme-alpine"
-                    headerHeight={35}
-                    rowHeight={40}
-                    gridOptions={gridOptions}
-                    rowData={filteredData}
-                    columnDefs={columnDefs}
-                    pagination={true}
-                    paginationPageSize={10}
-                    onGridReady={onGridReady}
-                    components={frameworkComponents}
-                    defaultColDef={defaultColDef}
-                  ></AgGridReact>
-                </div>
+              <div
+                className="ag-theme-alpine mt-2"
+                style={{ height: "40em", width: "100%" }}
+              >
+                <AgGridReact
+                  id="cat_grid"
+                  headerHeight={35}
+                  rowHeight={40}
+                  gridOptions={gridOptions}
+                  rowData={filteredData}
+                  columnDefs={columnDefs}
+                  pagination={true}
+                  paginationPageSize={10}
+                  onGridReady={onGridReady}
+                  components={frameworkComponents}
+                  defaultColDef={defaultColDef}
+                />
+              </div>
               ) : (
                 ""
               )}

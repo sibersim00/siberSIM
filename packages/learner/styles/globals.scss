@@ -128,15 +128,38 @@ body {
   display: none;
 }
 
+/* Light Mode (default override for Alpine) */
+.ag-theme-alpine {
+  --ag-background-color: #ffffff;
+  --ag-foreground-color: #000000;
+  --ag-header-background-color: #f8f9fa;
+  --ag-odd-row-background-color: #fafafa;
+}
+
+/* Dark Mode (when body has dark-theme) */
+body.dark-theme .ag-theme-alpine {
+  --ag-background-color: #24243e;   /* 👈 your color */
+  --ag-foreground-color: #f1f1f1;
+  --ag-header-background-color: #24243e;
+  --ag-odd-row-background-color: #24243e;
+}
+
+
 
 .main-signin-wrapper {
     flex: 1;
     display: flex;
     justify-content: center;
-    background: url('../public/assets/img/pngs/siberSIM-Landing-Page.png') center 50%;
+    // background: radial-gradient(circle,rgba(15, 15, 15, 1) 0%, rgba(31, 31, 31, 1) 100%);
+    background: url('../public/assets/img/pngs/siberSIM-Landing-Page2.png') center 50%;
     background-size: cover;
-    background-repeat: no-repeat;
+    // background-repeat: no-repeat;
+   border-radius: 0;
+    position: relative;
+    min-height: 100vh;
 }
+ 
+.signpages .card {border-color: #000; overflow: hidden; background: #1c1c1c;}
 
 
 /* dashbord main-end */

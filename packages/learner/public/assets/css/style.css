@@ -27741,7 +27741,7 @@ body.rtl {
     border-bottom: 1px solid #e8e8f7;
     z-index: 99;
     width: 100%;
-    box-shadow: -7.829px 11.607px 20px 0px rgb(228, 227, 245);
+    /* box-shadow: -7.829px 11.607px 20px 0px rgb(228, 227, 245); */
 }
 
 .main-header>.container,

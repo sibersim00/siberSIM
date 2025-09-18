@@ -38,6 +38,8 @@ import ScenarioQuiz from "./quiz";
 const ScenariosView = () => {
   const dispatch = useDispatch();
   const { query, push } = useRouter();
+  const router = useRouter();
+  const { backView, categoryId, subcategoryName } = router.query;
   const [rowId, setRowId] = useState("");
   const [rowValues, setRowValues] = useState({});
   const [activeTab, setActiveTab] = useState("basic_info");
@@ -565,7 +567,7 @@ const ScenariosView = () => {
                       className="d-flex align-items-center"
                       style={{ gap: "12px", maxWidth: "50%" }}
                     >
-                      <Button
+                      {/* <Button
                         variant="outline-secondary"
                         onClick={() => {
                           push(`/scenarios?view=${backTo || "list"}`);
@@ -573,7 +575,23 @@ const ScenariosView = () => {
                         }}
                       >
                         <i className="fe fe-arrow-left"></i>
-                      </Button>
+                      </Button> */}
+                      <Button
+  variant="outline-secondary"
+  onClick={() => {
+    if (categoryId && subcategoryName) {
+      router.push(`/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView || "list"}`);
+    } else if (categoryId) {
+      router.push(`/scenarios?categoryId=${categoryId}&view=${backView || "list"}`);
+    } else {
+      router.push(`/scenarios?view=${backView || "list"}`);
+    }
+    dispatch(clearSingleScenarios());
+  }}
+>
+  <i className="fe fe-arrow-left"></i>
+</Button>
+
                     </div>
                   </div>
                 </Col>

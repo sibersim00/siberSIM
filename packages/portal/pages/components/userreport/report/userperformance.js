@@ -305,6 +305,19 @@ const Userperformance = () => {
                   <Form.Group as={Col} md="4" className="">
                     <Select
                       isMulti
+  styles={{
+    ...customStyles,
+    multiValue: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      borderRadius: "2px",
+      fontSize: "85%",
+      padding: "3px 3px 3px 6px",
+      boxSizing: "border-box",
+    }),
+  }}
                       theme={(theme) => ({
                         ...theme,
                         colors: {
@@ -314,12 +327,12 @@ const Userperformance = () => {
                         },
                       })}
                       name="learner_id"
-                      styles={getSelectStyles("learner_id")}
+                      // styles={getSelectStyles("learner_id")}
                       value={formValidation.values.learner_id || null}
                       options={studentDropdown}
                       getOptionLabel={(x) => x.Student_name}
                       getOptionValue={(x) => x.learner_id}
-                      placeholder="Select Learner"
+                      placeholder="Select User"
                       onChange={(selectedOptions) => {
                         formValidation.setFieldValue(
                           "learner_id",
@@ -351,7 +364,20 @@ const Userperformance = () => {
 
                   <Form.Group as={Col} md="4" className="">
                     <Select
-                      isMulti
+                     isMulti
+  styles={{
+    ...customStyles,
+    multiValue: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      borderRadius: "2px",
+      fontSize: "85%",
+      padding: "3px 3px 3px 6px",
+      boxSizing: "border-box",
+    }),
+  }}
                       theme={(theme) => ({
                         ...theme,
                         colors: {
@@ -361,7 +387,7 @@ const Userperformance = () => {
                         },
                       })}
                       name="scenario_id"
-                      styles={getSelectStyles("scenario_id")}
+                      // styles={getSelectStyles("scenario_id")}
                       value={formValidation.values.scenario_id || null}
                       options={scenarioDropdown}
                       getOptionLabel={(x) => x.scenariotitle}

@@ -384,6 +384,19 @@ const Userreport = () => {
                   <Form.Group as={Col} md="4" className="">
                     <Select
                       isMulti
+  styles={{
+    ...customStyles,
+    multiValue: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      borderRadius: "2px",
+      fontSize: "85%",
+      padding: "3px 3px 3px 6px",
+      boxSizing: "border-box",
+    }),
+  }}
                       theme={(theme) => ({
                         ...theme,
                         colors: {

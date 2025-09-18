@@ -8,6 +8,8 @@ import {
   getNotification,
   markReadNotification,
 } from "../../redux/slices/noticonfigs/noticonfigs";
+import { getOrSetTheme } from "../../redux/slices/commons/commons";
+
 import { logOutData, clearlogOutData } from "../../redux/slices/auth/auth";
 import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 import Swal from "sweetalert2";
@@ -23,7 +25,7 @@ const HeadDropDown = () => {
     (state) => state?.localData?.getLocalData
   );
 
-  const { notificationData, logoutData, markReadNotiResp, errorData } =
+  const { notificationData, logoutData, markReadNotiResp, theme, errorData } =
     useSelector((state) => {
       return {
         notificationData:
@@ -37,31 +39,33 @@ const HeadDropDown = () => {
           state.noticonfigs &&
           state.noticonfigs.markReadNotiResp &&
           state.noticonfigs.markReadNotiResp,
-
+        theme: state.commonsdata?.theme,
         errorData: state && state.searchemployee && state.searchemployee.error,
       };
     });
+  useEffect(() => {
+    dispatch(getOrSetTheme()); // fetch theme on load
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("userLearner"));
+      dispatch(getOrSetTheme()); // fetch theme on load
     }
   }, []);
 
   useEffect(() => {
     dispatch(getNotification("Learner"));
   }, []);
-
-  // useEffect(() => {
-  //   if (notificationData && notificationData.length > 0) {
-  //     let date = new Date();
-  //     date.setDate(date.getDate() - 2);
-  //     var list = notificationData.filter(
-  //       (obj) => new Date(obj.createdon) >= date
-  //     );
-  //     setShowLessNotifications(list);
-  //   }
-  // }, [notificationData]);
+  useEffect(() => {
+    if (theme === "dark") {
+      document.body.classList.add("dark-theme");
+      localStorage.setItem("theme_preference", "dark");
+    } else {
+      document.body.classList.remove("dark-theme");
+      localStorage.setItem("theme_preference", "light");
+    }
+  }, [theme]);
 
   useEffect(() => {
     console.log("notificationData: ", notificationData);
@@ -163,44 +167,44 @@ const HeadDropDown = () => {
     ? `${process.env.API_URL_FILEMANAGER}${user.profile}`
     : dummy_profile.src;
 
-  // const Darkmode = () => {
-  //   document.querySelector("body").classList.toggle("dark-theme");
-  //   document.querySelector("#myonoffswitch2").checked = true;
-  //   if (document.body.classList.contains("dark-theme")) {
-  //     localStorage.setItem("DSPdark", true);
-  //   } else {
-  //     localStorage.removeItem("DSPdark");
-  //   }
-  // };
   const Darkmode = () => {
-  document.querySelector("body").classList.toggle("dark-theme");
-  const switchEl = document.querySelector("#myonoffswitch2");
-  if (switchEl) {
-    switchEl.checked = true;
-  }
-  if (document.body.classList.contains("dark-theme")) {
-    localStorage.setItem("DSPdark", true);
-  } else {
-    localStorage.removeItem("DSPdark");
-  }
-};
+    document.querySelector("body").classList.toggle("dark-theme");
+    const switchEl = document.querySelector("#myonoffswitch2");
+    if (switchEl) {
+      switchEl.checked = true;
+    }
+    if (document.body.classList.contains("dark-theme")) {
+      localStorage.setItem("DSPdark", true);
+    } else {
+      localStorage.removeItem("DSPdark");
+    }
+  };
+
+  const handleThemeToggle = () => {
+    const isNowDark = document.body.classList.toggle("dark-theme");
+    const newTheme = isNowDark ? "dark" : "light";
+
+    localStorage.setItem("theme_preference", newTheme);
+
+    dispatch(getOrSetTheme(newTheme));
+  };
 
   return (
     <div className="d-flex order-lg-2 align-items-center ms-auto">
       <ToastContainer />
-      {/* <Dropdown className="dropdown d-flex main-header-theme">
-          <Nav.Link
-            className="nav-link icon layout-setting"
-            onClick={() => Darkmode()}
-          >
-            <span className="dark-layout">
-              <i className="fe fe-sun header-icons"></i>
-            </span>
-            <span className="light-layout">
-              <i className="fe fe-moon header-icons"></i>
-            </span>
-          </Nav.Link>
-        </Dropdown> */}
+      <Dropdown className="dropdown d-flex main-header-theme">
+        <Nav.Link
+          className="nav-link icon layout-setting"
+          onClick={() => handleThemeToggle()}
+        >
+          <span className="dark-layout">
+            <i className="fe fe-sun header-icons"></i>
+          </span>
+          <span className="light-layout">
+            <i className="fe fe-moon header-icons"></i>
+          </span>
+        </Nav.Link>
+      </Dropdown>
       <Dropdown className="main-header-notification">
         <Dropdown.Toggle className="nav-link icon" variant="default">
           <i className="fe fe-bell header-icons"></i>
@@ -214,7 +218,7 @@ const HeadDropDown = () => {
               </span>
             )}
         </Dropdown.Toggle>
-        
+
         <Dropdown.Menu style={{ margin: 0 }}>
           <div className="header-navheading">
             {notificationData &&

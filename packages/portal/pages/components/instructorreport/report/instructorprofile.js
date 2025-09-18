@@ -420,6 +420,19 @@ const instructorreport = () => {
                                   },
                                 })}
                       isMulti
+  styles={{
+    ...customStyles,
+    multiValue: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      borderRadius: "2px",
+      fontSize: "85%",
+      padding: "3px 3px 3px 6px",
+      boxSizing: "border-box",
+    }),
+  }}
                       name="instructor_id"
                       value={formValidation.values.instructor_id}
                       options={InstructorDropdown}

@@ -444,7 +444,7 @@ const Forgetpassword = () => {
                 // className="d-none d-lg-block text-center bg-secondary details"
                  className="d-none d-lg-block text-center background-black"
               >
-                <div className="mt-5 pt-4 p-2 pos-absolute">
+                <div className="mt-5 pt-4 p-2">
                 
                   <img
                     src={adminLogoUrl}
@@ -457,7 +457,7 @@ const Forgetpassword = () => {
                   <div className="clearfix"></div>
                   <h5 className="mt-4 text-white">{t("login.forget-title")}</h5>
                   <span className="tx-white-6 tx-13 mb-5 mt-xl-0">
-                    {t("login.labels.sub_title")}
+                    {/* {t("login.labels.sub_title")} */}
                   </span>
                 </div>
               </Col>
@@ -483,7 +483,7 @@ const Forgetpassword = () => {
                               {t("login.labels.title")}
                             </h5>
                             <p className="mb-4 text-muted tx-13 ms-0 text-start">
-                              {t("login.labels.sub_title")}
+                              {/* {t("login.labels.sub_title")} */}
                             </p>
                           </>
                         ) : (

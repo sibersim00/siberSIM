@@ -217,6 +217,26 @@ const eventScenarioList = ({ dao, db }) => async (req, res, next) => {
   catch (err) { next(err) }
 }
 
+// controller/user.js
+const theme = ({ dao, db }) => async (req, res, next) => {
+  try {
+    const session_userid = req.user.userid;
+    const themeParam = req.query.theme; // optional: "dark" or "light"
+
+    const result = await dao.theme({ db })(session_userid, themeParam);
+
+    return res.status(200).send({
+      statusCode: 200,
+      message: themeParam ? "Theme updated." : "Theme fetched.",
+      data: result, // returns "dark" or "light"
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
 module.exports = {
   instructorlist,
   componentcategorylist,
@@ -237,6 +257,7 @@ module.exports = {
   faqlist,
   eventScenarioList,
   studentlist,
+  theme,
   
   
 

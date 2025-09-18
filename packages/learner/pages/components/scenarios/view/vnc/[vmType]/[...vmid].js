@@ -7,46 +7,58 @@ import {
   vmStartScenario,
   vmRestartScenario,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
+import Seo from "../../../../../../shared/layout-components/seo/seo";
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
   const containerRef = useRef(null);
   const rfbRef = useRef(null);
   const router = useRouter();
   const [backend] = useState(`${process.env.VNC_PROXY_URL}`);
-  const { vmid, vmType } = router.query;
+  const { vmid, vmType  } = router.query;
+
   const [status, setStatus] = useState("Click Connect to start.");
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [powerMenuOpen, setPowerMenuOpen] = useState(false);
+  const [componentName, setComponentName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [skipConnectUI, setSkipConnectUI] = useState(false);
-
   const updateStatus = (msg) => setStatus(msg);
   useEffect(() => {
     const token = localStorage.getItem("accessTokenLearner");
     if (!token) router.replace("/404");
   }, [router]);
+let cleanName = "";
+let realVmid = "";
+if (Array.isArray(vmid)) {
+  realVmid = vmid[0];        // "4747"
+  cleanName = vmid[1] || ""; // "windows10"
+} else {
+  realVmid = vmid || "";
+}
 
-  // --- Reusable function to fetch VNC ticket ---
-  const fetchVNCTicket = async () => {
-    const res = await fetch(
-      backend.replace(/^ws/, "http") +
-        `/ticket?vmid=${encodeURIComponent(vmid)}&vmType=${encodeURIComponent(
-          vmType
-        )}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    const data = await res.json();
-    if (!data.ticket) throw new Error("Failed to get VNC ticket");
-    return data.ticket;
-  };
+const fetchVNCTicket = async () => {
+  const res = await fetch(
+    backend.replace(/^ws/, "http") +
+      `/ticket?vmid=${encodeURIComponent(realVmid)}&vmType=${encodeURIComponent(
+        vmType
+      )}&cleanName=${encodeURIComponent(cleanName)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  const data = await res.json();
+  if (!data.ticket) throw new Error("Failed to get VNC ticket");
+  return data.ticket;
+};
+
+
   const intentionalDisconnect = useRef(false);
   const connect = async (reconnecting = false) => {
     try {
@@ -150,9 +162,9 @@ export default function ProxmoxConsole() {
   }, []);
 
   const handleStartClick = () => {
-     if (document.fullscreenElement) {
-    document.exitFullscreen();
-  }
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
     Swal.fire({
       title: "Are you sure?",
       text: `Do you really want to start VM/CT ${vmid}?`,
@@ -164,30 +176,30 @@ export default function ProxmoxConsole() {
       allowOutsideClick: false,
     }).then(async (result) => {
       if (result.isConfirmed) {
-  intentionalDisconnect.current = true;
-  setSkipConnectUI(true); // hide Connect button immediately
-  setOverlayLoading(true); // show loader during API
-  updateStatus("Starting VM...");
+        intentionalDisconnect.current = true;
+        setSkipConnectUI(true); // hide Connect button immediately
+        setOverlayLoading(true); // show loader during API
+        updateStatus("Starting VM...");
 
-  try {
-    await dispatch(vmStartScenario({ vmid, vmType })); // API call
-  } catch (err) {
-    updateStatus(err.message);
-  } finally {
-    setOverlayLoading(false);
-  }
+        try {
+          await dispatch(vmStartScenario({ vmid, vmType })); // API call
+        } catch (err) {
+          updateStatus(err.message);
+        } finally {
+          setOverlayLoading(false);
+        }
 
-  // reconnect in background (no loader, no black screen)
-  updateStatus("Reconnecting to VNC...");
-  connect(true);
-}
+        // reconnect in background (no loader, no black screen)
+        updateStatus("Reconnecting to VNC...");
+        connect(true);
+      }
     });
   };
 
   const handleRestartClick = () => {
-     if (document.fullscreenElement) {
-    document.exitFullscreen();
-  }
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
     Swal.fire({
       title: "Are you sure?",
       text: `Do you really want to reset VM/CT ${vmid}?`,
@@ -219,242 +231,246 @@ export default function ProxmoxConsole() {
       }
     });
   };
-  return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: "#0d1117",
-        color: "#fff",
-        position: "relative",
-      }}
-    >
-      {/* Wrapper for fullscreen */}
-      <div
-        ref={wrapperRef}
-        id="vnc_wrapper"
-        style={{ width: "100%", height: "100%", position: "relative" }}
-      >
-        {/* Sidebar + Controls */}
-        {connected && (
-          <>
-            {/* Arrow toggle */}
-            <div
-              onClick={() => {
-                if (sidebarOpen) setPowerMenuOpen(false);
-                setSidebarOpen(!sidebarOpen);
-              }}
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: 0,
-                transform: "translateY(-50%)",
-                background: "#111",
-                color: "#aaa",
-                padding: "20px 10px",
-                borderTopRightRadius: "6px",
-                borderBottomRightRadius: "6px",
-                cursor: "pointer",
-                zIndex: 9999,
-                userSelect: "none",
-              }}
-              title="Toggle controls"
-            >
-              {sidebarOpen ? "◀" : "▶"}
-            </div>
 
-            {/* Menu overlay */}
-            {sidebarOpen && (
+  return (
+    <>
+      <Seo title={`${cleanName}`} />
+
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          background: "#0d1117",
+          color: "#fff",
+          position: "relative",
+        }}
+      >
+        {/* Wrapper for fullscreen */}
+        <div
+          ref={wrapperRef}
+          id="vnc_wrapper"
+          style={{ width: "100%", height: "100%", position: "relative" }}
+        >
+          {/* Sidebar + Controls */}
+          {connected && (
+            <>
+              {/* Arrow toggle */}
               <div
+                onClick={() => {
+                  if (sidebarOpen) setPowerMenuOpen(false);
+                  setSidebarOpen(!sidebarOpen);
+                }}
                 style={{
                   position: "absolute",
                   top: "50%",
-                  left: "40px",
+                  left: 0,
                   transform: "translateY(-50%)",
-                  background: "rgba(17,17,17,0.95)",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "12px",
-                  zIndex: 9998,
+                  background: "#111",
+                  color: "#aaa",
+                  padding: "20px 10px",
+                  borderTopRightRadius: "6px",
+                  borderBottomRightRadius: "6px",
+                  cursor: "pointer",
+                  zIndex: 9999,
+                  userSelect: "none",
                 }}
+                title="Toggle controls"
               >
-                <button
-                  onClick={sendCtrlAltDel}
-                  title="Ctrl+Alt+Del"
-                  style={buttonStyle}
-                >
-                  ⌨️
-                </button>
-                <button
-                  onClick={toggleFullscreen}
-                  title="Fullscreen"
-                  style={buttonStyle}
-                >
-                  ⛶
-                </button>
+                {sidebarOpen ? "◀" : "▶"}
+              </div>
 
-                <div style={{ position: "relative" }}>
+              {/* Menu overlay */}
+              {sidebarOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "40px",
+                    transform: "translateY(-50%)",
+                    background: "rgba(17,17,17,0.95)",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "12px",
+                    zIndex: 9998,
+                  }}
+                >
                   <button
-                    onClick={() => setPowerMenuOpen(!powerMenuOpen)}
-                    title="Power Options"
+                    onClick={sendCtrlAltDel}
+                    title="Ctrl+Alt+Del"
                     style={buttonStyle}
                   >
-                    ⏻
+                    ⌨️
+                  </button>
+                  <button
+                    onClick={toggleFullscreen}
+                    title="Fullscreen"
+                    style={buttonStyle}
+                  >
+                    ⛶
                   </button>
 
-                  {powerMenuOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "110%",
-                        transform: "translateY(-50%)",
-                        background: "rgba(17,17,17,0.95)",
-                        borderRadius: "6px",
-                        padding: "8px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                        zIndex: 9999,
-                      }}
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onClick={() => setPowerMenuOpen(!powerMenuOpen)}
+                      title="Power Options"
+                      style={buttonStyle}
                     >
-                      <button
-                        onClick={handleStartClick}
-                        style={subButtonStyle}
-                        title="Start VM"
+                      ⏻
+                    </button>
+
+                    {powerMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "110%",
+                          transform: "translateY(-50%)",
+                          background: "rgba(17,17,17,0.95)",
+                          borderRadius: "6px",
+                          padding: "8px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          zIndex: 9999,
+                        }}
                       >
-                        Start
-                      </button>
-                      <button
-                        onClick={handleRestartClick}
-                        style={subButtonStyle}
-                        title="Hard Reset VM"
-                      >
-                        Hard Reset
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          onClick={handleStartClick}
+                          style={subButtonStyle}
+                          title="Start VM"
+                        >
+                          Start
+                        </button>
+                        <button
+                          onClick={handleRestartClick}
+                          style={subButtonStyle}
+                          title="Hard Reset VM"
+                        >
+                          Hard Reset
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
 
-        {/* VNC Container */}
-        <div
-          id="noVNC_container"
-          ref={containerRef}
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "#000",
-            border: "none",
-            overflow: "hidden",
-            display: connected ? "block" : "none",
-          }}
-        />
-      </div>
-
-      {/* Main content when not connected */}
-
-      {!connected && !skipConnectUI && (
-  <div
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%,-50%)",
-      textAlign: "center",
-    }}
-  >
-    <h2 style={{ marginBottom: "20px" }}>Proxmox VM Console</h2>
-    <button
-      onClick={connect}
-      disabled={loading}
-      style={{
-        padding: "12px 28px",
-        fontSize: "16px",
-        background: "#2a62f2",
-        color: "#fff",
-        border: "none",
-        borderRadius: "8px",
-        cursor: "pointer",
-        boxShadow: "0px 4px 12px rgba(0,0,0,0.3)",
-      }}
-    >
-      {loading ? "Connecting..." : "Connect"}
-    </button>
-    <p style={{ marginTop: "20px", color: "#aaa" }}>{status}</p>
-    {loading && (
-      <div
-        style={{
-          marginTop: "20px",
-          border: "6px solid #ccc",
-          borderTop: "6px solid #2a62f2",
-          borderRadius: "50%",
-          width: "40px",
-          height: "40px",
-          animation: "spin 1s linear infinite",
-          display: "inline-block",
-        }}
-      />
-    )}
-  </div>
-)}
-
-
-      {/* Full-screen overlay loader */}
-      {overlayLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 10000,
-            color: "#fff",
-            fontSize: "24px",
-            fontWeight: "bold",
-          }}
-        >
-          Connecting...
+          {/* VNC Container */}
           <div
+            id="noVNC_container"
+            ref={containerRef}
             style={{
-              marginTop: "20px",
-              border: "6px solid rgba(255,255,255,0.3)",
-              borderTop: "6px solid #2a62f2",
-              borderRadius: "50%",
-              width: "50px",
-              height: "50px",
-              animation: "spin 1s linear infinite",
+              width: "100%",
+              height: "100%",
+              background: "#000",
+              border: "none",
+              overflow: "hidden",
+              display: connected ? "block" : "none",
             }}
           />
         </div>
-      )}
 
-      <style jsx>{`
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
+        {/* Main content when not connected */}
+
+        {!connected && !skipConnectUI && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%,-50%)",
+              textAlign: "center",
+            }}
+          >
+            <h2 style={{ marginBottom: "20px" }}>Proxmox VM Console</h2>
+            <button
+              onClick={connect}
+              disabled={loading}
+              style={{
+                padding: "12px 28px",
+                fontSize: "16px",
+                background: "#2a62f2",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0px 4px 12px rgba(0,0,0,0.3)",
+              }}
+            >
+              {loading ? "Connecting..." : "Connect"}
+            </button>
+            <p style={{ marginTop: "20px", color: "#aaa" }}>{status}</p>
+            {loading && (
+              <div
+                style={{
+                  marginTop: "20px",
+                  border: "6px solid #ccc",
+                  borderTop: "6px solid #2a62f2",
+                  borderRadius: "50%",
+                  width: "40px",
+                  height: "40px",
+                  animation: "spin 1s linear infinite",
+                  display: "inline-block",
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Full-screen overlay loader */}
+        {overlayLoading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 10000,
+              color: "#fff",
+              fontSize: "24px",
+              fontWeight: "bold",
+            }}
+          >
+            Connecting...
+            <div
+              style={{
+                marginTop: "20px",
+                border: "6px solid rgba(255,255,255,0.3)",
+                borderTop: "6px solid #2a62f2",
+                borderRadius: "50%",
+                width: "50px",
+                height: "50px",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+          </div>
+        )}
+
+        <style jsx>{`
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
           }
-          to {
-            transform: rotate(360deg);
+          button:focus {
+            outline: none;
           }
-        }
-        button:focus {
-          outline: none;
-        }
-      `}</style>
-    </div>
+        `}</style>
+      </div>
+    </>
   );
 }
 

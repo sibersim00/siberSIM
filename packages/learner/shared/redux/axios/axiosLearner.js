@@ -33,6 +33,7 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => {
+    try{
     if (response && response.data && typeof(response?.data?.data) === "string") {
       const decryptedBytes = CryptoJS.AES.decrypt(response.data.data, secretKey);
       const decryptedPayload = decryptedBytes.toString(CryptoJS.enc.Utf8);
@@ -42,6 +43,10 @@ axiosInstance.interceptors.response.use(
         localStorage.setItem("accessTokenLearner", JSON.stringify(response.data.data.accessToken));
         Router.push('/dashboard');
       }
+    }
+  }catch (err) {
+      console.error("Error parsing response data:", err);
+      // fallback: keep the raw string
     }
     return response;
   }, 

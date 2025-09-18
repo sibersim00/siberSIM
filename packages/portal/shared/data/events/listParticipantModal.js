@@ -141,7 +141,7 @@ const ListParticipantModal = (props) => {
       maxWidth: 90,
     },
     {
-      headerName: "Student Name",
+      headerName: "User Name",
       // Use valueGetter to combine firstname and lastname
       valueGetter: (params) => {
         const first = params.data?.firstname || "";

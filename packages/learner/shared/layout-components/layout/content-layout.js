@@ -13,20 +13,45 @@ const Contentlayout = ({ children }) => {
   const currentPath = navigate.pathname;
   const dispatch = useDispatch();
   const [isUserValid, setIsUserValid] = useState(false);
-  const Add = () => {
-    document.querySelector("body").classList.remove("error-1");
-    document
-      .querySelector("body")
-      .classList.remove(
-        "app",
-        "sidebar-mini",
-        "ltr",
-        "landing-page",
-        "horizontalmenu"
-      );
-    document.querySelector("body").classList.add("main-body", "leftmenu");
-    document.body.classList.add("ltr", "main-body", "leftmenu","main-sidebar-hide");
-  };
+  // const Add = () => {
+  //   document.querySelector("body").classList.remove("error-1");
+  //   document
+  //     .querySelector("body")
+  //     .classList.remove(
+  //       "app",
+  //       "sidebar-mini",
+  //       "ltr",
+  //       "landing-page",
+  //       "horizontalmenu"
+  //     );
+  //   document.querySelector("body").classList.add("main-body", "leftmenu");
+  //   document.body.classList.add("ltr", "main-body", "leftmenu","main-sidebar-hide");
+  // };
+
+    const Add = () => {
+  const body = document.body;
+
+  // Remove unwanted classes
+  body.classList.remove(
+    "error-1",
+    "app",
+    "sidebar-mini",
+    "ltr",
+    "landing-page",
+    "horizontalmenu"
+  );
+
+  // Add default layout classes
+  body.classList.add("main-body", "leftmenu", "ltr", "main-sidebar-hide");
+
+  // Apply theme based on localStorage
+  const storedTheme = localStorage.getItem("theme_preference"); // "dark" or "light"
+  if (storedTheme === "dark") {
+    body.classList.add("dark-theme");
+  } else {
+    body.classList.remove("dark-theme");
+  }
+};
   useEffect(() => {
     Add();
 

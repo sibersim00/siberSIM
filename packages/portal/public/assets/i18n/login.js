@@ -12,7 +12,7 @@ export const login_en = {
     
     'Login-title' : instructor_title,
     "labels" : {
-        "title" :"Welcome to Learning",
+        "title" :"Welcome to siberSIM",
         "title1" : otp + " " + "Verification",
         "sub_title" : "Signin to create, discover and connect with the Learning community",
         "otp_title" : "One-Time Password has been sent on",

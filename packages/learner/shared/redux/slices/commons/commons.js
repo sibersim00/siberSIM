@@ -12,6 +12,7 @@ const initialState = {
   cityDataResp: [],
   designationData: [],
   companynamedata: [],
+   theme:"",
 };
 
 const slice = createSlice({
@@ -25,6 +26,10 @@ const slice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
+      hasGetThemeSucc(state,action){
+    state.isLoading = false,
+    state.theme = action.payload;
+  }, 
   },
 });
 
@@ -35,6 +40,29 @@ export function clearHasError() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasError([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+
+
+
+export function getOrSetTheme(theme) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const url = theme
+        ? `${api.user_theme}?theme=${theme}`
+        : `${api.user_theme}`;
+
+      const response = await axios.get(url);
+      console.log("respopnsessssssssssss",response);
+      
+      
+      dispatch(slice.actions.hasGetThemeSucc(response.data.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

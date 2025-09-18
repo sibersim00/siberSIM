@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getLocalStorageData } from "../../redux/slices/localstorage/LocalStorage";
 import { getNotification, markReadNotification } from "../../redux/slices/noticonfigs/noticonfigs";
 import { logOutData, clearlogOutData } from "../../redux/slices/authentication/Auth";
+import { getOrSetTheme } from "../../redux/slices/common/masters";
 import { setNestedObjectValues } from "formik";
 import dummy_profile from '../../../public/assets/img/dummy_profile.png'
 
@@ -29,6 +30,7 @@ const HeadDropDown = () => {
     logoutData,
     notificationData,
     markReadNotiResp,
+    theme,
     errorData,
   } = useSelector((state) => {
     return {
@@ -47,17 +49,28 @@ const HeadDropDown = () => {
         state.noticonfigs &&
         state.noticonfigs.markReadNotiResp &&
         state.noticonfigs.markReadNotiResp,
+      theme: state.commonMaster?.theme,
+
+
       errorData: state && state.searchemployee && state.searchemployee.error,
     };
   });
+
+console.log("themetheme",theme)
+  useEffect(() => {
+    dispatch(getOrSetTheme()); // fetch theme on load
+  }, []);
+
 
 
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"))
+      dispatch(getOrSetTheme()); // fetch theme on load 
     }
   }, [])
+
 
   useEffect(() => {
     if (getUserDataFromLocal && getUserDataFromLocal != undefined) {
@@ -65,7 +78,7 @@ const HeadDropDown = () => {
       dispatch(getNotification(getUserDataFromLocal?.usertype))
     }
   }, [getUserDataFromLocal])
-  
+
 
 
   useEffect(() => {
@@ -89,6 +102,25 @@ const HeadDropDown = () => {
       navigate.push("/components/noticonfigs/notificationList");
     }, 1000)
   }
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.body.classList.add("dark-theme");
+      localStorage.setItem("theme_preference", "dark");
+    } else { document.body.classList.remove("dark-theme"); 
+      localStorage.setItem("theme_preference", "light"); }
+  }, [theme]);
+
+const handleThemeToggle = () => {
+  const isNowDark = document.body.classList.toggle("dark-theme");
+  const newTheme = isNowDark ? "dark" : "light";
+
+  localStorage.setItem("theme_preference", newTheme);
+
+  dispatch(getOrSetTheme(newTheme));
+};
+
+
 
   function Fullscreen() {
     if (
@@ -114,15 +146,19 @@ const HeadDropDown = () => {
       }
     }
   }
-  const Darkmode = () => {
-    document.querySelector("body").classList.toggle("dark-theme");
-    document.querySelector("#myonoffswitch2").checked = true;
-    if (document.body.classList.contains("dark-theme")) {
-      localStorage.setItem("DSPdark", true);
-    } else {
-      localStorage.removeItem("DSPdark");
-    }
-  };
+
+  // const Darkmode = () => {
+  //   document.querySelector("body").classList.toggle("dark-theme");
+  //   document.querySelector("#myonoffswitch2").checked = true;
+  //   if (document.body.classList.contains("dark-theme")) {
+  //     localStorage.setItem("DSPdark", true);
+  //   } else {
+  //     localStorage.removeItem("DSPdark");
+  //   }
+  // };
+
+
+
 
   let navigate = useRouter();
 
@@ -219,10 +255,10 @@ const HeadDropDown = () => {
         </span>
       </div> */}
       <div className="d-flex order-lg-2 align-items-center ms-auto">
-        {/* <Dropdown className="dropdown d-flex main-header-theme">
+        <Dropdown className="dropdown d-flex main-header-theme">
           <Nav.Link
             className="nav-link icon layout-setting"
-            onClick={() => Darkmode()}
+            onClick={() => handleThemeToggle()}
           >
             <span className="dark-layout">
               <i className="fe fe-sun header-icons"></i>
@@ -231,7 +267,7 @@ const HeadDropDown = () => {
               <i className="fe fe-moon header-icons"></i>
             </span>
           </Nav.Link>
-        </Dropdown> */}
+        </Dropdown>
         <div className="d-md-flex">
           {/* <div className="nav-link icon full-screen-link" onClick={Fullscreen}>
             <i className="fe fe-maximize fullscreen-button fullscreen header-icons"></i>

@@ -10,6 +10,7 @@ const eventsRouter = require("../components/events");
 const eventChatBoxRouter = require("../components/eventchatbox");
 const notificationRouter = require("../components/notification");
 const authRouter = require("../components/auth");
+const commonRouter = require("../components/commons");
 
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
@@ -26,5 +27,6 @@ module.exports = function (iocContainer) {
   router.use("/events", authJwt.authenticateToken, eventsRouter(iocContainer));
   router.use("/eventchatbox", authJwt.authenticateToken, eventChatBoxRouter(iocContainer));
   router.use("/notification", authJwt.authenticateToken, notificationRouter(iocContainer));
+  router.use("/commons", authJwt.authenticateToken, commonRouter(iocContainer));
   return router;
 };

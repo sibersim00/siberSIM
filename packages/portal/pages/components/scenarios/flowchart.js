@@ -98,7 +98,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           position: 'relative',
           borderRadius: '8px',
           border: '2px solid #ccc',
-          background: '#fff',
+          // background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -167,7 +167,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           const labelStyle = {
             position: 'absolute',
             fontSize: 6,
-            background: '#fff',
+            // background: '#fff',
             padding: '1px 3px',
             whiteSpace: 'nowrap',
             zIndex: 5,
@@ -228,7 +228,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           width: '100%',
           zIndex: 10,
           position: 'relative',
-          background: '#fff',
+          // background: '#fff',
           padding: '0 2px',
         }}
       >
@@ -399,18 +399,18 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
 const idRef = useRef(0);
 const getId = () => `dndnode_${idRef.current++}`; 
 
-  <style>
-{`
-    .reactflow-wrapper .react-flow .react-flow__attribution {
-  display: none !important;
-}
+//   <style>
+// {`
+//     .reactflow-wrapper .react-flow .react-flow__attribution {
+//   display: none !important;
+// }
 
-.reactflow-wrapper .react-flow .react-flow__attribution a {
-  text-decoration: none;
-  color: #999;
-}
-`}
-</style>
+// .reactflow-wrapper .react-flow .react-flow__attribution a {
+//   text-decoration: none;
+ 
+// }
+// `}
+// </style>
 
 
   const {  saveScenarioFlowChart, getScenarioFlowchart } = useSelector((state) => ({
@@ -739,7 +739,7 @@ const configData = generateComponentConfig(flowchartData.nodes, flowchartData.ed
   return (
     <> 
       <div className="dndflow  mb-2" style={{ display: 'flex', height: '80vh', gap: '20px' }}>
-      <div style={{ width: '28%', height: '100%',   background: '#F0F4F8' }}>
+      <div style={{ width: '28%', height: '100%' }}>
           <SideBar
             imageNodeData={imageNodeData}
             setDraggedNode={setDraggedNode}  // Passing setDraggedNode to Sidebar
@@ -764,7 +764,7 @@ const configData = generateComponentConfig(flowchartData.nodes, flowchartData.ed
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            style={{ backgroundColor: '#F7F9FB' }}
+            // style={{ backgroundColor: '#F7F9FB' }}
             nodeTypes={nodeTypes} 
             defaultEdgeOptions={defaultEdgeOptions}
             connectionLineType="floating" //  This makes the connection line float

@@ -265,6 +265,9 @@ const api = {
   assign_scenario: "/assign_scenario/save",
   assign_scenario_get: "/assign_scenario/list",
   assign_scenario_getbyId: "/assign_scenario/get",
+ 
+  // dark theme 
+  user_theme: "/commons/theme",
 
 
   ///--------------usersessionlist

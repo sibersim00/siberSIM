@@ -51,7 +51,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           position: 'relative',
           borderRadius: '8px',
           border: '2px solid #ccc',
-          background: '#fff',
+          // background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -118,7 +118,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           const labelStyle = {
             position: 'absolute',
             fontSize: 6,
-            background: '#fff',
+            // background: '#fff',
             padding: '1px 3px',
             whiteSpace: 'nowrap',
             zIndex: 5,
@@ -179,7 +179,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           width: '100%',
           zIndex: 10,
           position: 'relative',
-          background: '#fff',
+          // background: '#fff',
           padding: '0 1px',
         }}
       >

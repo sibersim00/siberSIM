@@ -25,6 +25,7 @@ const initialState = {
   getCommonInstructorData :[],
   getScnarioComponentByCatData : [],
   getFaqData:[],
+  theme:"",
 };
 
 const slice = createSlice({
@@ -100,6 +101,10 @@ const slice = createSlice({
   hasGetFaqListSucc(state,action){
     state.isLoading = false,
     state.getFaqData = action.payload;
+  }, 
+  hasGetThemeSucc(state,action){
+    state.isLoading = false,
+    state.theme = action.payload;
   }, 
     // HAS ERROR
     hasError(state, action) {
@@ -348,3 +353,23 @@ export function getFaqList() {
     }
   };
 } 
+
+
+
+export function getOrSetTheme(theme) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const url = theme
+        ? `${api.user_theme}?theme=${theme}`
+        : `${api.user_theme}`;
+
+      const response = await axios.get(url);
+      console.log("responseresponseresponseresponseresponse",response);
+      
+      dispatch(slice.actions.hasGetThemeSucc(response.data.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}

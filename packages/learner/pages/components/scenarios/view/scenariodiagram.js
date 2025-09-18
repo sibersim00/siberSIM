@@ -13,7 +13,6 @@ const resolveImageUrl = (url) => {
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-
 const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
   const networkPorts = data.networkport || [];
   const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
@@ -24,16 +23,22 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
   const baseSize = 90;
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+const handleClick = (dataobj) => {
+  if (!isTimerVisible) return;
+  const vmid = dataobj?.vmid;
+  const vmType = dataobj?.vmType;
+  if (!vmid || !vmType) return;
 
-  const handleClick = (dataobj) => {
-    if (!isTimerVisible) {
-      return;
-    }
-    const vmid = dataobj?.vmid;
-    const vmType = dataobj?.vmType;
-    if (!vmid) return;
-    window.open(`${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}`, "_blank");
-  };
+  const rawLabel = dataobj?.label || "";
+  const namePart = rawLabel.split("-")[1]?.trim() || "";
+  const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+  window.open(
+    `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+    "_blank"
+  );
+};
+
+
   return (
     <div
       style={{
@@ -51,7 +56,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
           position: 'relative',
           borderRadius: '8px',
           border: '2px solid #ccc',
-          background: '#fff',
+          // background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -94,7 +99,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
           const labelStyle = {
             position: 'absolute',
             fontSize: 6,
-            background: '#fff',
+            // background: '#fff',
             padding: '1px 3px',
             whiteSpace: 'nowrap',
             zIndex: 5,
@@ -154,7 +159,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
           width: '100%',
           zIndex: 10,
           position: 'relative',
-          background: '#fff',
+          // background: '#fff',
           padding: '0 1px',
         }}
       >

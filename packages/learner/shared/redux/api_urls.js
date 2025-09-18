@@ -19,6 +19,9 @@ const api = {
 	event_list: "/event/geteventlist",
 
 
+	// dark theme  - 
+	user_theme: "/commons/theme",
+
 	// dashboard
 	dashboard_get: "/dashboard/get",
 	running_scenario_get: "/dashboard/scenario-running",

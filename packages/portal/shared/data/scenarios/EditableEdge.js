@@ -124,7 +124,7 @@ console.log('shouldAnimate',shouldAnimate,data?.source)
               onClick={() => setIsEditing(true)}
               style={{
                 fontSize: 12,
-                cursor: 'pointer',
+                cursor: 'pointer',  
                 userSelect: 'none',
                 whiteSpace: 'nowrap',
               }}

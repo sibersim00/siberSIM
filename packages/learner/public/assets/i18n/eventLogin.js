@@ -6,7 +6,7 @@ export const event_es = {
     'title_event' : title,
     'title-forget' : "FORGET PASSWORD",
     "labels" : {
-        "title" : "Welcome to Learning",
+        "title" : "Welcome to siberSIM",
         "title1" : otp + " " + "Verification",
         "sub_title" : "Signin to create, discover and connect with the Learning community",
         "sub_title1" : "Signup to create, discover and connect with the Learning community",

@@ -22,6 +22,7 @@ const NotificationList = () => {
   const [rowData, setRowData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
+  
   let navigate = useRouter();
 
   const {
@@ -42,8 +43,6 @@ const NotificationList = () => {
       
     };
   });
-
-
   const columnDefs = [
     {
       headerName: "Notifications",
@@ -60,13 +59,10 @@ const NotificationList = () => {
       floatingFilter: true,
       width: 180
     },
-
   ];
-
   useEffect(() => {
 		dispatch(getNotificationAll("Learner"));
 	},[])
-
 	useEffect(() => {
     if (gridApi) {
       gridApi.sizeColumnsToFit();
@@ -136,11 +132,11 @@ const NotificationList = () => {
     }
   }
   
-  const getRowStyle = (params) => {
-    if (params?.data?.is_read == 0) {
-      return { backgroundColor: "rgb(232, 232, 247)" }
-    }
-  }
+  // const getRowStyle = (params) => {
+  //   if (params?.data?.is_read == 0) {
+  //     return { backgroundColor: "rgb(232, 232, 247)" }
+  //   }
+  // }
   
   return (
     <div>
@@ -168,9 +164,9 @@ const NotificationList = () => {
               </div>
 
               <div
-                className="ag-theme-alpine"
-                style={{ height: "40em", width: "100%" }}
-              >
+  className="ag-theme-alpine mt-2"
+  style={{ height: "40em", width: "100%" }}
+>
                 <AgGridReact
                   id="staff_grid"
                   headerHeight={35}
@@ -182,7 +178,7 @@ const NotificationList = () => {
                   onGridReady={onGridReady}
                   defaultColDef={defaultColDef}
                   frameworkComponents={frameworkComponents}
-                  getRowStyle={getRowStyle}
+                  // getRowStyle={getRowStyle}
                 ></AgGridReact>
               </div>
             </Card.Body>

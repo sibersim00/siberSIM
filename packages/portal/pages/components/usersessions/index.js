@@ -73,7 +73,7 @@ const UserSession = () => {
       minWidth: 240,
     },
     {
-      headerName: "Student",
+      headerName: "User",
       field: "learner_name",
       filter: true,
       floatingFilter: true,

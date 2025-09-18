@@ -65,13 +65,7 @@ const NotificationList = () => {
       floatingFilter: true,
       flex: 1
     },
-    // {
-    //   headerName:"Date",
-    //   field: "createdon",
-    //   filter: true,
-    //   floatingFilter: true,
-    //   width:150
-    // },
+
     {
       headerName: "Date-Time",
       field: "date",
@@ -79,13 +73,7 @@ const NotificationList = () => {
       floatingFilter: true,
       width: 180
     },
-    // {
-    //   headerName: "View",
-    //   field: "link", 
-    // 	cellRenderer: "actionButtonRenderer",
-    // 	width : 150,
-    // 	pinned : "right"
-    // },
+
   ];
 
   useEffect(() => {
@@ -168,11 +156,6 @@ const NotificationList = () => {
     }
   }
 
-  const getRowStyle = (params) => {
-    if (params?.data?.is_read == 0) {
-      return { backgroundColor: "rgb(232, 232, 247)" }
-    }
-  }
 
   return (
     <div>
@@ -214,7 +197,6 @@ const NotificationList = () => {
                   onGridReady={onGridReady}
                   defaultColDef={defaultColDef}
                   frameworkComponents={frameworkComponents}
-                  getRowStyle={getRowStyle}
                 ></AgGridReact>
               </div>
             </Card.Body>
