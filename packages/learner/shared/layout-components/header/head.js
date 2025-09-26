@@ -145,6 +145,7 @@ const HeadDropDown = () => {
         }
       );
       const signOut = () => {
+          document.body.classList.remove("dark-theme");
         localStorage.removeItem("userLearner");
         localStorage.removeItem("accessTokenLearner");
         localStorage.removeItem("menusLearner");

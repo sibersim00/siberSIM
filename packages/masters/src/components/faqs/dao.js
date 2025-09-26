@@ -19,7 +19,7 @@ const getFaqsAll = ({ db }) => async (id = null) => {
       LEFT JOIN ad_users au ON faq.createdby = au.userid
       LEFT JOIN ad_users mu ON faq.modifiedby = mu.userid
       WHERE faq.deletedon IS NULL
-      ORDER BY faq.faq_id DESC, 
+      ORDER BY faq.question ASC, 
       CASE WHEN faq.modifiedon IS NOT NULL THEN faq.modifiedon ELSE faq.createdon END DESC
     `);
 

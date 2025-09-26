@@ -31,65 +31,7 @@ const ManageComponent = () => {
     hasFetchapilogsSuccesslist: state?.apilogsManage?.apilogsDatalist?.data,
      hasFetchApiLogByIdSuccess: state?.apilogsManage?.selectedLogData,
   }));
-  // const columnDefs = [
-  //   {
-  //     headerName: "Sr. No.",
-  //     field: "Sr No.",
-  //     cellRenderer: "srNoRender",
-  //     // floatingFilter: true,
-  //     // filter: true,
-  //     maxWidth: 100,
-  //     sortable: false,
-  //   },
-  //   {
-  //     headerName: "API Endpoint",
-  //     field: "api_end_point",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 600,
-  //   },
-  //    {
-  //     headerName: "Response Code",
-  //     field: "response_code",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 150,
-  //     cellRenderer: "responseCodeRenderer", // <-- Add this
-  //   },
-    
-  //   {
-  //     headerName: "Request Timestamp",
-  //     field: "request_datetime",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 150,
-  //     valueFormatter: (params) => formatDate(params.value),
-  //   },
-  //   {
-  //     headerName: "Response Timestamp",
-  //     field: "response_datetime",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 150,
-  //     valueFormatter: (params) => formatDate(params.value),
-  //   },
 
-   
-  //   {
-  //     headerName: "Duration (ms)",
-  //     field: "duration",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 100,
-  //   },
-  //   {
-  //     headerName: "IP Address",
-  //     field: "ip_address",
-  //     filter: true,
-  //     floatingFilter: true,
-  //     minWidth: 80,
-  //   },
-  // ];
 
 const columnDefs = [
   {
@@ -277,21 +219,12 @@ const handleExport = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
-  // const handleShowModal = (log) => {
-  //   setSelectedLog(log);
-  //   setShowModal(true);
-  // };
   const handleShowModal = (log) => {
   const logId = log.id; // assuming the log has an 'id' field
   dispatch(fetchApiLogById(logId));
   setShowModal(true); // open modal immediately (optionally use loader)
 };
 
-
-  // const handleCloseModal = () => {
-  //   setSelectedLog(null);
-  //   setShowModal(false);
-  // };
   const handleCloseModal = () => {
   setSelectedLog(null);
   setShowModal(false);
@@ -329,20 +262,7 @@ const handleExport = () => {
   const frameworkComponents = {
     srNoRender: (props) => props.node.rowIndex + 1,
     actionButtonRenderer: (props) => <ActionButtonRenderer propsVal={props} />,
-    // responseCodeRenderer: (props) => {
-    //   const code = props.value;
-    //   const { message, color } = getResponseInfo(Number(code));
-    //   return (
-    //     <span
-    //       className={`badge bg-${color}`}
-    //       style={{ cursor: "pointer" }}
-    //       onClick={() => handleShowModal(props.data)}
-    //       title="Click to view details"
-    //     >
-    //       {code} - {message}
-    //     </span>
-    //   );
-    // },
+
     responseCodeRenderer: (props) => {
       console.log("propsprops",props)
   const code = props.value;

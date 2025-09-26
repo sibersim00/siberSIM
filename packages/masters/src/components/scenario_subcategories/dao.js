@@ -13,7 +13,7 @@ const getscenariosubcategoryAll =
     LEFT JOIN scenario_categories scc ON sc.parentscenariocategoryid = scc.scenariocategoryid
     LEFT JOIN ad_users au ON sc.createdby = au.userid
     LEFT JOIN ad_users a ON sc.modifiedby = a.userid
-    WHERE sc.deletedon IS NULL AND sc.parentscenariocategoryid IS NOT NULL  ORDER BY CASE WHEN sc.modifiedon IS NOT NULL THEN sc.modifiedon ELSE sc.createdon END DESC`);
+    WHERE sc.deletedon IS NULL AND sc.parentscenariocategoryid IS NOT NULL  ORDER BY subcategoryname ASC`);
       return res;
     } catch (error) {
       console.log("scenariocategory err==>", error);

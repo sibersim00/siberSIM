@@ -34,6 +34,12 @@ import { useTranslation } from "react-i18next";
 import ScenarioDiagram from "./scenariodiagram";
 import ChatBox from "./chatbox";
 import ScenarioQuiz from "./quiz";
+import dynamic from "next/dynamic";
+
+const PdfLoader = dynamic(
+  () => import("../../../../shared/data/common/PdfLoader"),
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+);
 
 const ScenariosView = () => {
   const dispatch = useDispatch();
@@ -239,11 +245,6 @@ const ScenariosView = () => {
     ? `${baseUrl}${rowValues.instruction_file}`
     : null;
 
-  const viewerUrl = pdfUrl
-    ? `https://docs.google.com/gview?url=${encodeURIComponent(
-        pdfUrl
-      )}&embedded=true`
-    : null;
 
   const handleStart = () => {
     setIsScenarioError400(false);
@@ -506,6 +507,7 @@ const ScenariosView = () => {
       scenarioStatus
     )
   );
+  console.log("rowValuesrowValuesrowValuesrowValues", rowValues);
 
   return (
     <>
@@ -577,21 +579,30 @@ const ScenariosView = () => {
                         <i className="fe fe-arrow-left"></i>
                       </Button> */}
                       <Button
-  variant="outline-secondary"
-  onClick={() => {
-    if (categoryId && subcategoryName) {
-      router.push(`/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView || "list"}`);
-    } else if (categoryId) {
-      router.push(`/scenarios?categoryId=${categoryId}&view=${backView || "list"}`);
-    } else {
-      router.push(`/scenarios?view=${backView || "list"}`);
-    }
-    dispatch(clearSingleScenarios());
-  }}
->
-  <i className="fe fe-arrow-left"></i>
-</Button>
-
+                        variant="outline-secondary"
+                        onClick={() => {
+                          if (categoryId && subcategoryName) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
+                                backView || "list"
+                              }`
+                            );
+                          } else if (categoryId) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&view=${
+                                backView || "list"
+                              }`
+                            );
+                          } else {
+                            router.push(
+                              `/scenarios?view=${backView || "list"}`
+                            );
+                          }
+                          dispatch(clearSingleScenarios());
+                        }}
+                      >
+                        <i className="fe fe-arrow-left"></i>
+                      </Button>
                     </div>
                   </div>
                 </Col>
@@ -1064,17 +1075,8 @@ const ScenariosView = () => {
                               </Tab.Pane>
 
                               <Tab.Pane eventKey="instruction">
-                                {rowValues?.instruction_file ? (
-                                  <iframe
-                                    src={viewerUrl}
-                                    width="100%"
-                                    height="600px"
-                                    style={{
-                                      border: "1px solid #ccc",
-                                      borderRadius: "8px",
-                                    }}
-                                    title="Instruction PDF"
-                                  ></iframe>
+                                {pdfUrl ? (
+                                  <PdfLoader fileUrl={pdfUrl} />
                                 ) : (
                                   <Row>
                                     <Col sm={12}>
@@ -1238,20 +1240,19 @@ const ScenariosView = () => {
                                       <Col sm={12}>
                                         <Card className="custom-card">
                                           <Card.Body className="overflow-auto pd-t-10">
-                                            <Row className="signpages text-center">
+                                            <Row className="text-center">
                                               <Col md={10} className="mx-auto">
                                                 <Card
                                                   style={{
                                                     border: "none",
-                                                    backgroundColor: "#f6f7fb",
                                                   }}
                                                 >
                                                   <Card.Body>
-                                                    <div className="text-center">
+                                                    <div className="text-center mt-5">
                                                       <img
                                                         src={crossEvalicon.src}
                                                         alt="No data"
-                                                        className="wd-150"
+                                                        className="wd-150 mt-5"
                                                       />
                                                       <h5 className="mt-4">
                                                         No logs available.

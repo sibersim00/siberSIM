@@ -152,7 +152,7 @@ const EventDashboard = () => {
             <Row className="g-4 mb-2 mt-1">
                 {finalSortedTeams.length === 0 && selectedEventId ? (
                     <div className="d-flex justify-content-center align-items-center" style={{ height: "60vh", flexDirection: "column" }}>
-                        <img src={crossEvalicon.src} alt="No data" className="wd-150" />
+                        <img src={crossEvalicon.src} alt="No data" className="wd-150 mt-5" />
                         <h5 className="mt-4">No data found.</h5>
                     </div>
                 ) : (

@@ -2998,3 +2998,28 @@ border:1px solid #747272
 .background-black  {
   background-color: #000 !important;
 }
+
+
+.dark-theme ::placeholder {
+  color: #ffffffe1 !important; /* pure white */
+  opacity: 1; /* ensure it's not faded */
+}
+
+
+.dark-theme .filepond--drop-label {
+  color: #ffffffe1 !important;  /* white text */
+}
+
+.dark-theme .filepond--drop-label .filepond--label-action {
+  color: #ffffffe1 !important;  /* also make "Browse" white */
+  text-decoration: underline; /* optional: keep the link look */
+}
+
+.dark-theme .ck-content {
+  color: #000000 !important;   /* value text */
+}
+
+.dark-theme .ck-placeholder {
+  color: #000000 !important;   /* placeholder */
+  opacity: 0.8;                /* optional for readability */
+}

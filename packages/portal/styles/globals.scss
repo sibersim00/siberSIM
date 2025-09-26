@@ -3864,3 +3864,114 @@ table thead tr .table-title-heading {
 .background-black {
   background-color: #000 !important;
 }
+
+
+
+.dark-theme ::placeholder {
+  color: #ffffffe1 !important; /* pure white */
+  opacity: 1; /* ensure it's not faded */
+}
+
+
+.dark-theme .filepond--drop-label {
+  color: #ffffffe1 !important;  /* white text */
+}
+
+.dark-theme .filepond--drop-label .filepond--label-action {
+  color: #ffffffe1 !important;  /* also make "Browse" white */
+  text-decoration: underline; /* optional: keep the link look */
+}
+
+
+
+.dark-theme .ck-content {
+  color: #000000 !important;   /* value text */
+}
+
+.dark-theme .ck-placeholder {
+  color: #000000 !important;   /* placeholder */
+  opacity: 0.8;                /* optional for readability */
+}
+
+.dark-theme .table {
+  color: #000000 !important;   /* black text */
+}
+
+.dark-theme .table th{
+  color: #000000 !important;   /* force black for cells */
+}
+.dark-theme .table td {
+  color: #ffffff !important;   /* force black for cells */
+}
+
+
+.dark-theme .input-group-text-pass{
+  color: #fff; 
+}
+
+
+
+/* When dark theme is active, target CKEditor content */
+.dark-theme .ck-editor__editable_inline {
+  background-color: #0e0e23 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .ck-editor__editable_inline p,
+.dark-theme .ck-editor__editable_inline h1,
+.dark-theme .ck-editor__editable_inline h2,
+.dark-theme .ck-editor__editable_inline h3,
+.dark-theme .ck-editor__editable_inline h4,
+.dark-theme .ck-editor__editable_inline h5,
+.dark-theme .ck-editor__editable_inline h6,
+.dark-theme .ck-editor__editable_inline li,
+.dark-theme .ck-editor__editable_inline span {
+  color: #ffffff !important;
+}
+
+.dark-theme .ck.ck-toolbar {
+  background-color: #0e0e23 !important;
+  color: #ffffff !important;
+}
+
+
+/* Toolbar background in dark mode */
+.dark-theme .ck.ck-toolbar {
+  background-color: #0e0e23 !important;
+  border-color: #ffffff !important;
+}
+
+/* Make toolbar icons white */
+.dark-theme .ck.ck-toolbar .ck-icon,
+.dark-theme .ck.ck-toolbar .ck-button .ck-icon,
+.dark-theme .ck.ck-toolbar .ck-button .ck-label {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Hover / active states */
+.dark-theme .ck.ck-toolbar .ck-button:hover,
+.dark-theme .ck.ck-toolbar .ck-button.ck-on {
+  background-color: #0e0e23 !important;
+}
+
+/* Dropdown text (like Paragraph, Heading, etc.) */
+.dark-theme .ck.ck-toolbar .ck-dropdown__button .ck-button__label {
+  color: #ffffff !important;
+}
+
+/* Dropdown panel background + items */
+.dark-theme .ck.ck-list {
+  background-color: #0e0e23 !important;
+}
+
+.dark-theme .ck.ck-list .ck-button__label {
+  color: #ffffff !important;
+}
+
+.dark-theme .ck.ck-list .ck-button:hover {
+  background-color: #0e0e23 !important;
+}
+
+
+

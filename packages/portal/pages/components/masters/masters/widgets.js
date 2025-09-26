@@ -734,7 +734,7 @@ const Widgets = () => {
                   {gridData.map((item, index) => {
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team">
+                        <Card className="card custom-card our-team h-90">
                           <Card.Body className="p-3">
                             <div className="text-center mb-2">
                               <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
@@ -848,22 +848,21 @@ const Widgets = () => {
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
                         <Row
-                          className="signpages ext-center"
+                          className="text-center"
                           style={{ height: "70vh" }}
                         >
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{
                                 border: "none",
-                                backgroundColor: "#f6f7fb",
                               }}
                             >
                               <Card.Body>
-                                <div className="text-center">
+                                <div className="text-center mt-5">
                                   <img
                                     src={crossEvalicon.src}
                                     alt="user-img"
-                                    className="wd-150"
+                                    className="wd-150 mt-5"
                                   />
                                   <h5 className="mt-4">No data found.</h5>
                                 </div>

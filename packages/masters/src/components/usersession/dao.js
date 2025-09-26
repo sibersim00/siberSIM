@@ -84,9 +84,7 @@ const getUserSessionById =
     l.lastname,
     l.email,
     l.mobile,
-
     IFNULL(chat.unseen_message_count, 0) AS unseen_message_count
-
   FROM scenario_learner sl
   INNER JOIN scenarios s ON s.scenarioid = sl.scenarioid
   INNER JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid
@@ -103,7 +101,7 @@ const getUserSessionById =
   WHERE sl.scenariolearneruuid = ?
     AND s.deletedon IS NULL
 
-  ORDER BY s.scenarioid DESC
+  ORDER BY s.scenariotitle ASC
 `;
 
     try {

@@ -10517,9 +10517,9 @@ body.dark-theme {
     color: var(--dark-color);
 }
 
-.dark-theme .signpages .login_form {
+/* .dark-theme .signpages .login_form {
     background-color: var(--dark-theme);
-}
+} */
 
 .dark-theme .signpages .form__input {
     border-bottom-color: var(--dark-border);
@@ -12091,7 +12091,7 @@ body.dark-theme {
 }
 
 .dark-theme .custom-switch-indicator-md {
-    background: var(--dark-body);
+    background: #ff0000ad;
     border-color: var(--dark-border);
 }
 

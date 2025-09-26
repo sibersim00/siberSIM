@@ -18,7 +18,7 @@ const getWidgetsAll = ({ db }) => async (id = null) => {
       LEFT JOIN ad_users au ON wbw.createdby = au.userid
       LEFT JOIN ad_users mu ON wbw.modifiedby = mu.userid
       WHERE wbw.deletedon IS NULL
-      ORDER BY wbw.webbrowserwidgetid DESC, 
+      ORDER BY wbw.widget_name ASC, 
         CASE 
           WHEN wbw.modifiedon IS NOT NULL THEN wbw.modifiedon 
           ELSE wbw.createdon 

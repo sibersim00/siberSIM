@@ -33,11 +33,13 @@
     "next-redux-wrapper": "^8.1.0",
     "next-translate": "^2.6.2",
     "next-transpile-modules": "^10.0.1",
+    "pdfjs-dist": "^3.11.174",
     "react-bootstrap": "^2.10.10",
     "react-cookie": "^8.0.1",
     "react-datepicker": "^4.12.0",
     "react-google-recaptcha": "^3.1.0",
     "react-i18next": "^15.5.3",
+    "react-pdf": "^6.2.2",
     "react-perfect-scrollbar": "^1.5.8",
     "react-redux": "^8.1.3",
     "react-select": "^5.10.1",
@@ -46,8 +48,8 @@
     "redux-persist": "^6.0.0",
     "sass": "^1.62.1",
     "slick-carousel": "^1.8.1",
-    "yup": "^1.6.1",
-    "sweetalert2": "^11.22.2"
+    "sweetalert2": "^11.22.2",
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
@@ -55,4 +57,3 @@
     "eslint-config-next": "13.4.4"
   }
 }
-

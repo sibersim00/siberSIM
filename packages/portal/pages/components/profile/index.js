@@ -72,7 +72,6 @@ const styles = {
   },
 };
 
-
 const Index = () => {
   const dispatch = useDispatch();
   const formikRef = useRef(null);
@@ -103,7 +102,7 @@ const Index = () => {
   const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
   const [showpassIcon2, setPassicon2] = useState("fe fe-eye-off");
   const [showpassIcon3, setPassicon3] = useState("fe fe-eye-off");
-  const [profileImage, setProfileImage] = useState(null); 
+  const [profileImage, setProfileImage] = useState(null);
   const [uploadedFile, setUploadedFile] = useState({});
   const profile_path = FilePath.profile;
   const ismulti = false;
@@ -175,7 +174,7 @@ const Index = () => {
         }
       );
       dispatch(clearChangeProfile());
-      dispatch(getProfile()); 
+      dispatch(getProfile());
     }
   }, [changeProfileSucc]);
 
@@ -197,18 +196,12 @@ const Index = () => {
       .string()
       .required("Please enter the old password")
       .min(8, "Password must be at least 8 characters")
-      .matches(
-        passwordRegExp,
-        "The old password is incorrect. "
-      ),
+      .matches(passwordRegExp, "The old password is incorrect. "),
     password: yup
       .string()
       .required("Please enter the password")
       .min(8, "Password must be at least 8 characters")
-      .matches(
-        passwordRegExp,
-        "Invalid Password. Please check note"
-      ),
+      .matches(passwordRegExp, "Invalid Password. Please check note"),
     confirmPassword: yup
       .string()
       .oneOf([yup.ref("password"), null], "Passwords must match")
@@ -347,10 +340,7 @@ const Index = () => {
       email: yup
         .string()
         .required("Required")
-        .matches(
-          emailRegExp,
-          "Invalid email format - no spaces are allowed"
-        )
+        .matches(emailRegExp, "Invalid email format - no spaces are allowed")
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
@@ -365,7 +355,7 @@ const Index = () => {
           return !emojiRegex.test(value);
         }),
 
-       mobile: yup
+      mobile: yup
         .string()
         .matches(/^[+]?[0-9]*$/, "Invalid - only numbers")
         .min(8, "Mobile number must be at least 8 digits")
@@ -406,7 +396,7 @@ const Index = () => {
                 }
               )
               .test("no-emoji", "Email should not contain emojis", (value) => {
-                if (!value) return true; 
+                if (!value) return true;
                 const emojiRegex =
                   /([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2011-\u26FF])/g;
                 return !emojiRegex.test(value);
@@ -429,7 +419,6 @@ const Index = () => {
           profile: formValidation.values?.profile_url,
         };
 
-
         dispatch(changeProfile(payload1));
       } catch (error) {
         console.error("Error submitting the form:", error);
@@ -438,30 +427,31 @@ const Index = () => {
   });
   useEffect(() => {
     if (getProfileSucc) {
-      dispatch(setLocalStorageData("user", getProfileSucc)); 
+      dispatch(setLocalStorageData("user", getProfileSucc));
       dispatch(getLocalStorageData("user"));
     }
   }, [getProfileSucc]);
 
-     const handleUpload = (name = '', files = '', flag = '') => {
-          const allFilePaths = files.map((f) => f.file);
-          if(allFilePaths[0]){
-              const payload = {
-                  profile:allFilePaths[0],
-              };
-              dispatch(saveUserImage(payload));
-          }else{
-              toast.error(
-                  <p className="mx-2 tx-16 d-flex align-items-center mb-0">Oops! Something went wrong. Please try again later.</p>,
-                  {
-                      position: toast.POSITION.TOP_RIGHT,
-                      hideProgressBar: true,
-                      theme: "colored",
-                  }
-              );
-          }
-          
+  const handleUpload = (name = "", files = "", flag = "") => {
+    const allFilePaths = files.map((f) => f.file);
+    if (allFilePaths[0]) {
+      const payload = {
+        profile: allFilePaths[0],
       };
+      dispatch(saveUserImage(payload));
+    } else {
+      toast.error(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+          Oops! Something went wrong. Please try again later.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: true,
+          theme: "colored",
+        }
+      );
+    }
+  };
 
   useEffect(() => {
     if (saveUserImageRes && saveUserImageRes.statusCode === 200) {
@@ -477,7 +467,7 @@ const Index = () => {
         }
       );
       dispatch(clearSaveUserImage());
-      dispatch(getProfile()); 
+      dispatch(getProfile());
     }
   }, [saveUserImageRes]);
   const [image, setImage] = useState(null);
@@ -648,69 +638,74 @@ const Index = () => {
                                   </Form.Control.Feedback>
                                 </Form.Group>
 
-                                  {/* 🔹 Conditional Fields */}
-                          {userType === "Instructor" && (
-                            <>
-                              
-                                <Form.Group as={Col} md="6" className="mb-3">
-                                  <Form.Label>
-                                    Organization
-                                    <span className="text-danger">*</span>
-                                  </Form.Label>
-                                  <Form.Control
-                                    type="text"
-                                    name="organization"
-                                    autoComplete="off"
-                                    value={formValidation.values.organization}
-                                    onChange={formValidation.handleChange}
-                                    placeholder="Enter Organization"
-                                    isValid={
-                                      formValidation.touched.organization &&
-                                      !formValidation.errors.organization
-                                    }
-                                    isInvalid={
-                                      formValidation.touched.organization &&
-                                      formValidation.errors.organization
-                                    }
-                                  />
-                                  <Form.Control.Feedback type="invalid">
-                                    {formValidation.errors.organization}
-                                  </Form.Control.Feedback>
-                                </Form.Group>
+                                {/* 🔹 Conditional Fields */}
+                                {userType === "Instructor" && (
+                                  <>
+                                    <Form.Group
+                                      as={Col}
+                                      md="6"
+                                      className="mb-3"
+                                    >
+                                      <Form.Label>
+                                        Organization
+                                        <span className="text-danger">*</span>
+                                      </Form.Label>
+                                      <Form.Control
+                                        type="text"
+                                        name="organization"
+                                        autoComplete="off"
+                                        value={
+                                          formValidation.values.organization
+                                        }
+                                        onChange={formValidation.handleChange}
+                                        placeholder="Enter Organization"
+                                        isValid={
+                                          formValidation.touched.organization &&
+                                          !formValidation.errors.organization
+                                        }
+                                        isInvalid={
+                                          formValidation.touched.organization &&
+                                          formValidation.errors.organization
+                                        }
+                                      />
+                                      <Form.Control.Feedback type="invalid">
+                                        {formValidation.errors.organization}
+                                      </Form.Control.Feedback>
+                                    </Form.Group>
 
-                                <Form.Group as={Col} md="6" className="mb-3">
-                                  <Form.Label>
-                                    Address{" "}
-                                    <span className="text-danger">*</span>
-                                  </Form.Label>
-                                  <Form.Control
-                                    as="textarea"
-                                    name="address"
-                                    autoComplete="off"
-                                    value={formValidation.values.address}
-                                    onChange={formValidation.handleChange}
-                                    placeholder="Enter Address"
-                                    isValid={
-                                      formValidation.touched.address &&
-                                      !formValidation.errors.address
-                                    }
-                                    isInvalid={
-                                      formValidation.touched.address &&
-                                      formValidation.errors.address
-                                    }
-                                  />
-                                  <Form.Control.Feedback type="invalid">
-                                    {formValidation.errors.address}
-                                  </Form.Control.Feedback>
-                                </Form.Group>
-                              
-                            </>
-                          )}
+                                    <Form.Group
+                                      as={Col}
+                                      md="6"
+                                      className="mb-3"
+                                    >
+                                      <Form.Label>
+                                        Address{" "}
+                                        <span className="text-danger">*</span>
+                                      </Form.Label>
+                                      <Form.Control
+                                        as="textarea"
+                                        name="address"
+                                        autoComplete="off"
+                                        value={formValidation.values.address}
+                                        onChange={formValidation.handleChange}
+                                        placeholder="Enter Address"
+                                        isValid={
+                                          formValidation.touched.address &&
+                                          !formValidation.errors.address
+                                        }
+                                        isInvalid={
+                                          formValidation.touched.address &&
+                                          formValidation.errors.address
+                                        }
+                                      />
+                                      <Form.Control.Feedback type="invalid">
+                                        {formValidation.errors.address}
+                                      </Form.Control.Feedback>
+                                    </Form.Group>
+                                  </>
+                                )}
                               </Row>
                             </Col>
-
-
-                           
 
                             <Col md={4}>
                               {/* <div className="text-center mb-3">
@@ -759,7 +754,7 @@ const Index = () => {
                               />
 
                               <small className="text-warning text-center d-block mt-1">
-                                Only PNG, JPG and JPEG  images are allowed.
+                                Only PNG, JPG and JPEG images are allowed.
                               </small>
                               {formValidation.touched.profile_url &&
                                 formValidation.errors.profile_url && (
@@ -769,8 +764,6 @@ const Index = () => {
                                 )}
                             </Col>
                           </Row>
-
-                         
 
                           {/* 🔹 Submit Button */}
                           <Button variant="primary" type="submit">
@@ -816,8 +809,10 @@ const Index = () => {
                               <FormGroup className="form-group">
                                 <Row className="row-sm">
                                   <Col md={3}>
-                                    <Form.Label>Old Password <span className="text-danger">*</span></Form.Label>
-                                   
+                                    <Form.Label>
+                                      Old Password{" "}
+                                      <span className="text-danger">*</span>
+                                    </Form.Label>
                                   </Col>
                                   <Col md={9}>
                                     <Form.Control
@@ -825,7 +820,7 @@ const Index = () => {
                                         showpassIcon === "fe fe-eye-off"
                                           ? "password"
                                           : "text"
-                                      } 
+                                      }
                                       name="oldPassword"
                                       autoComplete="off"
                                       value={values.oldPassword}
@@ -864,8 +859,10 @@ const Index = () => {
                               <FormGroup className="form-group">
                                 <Row className="row-sm">
                                   <Col md={3}>
-                                    <Form.Label>New Password  <span className="text-danger">*</span></Form.Label>
-                                   
+                                    <Form.Label>
+                                      New Password{" "}
+                                      <span className="text-danger">*</span>
+                                    </Form.Label>
                                   </Col>
                                   <Col md={9}>
                                     <Form.Control
@@ -873,7 +870,7 @@ const Index = () => {
                                         showpassIcon2 === "fe fe-eye-off"
                                           ? "password"
                                           : "text"
-                                      } 
+                                      }
                                       name="password"
                                       autoComplete="off"
                                       value={values.password}
@@ -910,8 +907,10 @@ const Index = () => {
                               <FormGroup className="form-group">
                                 <Row className="row-sm">
                                   <Col md={3}>
-                                    <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
-                                    
+                                    <Form.Label>
+                                      Confirm Password{" "}
+                                      <span className="text-danger">*</span>
+                                    </Form.Label>
                                   </Col>
                                   <Col md={9}>
                                     <Form.Control

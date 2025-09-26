@@ -73,17 +73,17 @@ const Quiz = () => {
             <Col sm={12}>
               <Card className="custom-card">
                 <Card.Body className="overflow-auto pd-t-10">
-                  <Row className="signpages text-center">
+                  <Row className="text-center">
                     <Col md={10} className="mx-auto">
                       <Card
-                        style={{ border: "none", backgroundColor: "#f6f7fb" }}
+                        style={{ border: "none"}}
                       >
                         <Card.Body>
-                          <div className="text-center">
+                          <div className="text-center mt-5">
                             <img
                               src={crossEvalicon.src}
                               alt="No data"
-                              className="wd-150"
+                              className="wd-150 mt-5"
                             />
                             <h5 className="mt-4">No data found.</h5>
                           </div>

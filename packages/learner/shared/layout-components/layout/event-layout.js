@@ -1,40 +1,88 @@
-import React, {Fragment,useEffect } from 'react';
-import { Container, Form, Nav, Navbar,Dropdown, InputGroup, } from "react-bootstrap";
-import favicon from "../../../public/assets/img/brand/favicon.png"
+import React, { Fragment, useEffect } from "react";
+import {
+  Container,
+  Form,
+  Nav,
+  Navbar,
+  Dropdown,
+  InputGroup,
+} from "react-bootstrap";
+import favicon from "../../../public/assets/img/brand/favicon.png";
+import { getOrSetTheme } from "../../redux/slices/commons/commons";
+import { useDispatch, useSelector } from "react-redux";
 
 const Eventlayout = ({ children }) => {
+  const dispatch = useDispatch();
+
+  const { theme } = useSelector((state) => {
+    return {
+      theme: state.commonsdata?.theme,
+    };
+  });
+
   useEffect(() => {
-    document.querySelector("body").classList.add("ltr", "main-body", "leftmenu", "error-1");
+    dispatch(getOrSetTheme()); // fetch theme on load
   }, []);
 
-    const handleLogout = () => {
+  useEffect(() => {
+    if (theme === "dark") {
+      document.body.classList.add("dark-theme");
+      localStorage.setItem("theme_preference", "dark");
+    } else {
+      document.body.classList.remove("dark-theme");
+      localStorage.setItem("theme_preference", "light");
+    }
+  }, [theme]);
+  useEffect(() => {
+  const body = document.body;
+
+  // Remove unwanted classes
+  body.classList.remove(
+    "error-1",
+    "app",
+    "sidebar-mini",
+    "ltr",
+    "landing-page",
+    "horizontalmenu"
+  );
+
+  // Add default layout classes
+  body.classList.add("main-body", "leftmenu", "ltr", "main-sidebar-hide");
+
+  // Apply theme based on localStorage
+  const storedTheme = localStorage.getItem("theme_preference"); // "dark" or "light"
+  if (storedTheme === "dark") {
+    body.classList.add("dark-theme");
+  } else {
+    body.classList.remove("dark-theme");
+  }
+}, []);
+  const handleLogout = () => {
     alert("Logged out!");
   };
 
-  const Darkmode = () => {
-  document.querySelector("body").classList.toggle("dark-theme");
+  const handleThemeToggle = () => {
+    const isNowDark = document.body.classList.toggle("dark-theme");
+    const newTheme = isNowDark ? "dark" : "light";
 
-  const switchEl = document.querySelector("#myonoffswitch2");
-  if (switchEl) {
-    switchEl.checked = true;
-  }
+    localStorage.setItem("theme_preference", newTheme);
 
-  if (document.body.classList.contains("dark-theme")) {
-    localStorage.setItem("DSPdark", true);
-  } else {
-    localStorage.removeItem("DSPdark");
-  }
-};
-
+    dispatch(getOrSetTheme(newTheme));
+  };
   return (
     <>
-     <Fragment>
+      <Fragment>
         <Navbar expand="lg" className="main-header sticky ">
-          <Container fluid className="main-container container-fluid d-flex justify-content-between align-items-center">
-            
+          <Container
+            fluid
+            className="main-container container-fluid d-flex justify-content-between align-items-center"
+          >
             <div className="d-flex align-items-center">
-              <img src={favicon.src} alt="Favicon" style={{ height: '32px', marginRight: '12px' }} />
-              
+              <img
+                src={favicon.src}
+                alt="Favicon"
+                style={{ height: "32px", marginRight: "12px" }}
+              />
             </div>
 
             <div className="d-flex align-items-center">
@@ -42,26 +90,24 @@ const Eventlayout = ({ children }) => {
                 Logout
               </button> */}
               <Dropdown className="dropdown d-flex main-header-theme">
-                        <Nav.Link
-                          className="nav-link icon layout-setting"
-                          onClick={() => Darkmode()}
-                        >
-                          <span className="dark-layout">
-                            <i className="fe fe-sun header-icons"></i>
-                          </span>
-                          <span className="light-layout">
-                            <i className="fe fe-moon header-icons"></i>
-                          </span>
-                        </Nav.Link>
-                      </Dropdown>
+                <Nav.Link
+                  className="nav-link icon layout-setting"
+                  onClick={() => handleThemeToggle()}
+                >
+                  <span className="dark-layout">
+                    <i className="fe fe-sun header-icons"></i>
+                  </span>
+                  <span className="light-layout">
+                    <i className="fe fe-moon header-icons"></i>
+                  </span>
+                </Nav.Link>
+              </Dropdown>
             </div>
           </Container>
         </Navbar>
       </Fragment>
 
-      <main className="layout-content">
-        {children}
-      </main>
+      <main className="layout-content">{children}</main>
     </>
   );
 };

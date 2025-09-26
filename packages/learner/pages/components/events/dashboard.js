@@ -32,6 +32,12 @@ import Seo from "../../../shared/layout-components/seo/seo";
 import "../../../shared/utils/i18n";
 import ScenarioDiagram from "./scenariodiagram";
 import ChatBox from "./eventchatbox";
+import dynamic from "next/dynamic";
+
+const PdfLoader = dynamic(
+  () => import("../../../shared/data/common/PdfLoader"),
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+);
 
 const Dashboard = () => {
   let navigate = useRouter();
@@ -254,11 +260,11 @@ const Dashboard = () => {
     ? `${baseUrl}${rowValues.instruction_file}`
     : null;
 
-  const viewerUrl = pdfUrl
-    ? `https://docs.google.com/gview?url=${encodeURIComponent(
-        pdfUrl
-      )}&embedded=true`
-    : null;
+  // const viewerUrl = pdfUrl
+  //   ? `https://docs.google.com/gview?url=${encodeURIComponent(
+  //       pdfUrl
+  //     )}&embedded=true`
+  //   : null;
 
   const handleStart = () => {
     setIsScenarioError400(false);
@@ -939,18 +945,9 @@ const Dashboard = () => {
                               </Tab.Pane>
 
                               <Tab.Pane eventKey="instruction">
-                                {rowValues?.instruction_file ? (
-                                  <iframe
-                                    src={viewerUrl}
-                                    width="100%"
-                                    height="600px"
-                                    style={{
-                                      border: "1px solid #ccc",
-                                      borderRadius: "8px",
-                                    }}
-                                    title="Instruction PDF"
-                                  ></iframe>
-                                ) : (
+                                {pdfUrl ? (
+                                  <PdfLoader fileUrl={pdfUrl} />
+                                ): (
                                   <Row>
                                     <Col sm={12}>
                                       <Card className="custom-card">

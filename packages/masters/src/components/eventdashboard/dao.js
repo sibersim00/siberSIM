@@ -35,6 +35,7 @@ LEFT JOIN (
     GROUP BY eventlearnerid
 ) ec ON ec.eventlearnerid = el.eventlearnerid
 WHERE el.deletedon IS NULL
+el.team_name ASC;
     `;
 
     const replacements = [];
@@ -64,7 +65,7 @@ WHERE el.deletedon IS NULL
 const getEventList = ({ db }) => async () => {
   try {
     const eventList = await db.sequelize.query(
-      `SELECT eventid,eventuuid, eventname, status FROM events WHERE status IS NOT NULL`,
+      `SELECT eventid,eventuuid, eventname, status FROM events WHERE status IS NOT NULL ORDER BY eventname ASC;`,
       { type: db.sequelize.QueryTypes.SELECT }
     );
     return eventList;
@@ -116,7 +117,7 @@ ORDER BY
     WHEN el.status = 'Start'     THEN el.startedon
     WHEN el.status = 'Pending'   THEN el.createdon
     ELSE NULL
-  END ASC;
+  END ASC
 
     `;
 

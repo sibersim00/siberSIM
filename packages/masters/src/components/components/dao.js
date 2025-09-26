@@ -35,7 +35,7 @@ const getAll =
         WHERE 
           c.deletedon IS NULL
         GROUP BY c.componentid
-        ORDER BY CASE WHEN c.modifiedon IS NOT NULL THEN c.modifiedon ELSE c.createdon END DESC
+        ORDER BY c.componentname ASC
       `);
       return components;
     } catch (error) {

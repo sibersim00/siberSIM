@@ -532,22 +532,22 @@ const instructorreport = () => {
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
                         <Row
-                          className="signpages ext-center"
+                          className="text-center"
                           style={{ height: "70vh" }}
                         >
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{
                                 border: "none",
-                                backgroundColor: "#f6f7fb",
+                                // backgroundColor: "#f6f7fb",
                               }}
                             >
                               <Card.Body>
-                                <div className="text-center">
+                                <div className="text-center mt-5">
                                   <img
                                     src={crossEvalicon.src}
                                     alt="user-img"
-                                    className="wd-150"
+                                    className="wd-150 mt-5"
                                     onClick={() => handleFormModal(true)}
                                   />
                                   <h5 className="mt-4">No data found.</h5>

@@ -17,7 +17,7 @@ const getAll =
         DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
         DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,      
        CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status from learners t WHERE 
-  t.deletedon IS NULL ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`);
+  t.deletedon IS NULL ORDER by t.firstname ASC`);
       return res;
     } else {
       let res = await db.sequelize.query(
@@ -30,7 +30,7 @@ const getAll =
         inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid 
        
         group by t.learner_id
-        ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`,
+        ORDER by t.firstname ASC`,
         {
           replacements: {
             _userid: session_userid,

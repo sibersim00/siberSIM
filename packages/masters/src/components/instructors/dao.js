@@ -13,10 +13,7 @@ const list =
   DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
 FROM ad_users 
 WHERE usertype = "Instructor"
-ORDER BY CASE 
-           WHEN modifiedon IS NOT NULL THEN modifiedon 
-           ELSE createdon 
-         END DESC;`);
+ORDER BY firstname ASC;`);
       return res;
     };
 

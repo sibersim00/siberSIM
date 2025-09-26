@@ -3,7 +3,7 @@ const componentCategorylist =
   async () => {
     try {
       let [result] = await db.sequelize.query(
-        `SELECT mcc.componentcategoryid,mcc.categoryname as parentcategoryname,mcc.description,mcc.categoryimage, CASE  WHEN mcc.status = 'Active' THEN 'true'   ELSE 'false' END AS status,DATE_FORMAT(mcc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,DATE_FORMAT(mcc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM component_categories mcc  where mcc.deletedon is NULL ORDER by CASE WHEN mcc.modifiedon IS NOT NULL then mcc.modifiedon ELSE mcc.createdon END  DESC;`
+        `SELECT mcc.componentcategoryid,mcc.categoryname as parentcategoryname,mcc.description,mcc.categoryimage, CASE  WHEN mcc.status = 'Active' THEN 'true'   ELSE 'false' END AS status,DATE_FORMAT(mcc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,DATE_FORMAT(mcc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM component_categories mcc  where mcc.deletedon is NULL ORDER by parentcategoryname ASC;`
       );
       return result;
     } catch (error) {

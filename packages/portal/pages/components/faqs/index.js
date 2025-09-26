@@ -44,7 +44,7 @@ const Faq = () => {
                 <img
                   src={crossEvalicon.src}
                   alt="No data"
-                  className="wd-150"
+                  className="wd-150 mt-5"
                 />
                 <h5 className="mt-4">No data found.</h5>
               </div>

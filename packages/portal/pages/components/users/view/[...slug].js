@@ -781,7 +781,7 @@ const NormalUsersView = () => {
       <tbody>
         {rowValues?.eventScenarioSummary?.map((item, idx) => (
           <tr key={idx}>
-            <th scope="row">{item.scenario}</th>
+            <td scope="row">{item.scenario}</td>
             <td>{item.total_events}</td>
             <td>{item.completed_events}</td>
           </tr>

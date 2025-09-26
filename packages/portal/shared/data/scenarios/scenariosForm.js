@@ -3,14 +3,24 @@ import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
-import { Row, Col, Card, Button, Form, Tab, Nav, OverlayTrigger, Tooltip } from "react-bootstrap";
+import {
+  Row,
+  Col,
+  Card,
+  Button,
+  Form,
+  Tab,
+  Nav,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
 import {
   getScenarioSubCategoriesList,
   getScenarioSubCategorybyId,
   clearScenarioSubCategorybyId,
   getInstructorList,
 } from "../../redux/slices/common/masters";
-import Seo from '../../../shared/layout-components/seo/seo';
+import Seo from "../../../shared/layout-components/seo/seo";
 import { useRouter, push } from "next/router";
 import {
   getScenarioList,
@@ -70,7 +80,6 @@ const ScenarioForm = (props) => {
   const ismulti = false;
   const [uploadedFile, setUploadedFile] = useState({});
 
-
   const {
     saveScenariosData,
     updateScenariosData,
@@ -127,21 +136,29 @@ const ScenarioForm = (props) => {
     { id: "3", name: "Hard" },
   ];
   const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-        ...customStyles,
-        control: (styles) => ({
-          ...styles,
-          borderColor: "#EB5757",
-          boxShadow: "0 0 0 0.001rem #EB5757",
-        }),
-      }
-      : customStyles;
+  const error =
+    !formValidation.values[fieldName] &&
+    formValidation.errors[fieldName] &&
+    formValidation.touched[fieldName];
+
+  return {
+    ...customStyles,
+    control: (styles, state) => ({
+      ...styles,
+      borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+      boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+      backgroundColor: "var(--dark-bg-color)", // dark background
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      color: "var(--light-text-color)", // selected value text
+    }),
+    input: (provided) => ({
+      ...provided,
+      color: "var(--light-text-color)", // text while typing
+    }),
   };
+};
 
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
@@ -150,14 +167,14 @@ const ScenarioForm = (props) => {
       boxShadow: isDisabled
         ? null
         : isFocused
-          ? "0 0 0 0.001rem #00d683"
-          : null,
+        ? "0 0 0 0.001rem #00d683"
+        : null,
       "&:hover": {
         borderColor: isDisabled
           ? "#e8e8f7"
           : isFocused
-            ? "#00d683"
-            : styles.borderColor,
+          ? "#00d683"
+          : styles.borderColor,
       },
     }),
   };
@@ -187,7 +204,7 @@ const ScenarioForm = (props) => {
   }, []);
   useEffect(() => {
     if (rowValues) {
-      setScenarioId(rowValues?.scenarioid)
+      setScenarioId(rowValues?.scenarioid);
       setIsChecked(rowValues?.status);
       setInitialHtml(rowValues?.scenariodescription);
     }
@@ -250,9 +267,20 @@ const ScenarioForm = (props) => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              }
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -260,24 +288,13 @@ const ScenarioForm = (props) => {
               theme: "colored",
             }
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
 
       dispatch(clearHasError());
       setIsLoading(false);
     }
   }, [errorData]);
 
- useEffect(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"));
     }
@@ -299,7 +316,6 @@ const ScenarioForm = (props) => {
     }
   }, [getUserDataFromLocal]);
 
-
   //----- instrutot dropdown selected in instructor panel
   useEffect(() => {
     if (hasgetInstructorListSucc && hasgetInstructorListSucc.length > 0) {
@@ -310,7 +326,7 @@ const ScenarioForm = (props) => {
       setInstDropDownData(temp);
       // Get user data from localStorage
       let selectedInstructor;
-     if (userType === "Instructor" && userId) {
+      if (userType === "Instructor" && userId) {
         selectedInstructor = temp.find(
           (obj) => obj?.instructor_id?.toString() === userId.toString()
         );
@@ -325,10 +341,6 @@ const ScenarioForm = (props) => {
     }
   }, [hasgetInstructorListSucc]);
 
-
-
-
-
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
       toast.success(
@@ -341,10 +353,10 @@ const ScenarioForm = (props) => {
           theme: "colored",
         }
       );
-     
+
       setScenarioId(saveScenariosData?.scenarioid);
       dispatch(clearSaveScenarios());
-      setTabIndex('tab2');
+      setTabIndex("tab2");
     }
   }, [saveScenariosData]);
 
@@ -360,13 +372,14 @@ const ScenarioForm = (props) => {
           theme: "colored",
         }
       );
-     
+
       dispatch(getScenarioList());
       dispatch(clearUpdateScenarios());
       dispatch(clearSingleScenarios());
       dispatch(clearSaveScenarios());
       dispatch(clearScenarioSubCategorybyId());
-      setTabIndex('tab2'); setRowValues({})
+      setTabIndex("tab2");
+      setRowValues({});
     }
   }, [updateScenariosData]);
 
@@ -396,7 +409,6 @@ const ScenarioForm = (props) => {
           (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
         ) || "",
       scenarioimage: rowValues?.scenarioimage || "",
-
     },
     validationSchema: Yup.object().shape({
       scenarioidentification: Yup.string()
@@ -405,22 +417,22 @@ const ScenarioForm = (props) => {
           /^[a-zA-Z0-9]+$/,
           "Invalid - only alphanumeric characters are allowed (no spaces or special characters)"
         )
-        .min(3, "Minimum 3 characters required") 
-        .max(30, "Identification should not exceed 30 characters") 
+        .min(3, "Minimum 3 characters required")
+        .max(30, "Identification should not exceed 30 characters")
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
           (value) => {
-            return !/^\s|\s$/.test(value); 
+            return !/^\s|\s$/.test(value);
           }
         ),
       scenariotitle: Yup.string()
         .required("Required")
         .matches(
-          /^[a-zA-Z0-9 ]+$/, 
+          /^[a-zA-Z0-9 ]+$/,
           "Invalid - only alphanumeric characters and spaces are allowed (no special characters)"
         )
-   
+
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
@@ -465,9 +477,8 @@ const ScenarioForm = (props) => {
           const files = value.split(",");
           return files.every((file) => file.toLowerCase().endsWith(".pdf"));
         }),
-      scenarioimage: Yup.string()
-        .required(error?.required),
-     }),
+      scenarioimage: Yup.string().required(error?.required),
+    }),
 
     onSubmit: (data, action) => {
       const payload = {
@@ -494,7 +505,6 @@ const ScenarioForm = (props) => {
 
       if (rowValues?.scenarioid) {
         dispatch(updateScenarios(payload));
-
       } else {
         dispatch(saveScenarios(payload));
       }
@@ -503,14 +513,12 @@ const ScenarioForm = (props) => {
     },
   });
 
-
   const handelGetSubCat = (catId) => {
     setSubCatDropDownData([]);
     const payload = {
       scenariocategoryid: catId,
     };
     dispatch(getScenarioSubCategorybyId(payload));
-
   };
 
   return (
@@ -522,16 +530,23 @@ const ScenarioForm = (props) => {
           <Row className="mg-b-10 text-wrap">
             <div className="panel panel-primary tabs-style-2">
               <div className="tab-menu-heading">
-                <div className="tabs-menu" >
-                  <Tab.Container id="left-tabs-example" activeKey={tabIndex} onSelect={(key) => {
-                    setTabIndex(key);
-                  }} >
+                <div className="tabs-menu">
+                  <Tab.Container
+                    id="left-tabs-example"
+                    activeKey={tabIndex}
+                    onSelect={(key) => {
+                      setTabIndex(key);
+                    }}
+                  >
                     <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
                       <Nav className="d-flex justify-content-between align-items-center panel-body tabs-menu-body pills bd-b pb-0 bg-white">
                         <div className="d-flex align-items-center w-100 justify-content-between">
                           <div className="d-flex align-items-center">
                             <Nav.Item className="flex-fill text-center">
-                              <Nav.Link eventKey="tab1" onClick={() => setTabIndex("tab1")}>
+                              <Nav.Link
+                                eventKey="tab1"
+                                onClick={() => setTabIndex("tab1")}
+                              >
                                 {t("program.tab_name.basic_information")}
                               </Nav.Link>
                             </Nav.Item>
@@ -539,11 +554,16 @@ const ScenarioForm = (props) => {
                               <Nav.Link
                                 eventKey="tab2"
                                 onClick={() => {
-                                  if (scenarioId !== undefined && scenarioId !== '') {
+                                  if (
+                                    scenarioId !== undefined &&
+                                    scenarioId !== ""
+                                  ) {
                                     setTabIndex("tab2");
                                   }
                                 }}
-                                disabled={scenarioId === undefined || scenarioId === ''}
+                                disabled={
+                                  scenarioId === undefined || scenarioId === ""
+                                }
                               >
                                 {t("Scenario Diagram")}
                               </Nav.Link>
@@ -552,11 +572,16 @@ const ScenarioForm = (props) => {
                               <Nav.Link
                                 eventKey="tab3"
                                 onClick={() => {
-                                  if (scenarioId !== undefined && scenarioId !== '') {
+                                  if (
+                                    scenarioId !== undefined &&
+                                    scenarioId !== ""
+                                  ) {
                                     setTabIndex("tab3");
                                   }
                                 }}
-                                disabled={scenarioId === undefined || scenarioId === ''}
+                                disabled={
+                                  scenarioId === undefined || scenarioId === ""
+                                }
                               >
                                 {t("VM Configuration")}
                               </Nav.Link>
@@ -575,7 +600,7 @@ const ScenarioForm = (props) => {
                                 setRowValues({});
                                 formValidation.resetForm();
                                 setView("Card");
-                                setScenarioId('');
+                                setScenarioId("");
                               }}
                             >
                               <i className="fe fe-arrow-left"></i>
@@ -585,8 +610,6 @@ const ScenarioForm = (props) => {
                         </div>
                       </Nav>
                     </Row>
-
-
 
                     <Tab.Content className="p-0">
                       {tabIndex === "tab1" && (
@@ -599,13 +622,10 @@ const ScenarioForm = (props) => {
                                   e.preventDefault();
                                   formValidation.handleSubmit();
                                   return true;
-
-
                                 }}
                               >
                                 <Card className="custom-card">
                                   <Card.Body>
-
                                     <Row className="row-sm">
                                       <Col md={12}>
                                         <Card className="custom-card">
@@ -620,7 +640,9 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     Identification No
-                                                    <span className="text-danger">*</span>
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <Form.Control
                                                     type="text"
@@ -629,17 +651,24 @@ const ScenarioForm = (props) => {
                                                     autoComplete="off"
                                                     placeholder="Enter Identification No"
                                                     value={
-                                                      formValidation.values.scenarioidentification
+                                                      formValidation.values
+                                                        .scenarioidentification
                                                     }
-                                                    onChange={formValidation.handleChange}
+                                                    onChange={
+                                                      formValidation.handleChange
+                                                    }
                                                     isInvalid={
                                                       formValidation.touched
                                                         .scenarioidentification &&
-                                                      formValidation.errors.scenarioidentification
+                                                      formValidation.errors
+                                                        .scenarioidentification
                                                     }
                                                   />
                                                   <Form.Control.Feedback type="invalid">
-                                                    {formValidation.errors.scenarioidentification}
+                                                    {
+                                                      formValidation.errors
+                                                        .scenarioidentification
+                                                    }
                                                   </Form.Control.Feedback>
                                                 </Form.Group>
 
@@ -650,22 +679,35 @@ const ScenarioForm = (props) => {
                                                   className="mb-3"
                                                 >
                                                   <Form.Label>
-                                                    Title<span className="text-danger">*</span>
+                                                    Title
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <Form.Control
                                                     type="text"
                                                     name="scenariotitle"
                                                     autoComplete="off"
                                                     placeholder="Enter Title"
-                                                    value={formValidation.values.scenariotitle}
-                                                    onChange={formValidation.handleChange}
+                                                    value={
+                                                      formValidation.values
+                                                        .scenariotitle
+                                                    }
+                                                    onChange={
+                                                      formValidation.handleChange
+                                                    }
                                                     isInvalid={
-                                                      formValidation.touched.scenariotitle &&
-                                                      formValidation.errors.scenariotitle
+                                                      formValidation.touched
+                                                        .scenariotitle &&
+                                                      formValidation.errors
+                                                        .scenariotitle
                                                     }
                                                   />
                                                   <Form.Control.Feedback type="invalid">
-                                                    {formValidation.errors.scenariotitle}
+                                                    {
+                                                      formValidation.errors
+                                                        .scenariotitle
+                                                    }
                                                   </Form.Control.Feedback>
                                                 </Form.Group>
 
@@ -677,22 +719,33 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     {t("Level")}{" "}
-                                                    <span className="text-danger">*</span>
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
                                                       colors: {
                                                         ...theme.colors,
-                                                        primary25: "var(--primary-bg-color)",
-                                                        primary: "var(--primary-bg-color)",
+                                                        primary25:
+                                                          "var(--primary-bg-color)",
+                                                        primary:
+                                                          "var(--primary-bg-color)",
                                                       },
                                                     })}
                                                     name="scenariolevel"
-                                                    styles={getSelectStyles("scenariolevel")}
-                                                    value={formValidation.values.scenariolevel}
+                                                    styles={getSelectStyles(
+                                                      "scenariolevel"
+                                                    )}
+                                                    value={
+                                                      formValidation.values
+                                                        .scenariolevel
+                                                    }
                                                     options={level}
-                                                    getOptionLabel={(x) => x.name}
+                                                    getOptionLabel={(x) =>
+                                                      x.name
+                                                    }
                                                     getOptionValue={(x) => x.id}
                                                     placeholder="Select Level"
                                                     onChange={(e) => {
@@ -702,15 +755,22 @@ const ScenarioForm = (props) => {
                                                       );
                                                     }}
                                                     isInvalid={
-                                                      formValidation.touched.scenariolevel &&
-                                                      formValidation.errors.scenariolevel
+                                                      formValidation.touched
+                                                        .scenariolevel &&
+                                                      formValidation.errors
+                                                        .scenariolevel
                                                     }
                                                   />
 
-                                                  {formValidation.errors.scenariolevel &&
-                                                    formValidation.touched.scenariolevel && (
+                                                  {formValidation.errors
+                                                    .scenariolevel &&
+                                                    formValidation.touched
+                                                      .scenariolevel && (
                                                       <div className="invalid-tooltiped">
-                                                        {formValidation.errors.scenariolevel}
+                                                        {
+                                                          formValidation.errors
+                                                            .scenariolevel
+                                                        }
                                                       </div>
                                                     )}
                                                 </Form.Group>
@@ -722,25 +782,36 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     {t("Scenario Category")}{" "}
-                                                    <span className="text-danger">*</span>
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
                                                       colors: {
                                                         ...theme.colors,
-                                                        primary25: "var(--primary-bg-color)",
-                                                        primary: "var(--primary-bg-color)",
+                                                        primary25:
+                                                          "var(--primary-bg-color)",
+                                                        primary:
+                                                          "var(--primary-bg-color)",
                                                       },
                                                     })}
                                                     name="scenariocategoryids"
-                                                    styles={getSelectStyles("scenariocategoryids")}
+                                                    styles={getSelectStyles(
+                                                      "scenariocategoryids"
+                                                    )}
                                                     value={
-                                                      formValidation.values.scenariocategoryids
+                                                      formValidation.values
+                                                        .scenariocategoryids
                                                     }
                                                     options={catDropDownData}
-                                                    getOptionLabel={(x) => x.scenariocategory}
-                                                    getOptionValue={(x) => x.scenariocategoryid} //  FIXED
+                                                    getOptionLabel={(x) =>
+                                                      x.scenariocategory
+                                                    }
+                                                    getOptionValue={(x) =>
+                                                      x.scenariocategoryid
+                                                    } //  FIXED
                                                     placeholder="Select Category"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
@@ -751,18 +822,27 @@ const ScenarioForm = (props) => {
                                                         "scenariosubcategoryid",
                                                         null
                                                       );
-                                                      handelGetSubCat(e.scenariocategoryid);
+                                                      handelGetSubCat(
+                                                        e.scenariocategoryid
+                                                      );
                                                     }}
                                                     isInvalid={
-                                                      formValidation.touched.scenariocategoryids &&
-                                                      formValidation.errors.scenariocategoryids
+                                                      formValidation.touched
+                                                        .scenariocategoryids &&
+                                                      formValidation.errors
+                                                        .scenariocategoryids
                                                     }
                                                   />
 
-                                                  {formValidation.errors.scenariocategoryids &&
-                                                    formValidation.touched.scenariocategoryids && (
+                                                  {formValidation.errors
+                                                    .scenariocategoryids &&
+                                                    formValidation.touched
+                                                      .scenariocategoryids && (
                                                       <div className="invalid-tooltiped">
-                                                        {formValidation.errors.scenariocategoryids}
+                                                        {
+                                                          formValidation.errors
+                                                            .scenariocategoryids
+                                                        }
                                                       </div>
                                                     )}
                                                 </Form.Group>
@@ -775,39 +855,49 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     {t("Scenario Sub Category")}{" "}
-                                                    <span className="text-danger">*</span>
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
                                                       colors: {
                                                         ...theme.colors,
-                                                        primary25: "var(--primary-bg-color)",
-                                                        primary: "var(--primary-bg-color)",
+                                                        primary25:
+                                                          "var(--primary-bg-color)",
+                                                        primary:
+                                                          "var(--primary-bg-color)",
                                                       },
                                                     })}
                                                     name="scenariosubcategoryid"
                                                     styles={getSelectStyles(
                                                       "scenariosubcategoryid"
                                                     )}
-
                                                     value={
-                                                      formValidation.values.scenariosubcategoryid ||
+                                                      formValidation.values
+                                                        .scenariosubcategoryid ||
                                                       null
                                                     }
-                                                    options={subCatDropDownData || []}
-                                                    getOptionLabel={(x) => x.scenariocategory}
-                                                    getOptionValue={(x) => x.scenariosubcategoryid}
+                                                    options={
+                                                      subCatDropDownData || []
+                                                    }
+                                                    getOptionLabel={(x) =>
+                                                      x.scenariocategory
+                                                    }
+                                                    getOptionValue={(x) =>
+                                                      x.scenariosubcategoryid
+                                                    }
                                                     placeholder="Select Sub Category"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariosubcategoryid",
                                                         e
                                                       );
-
                                                     }}
                                                   />
-                                                  {formValidation.errors.scenariosubcategoryid &&
+                                                  {formValidation.errors
+                                                    .scenariosubcategoryid &&
                                                     formValidation.touched
                                                       .scenariosubcategoryid && (
                                                       <div className="invalid-tooltiped">
@@ -827,23 +917,33 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     {t("Instructor")}
-
                                                   </Form.Label>
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
                                                       colors: {
                                                         ...theme.colors,
-                                                        primary25: "var(--primary-bg-color)",
-                                                        primary: "var(--primary-bg-color)",
+                                                        primary25:
+                                                          "var(--primary-bg-color)",
+                                                        primary:
+                                                          "var(--primary-bg-color)",
                                                       },
                                                     })}
                                                     name="instructor_id"
-                                                    styles={getSelectStyles("instructor_id")}
-                                                    value={formValidation.values.instructor_id}
+                                                    styles={getSelectStyles(
+                                                      "instructor_id"
+                                                    )}
+                                                    value={
+                                                      formValidation.values
+                                                        .instructor_id
+                                                    }
                                                     options={instDropDownData}
-                                                    getOptionLabel={(x) => x.name}
-                                                    getOptionValue={(x) => x.instructor_id}
+                                                    getOptionLabel={(x) =>
+                                                      x.name
+                                                    }
+                                                    getOptionValue={(x) =>
+                                                      x.instructor_id
+                                                    }
                                                     placeholder="Select Instructor"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
@@ -851,7 +951,9 @@ const ScenarioForm = (props) => {
                                                         e
                                                       );
                                                     }}
-                                                    isDisabled={userType === "Instructor"}
+                                                    isDisabled={
+                                                      userType === "Instructor"
+                                                    }
                                                   />
                                                 </Form.Group>
                                                 <Form.Group
@@ -861,7 +963,10 @@ const ScenarioForm = (props) => {
                                                   className="mb-3"
                                                 >
                                                   <Form.Label>
-                                                    Duration<span className="text-danger">*</span>{" "}
+                                                    Duration
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>{" "}
                                                     <small>(In Minutes)</small>
                                                   </Form.Label>
                                                   <Form.Control
@@ -869,15 +974,25 @@ const ScenarioForm = (props) => {
                                                     name="duration"
                                                     placeholder="Enter Duration"
                                                     autoComplete="off"
-                                                    value={formValidation.values.duration}
-                                                    onChange={formValidation.handleChange}
+                                                    value={
+                                                      formValidation.values
+                                                        .duration
+                                                    }
+                                                    onChange={
+                                                      formValidation.handleChange
+                                                    }
                                                     isInvalid={
-                                                      formValidation.touched.duration &&
-                                                      formValidation.errors.duration
+                                                      formValidation.touched
+                                                        .duration &&
+                                                      formValidation.errors
+                                                        .duration
                                                     }
                                                   />
                                                   <Form.Control.Feedback type="invalid">
-                                                    {formValidation.errors.duration}
+                                                    {
+                                                      formValidation.errors
+                                                        .duration
+                                                    }
                                                   </Form.Control.Feedback>
                                                 </Form.Group>
 
@@ -888,73 +1003,121 @@ const ScenarioForm = (props) => {
                                                     controlid="validationFormik102"
                                                     className="mb-3 position-relative"
                                                   >
-                                                    <div className="wd-80p position-relative">
+                                                    <div className="position-relative">
                                                       <Form.Label>
                                                         {t("Instruction File")}
-                                                        <span className="text-danger">*</span>
+                                                        <span className="text-danger">
+                                                          *
+                                                        </span>
                                                       </Form.Label>
 
-                                              
                                                       {rowValues?.id !== 0 && (
                                                         <OverlayTrigger
                                                           placement="top"
                                                           overlay={
-                                                            <Tooltip id={`tooltip-${rowValues.id}`}>
-                                                              Removing the file will permanently delete it from storage and update the record.
+                                                            <Tooltip
+                                                              id={`tooltip-${rowValues.id}`}
+                                                            >
+                                                              Removing the file
+                                                              will permanently
+                                                              delete it from
+                                                              storage and update
+                                                              the record.
                                                             </Tooltip>
                                                           }
                                                         >
                                                           <i
                                                             className="fe fe-alert-circle text-warning position-absolute"
-                                                            style={{ top: "5px", right: "5px", cursor: "pointer" }}
+                                                            style={{
+                                                              top: "5px",
+                                                              right: "5px",
+                                                              cursor: "pointer",
+                                                            }}
                                                           ></i>
                                                         </OverlayTrigger>
                                                       )}
 
                                                       <FileUploader
-                                                        folderpath={category_path}
+                                                        folderpath={
+                                                          category_path
+                                                        }
                                                         ismulti={ismulti}
                                                         name="image_url"
-                                                        acceptedFileTypes={["application/pdf"]}
-                                                        handleUpload={handleUpload}
+                                                        acceptedFileTypes={[
+                                                          "application/pdf",
+                                                        ]}
+                                                        handleUpload={
+                                                          handleUpload
+                                                        }
                                                         fetchfiles={
                                                           ismulti
-                                                            ? formValidation.values.image_url.split(",")
-                                                            : [formValidation.values.image_url]
+                                                            ? formValidation.values.image_url.split(
+                                                                ","
+                                                              )
+                                                            : [
+                                                                formValidation
+                                                                  .values
+                                                                  .image_url,
+                                                              ]
                                                         }
                                                       />
 
-                                                      {formValidation.errors.image_url && formValidation.touched.image_url && (
-                                                        <div className="invalid-tooltiped">
-                                                          {formValidation.errors.image_url}
-                                                        </div>
-                                                      )}
+                                                      {formValidation.errors
+                                                        .image_url &&
+                                                        formValidation.touched
+                                                          .image_url && (
+                                                          <div className="invalid-tooltiped">
+                                                            {
+                                                              formValidation
+                                                                .errors
+                                                                .image_url
+                                                            }
+                                                          </div>
+                                                        )}
                                                     </div>
                                                   </Form.Group>
                                                 </Col>
 
                                                 <Col md={4}>
-                                                  <Form.Group controlId="imageUpload" className="d-flex flex-column">
+                                                  <Form.Group
+                                                    controlId="imageUpload"
+                                                    className="d-flex flex-column"
+                                                  >
                                                     <div className="position-relative">
                                                       <Form.Label>
-                                                        {t("Scenario Image")}<span className="text-danger">*</span>
-                                                        {rowValues?.id !== 0 && (
+                                                        {t("Scenario Image")}
+                                                        <span className="text-danger">
+                                                          *
+                                                        </span>
+                                                        {rowValues?.id !==
+                                                          0 && (
                                                           <OverlayTrigger
                                                             placement="top"
                                                             overlay={
-                                                              <Tooltip id={`tooltip-${rowValues.id}`}>
-                                                                Removing the file will permanently delete it from storage and update the record.
+                                                              <Tooltip
+                                                                id={`tooltip-${rowValues.id}`}
+                                                              >
+                                                                Removing the
+                                                                file will
+                                                                permanently
+                                                                delete it from
+                                                                storage and
+                                                                update the
+                                                                record.
                                                               </Tooltip>
                                                             }
                                                           >
                                                             <i
                                                               className="fe fe-alert-circle text-warning"
                                                               style={{
-                                                                position: "absolute",
+                                                                position:
+                                                                  "absolute",
                                                                 top: "2px",
                                                                 right: "5px",
-                                                                cursor: "pointer",
-                                                                color: "#212122ff",
+                                                                cursor:
+                                                                  "pointer",
+                                                                color:
+                                                                  "#212122ff",
                                                               }}
                                                             ></i>
                                                           </OverlayTrigger>
@@ -962,46 +1125,68 @@ const ScenarioForm = (props) => {
                                                       </Form.Label>
 
                                                       <FileUploader
-                                                        folderpath={scenario_path}
+                                                        folderpath={
+                                                          scenario_path
+                                                        }
                                                         ismulti={ismulti}
                                                         name="scenarioimage"
-                                                        acceptedFileTypes={["image/png", "image/jpeg"]}
-                                                        handleUpload={handleUpload}
+                                                        acceptedFileTypes={[
+                                                          "image/png",
+                                                          "image/jpeg",
+                                                        ]}
+                                                        handleUpload={
+                                                          handleUpload
+                                                        }
                                                         fetchfiles={
                                                           ismulti
-                                                            ? (formValidation.values.scenarioimage || "").split(",")
-                                                            : [formValidation.values.scenarioimage]
+                                                            ? (
+                                                                formValidation
+                                                                  .values
+                                                                  .scenarioimage ||
+                                                                ""
+                                                              ).split(",")
+                                                            : [
+                                                                formValidation
+                                                                  .values
+                                                                  .scenarioimage,
+                                                              ]
                                                         }
                                                       />
                                                     </div>
 
-                                                    <Form.Control.Feedback type="invalid" className="d-block">
-                                                      {formValidation.touched.scenarioimage && formValidation.errors.scenarioimage}
+                                                    <Form.Control.Feedback
+                                                      type="invalid"
+                                                      className="d-block"
+                                                    >
+                                                      {formValidation.touched
+                                                        .scenarioimage &&
+                                                        formValidation.errors
+                                                          .scenarioimage}
                                                     </Form.Control.Feedback>
 
-
-                                                    {formValidation.values.scenarioimage && (
+                                                    {formValidation.values
+                                                      .scenarioimage && (
                                                       <div className="picture avatar-lg online text-center mt-2 mb-3">
                                                         <div className="pointer overflow-hidden">
                                                           <img
                                                             alt="Scenario Category Preview"
                                                             src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.scenarioimage}`}
                                                             onError={(e) => {
-                                                              e.target.onerror = null || "";
-                                                              e.target.src = dummy_network.src;
+                                                              e.target.onerror =
+                                                                null || "";
+                                                              e.target.src =
+                                                                dummy_network.src;
                                                             }}
                                                             style={{
-                                                              objectFit: "cover",
+                                                              objectFit:
+                                                                "cover",
                                                               width: "100%",
                                                               height: "100%",
                                                             }}
-                                                            
-
                                                           />
                                                         </div>
                                                       </div>
                                                     )}
-
                                                   </Form.Group>
                                                 </Col>
 
@@ -1009,13 +1194,15 @@ const ScenarioForm = (props) => {
                                                   as={Col}
                                                   md="12"
                                                   controlid="validationFormik102"
-                                                  className="mb-3"
+                                                  className="mb-5 mt-4"
                                                 >
                                                   <Form.Label>
                                                     {t(
                                                       "component_sub_categories.forms.label.description"
                                                     )}
-                                                    <span className="text-danger">*</span>
+                                                    <span className="text-danger">
+                                                      *
+                                                    </span>
                                                   </Form.Label>
                                                   <EditorComponent
                                                     name="description"
@@ -1028,23 +1215,34 @@ const ScenarioForm = (props) => {
                                                     }}
                                                     editorLoaded={editorLoaded}
                                                     data={initialHtml}
-                                                    setEditorLoaded={setEditorLoaded}
-                                                    style={{ minHeight: "600px", height: "600px" }}  // 
+                                                    setEditorLoaded={
+                                                      setEditorLoaded
+                                                    }
+                                                    style={{
+                                                      minHeight: "600px",
+                                                      height: "600px",
+                                                    }} //
                                                   />
-                                                  {formValidation.errors.description &&
-                                                    formValidation.touched.description && (
+                                                  {formValidation.errors
+                                                    .description &&
+                                                    formValidation.touched
+                                                      .description && (
                                                       <div className="invalid-tooltiped">
-                                                        {formValidation.errors.description}
+                                                        {
+                                                          formValidation.errors
+                                                            .description
+                                                        }
                                                       </div>
                                                     )}
                                                 </Form.Group>
                                               </Row>
-
                                             </Col>
                                           </Row>
                                           <Row>
                                             <Col className="d-flex justify-content-end">
-                                              <Button type="submit">{t("Save & Next")}</Button>
+                                              <Button type="submit">
+                                                {t("Save & Next")}
+                                              </Button>
                                             </Col>
                                           </Row>
                                         </Card>
@@ -1056,22 +1254,35 @@ const ScenarioForm = (props) => {
                             </Col>
                           </Row>
                         </Tab.Pane>
-
                       )}
-                      {console.log(scenarioId, 'tabIndex', tabIndex)}
+                      {console.log(scenarioId, "tabIndex", tabIndex)}
 
-                      {tabIndex === "tab2" && scenarioId !== undefined && scenarioId !== '' && (
-                        
-                        <Tab.Pane eventKey="tab2" className="p-0">
-                          <CreateScenario scenarioId={scenarioId} setScenarioId={setScenarioId} setTabIndex={setTabIndex} setView={setView} setRowValues={setRowValues} />
-
-                        </Tab.Pane>
-                      )}
-                      {tabIndex === "tab3" && scenarioId !== undefined && scenarioId !== '' && (
-                        <Tab.Pane eventKey="tab3" className="p-0">
-                          <DiagramComponents scenarioId={scenarioId} setScenarioId={setScenarioId} setTabIndex={setTabIndex} setView={setView} setRowValues={setRowValues} />
-                        </Tab.Pane>
-                      )}
+                      {tabIndex === "tab2" &&
+                        scenarioId !== undefined &&
+                        scenarioId !== "" && (
+                          <Tab.Pane eventKey="tab2" className="p-0">
+                            <CreateScenario
+                              scenarioId={scenarioId}
+                              setScenarioId={setScenarioId}
+                              setTabIndex={setTabIndex}
+                              setView={setView}
+                              setRowValues={setRowValues}
+                            />
+                          </Tab.Pane>
+                        )}
+                      {tabIndex === "tab3" &&
+                        scenarioId !== undefined &&
+                        scenarioId !== "" && (
+                          <Tab.Pane eventKey="tab3" className="p-0">
+                            <DiagramComponents
+                              scenarioId={scenarioId}
+                              setScenarioId={setScenarioId}
+                              setTabIndex={setTabIndex}
+                              setView={setView}
+                              setRowValues={setRowValues}
+                            />
+                          </Tab.Pane>
+                        )}
                     </Tab.Content>
                   </Tab.Container>
                 </div>

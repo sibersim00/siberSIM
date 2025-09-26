@@ -1,23 +1,6 @@
 const MailTemplate = require("../../utils/mailUtility");
 const bcrypt = require("bcryptjs");
 
-// const getAll =
-//   ({ db }) =>
-//   async () => {
-//     try {
-//       const eventlist = `SELECT e.eventid, e.eventuuid, e.eventname, e.eventdescription, e.scenarioid, e.eventstarttime, e.eventendtime,e.status, s.scenariotitle ,
-//       DATE_FORMAT(e.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-//       DATE_FORMAT(e.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-//       from events e
-//       LEFT JOIN scenarios s on s.scenarioid = e.scenarioid`;
-//       let [res] = await db.sequelize.query(eventlist);
-//       return res;
-//     } catch (error) {
-//       console.error("Error fetching data:", error);
-//       throw new Error("An error occurred. Please try again later.");
-//     }
-//   };
-
 const getAll =
   ({ db }) =>
   async () => {
@@ -37,6 +20,7 @@ const getAll =
           DATE_FORMAT(e.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
         FROM events e
         LEFT JOIN scenarios s ON s.scenarioid = e.scenarioid
+        ORDER BY e.eventname ASC
       `;
 
       let [res] = await db.sequelize.query(eventlist);

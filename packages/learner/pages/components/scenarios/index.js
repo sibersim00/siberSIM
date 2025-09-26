@@ -1,153 +1,145 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import Seo from "../../../shared/layout-components/seo/seo";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  OverlayTrigger,
-  Tooltip,
-} from "react-bootstrap";
-import { getScenariosList } from "../../../shared/redux/slices/scenarios/scenarios";
-import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
-import { AgGridReact } from "ag-grid-react";
-import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
-import { useRouter } from "next/router";
-import dummy_network from "../../../public/assets/img/dummy.jpg";
+  import React, { useState, useEffect, useMemo } from "react";
+  import { useDispatch, useSelector } from "react-redux";
+  import Seo from "../../../shared/layout-components/seo/seo";
+  import {
+    Row,
+    Col,
+    Card,
+    Button,
+    OverlayTrigger,
+    Tooltip,
+  } from "react-bootstrap";
+  import { getScenariosList } from "../../../shared/redux/slices/scenarios/scenarios";
+  import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
+  import { AgGridReact } from "ag-grid-react";
+  import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
+  import { useRouter } from "next/router";
+  import dummy_network from "../../../public/assets/img/dummy.jpg";
 
-const Scenarios = () => {
-  const dispatch = useDispatch();
-  const router = useRouter();
-  const { scenariosListData } = useSelector((state) => ({
-    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? [],
-  }));
+  const Scenarios = () => {
+    const dispatch = useDispatch();
+    const router = useRouter();
+    const { scenariosListData } = useSelector((state) => ({
+      scenariosListData: state?.scenarios?.getScenariosListData?.data ?? [],
+    }));
 
-  const [view, setView] = useState("card");
-  const [quickFilter, setQuickFilter] = useState("");
-  const [filteredData, setFilteredData] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [filteredSubcategories, setFilteredSubcategories] = useState([]);
+    const [view, setView] = useState("card");
+    const [quickFilter, setQuickFilter] = useState("");
+    const [filteredData, setFilteredData] = useState([]);
+    const [filteredCategories, setFilteredCategories] = useState([]);
+    const [filteredSubcategories, setFilteredSubcategories] = useState([]);
 
-  const [gridApi, setGridApi] = useState(null);
+    const [gridApi, setGridApi] = useState(null);
 
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
-  const [showCategoryCard, setShowCategoryCard] = useState(false);
-  const [showSubcategoryCard, setShowSubcategoryCard] = useState(false);
+    const [showCategoryCard, setShowCategoryCard] = useState(false);
+    const [showSubcategoryCard, setShowSubcategoryCard] = useState(false);
 
-  useEffect(() => {
-    dispatch(getScenariosList());
-  }, [dispatch]);
+    useEffect(() => {
+      dispatch(getScenariosList());
+    }, [dispatch]);
 
-  useEffect(() => {
-    if (scenariosListData) {
-      setFilteredData(scenariosListData);
-    }
-  }, [scenariosListData]);
-
-  const Breadcrumb = ({
-    selectedCategory,
-    selectedSubcategory,
-    onCategoryClick,
-    onSubcategoryClick,
-  }) => {
-    return (
-      <div className="d-flex align-items-center">
-        <span
-          className="breadcrumb-item text-primary"
-          style={{ cursor: "pointer" }}
-          onClick={() => {
-            onCategoryClick(null);
-            onSubcategoryClick(null);
-          }}
-        >
-          Home
-        </span>
-
-        {selectedCategory && (
-          <>
-            <span className="mx-2">/</span>
-            <span
-              className="breadcrumb-item text-primary"
-              style={{ cursor: "pointer" }}
-              onClick={() => onSubcategoryClick(null)}
-            >
-              {selectedCategory.scenariocategory_name}
-            </span>
-          </>
-        )}
-
-        {selectedSubcategory && (
-          <>
-            <span className="mx-2">/</span>
-            <span className="text-primary">
-              {selectedSubcategory.scenariosubcategory_name}
-            </span>
-          </>
-        )}
-      </div>
-    );
-  };
-  const uniqueCategories = Array.from(
-    new Map(
-      scenariosListData?.map((item) => [item.scenariocategoryid, item])
-    ).values()
-  );
-
-  const uniqueSubcategories = selectedCategory
-    ? Array.from(
-        new Map(
-          scenariosListData
-            .filter(
-              (item) =>
-                item.scenariocategoryid === selectedCategory.scenariocategoryid
-            )
-            .map((item) => [item.scenariosubcategory_name, item])
-        ).values()
-      )
-    : [];
-
-  useEffect(() => {
-    if (!selectedCategory) {
-      setFilteredData([]);
-      setSelectedSubcategory(null);
-      return;
-    }
-    let filtered = scenariosListData.filter(
-      (item) => item.scenariocategoryid === selectedCategory.scenariocategoryid
-    );
-    if (selectedSubcategory) {
-      filtered = filtered.filter(
-        (item) =>
-          item.scenariosubcategory_name ===
-          selectedSubcategory.scenariosubcategory_name
-      );
-    }
-    setFilteredData(filtered);
-  }, [selectedCategory, selectedSubcategory, scenariosListData]);
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setSelectedSubcategory(null);
-    setShowCategoryCard(true);
-    setShowSubcategoryCard(false);
-  };
-  const handleSubcategoryClick = (subcategory) => {
-    setSelectedSubcategory(subcategory);
-    setShowSubcategoryCard(true);
-    setShowCategoryCard(false);
-  };
-  useEffect(() => {
-    if (scenariosListData) {
-      let filtered = scenariosListData;
-      if (selectedCategory) {
-        filtered = filtered.filter(
-          (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
-        );
+    useEffect(() => {
+      if (scenariosListData) {
+        setFilteredData(scenariosListData);
       }
+    }, [scenariosListData]);
+
+    const Breadcrumb = ({
+      selectedCategory,
+      selectedSubcategory,
+      onCategoryClick,
+      onSubcategoryClick,
+    }) => {
+      return (
+        <div className="d-flex align-items-center">
+          <span
+            className="breadcrumb-item text-primary"
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              onCategoryClick(null);
+              onSubcategoryClick(null);
+            }}
+          >
+            Home
+          </span>
+
+          {selectedCategory && (
+            <>
+              <span className="mx-2">/</span>
+              <span
+                className="breadcrumb-item text-primary"
+                style={{ cursor: "pointer" }}
+                onClick={() => onSubcategoryClick(null)}
+              >
+                {selectedCategory.scenariocategory_name}
+              </span>
+            </>
+          )}
+
+          {selectedSubcategory && (
+            <>
+              <span className="mx-2">/</span>
+              <span className="text-primary">
+                {selectedSubcategory.scenariosubcategory_name}
+              </span>
+            </>
+          )}
+        </div>
+      );
+    };
+    // const uniqueCategories = Array.from(
+    //   new Map(
+    //     scenariosListData?.map((item) => [item.scenariocategoryid, item])
+    //   ).values()
+    // );
+    const uniqueCategories = Array.from(
+  new Map(
+    scenariosListData?.map((item) => [item.scenariocategoryid, item])
+  ).values()
+).sort((a, b) =>
+  a.scenariocategory_name.localeCompare(b.scenariocategory_name)
+);
+
+    // const uniqueSubcategories = selectedCategory
+    //   ? Array.from(
+    //       new Map(
+    //         scenariosListData
+    //           .filter(
+    //             (item) =>
+    //               item.scenariocategoryid === selectedCategory.scenariocategoryid
+    //           )
+    //           .map((item) => [item.scenariosubcategory_name, item])
+    //       ).values()
+    //     )
+    //   : [];
+    const uniqueSubcategories = selectedCategory
+  ? Array.from(
+      new Map(
+        scenariosListData
+          .filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid
+          )
+          .map((item) => [item.scenariosubcategory_name, item])
+      ).values()
+    ).sort((a, b) =>
+      a.scenariosubcategory_name.localeCompare(b.scenariosubcategory_name)
+    )
+  : [];
+
+
+    useEffect(() => {
+      if (!selectedCategory) {
+        setFilteredData([]);
+        setSelectedSubcategory(null);
+        return;
+      }
+      let filtered = scenariosListData.filter(
+        (item) => item.scenariocategoryid === selectedCategory.scenariocategoryid
+      );
       if (selectedSubcategory) {
         filtered = filtered.filter(
           (item) =>
@@ -156,457 +148,499 @@ const Scenarios = () => {
         );
       }
       setFilteredData(filtered);
-    }
-  }, [scenariosListData, selectedCategory, selectedSubcategory]);
-  useEffect(() => {
-  if (!scenariosListData) return;
+    }, [selectedCategory, selectedSubcategory, scenariosListData]);
 
-  // Restore category
-  if (router.query.categoryId) {
-    const category = scenariosListData.find(
-      (item) => item.scenariocategoryid === Number(router.query.categoryId)
-    );
-    if (category) setSelectedCategory(category);
-  }
-
-  // Restore subcategory
-  if (router.query.subcategoryName) {
-    const subcategory = scenariosListData.find(
-      (item) => item.scenariosubcategory_name === router.query.subcategoryName
-    );
-    if (subcategory) setSelectedSubcategory(subcategory);
-  }
-
-  // Restore view type (card / list)
-  if (router.query.view) {
-    setView(router.query.view);
-  }
-}, [router.query, scenariosListData]);
-
-
-  const columnDefs = [
-    {
-      headerName: "Sr No.",
-      field: "",
-      cellRenderer: "srNoRender",
-      floatingFilter: false,
-      filter: false,
-      headerClass: "ag-header-cell",
-      minWidth: 80,
-      sortable: false,
-    },
-
-    {
-      headerName: "Identification No",
-      field: "scenarioidentification",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-    },
-    {
-      headerName: "Title",
-      field: "scenariotitle",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 240,
-    },
-    {
-      headerName: "Level",
-      field: "scenariolevel",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-    },
-    {
-      headerName: "Scenario Category",
-      field: "scenariocategory_name",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-    },
-    {
-      headerName: "Scenario Sub-Category",
-      field: "scenariosubcategory_name",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-    },
-    {
-      headerName: "Duration",
-      field: "duration",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-      valueGetter: (params) => {
-        const value = params.data?.duration;
-        return value != null ? `${value} Mins` : "0 Mins";
-      },
-    },
-    {
-      headerName: "Action",
-      field: "status",
-      pinned: "right",
-      minWidth: 80,
-      cellRenderer: "actionButtonRenderer",
-    },
-  ];
-
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10,
-  };
-
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
-
-  const defaultColDef = useMemo(() => {
-    return {
-      sortable: true,
-      suppressMovable: true,
-      flex: 1,
+    const handleCategoryClick = (category) => {
+      setSelectedCategory(category);
+      setSelectedSubcategory(null);
+      setShowCategoryCard(true);
+      setShowSubcategoryCard(false);
     };
-  }, []);
-
-  const handleChangeView = (thisView) => {
-    setView(thisView);
-  };
-
-  const onFilterChanged = (data) => {
-    setQuickFilter(data);
-    const val = data.toLowerCase().trim();
-
-    if (!val) {
-      if (!selectedCategory) {
-        setFilteredCategories([]);
-        setFilteredSubcategories([]);
-        setFilteredData([]);
-      } else if (selectedCategory && !selectedSubcategory) {
-        const filtered = scenariosListData.filter(
-          (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
-        );
-        setFilteredSubcategories(filtered);
-        setFilteredData([]);
-      } else if (selectedCategory && selectedSubcategory) {
-        const filtered = scenariosListData.filter(
-          (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid &&
-            item.scenariosubcategory_name ===
+    const handleSubcategoryClick = (subcategory) => {
+      setSelectedSubcategory(subcategory);
+      setShowSubcategoryCard(true);
+      setShowCategoryCard(false);
+    };
+    useEffect(() => {
+      if (scenariosListData) {
+        let filtered = scenariosListData;
+        if (selectedCategory) {
+          filtered = filtered.filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid
+          );
+        }
+        if (selectedSubcategory) {
+          filtered = filtered.filter(
+            (item) =>
+              item.scenariosubcategory_name ===
               selectedSubcategory.scenariosubcategory_name
-        );
+          );
+        }
         setFilteredData(filtered);
       }
-      return;
+    }, [scenariosListData, selectedCategory, selectedSubcategory]);
+    useEffect(() => {
+    if (!scenariosListData) return;
+
+    // Restore category
+    if (router.query.categoryId) {
+      const category = scenariosListData.find(
+        (item) => item.scenariocategoryid === Number(router.query.categoryId)
+      );
+      if (category) setSelectedCategory(category);
     }
 
-    if (!selectedCategory) {
-      const seenIds = new Set();
-      const filtered = scenariosListData.filter((item) => {
-        const match = item.scenariocategory_name?.toLowerCase().includes(val);
-        if (match && !seenIds.has(item.scenariocategoryid)) {
-          seenIds.add(item.scenariocategoryid);
-          return true;
+    // Restore subcategory
+    if (router.query.subcategoryName) {
+      const subcategory = scenariosListData.find(
+        (item) => item.scenariosubcategory_name === router.query.subcategoryName
+      );
+      if (subcategory) setSelectedSubcategory(subcategory);
+    }
+
+    // Restore view type (card / list)
+    if (router.query.view) {
+      setView(router.query.view);
+    }
+  }, [router.query, scenariosListData]);
+
+
+    const columnDefs = [
+      {
+        headerName: "Sr No.",
+        field: "",
+        cellRenderer: "srNoRender",
+        floatingFilter: false,
+        filter: false,
+        headerClass: "ag-header-cell",
+        minWidth: 80,
+        sortable: false,
+      },
+
+      {
+        headerName: "Identification No",
+        field: "scenarioidentification",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 180,
+      },
+      {
+        headerName: "Title",
+        field: "scenariotitle",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 240,
+      },
+      {
+        headerName: "Level",
+        field: "scenariolevel",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 180,
+      },
+      {
+        headerName: "Scenario Category",
+        field: "scenariocategory_name",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 180,
+      },
+      {
+        headerName: "Scenario Sub-Category",
+        field: "scenariosubcategory_name",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 180,
+      },
+      {
+        headerName: "Duration",
+        field: "duration",
+        filter: true,
+        floatingFilter: true,
+        minWidth: 180,
+        valueGetter: (params) => {
+          const value = params.data?.duration;
+          return value != null ? `${value} Mins` : "0 Mins";
+        },
+      },
+      {
+        headerName: "Action",
+        field: "status",
+        pinned: "right",
+        minWidth: 80,
+        cellRenderer: "actionButtonRenderer",
+      },
+    ];
+
+    const gridOptions = {
+      pagination: true,
+      paginationPageSize: 10,
+    };
+
+    const onGridReady = (params) => {
+      setGridApi(params.api);
+    };
+
+    const defaultColDef = useMemo(() => {
+      return {
+        sortable: true,
+        suppressMovable: true,
+        flex: 1,
+      };
+    }, []);
+
+    const handleChangeView = (thisView) => {
+      setView(thisView);
+    };
+
+    const onFilterChanged = (data) => {
+      setQuickFilter(data);
+      const val = data.toLowerCase().trim();
+
+      if (!val) {
+        if (!selectedCategory) {
+          setFilteredCategories([]);
+          setFilteredSubcategories([]);
+          setFilteredData([]);
+        } else if (selectedCategory && !selectedSubcategory) {
+          const filtered = scenariosListData.filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid
+          );
+          setFilteredSubcategories(filtered);
+          setFilteredData([]);
+        } else if (selectedCategory && selectedSubcategory) {
+          const filtered = scenariosListData.filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid &&
+              item.scenariosubcategory_name ===
+                selectedSubcategory.scenariosubcategory_name
+          );
+          setFilteredData(filtered);
         }
-        return false;
-      });
-      setFilteredCategories(filtered);
-    } else if (selectedCategory && !selectedSubcategory) {
-      const seenSubcats = new Set();
-      const filtered = scenariosListData
-        .filter(
-          (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
-        )
-        .filter((item) => {
-          const match = item.scenariosubcategory_name
-            ?.toLowerCase()
-            .includes(val);
-          if (match && !seenSubcats.has(item.scenariosubcategory_name)) {
-            seenSubcats.add(item.scenariosubcategory_name);
+        return;
+      }
+
+      if (!selectedCategory) {
+        const seenIds = new Set();
+        const filtered = scenariosListData.filter((item) => {
+          const match = item.scenariocategory_name?.toLowerCase().includes(val);
+          if (match && !seenIds.has(item.scenariocategoryid)) {
+            seenIds.add(item.scenariocategoryid);
             return true;
           }
           return false;
         });
-      setFilteredSubcategories(filtered);
-    } else if (selectedCategory && selectedSubcategory) {
-      const filtered = scenariosListData
-        .filter(
-          (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid &&
-            item.scenariosubcategory_name ===
-              selectedSubcategory.scenariosubcategory_name
-        )
-        .filter((item) => {
-          const titleMatch = item.scenariotitle?.toLowerCase().includes(val);
-          const levelMatch = item.scenariolevel?.toLowerCase().includes(val);
-          const durationMatch = String(item.duration ?? "").includes(val);
-          const categoryMatch = item.scenariocategory_name
-            ?.toLowerCase()
-            .includes(val);
-          const subcategoryMatch = item.scenariosubcategory_name
-            ?.toLowerCase()
-            .includes(val);
+        setFilteredCategories(filtered);
+      } else if (selectedCategory && !selectedSubcategory) {
+        const seenSubcats = new Set();
+        const filtered = scenariosListData
+          .filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid
+          )
+          .filter((item) => {
+            const match = item.scenariosubcategory_name
+              ?.toLowerCase()
+              .includes(val);
+            if (match && !seenSubcats.has(item.scenariosubcategory_name)) {
+              seenSubcats.add(item.scenariosubcategory_name);
+              return true;
+            }
+            return false;
+          });
+        setFilteredSubcategories(filtered);
+      } else if (selectedCategory && selectedSubcategory) {
+        const filtered = scenariosListData
+          .filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid &&
+              item.scenariosubcategory_name ===
+                selectedSubcategory.scenariosubcategory_name
+          )
+          .filter((item) => {
+            const titleMatch = item.scenariotitle?.toLowerCase().includes(val);
+            const levelMatch = item.scenariolevel?.toLowerCase().includes(val);
+            const durationMatch = String(item.duration ?? "").includes(val);
+            const categoryMatch = item.scenariocategory_name
+              ?.toLowerCase()
+              .includes(val);
+            const subcategoryMatch = item.scenariosubcategory_name
+              ?.toLowerCase()
+              .includes(val);
 
-          return (
-            titleMatch ||
-            levelMatch ||
-            durationMatch ||
-            categoryMatch ||
-            subcategoryMatch
-          );
-        });
+            return (
+              titleMatch ||
+              levelMatch ||
+              durationMatch ||
+              categoryMatch ||
+              subcategoryMatch
+            );
+          });
 
-      setFilteredData(filtered);
-    }
+        setFilteredData(filtered);
+      }
+    };
+
+    const [columnsPerRow, setColumnsPerRow] = useState(3);
+    const colarray = [6, 4, 3, 2];
+    const zoomIn = () => {
+      const currentIndex = colarray.indexOf(columnsPerRow);
+      if (currentIndex > 0) {
+        setColumnsPerRow(colarray[currentIndex - 1]);
+      }
+    };
+    const zoomOut = () => {
+      const currentIndex = colarray.indexOf(columnsPerRow);
+      if (currentIndex < colarray.length - 1) {
+        setColumnsPerRow(colarray[currentIndex + 1]);
+      }
+    };
+
+    const handleReturnView = (props) => {
+    const categoryId = selectedCategory?.scenariocategoryid || "";
+    const subcategoryName = selectedSubcategory?.scenariosubcategory_name || "";
+
+    router.push({
+      pathname: `/scenarios_view/${props?.scenariouuid}`,
+      query: {
+        backView: view,
+        categoryId,
+        subcategoryName,
+      },
+    });
   };
 
-  const [columnsPerRow, setColumnsPerRow] = useState(3);
-  const colarray = [6, 4, 3, 2];
-  const zoomIn = () => {
-    const currentIndex = colarray.indexOf(columnsPerRow);
-    if (currentIndex > 0) {
-      setColumnsPerRow(colarray[currentIndex - 1]);
-    }
-  };
-  const zoomOut = () => {
-    const currentIndex = colarray.indexOf(columnsPerRow);
-    if (currentIndex < colarray.length - 1) {
-      setColumnsPerRow(colarray[currentIndex + 1]);
-    }
-  };
 
-  const handleReturnView = (props) => {
-  const categoryId = selectedCategory?.scenariocategoryid || "";
-  const subcategoryName = selectedSubcategory?.scenariosubcategory_name || "";
+    const frameworkComponents = {
+      srNoRender: function (props) {
+        return props.node.rowIndex + 1;
+      },
 
-  router.push({
-    pathname: `/scenarios_view/${props?.scenariouuid}`,
-    query: {
-      backView: view,
-      categoryId,
-      subcategoryName,
-    },
-  });
-};
+      actionButtonRenderer: function (props) {
+        return (
+          <ActionButtonRenderer
+            handleEditView={handleReturnView}
+            handleShowEditView={true}
+            propsVal={props}
+          />
+        );
+      },
+    };
 
-
-  const frameworkComponents = {
-    srNoRender: function (props) {
-      return props.node.rowIndex + 1;
-    },
-
-    actionButtonRenderer: function (props) {
-      return (
-        <ActionButtonRenderer
-          handleEditView={handleReturnView}
-          handleShowEditView={true}
-          propsVal={props}
-        />
-      );
-    },
-  };
-
-  return (
-    <>
-      <Seo title="Scenarios" />
-      <Col md={12}>
-        <Card className="custom-card overflow-hidden">
-          <Card.Body className="p-3">
-            <div className="d-flex justify-content-between align-items-center">
-              <Breadcrumb
-                selectedCategory={selectedCategory}
-                selectedSubcategory={selectedSubcategory}
-                onCategoryClick={setSelectedCategory}
-                onSubcategoryClick={setSelectedSubcategory}
-              />
-
-              <div className="d-flex align-items-center">
-                {view === "card" && (
-                  <>
-                    <button
-                      onClick={zoomIn}
-                      className="btn bd bd-success text-success mx-1"
-                      title="Zoom In"
-                    >
-                      <i className="fas fa-search-plus"></i>
-                    </button>
-                    <button
-                      onClick={zoomOut}
-                      className="btn bd bd-success text-success"
-                      title="Zoom Out"
-                    >
-                      <i className="fas fa-search-minus"></i>
-                    </button>
-                    &nbsp;
-                  </>
-                )}
-                <Button
-                  type="button"
-                  title="Card View"
-                  variant="outline-success"
-                  onClick={() => handleChangeView("card")}
-                  className={
-                    view === "card" ? "mx-1 active text-white" : "mx-1"
-                  }
-                >
-                  <i className="fe fe-grid"></i>
-                </Button>
-                <Button
-                  type="button"
-                  title="List View"
-                  variant="outline-success"
-                  onClick={() => handleChangeView("list")}
-                  className={view === "list" ? "active text-white" : ""}
-                >
-                  <i className="fe fe-list"></i>
-                </Button>
-                &nbsp;&nbsp;
-                <input
-                  className="form-control bd bd-2 ms-2 w-auto"
-                  value={quickFilter}
-                  placeholder="Search..."
-                  type="text"
-                  onChange={(e) => onFilterChanged(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <Col md={12}>
-              {view == "list" ? (
-              <div
-                className="ag-theme-alpine mt-2"
-                style={{ height: "40em", width: "100%" }}
-              >
-                <AgGridReact
-                  id="cat_grid"
-                  headerHeight={35}
-                  rowHeight={40}
-                  gridOptions={gridOptions}
-                  rowData={filteredData}
-                  columnDefs={columnDefs}
-                  pagination={true}
-                  paginationPageSize={10}
-                  onGridReady={onGridReady}
-                  components={frameworkComponents}
-                  defaultColDef={defaultColDef}
-                />
-              </div>
-              ) : (
-                ""
-              )}
-            </Col>
-          </Card.Body>
-        </Card>
-      </Col>
-
-      {view === "card" && (
+    return (
+      <>
+        <Seo title="Scenarios" />
         <Col md={12}>
-          <Row className="row-sm">
-            {!selectedCategory &&
-              (filteredCategories.length > 0
-                ? filteredCategories
-                : uniqueCategories
-              ).map((item) => (
-                <Col
-                  md={columnsPerRow}
-                  className="p-2"
-                  key={item.scenariocategoryid}
+          <Card className="custom-card overflow-hidden">
+            <Card.Body className="p-3">
+              <div className="d-flex justify-content-between align-items-center">
+                <Breadcrumb
+                  selectedCategory={selectedCategory}
+                  selectedSubcategory={selectedSubcategory}
+                  onCategoryClick={setSelectedCategory}
+                  onSubcategoryClick={setSelectedSubcategory}
+                />
+
+                <div className="d-flex align-items-center">
+                  {view === "card" && (
+                    <>
+                      <button
+                        onClick={zoomIn}
+                        className="btn bd bd-success text-success mx-1"
+                        title="Zoom In"
+                      >
+                        <i className="fas fa-search-plus"></i>
+                      </button>
+                      <button
+                        onClick={zoomOut}
+                        className="btn bd bd-success text-success"
+                        title="Zoom Out"
+                      >
+                        <i className="fas fa-search-minus"></i>
+                      </button>
+                      &nbsp;
+                    </>
+                  )}
+                  <Button
+                    type="button"
+                    title="Card View"
+                    variant="outline-success"
+                    onClick={() => handleChangeView("card")}
+                    className={
+                      view === "card" ? "mx-1 active text-white" : "mx-1"
+                    }
+                  >
+                    <i className="fe fe-grid"></i>
+                  </Button>
+                  <Button
+                    type="button"
+                    title="List View"
+                    variant="outline-success"
+                    onClick={() => handleChangeView("list")}
+                    className={view === "list" ? "active text-white" : ""}
+                  >
+                    <i className="fe fe-list"></i>
+                  </Button>
+                  &nbsp;&nbsp;
+                  <input
+                    className="form-control bd bd-2 ms-2 w-auto"
+                    value={quickFilter}
+                    placeholder="Search..."
+                    type="text"
+                    onChange={(e) => onFilterChanged(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Col md={12}>
+                {view == "list" ? (
+                <div
+                  className="ag-theme-alpine mt-2"
+                  style={{ height: "40em", width: "100%" }}
                 >
-                  <Card
-                    className="card custom-card our-team pointer"
-                    onClick={() => handleCategoryClick(item)}
+                  <AgGridReact
+                    id="cat_grid"
+                    headerHeight={35}
+                    rowHeight={40}
+                    gridOptions={gridOptions}
+                    rowData={filteredData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    onGridReady={onGridReady}
+                    components={frameworkComponents}
+                    defaultColDef={defaultColDef}
+                  />
+                </div>
+                ) : (
+                  ""
+                )}
+              </Col>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {view === "card" && (
+          <Col md={12}>
+            <Row className="row-sm">
+              {!selectedCategory &&
+                (filteredCategories.length > 0
+                  ? filteredCategories
+                  : uniqueCategories
+                ).map((item) => (
+                  <Col
+                    md={columnsPerRow}
+                    className="p-2"
+                    key={item.scenariocategoryid}
                   >
-                    <Card.Body className="p-3">
-                      <div className="text-center mb-2">
-                        <div
-                          className=" mx-auto d-flex justify-content-center align-items-center "
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                          }}
-                        >
-                          <img
-                            alt="avatar"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = dummy_network.src;
-                            }}
+                    <Card
+                      className="card custom-card h-100 our-team pointer"
+                      onClick={() => handleCategoryClick(item)}
+                    >
+                      <Card.Body className="p-3">
+                        <div className="text-center mb-2">
+                          <div
+                            className=" mx-auto d-flex justify-content-center align-items-center "
                             style={{
                               width: "100px",
                               height: "100px",
                             }}
-                            src={
-                              item?.category_image
-                                ? `${process.env.API_URL_FILEMANAGER}${item?.category_image}`
-                                : dummy_network.src
-                            }
-                          />
+                          >
+                            <img
+                              alt="avatar"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = dummy_network.src;
+                              }}
+                              style={{
+                                width: "100px",
+                                height: "100px",
+                              }}
+                              src={
+                                item?.category_image
+                                  ? `${process.env.API_URL_FILEMANAGER}${item?.category_image}`
+                                  : dummy_network.src
+                              }
+                            />
+                          </div>
+
+                          <h5 className="pro-user-username text-dark mt-2 mb-0">
+                            {item?.scenariocategory_name || ""}
+                          </h5>
                         </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
 
-                        <h5 className="pro-user-username text-dark mt-2 mb-0">
-                          {item?.scenariocategory_name || ""}
-                        </h5>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-
-            {selectedCategory &&
-              !selectedSubcategory &&
-              (filteredSubcategories.length > 0
-                ? filteredSubcategories
-                : uniqueSubcategories
-              ).map((item, idx) => (
-                <Col md={columnsPerRow} className="p-0" key={idx}>
-                  <Card
-                    className="card custom-card our-team pointer"
-                    onClick={() => handleSubcategoryClick(item)}
-                  >
-                    <Card.Body className="p-3">
-                      <div className="text-center mb-2">
-                        <div
-                          className="rounded-circle mx-auto d-flex justify-content-center align-items-center "
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                          }}
-                        >
-                          <img
-                            alt="avatar"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = dummy_network.src;
-                            }}
+              {selectedCategory &&
+                !selectedSubcategory &&
+                (filteredSubcategories.length > 0
+                  ? filteredSubcategories
+                  : uniqueSubcategories
+                ).map((item, idx) => (
+                  <Col md={columnsPerRow} className="pb-4" key={idx}>
+                    <Card
+                      className="card custom-card h-100 our-team pointer"
+                      onClick={() => handleSubcategoryClick(item)}
+                    >
+                      <Card.Body className="p-3">
+                        <div className="text-center mb-2">
+                          <div
+                            className="rounded-circle mx-auto d-flex justify-content-center align-items-center "
                             style={{
                               width: "100px",
                               height: "100px",
                             }}
-                            src={
-                              item?.subcategory_image
-                                ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
-                                : dummy_network.src
-                            }
-                          />
-                        </div>
+                          >
+                            <img
+                              alt="avatar"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = dummy_network.src;
+                              }}
+                              style={{
+                                width: "100px",
+                                height: "100px",
+                              }}
+                              src={
+                                item?.subcategory_image
+                                  ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
+                                  : dummy_network.src
+                              }
+                            />
+                          </div>
 
-                        <h5 className="pro-user-username text-dark mt-2 mb-0 ">
-                          {item?.scenariosubcategory_name || ""}
-                        </h5>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
+                          <h5 className="pro-user-username text-dark mt-2 mb-0 ">
+                            {item?.scenariosubcategory_name || ""}
+                          </h5>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
 
             {selectedCategory &&
               selectedSubcategory &&
               filteredData.length > 0 &&
-              ["Easy", "Medium", "Hard"].map((level) => {
+              ["Easy", "Medium", "Hard"].map((level) => { 
+                // const levelData = filteredData
+                //   .filter((item) => item.scenariolevel === level)
+                //   .sort((a, b) => a.duration - b.duration);
                 const levelData = filteredData
-                  .filter((item) => item.scenariolevel === level)
-                  .sort((a, b) => a.duration - b.duration);
+  .filter((item) => item.scenariolevel === level)
+  .sort((a, b) => {
+    // 1️⃣ Compare titles alphabetically
+    const titleCompare = a.scenariotitle.localeCompare(b.scenariotitle);
+    if (titleCompare !== 0) {
+      return titleCompare;
+    }
+    // 2️⃣ If titles are same, compare duration
+    return (a.duration ?? 0) - (b.duration ?? 0);
+  });
+
 
                 return levelData.length > 0 ? (
                   <div key={level} className="mb-3">
@@ -643,7 +677,7 @@ const Scenarios = () => {
 
                     <Row className="row-sm">
                       {levelData.map((item, index) => (
-                        <Col md={columnsPerRow} className="p-2" key={index}>
+                        <Col md={columnsPerRow} className="p-2 pb-3" key={index}>
                           <Card
                             className="h-100 shadow-sm rounded-4 pointer"
                             style={{
@@ -755,7 +789,7 @@ const Scenarios = () => {
                 <Col sm={12}>
                   <Card className="custom-card">
                     <Card.Body className="overflow-auto pd-t-10">
-                      <Row className="signpages text-center">
+                      <Row className="text-center">
                         <Col md={10} className="mx-auto">
                           <Card
                             style={{
@@ -764,11 +798,11 @@ const Scenarios = () => {
                             }}
                           >
                             <Card.Body>
-                              <div className="text-center">
+                              <div className="text-center mt-5">
                                 <img
                                   src={crossEvalicon.src}
                                   alt="No data"
-                                  className="wd-150"
+                                  className="wd-150 mt-5"
                                 />
                                 <h5 className="mt-4">No data found.</h5>
                               </div>

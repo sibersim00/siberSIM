@@ -54,7 +54,7 @@ const saveJson =({ db, body }) => async () => {
 const instructorlist = ({ db }) => async () => {
     try {
       let [result] = await db.sequelize.query(
-      `select concat(firstname," ",lastname) as name,userid as instructor_id from ad_users where status = 'Active' and usertype='Instructor' and isverified='Yes'  and deletedon is NULL ORDER by CASE WHEN modifiedon IS NOT NULL then modifiedon ELSE createdon END DESC`
+      `select concat(firstname," ",lastname) as name,userid as instructor_id from ad_users where status = 'Active' and usertype='Instructor' and isverified='Yes'  and deletedon is NULL ORDER by name ASC`
     );
     return result;
   }catch (error) {
@@ -93,7 +93,7 @@ const scenarioinstructorlist = ({ db }) => async (scenarioid) => {
 const scenariocategorylist = ({ db }) => async () => {
   try {
     let [result] = await db.sequelize.query(
-      `select scenariocategoryid,categoryname as scenariocategory from scenario_categories where status = 'Active' and (parentscenariocategoryid='0' OR parentscenariocategoryid is NULL) and deletedon is NULL ORDER by CASE WHEN modifiedon IS NOT NULL then modifiedon ELSE createdon END  DESC`
+      `select scenariocategoryid,categoryname as scenariocategory from scenario_categories where status = 'Active' and (parentscenariocategoryid='0' OR parentscenariocategoryid is NULL) and deletedon is NULL ORDER by categoryname`
     );
     return result;
   } catch (error) {
@@ -106,7 +106,7 @@ const scenariosubcategorylist = ({ db, body }) => async () => {
   try {
     let [result] = await db.sequelize
       .query(`select sc.scenariocategoryid,sc.parentscenariocategoryid,sc.categoryname as scenariocategory,scc.categoryname as parentscenariocategory from scenario_categories sc left join  scenario_categories scc on scc.scenariocategoryid= sc.parentscenariocategoryid
-where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by CASE WHEN sc.modifiedon IS NOT NULL then sc.modifiedon ELSE sc.createdon END  DESC`);
+where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
     return result;
   } catch (error) {
     throw error;
@@ -116,7 +116,7 @@ where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentsce
 const componentcategorylist = ({ db }) => async () => {
   try {
     let [result] = await db.sequelize.query(
-      `select componentcategoryid,categoryname as componentcategory from component_categories where status = 'Active' and deletedon is NULL  ORDER by CASE WHEN modifiedon IS NOT NULL then modifiedon ELSE createdon END  DESC`
+      `select componentcategoryid,categoryname as componentcategory from component_categories where status = 'Active' and deletedon is NULL  ORDER by componentcategory ASC`
     );
     return result;
   } catch (error) {
@@ -140,6 +140,7 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
       WHERE status = 'Active'
         AND deletedon IS NULL
         AND componentcategoryid = :componentcategoryid
+        ORDER BY vmname;
     `, {
       replacements: { componentcategoryid },
     });
@@ -334,14 +335,14 @@ const scenariolist = ({ db }) => async (session_userid, usertype) => {
         .query(`select s.scenarioid,s.scenariotitle,s.scenarioidentification 
       from scenarios s  
       where s.status='Active' and s.deletedon is null 
-      ORDER by CASE WHEN s.modifiedon IS NOT NULL then s.modifiedon ELSE s.createdon END  DESC`);
+      ORDER by s.scenariotitle ASC`);
       return res;
     } else {
       let res = await db.sequelize.query(
         `select s.scenarioid,s.scenariotitle,s.scenarioidentification
         from scenarios s  
         where s.status='Active' and s.instructor_id=:_userid and s.deletedon is null 
-        ORDER by CASE WHEN s.modifiedon IS NOT NULL then s.modifiedon ELSE s.createdon END  DESC`,
+        ORDER by s.scenariotitle ASC`,
         {
           replacements: {
             _userid: session_userid,
@@ -402,7 +403,7 @@ const faqlist = ({ db }) => async (usertype) => {
 const eventScenarioList = ({ db }) => async () => {
   try {
     const result = await db.sequelize.query(
-      `SELECT scenarioid,scenariotitle FROM scenarios WHERE status = 'Active' AND scenariostatus = 'Publish'`,
+      `SELECT scenarioid,scenariotitle FROM scenarios WHERE status = 'Active' AND scenariostatus = 'Publish' order by scenariotitle ASC`,
       {
         type: db.sequelize.QueryTypes.SELECT,
       }

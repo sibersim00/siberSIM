@@ -9,7 +9,7 @@ const getscenarioAll = ({ db }) => async (id = null) => {
     FROM scenario_categories sc
     LEFT JOIN ad_users au ON sc.createdby = au.userid
     LEFT JOIN ad_users a ON sc.modifiedby = a.userid
-    WHERE sc.deletedon IS NULL AND parentscenariocategoryid IS NULL ORDER BY CASE WHEN sc.modifiedon IS NOT NULL THEN sc.modifiedon ELSE sc.createdon END DESC`);
+    WHERE sc.deletedon IS NULL AND parentscenariocategoryid IS NULL ORDER BY categoryname ASC`);
     return res;
   }catch (error) {
     console.error("Error Fetching Scenario Categories List:", error);

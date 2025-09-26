@@ -140,10 +140,10 @@ const ComponentView = () => {
                   <Col md={8}>
                     <h6 className="mb-3">VM Details</h6>
                     <Table responsive bordered className="mb-0">
-                      <thead className="table-light">
+                      <thead>
                         <tr>
-                          <th style={{ width: "30%" }}>Property</th>
-                          <th>Value</th>
+                          <td style={{ width: "30%" }}>Property</td>
+                          <td>Value</td>
                         </tr>
                       </thead>
                       <tbody>
