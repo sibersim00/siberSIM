@@ -1,49 +1,53 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Row, Col, Card, Button, Form } from "react-bootstrap"; 
 import {
-  ReactFlow, 
-  Background, 
+  ReactFlow,
+  Background,
   Handle,
   Position,
   useReactFlow
 } from '@xyflow/react';
-  import '@xyflow/react/dist/style.css'; 
-import EditableEdge from '../../../../shared/data/scenarios/EditableEdge';
- 
+import '@xyflow/react/dist/style.css';
+import EditableEdge from '../../../../shared/data/usersessions/EditableEdge';
 const resolveImageUrl = (url) => {
   if (!url) return '';
-
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
-  const isStatic = url.startsWith('/_next') || url.startsWith('/static') || url.startsWith('/images');
-  console.log(isStatic,'isAbsolute',isAbsolute ,url,  `${window.location.origin}${url}`)
-
-  if (isAbsolute) {
-    return url;
-  }else{
-  return `${window.location.origin}${url}`;
-
-  }
-}; 
-
- 
-const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-  console.log('data****',data?.isOnline)
+  return isAbsolute ? url : `${window.location.origin}${url}`;
+};
+const ImageNode = ({  data, isConnectable }) => {
   const networkPorts = data.networkport || [];
   const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
- //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
   const totalPorts = portKeys.length;
-
   const sides = ['Right', 'Bottom', 'Left', 'Top'];
   const portsPerSide = Math.ceil(totalPorts / 4);
   const spacingRatio = 100 / (portsPerSide + 1);
-
   const baseSize = 90;
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+const handleClick = (dataobj) => {
+  const vmid = dataobj?.vmid;
+  const vmType = dataobj?.vmType;
+  if (!vmid || !vmType) return;
+
+  const rawLabel = dataobj?.label || "";
+  const namePart = rawLabel.split("-")[1]?.trim() || "";
+  const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+  window.open(
+    `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+    "_blank"
+  );
+};
+
 
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',  cursor: 'pointer',
- }} onClick={() => window.open(data?.url, '_blank')}>
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+      onClick={() => handleClick(data)}
+    >
       <div
         style={{
           width: nodeSize,
@@ -58,29 +62,6 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
         }}
       >
-        {/* Delete Button */}
-        <button
-          onClick={() => deleteNode(id)}
-          style={{
-            position: 'absolute',
-            top: 2,
-            right: 2,
-            color: 'black',
-            border: 'none',
-            borderRadius: '50%',
-            width: 14,
-            height: 14,
-            fontSize: 10,
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            background: '#fff',
-            zIndex: 2,
-          }}
-        >
-          ×
-        </button>
-
-        {/* Image */}
         <div
           style={{
             width: nodeSize * 0.6,
@@ -92,20 +73,18 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           }}
         />
 
-        {/* Ports */}
         {portKeys.map((portKey, index) => {
           const sideIndex = Math.floor(index / portsPerSide);
           const side = sides[sideIndex];
           const positionIndex = index % portsPerSide;
           let offsetPercent;
 
-          // Reverse position for specific sides
           if (side === 'Right' || side === 'Top') {
             offsetPercent = (positionIndex + 1) * spacingRatio;
           } else {
-            // Reverse direction for Bottom (right-to-left) and Left (bottom-to-top)
             offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
           }
+
           const baseHandleStyle = {
             position: 'absolute',
             width: 10,
@@ -115,6 +94,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
             border: '1px solid white',
             zIndex: 2,
           };
+
           const labelStyle = {
             position: 'absolute',
             fontSize: 6,
@@ -170,7 +150,6 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
         })}
       </div>
 
-      {/* Node Label */}
       <div
         style={{
           marginTop: 18,
@@ -184,135 +163,104 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
         }}
       >
         {data.label || 'Unnamed'}
-        
-        {/* Online Status */}
+
         {data.isOnline === 'Yes' && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        // marginTop: 4,
-          fontSize: 8,
-          color: 'green',
-        }}>
           <div style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            backgroundColor: 'green',
-            marginRight: 4,
-          }} />
-          Online
-        </div>
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 8,
+            color: 'green',
+          }}>
+            <div style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: 'green',
+              marginRight: 4,
+            }} />
+            Online
+          </div>
         )}
       </div>
     </div>
   );
 };
-  // Node types map
-  const nodeTypes = {
-    imageNode: ImageNode,
-  }; 
 
-const ScenarioDiagram = ({scenarioId,scenariodiagram}) => {
-   
-    console.log(scenariodiagram,'props@@@@@',scenarioId)  
-    const [elements, setelements] = useState({ nodes: [], edges: [] });
 
-    useEffect(() => {
-      if (scenariodiagram && scenariodiagram!== '' ) {
-  
-        const data = scenariodiagram;
-        const parsedData = JSON.parse(data.replace('flowchartData ', ''));
-        console.log('parsedData',parsedData);
-        if (parsedData && parsedData.nodes) {
-          setelements({
-            nodes: parsedData.nodes,
-            edges: parsedData.edges,
-          });
-         
-        } 
-      }
-    }, [scenariodiagram]); 
-    console.log('Rendering with nodes:', elements.nodes);
-    console.log('Rendering with edges:', elements.edges);
-
- const FlowViewportController = ({ nodes }) => {
-  const { fitView, setViewport } = useReactFlow();
+const ScenarioDiagram = ({ scenariodiagram }) => {
+  const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const reactFlowWrapper = useRef(null);
+  const flowRef = useRef(null);
 
   useEffect(() => {
-    if (nodes.length > 0) {
-      fitView({ padding: 0.2 });  // fitView with small padding
-      setTimeout(() => {
-        setViewport((v) => ({
-          x: v.x,
-          y: v.y - 100,
-          transition: { duration: 300 },
-        }));
-      }, 200);  // delay to ensure fitView completes
+    if (!scenariodiagram) return;
+
+    try {
+      const cleanData = scenariodiagram.replace('flowchartData ', '');
+      const parsedData = JSON.parse(cleanData);
+      const backendBaseUrl = process.env.API_URL_FILEMANAGER;
+
+      const updatedNodes = parsedData.nodes.map(node => ({
+        ...node,
+        position: node.position || { x: 0, y: 0 }, // Ensure position exists
+        data: {
+          ...node.data,
+          image:
+            node.data.image && node.data.image.startsWith('/uploads')
+              ? `${backendBaseUrl}${node.data.image}`
+              : node.data.image,
+        },
+      }));
+
+      setElements({ nodes: updatedNodes, edges: parsedData.edges });
+    } catch (err) {
+      console.error('Failed to parse scenariodiagram:', err);
     }
-  }, [nodes, fitView, setViewport]);
+  }, [scenariodiagram]);
 
-  return null;
-};
+useEffect(() => {
+  if (!flowRef.current || elements.nodes.length === 0) return;
+  const id = requestAnimationFrame(() => {
+    flowRef.current.fitView({ padding: 0.3 });
+  });
 
-    
-  const reactFlowWrapper = useRef(null);
+  return () => cancelAnimationFrame(id);
+}, [elements.nodes]); // Only run when nodes change
+  const nodeTypes = {
+    imageNode: (props) => <ImageNode {...props} />,
+  };
     const EditableEdgeWrapper = (edgeProps) => {
-  const { getEdges, setEdges } = useReactFlow();
-
-  // You can also pull labelMap or other shared state from context/store here
-  const edges = getEdges(); // all current edges
-
+      const { getEdges, setEdges } = useReactFlow();
+      const edges = getEdges(); // all current edges
+      return (
+        <EditableEdge
+          {...edgeProps}
+          allEdges={edges}
+          setEdges={setEdges}
+        />
+      );
+    };
+  const edgeTypes = { custom: EditableEdgeWrapper };
   return (
-    <EditableEdge
-      {...edgeProps}
-      allEdges={edges}
-      setEdges={setEdges}
-    />
+    <div
+      ref={reactFlowWrapper}
+      style={{ width: '100%', height: '80vh', borderRadius: 8 }}
+    >
+      {elements.nodes.length > 0 && (
+        <ReactFlow
+          nodes={elements.nodes}
+          edges={elements.edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          zoomOnDoubleClick={false}
+          onInit={(instance) => (flowRef.current = instance)}
+        >
+          <Background />
+        </ReactFlow>
+      )}
+    </div>
   );
 };
-    const edgeTypes = {
-      custom: EditableEdgeWrapper,  
-    };
-    return (
-        <>  
-        <style>
-          {`
-            .react-flow__container{
-                top : -75px;
-                left: 115px;
-            }
-          `}
-        </style> 
-            <div
-              className="reactflow-wrapper"
-              ref={reactFlowWrapper}
-              style={{
-              width: '100%', height: '80vh',
-                borderRadius: '8px',
-              }}
-            >
-              {elements.nodes.length > 0 && elements.edges.length > 0 && (
-              <ReactFlow
-                nodes={elements.nodes}
-                edges={elements.edges}
-                nodeTypes={nodeTypes}
-                onInit={(reactFlowInstance) => {
-                  setTimeout(() => {
-                    reactFlowInstance.fitView();
-                  }, 100); // wait for layout
-                }}
-                zoomOnDoubleClick={false}
-                edgeTypes={edgeTypes}
-              >
-                  <FlowViewportController nodes={elements.nodes} />
-                <Background />
-              </ReactFlow>
-              )}
-            </div> 
-        </>
-    );
-}; 
 ScenarioDiagram.layout = "Contentlayout";
 export default ScenarioDiagram;

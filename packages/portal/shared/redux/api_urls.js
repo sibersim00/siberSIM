@@ -358,7 +358,14 @@ const api = {
   // import_masters: "/company_setting/import_masters",
 
   export_masters: "/company_setting/export_masters",
+  export_scenarios: "/company_setting/export_scenarios",
   import_masters: "/company_setting/import_masters",
+
+
+  // start and restart
+
+  vm_start_scenario: "/usersession/start-scenario-learner",
+	vm_restart_scenario: "/usersession/restart-scenario-learner",
 
 
 

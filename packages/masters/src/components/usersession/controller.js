@@ -1,3 +1,6 @@
+const axios = require("axios");
+const keys = require("../../keys");
+const EVENTLEARNER_API_URL = keys.EVENTLEARNER_API_URL;
 const listScenarios =
   ({ dao, db, validation }) =>
   async (req, res) => {
@@ -199,6 +202,90 @@ const getLogs =
     }
   };
 
+
+
+  const startScenarioLearner =
+  ({ dao, db, validation }) =>
+  async (req, res, next) => {
+    try {
+      const { vmid, vmType } = req.body;
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/start-scenario-learner`,
+          { vmid, vmType }
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Failed to call Jobs service.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in starting event learner:", err);
+      next(err);
+    }
+  };
+
+
+const restartscenarioLearner =
+  ({ dao, db, validation }) =>
+  async (req, res, next) => {
+    try {
+      const { vmid, vmType } = req.body;
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/restart-scenario-learner`,
+          {vmid, vmType}
+        );
+        return res
+          .status(200)
+          .send({
+            statusCode: 200,
+            message: response.data.message || "Job started successfully.",
+            data: response.data,
+          });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else if (error.request) {
+          console.error("No Response:");
+          console.error(error.request);
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res
+          .status(500)
+          .send({
+            statusCode: 500,
+            message: "Failed to call Jobs service.",
+            error: error.response?.data || error.message,
+          });
+      }
+    } catch (err) {
+      console.error("Error in restarting Scenario learner:", err);
+      next(err);
+    }
+  };
+
+
 module.exports = {
   listScenarios,
   getMessagesByScenario,
@@ -208,4 +295,6 @@ module.exports = {
   terminateScenario,
   getUserSessionById,
   getLogs,
+  startScenarioLearner,
+  restartscenarioLearner,
 };

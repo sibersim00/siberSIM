@@ -7,12 +7,11 @@ const ModuleNotAssigned = () => {
     <Row className="row-sm">
       <Col md={12}>
         <Card className="custom-card overflow-hidden">
-          <Row className="signpages ext-center" style={{ height: "70vh" }}>
+          <Row className="text-center" style={{ height: "70vh" }}>
             <Col md={10} className="mx-auto">
               <Card
                 style={{
                   border: "none",
-                  backgroundColor: "#f6f7fb",
                 }}
               >
                 <Card.Body>

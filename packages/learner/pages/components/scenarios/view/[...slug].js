@@ -1082,12 +1082,11 @@ const ScenariosView = () => {
                                     <Col sm={12}>
                                       <Card className="custom-card">
                                         <Card.Body className="overflow-auto pd-t-10">
-                                          <Row className="signpages text-center">
+                                          <Row className="text-center">
                                             <Col md={10} className="mx-auto">
                                               <Card
                                                 style={{
                                                   border: "none",
-                                                  backgroundColor: "#f6f7fb",
                                                 }}
                                               >
                                                 <Card.Body>

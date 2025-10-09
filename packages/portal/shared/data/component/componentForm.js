@@ -1016,8 +1016,8 @@ const ComponentForm = (props) => {
                                 <Table responsive bordered>
                                   <thead>
                                     <tr>
-                                      <th>Property</th>
-                                      <th>Value</th>
+                                      <td>Property</td>
+                                      <td>Value</td>
                                     </tr>
                                   </thead>
                                   <tbody>

@@ -136,29 +136,29 @@ const ScenarioForm = (props) => {
     { id: "3", name: "Hard" },
   ];
   const getSelectStyles = (fieldName) => {
-  const error =
-    !formValidation.values[fieldName] &&
-    formValidation.errors[fieldName] &&
-    formValidation.touched[fieldName];
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
 
-  return {
-    ...customStyles,
-    control: (styles, state) => ({
-      ...styles,
-      borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
-      boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
-      backgroundColor: "var(--dark-bg-color)", // dark background
-    }),
-    singleValue: (provided) => ({
-      ...provided,
-      color: "var(--light-text-color)", // selected value text
-    }),
-    input: (provided) => ({
-      ...provided,
-      color: "var(--light-text-color)", // text while typing
-    }),
+    return {
+      ...customStyles,
+      control: (styles, state) => ({
+        ...styles,
+        borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+        boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+        backgroundColor: "var(--dark-bg-color)", // dark background
+      }),
+      singleValue: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // selected value text
+      }),
+      input: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // text while typing
+      }),
+    };
   };
-};
 
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
@@ -414,8 +414,8 @@ const ScenarioForm = (props) => {
       scenarioidentification: Yup.string()
         .required("Required")
         .matches(
-          /^[a-zA-Z0-9]+$/,
-          "Invalid - only alphanumeric characters are allowed (no spaces or special characters)"
+          /^[a-zA-Z0-9 _:-]+$/,
+          "Invalid - only letters, numbers, spaces, hyphens (-), underscores (_), and colons (:) are allowed"
         )
         .min(3, "Minimum 3 characters required")
         .max(30, "Identification should not exceed 30 characters")
@@ -423,16 +423,12 @@ const ScenarioForm = (props) => {
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
           (value) => {
-            return !/^\s|\s$/.test(value);
+            return value ? !/^\s|\s$/.test(value) : true;
           }
         ),
+
       scenariotitle: Yup.string()
         .required("Required")
-        .matches(
-          /^[a-zA-Z0-9 ]+$/,
-          "Invalid - only alphanumeric characters and spaces are allowed (no special characters)"
-        )
-
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",

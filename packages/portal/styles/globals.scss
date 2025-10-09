@@ -3975,3 +3975,56 @@ table thead tr .table-title-heading {
 
 
 
+
+//  /* Apply dark background to FilePond when in dark theme */
+// /* Outer wrapper */
+// .dark-theme .dark-fileupload-wrapper {
+//   background-color: #000;   /* black outer background */
+//   padding: 10px;
+//   border-radius: 8px;
+//   color: #fff;
+// }
+
+// /* FilePond drop area */
+// .dark-theme .filepond--root {
+//   background-color: #000 !important;
+//   color: #fff !important;
+//   border-radius: 8px;
+//   border: 1px solid #333 !important;
+// }
+
+// /* Drag & drop label */
+.dark-theme .filepond--drop-label {
+  color: #fff !important;
+}
+
+/* Uploaded file panel */
+.dark-theme .filepond--item-panel {
+  background-color: #0e0e23 !important; /* black panel for uploaded file */
+  color: #fff !important;
+  box-shadow: none !important;
+  border: 1px solid #333 !important; /* optional subtle border */
+}
+
+/* Uploaded file info (filename, size) */
+.dark-theme .filepond--file-info {
+  color: #fff !important;
+}
+
+/* Remove button / trash icon */
+.dark-theme .filepond--action-button {
+  color: #fff !important;
+}
+
+.dark-theme .filepond--drip{
+  position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 10;
+    border-radius: 2px;
+    background-color: #24243e;
+}

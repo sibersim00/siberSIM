@@ -11,6 +11,13 @@ module.exports = function (iocContainer) {
     router.post("/noti-termination", controller.notitermination(iocContainer));
     router.post("/terminate", controller.terminateScenario(iocContainer));
   router.post("/get-logs", controller.getLogs(iocContainer));
+  router.post(
+  "/start-scenario-learner",
+  controller.startScenarioLearner(iocContainer)
+);
+  router.post("/restart-scenario-learner", controller.restartscenarioLearner(iocContainer));
+
+
 
 
 

@@ -19,6 +19,8 @@ const initialState = {
   sendNotification: [],
   sendTermination:[],
   singleUserSession:[],
+    getvmStartScenario: [],
+  getvmRestartScenario: [],
   getLogsData:[]
 
 };
@@ -44,6 +46,16 @@ const slice = createSlice({
     hasGetGetChatMessagesSucc(state, action) {
       state.isLoading = false,
         state.getChatMessagesListData = action.payload;
+
+    },
+    hasGetvmStartScenario(state, action) {
+      state.isLoading = false,
+        state.getvmStartScenario = action.payload;
+
+    },
+    hasGetvmRestartScenario(state, action) {
+      state.isLoading = false,
+        state.getvmRestartScenario = action.payload;
 
     },
 
@@ -370,6 +382,51 @@ export function clearSingleScenarios() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetSingleScenariosSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+// start restart
+export function vmStartScenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.vm_start_scenario}`, payload);
+      dispatch(slice.actions.hasGetvmStartScenario(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearvmStartScenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetvmStartScenario([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function vmRestartScenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.vm_restart_scenario}`, payload);
+      dispatch(slice.actions.hasGetvmRestartScenario(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearvmRestartScenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetvmRestartScenario([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

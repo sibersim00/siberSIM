@@ -29,6 +29,7 @@ const nextConfig = withTM({
    LEARNER_BASE_PATH: 'http://sibersim.battlerangers.com',
    BASE_PATH : `/`,
    CRYPTO_SECURITY_KEY:'techno5202jarus',
+    VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
 		config.module.rules.push({
@@ -144,7 +145,7 @@ const nextConfig = withTM({
           { source: '/adminuserlogs', destination: '/components/loginlogs/report/adminuserlogs' },
           { source: '/instructorlogs', destination: '/components/loginlogs/report/instructorlogs' },
           { source: '/normaluserlogs', destination: '/components/loginlogs/report/normaluserlogs' },
-
+          { source: '/vnc_view/:slug*', destination: '/components/usersessions/view/vnc/:slug*' },
     ]
   },
 })

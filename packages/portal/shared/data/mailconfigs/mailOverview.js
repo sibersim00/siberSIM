@@ -508,14 +508,13 @@ const MailOverview = () => {
                             </PerfectScrollbar>
                           ) : (
                             <Row
-                              className="signpages ext-center"
+                              className="text-center"
                               style={{ height: "28.5vh" }}
                             >
                               <Col md={12} className="mx-auto">
                                 <Card
                                   style={{
                                     border: "none",
-                                    backgroundColor: "#f6f7fb",
                                   }}
                                 >
                                   <Card.Body>

@@ -74,6 +74,7 @@ const getUserSessionById =
     s.scenariolevel,
     s.instruction_file,
     s.component_config,
+    s.components,
     sc.categoryname AS scenariocategory_name,
     ssc.categoryname AS scenariosubcategory_name,
     s.duration,
@@ -115,14 +116,17 @@ const getUserSessionById =
       result[0].virtual_cpu = 0;
       result[0].virtual_memory = 0;
       result[0].storage_size = 0;
-
+       result[0].component_images = [];
+  const componentDetails = {};
       // Use Promise.all to handle asynchronous loop
       await Promise.all(
         components.map(async (element) => {
           try {
             if (element.componentid) {
               let [rowData] = await db.sequelize.query(
-                `SELECT cores, memory, storage FROM components WHERE componentid = ?`,
+                `SELECT cores, memory, storage, componentimage
+                 FROM components
+                 WHERE componentid = ?`,
                 {
                   replacements: [element.componentid],
                   type: db.sequelize.QueryTypes.SELECT,
@@ -130,9 +134,17 @@ const getUserSessionById =
               );
 
               if (rowData) {
-                result[0].virtual_cpu += rowData.cores || 0;
-                result[0].virtual_memory += rowData.memory || 0;
-                result[0].storage_size += parseInt(rowData.storage) || 0;
+                console.log("dddddddddddddddddd");
+                
+                componentDetails[element.componentid] = rowData;
+
+                res[0].virtual_cpu += rowData.cores || 0;
+                res[0].virtual_memory += rowData.memory || 0;
+                res[0].storage_size += parseInt(rowData.storage) || 0;
+
+                if (rowData.componentimage) {
+                  res[0].component_images.push(rowData.componentimage);
+                }
               }
             }
           } catch (err) {
@@ -143,6 +155,28 @@ const getUserSessionById =
           }
         })
       );
+      if (result[0].scenariodiagram) {
+        try {
+          const diagramObj = JSON.parse(result[0].scenariodiagram);
+
+          if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
+            diagramObj.nodes = diagramObj.nodes.map((node) => {
+              const componentId = node.data?.componentId || node.data?.componentid;
+
+              if (componentId && componentDetails[componentId]) {
+                // Replace node.data.image with componentimage from DB
+                node.data.image = componentDetails[componentId].componentimage;
+              }
+              return node;
+            });
+          }
+
+          // Convert back to string to keep the same structure
+          result[0].scenariodiagram = JSON.stringify(diagramObj);
+        } catch (err) {
+          console.error("Error parsing or updating scenariodiagram JSON:", err);
+        }
+      }
 
       return result;
     } catch (error) {
@@ -476,6 +510,211 @@ WHERE sl.scenariolearneruuid  = ?
     }
   };
 
+
+
+  const startScenarioLearner =
+  ({ db, ipAddress }) =>
+  async (scenarioid, learnerid, scenariolearnersessionid) => {
+    try {
+      // 1️⃣ Fetch components for this event learner
+      const components = await db.sequelize.query(
+        `SELECT vmid, componenttype, componentname, vmconfigurationid
+         FROM vm_configuration
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [scenariolearnersessionid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!components.length) {
+        return {
+          success: false,
+          message: "No components found for this event learner.",
+        };
+      }
+
+      // 2️⃣ Loop through each component & start VM
+      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+        const proxmoxService = ProxMoxService(
+          db,
+          { vmType: componenttype.toLowerCase() },
+          ipAddress
+        );
+
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: `Could not connect to the Proxmox server for ${componentname}.`,
+          };
+        }
+
+        const startResult = await proxmoxService.startVM(
+          vmid,
+          componenttype.toLowerCase()
+        );
+
+        if (startResult?.status === 200) {
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+             SET status = 'Running', modifiedon = NOW() 
+             WHERE vmconfigurationid = ?`,
+            {
+              replacements: [vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        } else {
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+             SET status = 'Starting', modifiedon = NOW() 
+             WHERE vmconfigurationid = ?`,
+            {
+              replacements: [vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+          console.warn(`${vmid}-${componentname} - Start failed`);
+        }
+      }
+      return {
+        success: true,
+        message: "Start process completed — status updated accordingly.",
+      };
+    } catch (err) {
+      console.error("Error in starting event learner:", err);
+      return {
+        success: false,
+        message: "Unexpected error occurred during start.",
+      };
+    }
+  };
+
+
+  const restartscenarioLearner =
+  ({ db, ipAddress }) =>
+  async (scenarioid, learnerid, scenariolearnersessionid) => {
+    try {
+      // 1️⃣ Fetch all components for this event learner
+      const components = await db.sequelize.query(
+        `SELECT vmid, componenttype, componentname, vmconfigurationid
+         FROM vm_configuration
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [scenariolearnersessionid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!components.length) {
+        return {
+          success: false,
+          message: "No components found for this event learner.",
+        };
+      }
+
+      // 2️⃣ Stop each component
+      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+        const proxmoxService = ProxMoxService(
+          db,
+          { vmType: componenttype.toLowerCase() },
+          ipAddress
+        );
+
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: `Could not connect to the Proxmox server for ${componentname}.`,
+          };
+        }
+
+        const stopResult = await proxmoxService.stopVM(
+          vmid,
+          componenttype.toLowerCase()
+        );
+
+        // ✅ Always mark as Stopped whether stop succeeds or fails
+        await db.sequelize.query(
+          `UPDATE vm_configuration 
+           SET status = 'Stopped', modifiedon = NOW() 
+           WHERE vmconfigurationid = ?`,
+          {
+            replacements: [vmconfigurationid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+
+        if (stopResult?.status !== 200) {
+          console.warn(`${vmid}-${componentname} - Stop failed`);
+        }
+      }
+
+      // 3️⃣ Wait for 10 seconds
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+
+      // 4️⃣ Start each component
+      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+        const proxmoxService = ProxMoxService(
+          db,
+          { vmType: componenttype.toLowerCase() },
+          ipAddress
+        );
+
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "400") {
+          return {
+            success: false,
+            message: `Could not connect to the Proxmox server for ${componentname}.`,
+          };
+        }
+
+        const startResult = await proxmoxService.startVM(
+          vmid,
+          componenttype.toLowerCase()
+        );
+
+        if (startResult?.status === 200) {
+          // ✅ Mark as Running
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+             SET status = 'Running', modifiedon = NOW() 
+             WHERE vmconfigurationid = ?`,
+            {
+              replacements: [vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        } else {
+          // ❌ Mark as Starting if start failed
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+             SET status = 'Starting', modifiedon = NOW() 
+             WHERE vmconfigurationid = ?`,
+            {
+              replacements: [vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+          console.warn(`${vmid}-${componentname} - Start failed`);
+        }
+      }
+
+      return {
+        success: true,
+        message: "Restart process completed — status updated accordingly.",
+      };
+    } catch (err) {
+      console.error("Error in restarting event learner:", err);
+      return {
+        success: false,
+        message: "Unexpected error occurred during restart.",
+      };
+    }
+  };
+
+
 module.exports = {
   listScenarios,
   getMessagesByScenario,
@@ -485,4 +724,6 @@ module.exports = {
   terminateScenario,
   getUserSessionById,
   getLogs,
+  restartscenarioLearner,
+  startScenarioLearner,
 };
