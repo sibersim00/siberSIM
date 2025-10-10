@@ -27,7 +27,7 @@ const nextConfig = withTM({
    API_URL_LEARNER : `http://sibersim.battlerangers.com/learnerapi`,
    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
    LEARNER_BASE_PATH: 'http://sibersim.battlerangers.com',
-   BASE_PATH : `/`,
+   BASE_PATH : `/app/`,
    CRYPTO_SECURITY_KEY:'techno5202jarus',
     VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
   },
