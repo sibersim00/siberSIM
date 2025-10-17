@@ -187,13 +187,13 @@ if (vmid && vmid.includes(",")) {
       headers: { Cookie: `PVEAuthCookie=${ticket}` },
     });
 
-    proxmoxWs.on("open", () => console.log("Connected to Proxmox WS"));
+    proxmoxWs.on("open", () => console.log("Connected to siberSIM WS"));
 
     // Pipe traffic both ways
     proxmoxWs.on("message", (msg) => ws.send(msg));
     proxmoxWs.on("close", () => ws.close());
     proxmoxWs.on("error", (err) => {
-      console.error("Proxmox WS error", err);
+      console.error("siberSIM WS error", err);
       ws.close();
     });
 

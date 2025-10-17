@@ -116,8 +116,8 @@ const getUserSessionById =
       result[0].virtual_cpu = 0;
       result[0].virtual_memory = 0;
       result[0].storage_size = 0;
-       result[0].component_images = [];
-  const componentDetails = {};
+      result[0].component_images = [];
+      const componentDetails = {};
       // Use Promise.all to handle asynchronous loop
       await Promise.all(
         components.map(async (element) => {
@@ -135,15 +135,15 @@ const getUserSessionById =
 
               if (rowData) {
                 console.log("dddddddddddddddddd");
-                
+
                 componentDetails[element.componentid] = rowData;
 
-                res[0].virtual_cpu += rowData.cores || 0;
-                res[0].virtual_memory += rowData.memory || 0;
-                res[0].storage_size += parseInt(rowData.storage) || 0;
+                result[0].virtual_cpu += rowData.cores || 0;
+                result[0].virtual_memory += rowData.memory || 0;
+                result[0].storage_size += parseInt(rowData.storage) || 0;
 
                 if (rowData.componentimage) {
-                  res[0].component_images.push(rowData.componentimage);
+                  result[0].component_images.push(rowData.componentimage);
                 }
               }
             }
@@ -161,7 +161,8 @@ const getUserSessionById =
 
           if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
             diagramObj.nodes = diagramObj.nodes.map((node) => {
-              const componentId = node.data?.componentId || node.data?.componentid;
+              const componentId =
+                node.data?.componentId || node.data?.componentid;
 
               if (componentId && componentDetails[componentId]) {
                 // Replace node.data.image with componentimage from DB
@@ -185,42 +186,6 @@ const getUserSessionById =
     }
   };
 
-// const notitermination =
-//   ({ db, validation }) =>
-//     async (body, session_userid) => {
-//       const sql = `
-//       UPDATE scenario_learner_session
-//       SET isnotitermination = 'Yes'
-//       WHERE scenariolearnersessionid = :scenariolearnersessionid
-//     `;
-
-//       try {
-//         await db.sequelize.query(sql, {
-//           replacements: {
-//             scenariolearnersessionid: body.scenariolearnersessionid,
-//           },
-//         });
-//         const insertQuery = `Insert into scenario_learner_chats (scenariolearnerid,scenarioid,learner_id,instructor_id,message,sender_type)values (?,?,?,?,?,'Instructor')`;
-//         const queryParams = [
-//           body.scenariolearnerid,
-//           body.scenarioid,
-//           body.learner_id,
-//           session_userid,
-//           validation.messages.noti_termination_msg,
-//         ];
-//         await db.sequelize.query(insertQuery, {
-//           replacements: queryParams,
-//           type: db.sequelize.QueryTypes.INSERT,
-//         });
-//         return {
-//           statusCode: 200,
-//           message: validation.messages.noti_termination,
-//         };
-//       } catch (error) {
-//         console.error("Error updating termination notification:", error);
-//         throw error;
-//       }
-//     };
 
 const notitermination =
   ({ db, validation }) =>
@@ -510,9 +475,7 @@ WHERE sl.scenariolearneruuid  = ?
     }
   };
 
-
-
-  const startScenarioLearner =
+const startScenarioLearner =
   ({ db, ipAddress }) =>
   async (scenarioid, learnerid, scenariolearnersessionid) => {
     try {
@@ -535,7 +498,12 @@ WHERE sl.scenariolearneruuid  = ?
       }
 
       // 2️⃣ Loop through each component & start VM
-      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+      for (const {
+        vmid,
+        componenttype,
+        componentname,
+        vmconfigurationid,
+      } of components) {
         const proxmoxService = ProxMoxService(
           db,
           { vmType: componenttype.toLowerCase() },
@@ -546,7 +514,7 @@ WHERE sl.scenariolearneruuid  = ?
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -591,8 +559,7 @@ WHERE sl.scenariolearneruuid  = ?
     }
   };
 
-
-  const restartscenarioLearner =
+const restartscenarioLearner =
   ({ db, ipAddress }) =>
   async (scenarioid, learnerid, scenariolearnersessionid) => {
     try {
@@ -615,7 +582,12 @@ WHERE sl.scenariolearneruuid  = ?
       }
 
       // 2️⃣ Stop each component
-      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+      for (const {
+        vmid,
+        componenttype,
+        componentname,
+        vmconfigurationid,
+      } of components) {
         const proxmoxService = ProxMoxService(
           db,
           { vmType: componenttype.toLowerCase() },
@@ -626,7 +598,7 @@ WHERE sl.scenariolearneruuid  = ?
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -655,7 +627,12 @@ WHERE sl.scenariolearneruuid  = ?
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
       // 4️⃣ Start each component
-      for (const { vmid, componenttype, componentname, vmconfigurationid } of components) {
+      for (const {
+        vmid,
+        componenttype,
+        componentname,
+        vmconfigurationid,
+      } of components) {
         const proxmoxService = ProxMoxService(
           db,
           { vmType: componenttype.toLowerCase() },
@@ -666,7 +643,7 @@ WHERE sl.scenariolearneruuid  = ?
         if (!tokenResult || tokenResult.status !== "400") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -713,7 +690,6 @@ WHERE sl.scenariolearneruuid  = ?
       };
     }
   };
-
 
 module.exports = {
   listScenarios,

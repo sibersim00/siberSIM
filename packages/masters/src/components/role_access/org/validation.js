@@ -6,9 +6,9 @@ const schema = joi.object({
         "any.required": `Organization Id is a required.`,
     }),
     userid: joi.number().required().messages({
-        "string.empty": `User Id cannot be an empty`,
-        "number.base": `User Id should be numeric.`,
-        "any.required": `User Id is a required.`,
+        "string.empty": `SIMUser Id cannot be an empty`,
+        "number.base": `SIMUser Id should be numeric.`,
+        "any.required": `SIMUser Id is a required.`,
     }),
     orgcode: joi.string().trim().required().max(20).messages({
         "string.base": `Organization code should be a type of 'number'`,

@@ -90,9 +90,9 @@ const addSchema = joi.object({
 
 const updateSchema = joi.object({
   instructor_id: joi.number().strict(true).required().messages({
-    "number.base": `Instructor Id should be a integer`,
-    "number.empty": `Instructor Id cannot be empty`,
-    "any.required": `Instructor Id is required.`,
+    "number.base": `SIMManager Id should be a integer`,
+    "number.empty": `SIMManager Id cannot be empty`,
+    "any.required": `SIMManager Id is required.`,
   }),
 
   firstname: joi
@@ -174,9 +174,9 @@ const updateSchema = joi.object({
 
 const deleteSchema = joi.object({
   instructor_id: joi.number().strict(true).required().messages({
-    "number.base": `Instructor Id should be a integer`,
-    "number.empty": `Instructor Id cannot be empty`,
-    "any.required": `Instructor Id is required.`,
+    "number.base": `SIMManager Id should be a integer`,
+    "number.empty": `SIMManager Id cannot be empty`,
+    "any.required": `SIMManager Id is required.`,
   }),
 });
 
@@ -216,21 +216,21 @@ const resetpasswordSchema = joi.object({
 });
 
 const messages = {
-  add_success: `Instructor has been created successfully`,
-  update_success: `Instructor has been updated successfully`,
-  delete_success: `Instructor has been deleted successfully`,
-  verify_success: `Instructor has been verify successfully`,
+  add_success: `SIMManager has been created successfully`,
+  update_success: `SIMManager has been updated successfully`,
+  delete_success: `SIMManager has been deleted successfully`,
+  verify_success: `SIMManager has been verify successfully`,
   reset_success: `A new password has been sent to your registered email ID.`,
   something_wrong_try_later: `Something went wrong. Please try again later`,
-  not_updated: `Instructor not found or not updated`,
-  status_change: "Instructor Status has been Updated Successfully",
+  not_updated: `SIMManager not found or not updated`,
+  status_change: "SIMManager Status has been Updated Successfully",
   email_mobile_duplicate:
     "The provided email/mobile is already registered. Please use a different one.",
   email_duplicate: "Email is already registered.",
   mobile_duplicate: "Mobile is already registered.",
   username_duplicate: "Username is already registered.",
   intructor_list: "Get Intructors List",
-  intructor_detail: "Get Instructor Details",
+  intructor_detail: "Get SIMManager Details",
   duplicate_loginid: "Duplicate Username Found",
   verification_email: "Verification mail send successfully",
   verification_success_email: "Your account has been verified successfully",

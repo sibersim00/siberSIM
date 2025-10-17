@@ -179,7 +179,7 @@ const ScenarioView = () => {
                           <div className="fw-semibold text-dark mb-1">
                             {rowValues?.instructor_name || "—"}
                           </div>
-                          <small className="text-muted">Instructor Name</small>
+                          <small className="text-muted">SIMManager Name</small>
                         </div>
                       </div>
                     </Col>

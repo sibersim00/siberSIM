@@ -912,7 +912,7 @@ const ScenarioForm = (props) => {
                                                   className="mb-3 h-62 input-container select"
                                                 >
                                                   <Form.Label>
-                                                    {t("Instructor")}
+                                                    SIMManager
                                                   </Form.Label>
                                                   <Select
                                                     theme={(theme) => ({
@@ -940,7 +940,7 @@ const ScenarioForm = (props) => {
                                                     getOptionValue={(x) =>
                                                       x.instructor_id
                                                     }
-                                                    placeholder="Select Instructor"
+                                                    placeholder="Select SIMManager"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "instructor_id",

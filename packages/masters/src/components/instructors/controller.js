@@ -15,7 +15,7 @@ const getById = ({ dao, validation, db }) => async (req, res) => {
 
     return res.status(200).json({
       statusCode: 200,
-      message: validation.messages.get_success || "Instructor fetched successfully.",
+      message: validation.messages.get_success || "SIMManager fetched successfully.",
       data: result,
     });
   } catch (error) {

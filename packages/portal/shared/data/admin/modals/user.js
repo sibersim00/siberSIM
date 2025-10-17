@@ -191,7 +191,7 @@ const userAdd = (props) => {
                     viewDemoShow(false);
                   }}
                 >
-                  <Modal.Title>{modalTitle} Admin User </Modal.Title>
+                  <Modal.Title>{modalTitle} SIMMaster User </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                   <Row>

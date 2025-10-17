@@ -184,7 +184,7 @@ const MapInstructorModal = (props) => {
               viewDemoShow(false);
             }}
           >
-            <Modal.Title>Assign Instructor</Modal.Title>
+            <Modal.Title>Assign SIMManager</Modal.Title>
           </Modal.Header>
           <Form
             noValidate
@@ -203,7 +203,7 @@ const MapInstructorModal = (props) => {
                   className="mb-3"
                 >
                   <Form.Label>
-                    Instructor <span className="text-danger">*</span>
+                    SIMManager <span className="text-danger">*</span>
                   </Form.Label>
                   <Select
                     theme={(theme) => ({
@@ -220,7 +220,7 @@ const MapInstructorModal = (props) => {
                     options={instructorsDropdown}
                     getOptionLabel={(x) => x.instructor_name}
                     getOptionValue={(x) => x.instructor_id}
-                    placeholder="Select Instructor"
+                    placeholder="Select SIMManager"
                     onChange={(e) => {
                       console.log("Selected:", e);
                       formValidation.setFieldValue("instructor_id", [e]); // store as array

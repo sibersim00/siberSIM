@@ -3,7 +3,7 @@ import Head from "next/head"
 import favicon from "../../../public/assets/img/brand/favicon.png"
 
 const Seo = ({title}) => {
-  let i = `User - ${title}`
+  let i = `SIMUser - ${title}`
   return (
     <Head>
         <title>{i}</title>

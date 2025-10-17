@@ -213,7 +213,7 @@ const instructorAdd = (props) => {
                     viewDemoShow(false);
                   }}
                 >
-                  <Modal.Title>{modalTitle} Instructor </Modal.Title>
+                  <Modal.Title>{modalTitle} SIMManager </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                   <Row>

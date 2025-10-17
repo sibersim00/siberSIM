@@ -55,9 +55,9 @@ const updateSchema = joi.object({
     "number.base": "Mobile number must be a valid number.",
   }),
   learner_uuid: joi.required().empty().messages({
-    "any.required": `User is required.`,
-    "number.base": `User must be a valid number.`,
-    "number.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "number.base": `SIMUser must be a valid number.`,
+    "number.empty": `SIMUser cannot be empty.`,
   }),
 });
 
@@ -68,14 +68,14 @@ const idSchema = joi.required().empty(null).messages({
 
 const mailSchema = joi.object({
   learner_uuid: joi.string().strict(true).required().messages({
-    "string.base": `User id should be a string`,
-    "string.empty": `User id cannot be empty`,
-    "any.required": `User id is required.`,
+    "string.base": `SIMUser id should be a string`,
+    "string.empty": `SIMUser id cannot be empty`,
+    "any.required": `SIMUser id is required.`,
   }),
 });
 
 const messages = {
-  add_success: `User registered successfully.`,
+  add_success: `SIMUser registered successfully.`,
   email_duplicate: "Email is already registered.",
   mobile_duplicate: "Mobile is already registered.",
   username_duplicate: "Username is already registered.",
@@ -89,18 +89,18 @@ const messages = {
 
 const statusUpdateSchema = joi.object({
   status: joi.required().messages({
-    "any.required": `User status is required`,
+    "any.required": `SIMUser status is required`,
   }),
   learner_uuid: joi.string().required().empty().messages({
-    "any.required": `User is required.`,
-    "string.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "string.empty": `SIMUser cannot be empty.`,
   }),
 });
 
 const deleteSchema = joi.object({
   learner_uuid: joi.string().required().empty().messages({
-    "any.required": `User is required.`,
-    "string.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "string.empty": `SIMUser cannot be empty.`,
   }),
 });
 const verifySuccessSchema = joi.object({

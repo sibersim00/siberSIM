@@ -88,20 +88,54 @@ const ComponentForm = (props) => {
     formValidation.touched[fieldName];
 
   return {
-    ...customStyles,
-    control: (styles, state) => ({
+    // ...customStyles,
+    // control: (styles, state) => ({
+    //   ...styles,
+    //   borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+    //   boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+    //   backgroundColor: "var(--dark-bg-color)", // dark background
+    // }),
+    // singleValue: (provided) => ({
+    //   ...provided,
+    //   color: "var(--light-text-color)", // selected value text
+    // }),
+    // input: (provided) => ({
+    //   ...provided,
+    //   color: "var(--light-text-color)", // text while typing
+    // }),
+      control: (styles) => ({
       ...styles,
-      borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
-      boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
-      backgroundColor: "var(--dark-bg-color)", // dark background
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
     }),
-    singleValue: (provided) => ({
-      ...provided,
-      color: "var(--light-text-color)", // selected value text
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
     }),
-    input: (provided) => ({
-      ...provided,
-      color: "var(--light-text-color)", // text while typing
+    multiValueLabel: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
+      },
+    }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
     }),
   };
 };
@@ -540,7 +574,7 @@ const ComponentForm = (props) => {
       } else {
         toast.error(
           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-            Unable to retrieve VM details from Proxmox. Please try again later.
+            Unable to retrieve VM details from SiberSim. Please try again later.
           </p>,
           {
             position: toast.POSITION.TOP_RIGHT,

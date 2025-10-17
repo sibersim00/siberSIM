@@ -389,7 +389,7 @@ export default function ProxmoxConsole() {
               textAlign: "center",
             }}
           >
-            <h2 style={{ marginBottom: "20px" }}>Proxmox VM Console</h2>
+            <h2 style={{ marginBottom: "20px" }}>Siber Sim VM Console</h2>
             <button
               onClick={connect}
               disabled={loading}

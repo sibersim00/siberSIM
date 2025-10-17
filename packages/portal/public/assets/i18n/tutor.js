@@ -1,4 +1,4 @@
-let title = 'Instructors';
+let title = 'SIMManager';
 let sub_title = 'Manage';
 let email = "Email Id"
 export const tutor_en = {
@@ -101,7 +101,7 @@ export const tutor_en = {
   }
 
   export const tutor1_es = {
-    'title' : "Instructor",
+    'title' : "SIMManager",
     'columns' : {
       'name' : "Name",
       "email_id" : "Email Id",

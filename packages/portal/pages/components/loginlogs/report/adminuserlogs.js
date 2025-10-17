@@ -101,7 +101,7 @@ const Adminuser = () => {
       responsive: true,
       plugins: {
         legend: { position: "top" },
-        title: { display: true, text: "Admin Login/Logout Stats" },
+        title: { display: true, text: "SIMMaster Login/Logout Stats" },
       },
     };
 
@@ -331,7 +331,7 @@ const Adminuser = () => {
 
   return (
     <>
-      <Seo title="Admin Logs" />
+      <Seo title="SIMMaster Logs" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -340,7 +340,7 @@ const Adminuser = () => {
               {/* Header with Buttons */}
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center flex-wrap">
-                  <h4>Admin Logs</h4>
+                  <h4>SIMMaster Logs</h4>
                   <div className="d-flex align-items-center flex-wrap">
                     {/* View Buttons */}
                     <Button

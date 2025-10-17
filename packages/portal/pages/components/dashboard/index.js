@@ -91,7 +91,7 @@ const Dashboard = () => {
                 <Card className="custom-card" style={{ cursor: "pointer" }} onClick={() => handleCardClick("learner")}>
                   <Card.Body>
                     <div className="card-order">
-                      <label className="main-content-label mb-3 pt-1">Total Users</label>
+                      <label className="main-content-label mb-3 pt-1">Total SIMUser</label>
                       <h2 className="text-end card-item-icon card-icon">
                         <i className="mdi mdi-account-multiple float-start text-primary"></i>
                         <span className="font-weight-bold">
@@ -121,7 +121,7 @@ const Dashboard = () => {
                       <Card.Body>
                         <div className="card-widget">
                           <label className="main-content-label mb-3 pt-1">
-                            Total Instructors
+                            Total SIMManager
                           </label>
                           <h2 className="text-end">
                             <i className="mdi mdi-account-multiple float-start text-warning"></i>
@@ -151,7 +151,7 @@ const Dashboard = () => {
                       <Card.Body>
                         <div className="card-widget">
                           <label className="main-content-label mb-3 pt-1">
-                            Total Admin Users
+                            Total SIMMaster
                           </label>
                           <h2 className="text-end">
                             <i className="mdi mdi-account-multiple float-start text-danger"></i>

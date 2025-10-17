@@ -335,7 +335,13 @@ async function markOperationFailedAndNotify(
   // 1. Send notification & email alert
   await sendProxmoxDownAlerts(db, learner_id);
 
-  await new NotiTemplate(db, "Proxmox_Terminate",  { userid: 0, scenarioid, learner_id }, "Admin", 0);
+  await new NotiTemplate(
+    db,
+    "proxmox_terminate",
+    { userid: 0, scenarioid, learner_id },
+    "Admin",
+    0
+  );
 
   await db.sequelize.query(
     `UPDATE scenario_learner_session
@@ -348,7 +354,7 @@ async function markOperationFailedAndNotify(
   );
 
   // 4. Insert log entry
-await db.sequelize.query(
+  await db.sequelize.query(
     `INSERT INTO scenario_learner_logs
       (scenariolearnersessionid, scenarioid, learner_id, scenariolearnerid, type, remark, status, createdon)
       SELECT
@@ -460,7 +466,7 @@ const updateCompleteTerminatelearner =
           { vmType: componenttype.toLowerCase() },
           ipAddress
         );
-         const tokenResult = await proxmoxService.generateAccessTicket();
+        const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
@@ -510,7 +516,7 @@ const updateCompleteTerminatelearner =
           { vmType: componenttype.toLowerCase() },
           ipAddress
         );
-         const tokenResult = await proxmoxService.generateAccessTicket();
+        const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
@@ -563,44 +569,44 @@ const updateCompleteTerminatelearner =
         );
 
         // Update scenario diagram
-        const [diagramRow] = await db.sequelize.query(
-          `SELECT scenariodiagram FROM scenario_learner_session WHERE scenariolearnersessionid = ? LIMIT 1`,
-          {
-            replacements: [scenariolearnersessionid],
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
+        // const [diagramRow] = await db.sequelize.query(
+        //   `SELECT scenariodiagram FROM scenario_learner_session WHERE scenariolearnersessionid = ? LIMIT 1`,
+        //   {
+        //     replacements: [scenariolearnersessionid],
+        //     type: db.sequelize.QueryTypes.SELECT,
+        //   }
+        // );
 
-        if (diagramRow?.scenariodiagram) {
-          const scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
-          scenariodiagram.nodes?.forEach((node) => {
-            if (node?.data?.isOnline) node.data.isOnline = "No";
-          });
-          scenariodiagram.edges?.forEach((edge) => {
-            if (edge?.isAttacked) edge.isAttacked = "No";
-          });
+        // if (diagramRow?.scenariodiagram) {
+        //   const scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
+        //   scenariodiagram.nodes?.forEach((node) => {
+        //     if (node?.data?.isOnline) node.data.isOnline = "No";
+        //   });
+        //   scenariodiagram.edges?.forEach((edge) => {
+        //     if (edge?.isAttacked) edge.isAttacked = "No";
+        //   });
 
-          if (status === "Completed" || status === "Terminated") {
-            await db.sequelize.query(
-              `UPDATE scenario_learner_session
-                SET scenariodiagram = ?,
-                    modifiedon = NOW(),
-                    status = ?,
-                    ${
-                      status === "Terminated" ? "terminatedon" : "completedon"
-                    } = NOW()
-                WHERE scenariolearnersessionid = ?`,
-              {
-                replacements: [
-                  JSON.stringify(scenariodiagram),
-                  status,
-                  scenariolearnersessionid,
-                ],
-                type: db.sequelize.QueryTypes.UPDATE,
-              }
-            );
-          }
-        }
+        //   if (status === "Completed" || status === "Terminated") {
+        //     await db.sequelize.query(
+        //       `UPDATE scenario_learner_session
+        //         SET scenariodiagram = ?,
+        //             modifiedon = NOW(),
+        //             status = ?,
+        //             ${
+        //               status === "Terminated" ? "terminatedon" : "completedon"
+        //             } = NOW()
+        //         WHERE scenariolearnersessionid = ?`,
+        //       {
+        //         replacements: [
+        //           JSON.stringify(scenariodiagram),
+        //           status,
+        //           scenariolearnersessionid,
+        //         ],
+        //         type: db.sequelize.QueryTypes.UPDATE,
+        //       }
+        //     );
+        //   }
+        // }
       }
 
       await releaseNetworks(db, session.network_bridges);
@@ -624,6 +630,43 @@ const updateCompleteTerminatelearner =
         success: false,
         message: "Unexpected error occurred during termination.",
       };
+    } finally {
+      try {
+        const [diagramRow] = await db.sequelize.query(
+          `SELECT scenariodiagram FROM scenario_learner_session WHERE scenariolearnersessionid = ? LIMIT 1`,
+          {
+            replacements: [scenariolearnersessionid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        if (diagramRow?.scenariodiagram) {
+          scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
+
+          // Always mark all nodes offline and remove attacks
+          scenariodiagram.nodes?.forEach((node) => {
+            if (node?.data?.isOnline) node.data.isOnline = "No";
+          });
+          scenariodiagram.edges?.forEach((edge) => {
+            if (edge?.isAttacked) edge.isAttacked = "No";
+          });
+
+          await db.sequelize.query(
+            `UPDATE scenario_learner_session
+          SET scenariodiagram = ?, modifiedon = NOW()
+          WHERE scenariolearnersessionid = ?`,
+            {
+              replacements: [
+                JSON.stringify(scenariodiagram),
+                scenariolearnersessionid,
+              ],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+      } catch (diagramErr) {
+        console.error("Error while resetting isAttacked:", diagramErr);
+      }
     }
   };
 
@@ -637,9 +680,9 @@ const generateProxmoxAccessToken =
     if (!ticket || result.status !== "200") {
       sendProxmoxDownAlerts(db, learner_id);
       return {
-            success: false,
-            message: `Error in generating ticket. Please check server status or credentials.`,
-          };
+        success: false,
+        message: `Error in generating ticket. Please check server status or credentials.`,
+      };
     }
 
     return {
@@ -733,9 +776,6 @@ const autoTerminateFailedScenarios =
     }
   };
 
-
-
-
 const startScenarioLearner =
   ({ db, ipAddress }) =>
   async (vmid, vmType) => {
@@ -778,9 +818,6 @@ const startScenarioLearner =
       };
     }
   };
-
-
-
 
 const restartscenarioLearner =
   ({ db, ipAddress }) =>
@@ -848,5 +885,5 @@ module.exports = {
   generateProxmoxAccessToken,
   autoTerminateFailedScenarios,
   startScenarioLearner,
-  restartscenarioLearner
+  restartscenarioLearner,
 };

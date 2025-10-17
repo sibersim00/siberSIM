@@ -47,14 +47,14 @@ const InstructorView = () => {
 
   return (
     <>
-      <Seo title="Instructor" />
+      <Seo title="SIMManager" />
       <ToastContainer />
       <Container className="py-4">
         <h4 className="fw-bold mb-4">
-          <i className="fe fe-user me-2"></i>Instructor Details
+          <i className="fe fe-user me-2"></i>SIMManager Details
         </h4>
 
-        {/* Instructor Header */}
+        {/* SIMManager Header */}
         <div className="d-flex align-items-center mb-4 bg-light p-3 rounded-3 shadow-sm">
           <div className="me-3">
             <i className="bi bi-person-circle fs-1 text-primary"></i>
@@ -95,7 +95,7 @@ const InstructorView = () => {
             <Tab.Container defaultActiveKey="details">
               <Nav variant="pills" className="mb-3">
                 <Nav.Item>
-                  <Nav.Link eventKey="details">Instructor Details</Nav.Link>
+                  <Nav.Link eventKey="details">SIMManager Details</Nav.Link>
                 </Nav.Item>
                 <Nav.Item>
                   <Nav.Link eventKey="students">Students</Nav.Link>
@@ -114,7 +114,7 @@ const InstructorView = () => {
                           <i className="bi bi-person fs-3 text-primary me-3"></i>
                           <div>
                             <div className="fw-bold">{rowValues.Instructor_name}</div>
-                            <small className="text-muted">Instructor Name</small>
+                            <small className="text-muted">SIMManager Name</small>
                           </div>
                         </div>
                       </Card>

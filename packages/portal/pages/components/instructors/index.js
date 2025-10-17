@@ -214,7 +214,7 @@ const Instructors = () => {
     });
 
     const header = [
-      "Instructor Id",
+      "SIMManager Id",
       "User Name",
       "First Name",
       "Last Name",
@@ -232,7 +232,7 @@ const Instructors = () => {
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Instructor");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SIMManager");
 
     const timestamp = new Date()
       .toISOString()
@@ -665,7 +665,7 @@ const onFilterChanged = (data) => {
 
   return (
     <>
-      <Seo title="Instructor" />
+      <Seo title="SIMManager" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -673,7 +673,7 @@ const onFilterChanged = (data) => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4>Instructors</h4>
+                  <h4>SIMManager</h4>
                   <div className="d-flex align-items-center">
                     {view === "card" && (
                       <>

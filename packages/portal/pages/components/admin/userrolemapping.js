@@ -318,7 +318,7 @@ const UserRoleMapping = () => {
                         className="mb-3"
                       >
                         <Form.Label>
-                          User <span className="text-danger">*</span>
+                          SIMUser <span className="text-danger">*</span>
                         </Form.Label>
                         <Select
                           key={refreshKey}

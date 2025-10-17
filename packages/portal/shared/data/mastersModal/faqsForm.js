@@ -44,7 +44,7 @@ const FormFaqs = (props) => {
     type: yup
       .string()
       .required(error.required)
-      .oneOf(["User", "Instructor", "Admin"], "Type must be User, Instructor, or Admin"),
+      .oneOf(["User", "Instructor", "Admin"], "Type must be SIMUser, SIMManager, or Admin"),
   });
 
 

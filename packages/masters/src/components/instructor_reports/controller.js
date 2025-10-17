@@ -11,8 +11,8 @@ const getInstructorDetails =
       return res.status(200).send({
         statusCode: 200,
         message: instructor_id
-          ? "Instructor(s) fetched successfully"
-          : "All instructors fetched successfully",
+          ? "SIMManager fetched successfully"
+          : "All SIMManager fetched successfully",
         data: result,
       });
     } catch (err) {
@@ -29,7 +29,7 @@ const getInstructorStatistics = ({ dao, db }) => async (req, res, next) => {
 
     return res.status(200).send({
       statusCode: 200,
-      message: 'Instructor statistics fetched successfully',
+      message: 'SIMManager statistics fetched successfully',
       data,
     });
   } catch (err) {

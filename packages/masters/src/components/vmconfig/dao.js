@@ -302,7 +302,7 @@ async function markOperationFailedAndNotify(
 
   await new NotiTemplate(
     db,
-    "Proxmox_Terminate",
+    "proxmox_terminate",
     { userid: 0, scenarioid, learner_id },
     "Admin",
     0
@@ -435,7 +435,7 @@ const updateCompleteTerminate =
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server while destroying components.`,
+            message: `Could not connect to the siberSIM server while destroying components.`,
           };
         }
 
@@ -485,7 +485,7 @@ const updateCompleteTerminate =
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server while destroying components.`,
+            message: `Could not connect to the siberSIM server while destroying components.`,
           };
         }
 
@@ -760,7 +760,7 @@ const stopAndDestroyFailedScenarios =
             else allComponentsFixed = false; // failed stop
             await new NotiTemplate(
               db,
-              "Proxmox_Terminate",
+              "proxmox_terminate",
               { userid: 0, scenarioid, learner_id },
               "Admin",
               0
@@ -773,7 +773,7 @@ const stopAndDestroyFailedScenarios =
             if (!destroyOK) allComponentsFixed = false; // failed destroy
             await new NotiTemplate(
               db,
-              "Proxmox_Terminate",
+              "proxmox_terminate",
               { userid: 0, scenarioid, learner_id },
               "Admin",
               0
@@ -904,7 +904,7 @@ WHERE el.vm_steps = ?
 
             await new NotiTemplate(
               db,
-              "Proxmox_Terminate",
+              "proxmox_terminate",
               { userid: 0, scenarioid, learner_id, eventid },
               "Admin",
               0
@@ -918,7 +918,7 @@ WHERE el.vm_steps = ?
 
             await new NotiTemplate(
               db,
-              "Proxmox_Terminate",
+              "proxmox_terminate",
               { userid: 0, scenarioid, learner_id, eventid },
               "Admin",
               0

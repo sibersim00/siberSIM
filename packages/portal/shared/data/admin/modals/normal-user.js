@@ -218,7 +218,7 @@ const NormalUserForm = (props) => {
               viewDemoShow(false);
             }}
           >
-            <Modal.Title>{modalTitle} User </Modal.Title>
+            <Modal.Title>{modalTitle} SIMUser </Modal.Title>
           </Modal.Header>
           <Form
             noValidate

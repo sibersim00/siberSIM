@@ -68,9 +68,9 @@ const ScenariosView = () => {
   const [isScenarioError400, setIsScenarioError400] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [pdfNotFound, setPdfNotFound] = useState(false);
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
     useState(false);
-
   const vmStepsOrder = [
     "Initializing",
     "Cloning",
@@ -128,6 +128,11 @@ const ScenariosView = () => {
 
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
+  );
+
+  console.log(
+    "getSingleScenariosSuccgetSingleScenariosSucc",
+    getSingleScenariosSucc
   );
 
   useEffect(() => {
@@ -244,7 +249,6 @@ const ScenariosView = () => {
   const pdfUrl = rowValues?.instruction_file
     ? `${baseUrl}${rowValues.instruction_file}`
     : null;
-
 
   const handleStart = () => {
     setIsScenarioError400(false);
@@ -564,20 +568,21 @@ const ScenariosView = () => {
                         {rowValues?.scenariotitle || "—"}
                       </span>
                     </div>
-
+                    {pdfUrl && !pdfNotFound && (
+                      <Col className="text-end">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => window.open(pdfUrl, "_blank")}
+                        >
+                            <i className="fa fa-cloud-download"></i> View / Download PDF
+                        </Button>
+                      </Col>
+                    )}
                     <div
                       className="d-flex align-items-center"
                       style={{ gap: "12px", maxWidth: "50%" }}
                     >
-                      {/* <Button
-                        variant="outline-secondary"
-                        onClick={() => {
-                          push(`/scenarios?view=${backTo || "list"}`);
-                          dispatch(clearSingleScenarios());
-                        }}
-                      >
-                        <i className="fe fe-arrow-left"></i>
-                      </Button> */}
                       <Button
                         variant="outline-secondary"
                         onClick={() => {
@@ -1074,7 +1079,7 @@ const ScenariosView = () => {
                                 </Row>
                               </Tab.Pane>
 
-                              <Tab.Pane eventKey="instruction">
+                              {/* <Tab.Pane eventKey="instruction">
                                 {pdfUrl ? (
                                   <PdfLoader fileUrl={pdfUrl} />
                                 ) : (
@@ -1110,6 +1115,83 @@ const ScenariosView = () => {
                                     </Col>
                                   </Row>
                                 )}
+                              </Tab.Pane> */}
+                              {/* <Tab.Pane eventKey="instruction">
+  <Row className="align-items-center mb-2">
+    <Col>
+      <h5 className="d-inline">Instruction Details</h5>
+    </Col>
+ 
+    {pdfUrl && (
+      <Col className="text-end">
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => window.open(pdfUrl, "_blank")}
+        >
+          View / Download PDF
+        </Button>
+      </Col>
+    )}
+  </Row>
+
+  {pdfUrl ? (
+    <PdfLoader fileUrl={pdfUrl} />
+  ) : (
+    <Row>
+      <Col sm={12}>
+        <Card className="custom-card">
+          <Card.Body className="overflow-auto pd-t-10">
+            <Row className="text-center">
+              <Col md={10} className="mx-auto">
+                <Card style={{ border: "none" }}>
+                  <Card.Body>
+                    <div className="text-center">
+                      <img
+                        src={crossEvalicon.src}
+                        alt="No data"
+                        className="wd-150"
+                      />
+                      <h5 className="mt-4">No instruction PDF provided.</h5>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+    </Row>
+  )}
+</Tab.Pane> */}
+                              <Tab.Pane eventKey="instruction">
+                                <Row className="align-items-center mb-2">
+                                  <Col>
+                                    <h5 className="d-inline">
+                                      Instruction Details
+                                    </h5>
+                                  </Col>
+                                  {/* Only show button if PDF exists and is valid */}
+                                  {/* {pdfUrl && !pdfNotFound && (
+                                    <Col className="text-end">
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() =>
+                                          window.open(pdfUrl, "_blank")
+                                        }
+                                      >
+                                        View / Download PDF
+                                      </Button>
+                                    </Col>
+                                  )} */}
+                                </Row>
+
+                                {/* Pass setPdfNotFound to PdfLoader so it can update parent state */}
+                                <PdfLoader
+                                  fileUrl={pdfUrl}
+                                  setPdfNotFound={setPdfNotFound}
+                                />
                               </Tab.Pane>
 
                               <Tab.Pane eventKey="diagram">

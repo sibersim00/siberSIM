@@ -118,7 +118,7 @@ const Dashboard = () => {
                           <div className="col-xl-8 col-sm-6 col-12">
                             <h4 className="d-flex mb-3">
                               <span className="font-weight-bold text-white">
-                                Welcome To siberSIM User Portal
+                                Welcome To siberSIM SIMUser Portal
                               </span>
                             </h4>
                             <p className="tx-white-7 mb-1">

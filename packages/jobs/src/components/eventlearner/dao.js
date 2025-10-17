@@ -318,7 +318,7 @@ async function markOperationFailedAndNotify(db, eventlearnerid, err, learner_id)
 
   await new NotiTemplate(
     db,
-    "Proxmox_Terminate",
+    "proxmox_terminate",
     { userid: 0, },
     "Admin",
     0
@@ -453,7 +453,7 @@ const updateCompleteTerminate =
           if (!tokenResult || tokenResult.status !== "200") {
             return {
               success: false,
-              message: `Could not connect to the Proxmox server while destroying components.`,
+              message: `Could not connect to the siberSIM server while destroying components.`,
             };
           }
 
@@ -508,7 +508,7 @@ const updateCompleteTerminate =
           if (!tokenResult || tokenResult.status !== "200") {
             return {
               success: false,
-              message: `Could not connect to the Proxmox server while destroying components.`,
+              message: `Could not connect to the siberSIM server while destroying components.`,
             };
           }
 
@@ -654,7 +654,7 @@ const restartEventLearner =
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -694,7 +694,7 @@ const restartEventLearner =
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -840,7 +840,7 @@ const generateProxmoxAccessToken =
         if (ticket) {
           return {
             statusCode: 200,
-            message: "Successfully connected to the Proxmox server.",
+            message: "Successfully connected to the siberSIM server.",
             data: {
               ticket,
               cookie: constants.cookie_prefix + ticket,
@@ -869,7 +869,7 @@ const generateProxmoxAccessToken =
           return {
             statusCode: 500,
             message:
-              "Login to the Proxmox server failed. Please check the username, password, and permissions.",
+              "Login to the siberSIM server failed. Please check the username, password, and permissions.",
             data: null,
           };
         }
@@ -897,7 +897,7 @@ const generateProxmoxAccessToken =
         return {
           statusCode: 500,
           message:
-            "Unable to connect to the Proxmox server. Please ensure it is online and reachable.",
+            "Unable to connect to the siberSIM server. Please ensure it is online and reachable.",
           error: error.toString(),
           data: null,
         };

@@ -117,40 +117,63 @@ const Userreport = () => {
       eventlearnerid: rowValues?.eventlearnerid,
     },
   });
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
+  // const customStyles = {
+  //   control: (styles, { isFocused, isDisabled }) => ({
+  //     ...styles,
+  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+  //     boxShadow: isDisabled
+  //       ? null
+  //       : isFocused
+  //       ? "0 0 0 0.001rem #00d683"
+  //       : null,
+  //     "&:hover": {
+  //       borderColor: isDisabled
+  //         ? "#e8e8f7"
+  //         : isFocused
+  //         ? "#00d683"
+  //         : styles.borderColor,
+  //     },
+  //   }),
+  // };
+   const customStyles = () => {
+  return {
+    control: (styles) => ({
       ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-          ? "#00d683"
-          : styles.borderColor,
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
+    }),
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
+    }),
+    multiValueLabel: (styles) => ({
+      ...styles,
+       color: "#fff",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
       },
     }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
+    }),
   };
-  const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-          ...customStyles,
-          control: (styles) => ({
-            ...styles,
-            borderColor: "#EB5757",
-            boxShadow: "0 0 0 0.001rem #EB5757",
-          }),
-        }
-      : customStyles;
-  };
+};
+
 
   const columnDefs = [
     {
@@ -229,7 +252,7 @@ const Userreport = () => {
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "User Report");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SIMUser Report");
 
     const timestamp = new Date()
       .toISOString()
@@ -372,7 +395,7 @@ const Userreport = () => {
 
   return (
     <>
-      <Seo title="User Report" />
+      <Seo title="SIMUser Report" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -380,23 +403,12 @@ const Userreport = () => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4> User Report</h4>
+                  <h4> SIMUser Report</h4>
                   <Form.Group as={Col} md="4" className="">
                     <Select
                       isMulti
-  styles={{
-    ...customStyles,
-    multiValue: (base) => ({
-      ...base,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-      borderRadius: "2px",
-      fontSize: "85%",
-      padding: "3px 3px 3px 6px",
-      boxSizing: "border-box",
-    }),
-  }}
+                        styles={customStyles()}
+
                       theme={(theme) => ({
                         ...theme,
                         colors: {
@@ -410,7 +422,7 @@ const Userreport = () => {
                       options={studentDropdown}
                       getOptionLabel={(x) => x.Student_name}
                       getOptionValue={(x) => x.learner_id}
-                      placeholder="Select Users"
+                      placeholder="Select SIMUser"
                       onChange={(selectedOptions) => {
                         formValidation.setFieldValue(
                           "learner_id",

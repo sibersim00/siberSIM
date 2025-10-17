@@ -5,28 +5,17 @@ import {
   Col,
   Card,
   Button,
-  OverlayTrigger,
-  Tooltip,
   Form,
-  InputGroup,
 } from "react-bootstrap";
-import DatePicker from "react-datepicker";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { useRouter } from "next/router";
-import dummy_profile from "../../../../public/assets/img/dummy_profile.png";
 import "../../../../shared/utils/i18n";
 import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
-import ToggleButton from "../../../../shared/data/masterButtons/toggleButton";
-import Swal from "sweetalert2";
 import Select from "react-select";
 import { toast, ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import Seo from "../../../../shared/layout-components/seo/seo";
-import CustomToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import NormalUserModal from "../../../../shared/data/admin/modals/normal-user";
-import MapInstructorModal from "../../../../shared/data/admin/modals/map-instructors";
 // import ImportAdUser from "./import-adminusers";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -141,41 +130,63 @@ const instructorreport = () => {
       eventlearnerid: rowValues?.eventlearnerid,
     },
   });
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
+  // const customStyles = {
+  //   control: (styles, { isFocused, isDisabled }) => ({
+  //     ...styles,
+  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+  //     boxShadow: isDisabled
+  //       ? null
+  //       : isFocused
+  //       ? "0 0 0 0.001rem #00d683"
+  //       : null,
+  //     "&:hover": {
+  //       borderColor: isDisabled
+  //         ? "#e8e8f7"
+  //         : isFocused
+  //         ? "#00d683"
+  //         : styles.borderColor,
+  //     },
+  //   }),
+  // };
+     const customStyles = () => {
+  return {
+    control: (styles) => ({
       ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-          ? "#00d683"
-          : styles.borderColor,
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
+    }),
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
+    }),
+    multiValueLabel: (styles) => ({
+      ...styles,
+       color: "#fff",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
       },
     }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
+    }),
   };
-  const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-          ...customStyles,
-          control: (styles) => ({
-            ...styles,
-            borderColor: "#EB5757",
-            boxShadow: "0 0 0 0.001rem #EB5757",
-          }),
-        }
-      : customStyles;
-  };
- 
+};
+
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -256,7 +267,7 @@ const instructorreport = () => {
  
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "User Report");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SIMUser Report");
  
     const timestamp = new Date()
       .toISOString()
@@ -399,7 +410,7 @@ const instructorreport = () => {
  
   return (
     <>
-      <Seo title="Instructor Report" />
+      <Seo title="SIMManager Report" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -407,7 +418,7 @@ const instructorreport = () => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4> Instructor Report</h4>
+                  <h4> SIMManager Report</h4>
                   <Form.Group as={Col} md="6" className="">
                    
                     <Select
@@ -420,25 +431,13 @@ const instructorreport = () => {
                                   },
                                 })}
                       isMulti
-  styles={{
-    ...customStyles,
-    multiValue: (base) => ({
-      ...base,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-      borderRadius: "2px",
-      fontSize: "85%",
-      padding: "3px 3px 3px 6px",
-      boxSizing: "border-box",
-    }),
-  }}
+ styles={customStyles()}
                       name="instructor_id"
                       value={formValidation.values.instructor_id}
                       options={InstructorDropdown}
                       getOptionLabel={(x) => x.name}
                       getOptionValue={(x) => x.instructor_id}
-                      placeholder="Select Instructors"
+                      placeholder="Select SIMManager"
                       onChange={(selectedOptions) => {
                         formValidation.setFieldValue(
                           "instructor_id",

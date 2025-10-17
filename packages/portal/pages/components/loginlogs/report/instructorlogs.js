@@ -111,7 +111,7 @@ const Instructor = () => {
       responsive: true,
       plugins: {
         legend: { position: "top" },
-        title: { display: true, text: "Instructor Login/Logout Stats" },
+        title: { display: true, text: "SIMManager Login/Logout Stats" },
       },
     };
 
@@ -371,7 +371,7 @@ useEffect(() => {
 
   return (
     <>
-      <Seo title="Instructor Logs" />
+      <Seo title="SIMManager Logs" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -380,7 +380,7 @@ useEffect(() => {
               {/* Header with Buttons */}
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4>Instructor Logs</h4>
+                  <h4>SIMManager Logs</h4>
                   <div className="d-flex align-items-center flex-wrap">
                     {/* View Buttons */}
                     <Button

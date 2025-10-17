@@ -9,10 +9,13 @@ import {
   Badge,
   OverlayTrigger,
   Tooltip,
+  Modal,
+  Form,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
 import Router, { useRouter } from "next/router";
+import Select from "react-select";
 import {
   getScenarioList,
   changeStatusScenarios,
@@ -21,6 +24,7 @@ import {
   cleardeleteScenarios,
   clearHasError,
   handleManageView,
+  exportSelectedScenariosAction,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 import * as XLSX from "xlsx";
 import CustomToggleButton from "@mui/material/ToggleButton";
@@ -32,8 +36,12 @@ import ScenarioForm from "../../../shared/data/scenarios/scenariosForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import { Fab } from "@mui/material";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
+import { useTranslation } from "react-i18next";
+// import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
+
 
 const ManageScenarios = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [scenStatus, setscenStatus] = useState("true");
   const [view, setView] = useState("card");
@@ -43,9 +51,14 @@ const ManageScenarios = () => {
   const [quickFilter, setQuickFilter] = useState("");
   const [formModal, setformModal] = useState(false);
   const { push } = useRouter();
+    const [showListImort, setShowListImport] = useState(true);
+    const [openImportModal, setOpenImportModal] = useState(false);
   const [oneClick, setOneClick] = useState(false);
   const [previousView, setPreviousView] = useState("card");
   const [backview, setBackView] = useState("card");
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedScenarios, setSelectedScenarios] = useState([]);
+
   const [rowValues, setRowValues] = useState({
     title: "Add",
     scenarioid: 0,
@@ -88,6 +101,44 @@ const ManageScenarios = () => {
         state && state.scenarioManage && state.scenarioManage.viewNameResp,
     };
   });
+ const getScenarioSelectStyles = () => {
+  return {
+    control: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
+    }),
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
+    }),
+    multiValueLabel: (styles) => ({
+      ...styles,
+      color: "#fff",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
+      },
+    }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
+    }),
+  };
+};
 
   const assignedBadgeRenderer = (params) => {
     const { value, data } = params;
@@ -132,7 +183,7 @@ const ManageScenarios = () => {
       cellRenderer: "srNoRender",
       floatingFilter: true,
       minWidth: 80,
-      sortable: false
+      sortable: false,
     },
     {
       headerName: "Identification No",
@@ -171,7 +222,7 @@ const ManageScenarios = () => {
       minWidth: 180,
     },
     {
-      headerName: "Instructor",
+      headerName: "SIMManager",
       field: "instructor_name",
       filter: true,
       floatingFilter: true,
@@ -205,7 +256,7 @@ const ManageScenarios = () => {
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 150,
+      minWidth: 160,
       pinned: "right",
       cellRenderer: "actionButtonRenderer",
     },
@@ -223,7 +274,7 @@ const ManageScenarios = () => {
     setOneClick(flag);
   };
   //Function to Download Excel file
-  const handleExport = () => {
+  const handleExportExcel = () => {
     // Filter data based on scenStatus ("" = all, "true" = active, "false" = inactive)
     const filteredData = hasGetScenarioListSucc.filter((row) => {
       if (scenStatus === "") return true; // All
@@ -279,7 +330,7 @@ const ManageScenarios = () => {
       "Scenario Category",
       "Scenario Sub Category",
       "Level",
-      "Instructor Name",
+      "SIMManager Name",
       "Instruction File",
       "Duration",
       "Status",
@@ -301,11 +352,96 @@ const ManageScenarios = () => {
       scenStatus === ""
         ? "Scenarios_All"
         : scenStatus === "true"
-          ? "Scenarios_Active"
-          : "Scenarios_Inactive";
+        ? "Scenarios_Active"
+        : "Scenarios_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
+
+  //main
+  // const handleExport = () => {
+  //   // Filter data based on scenStatus ("" = all, "true" = active, "false" = inactive)
+  //   const filteredData = hasGetScenarioListSucc.filter((row) => {
+  //     if (scenStatus === "") return true; // All
+  //     return row.status === scenStatus;
+  //   });
+
+  //   const exportData = filteredData.map((row) => {
+  //     const createdDate = row.createdon ? new Date(row.createdon) : null;
+  //     const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
+
+  //     const createdDateOnly =
+  //       createdDate && !isNaN(createdDate)
+  //         ? createdDate.toLocaleDateString()
+  //         : "N/A";
+  //     const createdTime =
+  //       createdDate && !isNaN(createdDate)
+  //         ? createdDate.toLocaleTimeString()
+  //         : "N/A";
+
+  //     const modifiedDateOnly =
+  //       modifiedDate && !isNaN(modifiedDate)
+  //         ? modifiedDate.toLocaleDateString()
+  //         : " ";
+  //     const modifiedTime =
+  //       modifiedDate && !isNaN(modifiedDate)
+  //         ? modifiedDate.toLocaleTimeString()
+  //         : " ";
+
+  //     return [
+  //       row.scenarioid,
+  //       row.scenarioidentification,
+  //       row.scenariotitle,
+  //       row.scenariodescription,
+  //       row.scenariocategory,
+  //       row.scenariosubcategory,
+  //       row.scenariolevel,
+  //       row.instructor_name,
+  //       row.instruction_file,
+  //       row.duration,
+  //       row.status === "true" ? "Active" : "Inactive",
+  //       createdDateOnly,
+  //       createdTime,
+  //       modifiedDateOnly,
+  //       modifiedTime,
+  //     ];
+  //   });
+
+  //   const header = [
+  //     "Scenario Id",
+  //     "Identification no",
+  //     "Title",
+  //     "Desciption",
+  //     "Scenario Category",
+  //     "Scenario Sub Category",
+  //     "Level",
+  //     "Instructor Name",
+  //     "Instruction File",
+  //     "Duration",
+  //     "Status",
+  //     "Created Date",
+  //     "Created Time",
+  //     "Modified Date",
+  //     "Modified Time",
+  //   ];
+
+  //   const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Scenarios");
+
+  //   const timestamp = new Date()
+  //     .toISOString()
+  //     .replace(/[-T:\.]/g, "")
+  //     .slice(0, 15);
+  //   const filePrefix =
+  //     scenStatus === ""
+  //       ? "Scenarios_All"
+  //       : scenStatus === "true"
+  //       ? "Scenarios_Active"
+  //       : "Scenarios_Inactive";
+
+  //   XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
+  // };
 
   const gridOptions = {
     pagination: true,
@@ -478,9 +614,20 @@ const ManageScenarios = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              }
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -488,17 +635,6 @@ const ManageScenarios = () => {
               theme: "colored",
             }
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
 
       handleOneClick(false);
       dispatch(clearHasError());
@@ -568,10 +704,32 @@ const ManageScenarios = () => {
     }
   };
 
+  const handleDeletecard = (item) => {
+    console.log("itemitemitemitemitemitemitem", item);
+
+    Swal.fire({
+      title: t("common.swal.title"),
+      text: t("common.swal.text_delete"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: t("common.swal.yes"),
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const payload = {
+          scenarioid: item?.scenarioid,
+        };
+        dispatch(deleteScenarios(payload));
+      }
+    });
+  };
+
   const handleDelete = (props, flag) => {
     if (flag == true) {
       const payload = {
-        scenarioid: props?.scenariouuid,
+        scenarioid: props?.scenarioid,
       };
       dispatch(deleteScenarios(payload));
     }
@@ -643,7 +801,7 @@ const ManageScenarios = () => {
           handleFiles={handleFiles}
           propsVal={props}
           handleShowEdit={true}
-        //  handleDelete={handleDelete}
+          handleDelete={handleDelete}
         />
       );
     },
@@ -671,6 +829,10 @@ const ManageScenarios = () => {
     if (currentIndex < colarray.length - 1) {
       setColumnsPerRow(colarray[currentIndex + 1]);
     }
+  };
+
+    const handleImportModal = () => {
+    setOpenImportModal(!openImportModal);
   };
 
   return (
@@ -752,13 +914,34 @@ const ManageScenarios = () => {
                         </CustomToggleButton>
                       </ToggleButtonGroup>
                       &nbsp;&nbsp; &nbsp;
-                      <Button
+                      {/* main */}
+                      {/* <Button
                         type="button"
                         variant="outline-info"
                         onClick={() => handleExport()}
                       >
                         <i className="fa fa-file-excel-o"></i> Export
+                      </Button> */}
+                      <Button
+                        type="button"
+                        variant="outline-info"
+                        onClick={() => setShowExportModal(true)}
+                      >
+                        <i className="fa fa-file-excel-o"></i> Export
                       </Button>
+                          &nbsp;
+                      
+                                                <Button
+                                                  type="button"
+                                                  variant="outline-warning"
+                                                  onClick={() => {
+                                                    setShowListImport(true);
+                                                    handleImportModal();
+                                                  }}
+                                                >
+                                                  <i className="fa fa-file-excel-o"></i> Import
+                                                </Button>
+                                            
                       &nbsp;
                       <Button
                         type="button"
@@ -802,9 +985,9 @@ const ManageScenarios = () => {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
-                      //  overlayNoRowsTemplate={
-                      //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
-                      // }
+                        //  overlayNoRowsTemplate={
+                        //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
+                        // }
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -825,12 +1008,13 @@ const ManageScenarios = () => {
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
-                          ? "shadow-publish"
-                          : item.scenariostatus === "Draft"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${
+                          item.scenariostatus === "Publish"
+                            ? "shadow-publish"
+                            : item.scenariostatus === "Draft"
                             ? "shadow-draft"
                             : ""
-                          }`}
+                        }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
                           {/* Published Badge */}
@@ -879,9 +1063,9 @@ const ManageScenarios = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                      0,
-                                      27
-                                    )}...`
+                                        0,
+                                        27
+                                      )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -975,18 +1159,18 @@ const ManageScenarios = () => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                                <div
-                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                  onClick={() => handleEdit(item)}
+                              <div
+                                className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Update</Tooltip>}
                                 >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Update</Tooltip>}
-                                  >
-                                    <i className="fe fe-edit"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                                  <i className="fe fe-edit"></i>
+                                </OverlayTrigger>
+                              </div>
+                            )}
 
                             {/* View Button */}
                             <div
@@ -1003,28 +1187,42 @@ const ManageScenarios = () => {
                               </OverlayTrigger>
                             </div>
 
+                            <div
+                              className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
+                              onClick={() => {
+                                handleDeletecard(item);
+                              }}
+                            >
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={<Tooltip>Delete</Tooltip>}
+                              >
+                                <i className="fe fe-trash"></i>
+                              </OverlayTrigger>
+                            </div>
+
                             {/* Status Switch */}
                             {!(
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                                <div className="btn btn-sm ripple me-1">
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Change Status</Tooltip>}
-                                  >
-                                    <label className="custom-switch mb-0">
-                                      <input
-                                        type="checkbox"
-                                        className="custom-switch-input"
-                                        checked={item?.status === "true"}
-                                        onChange={() => handleStatusSwitch(item)}
-                                      />
-                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                    </label>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                              <div className="btn btn-sm ripple me-1">
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Change Status</Tooltip>}
+                                >
+                                  <label className="custom-switch mb-0">
+                                    <input
+                                      type="checkbox"
+                                      className="custom-switch-input"
+                                      checked={item?.status === "true"}
+                                      onChange={() => handleStatusSwitch(item)}
+                                    />
+                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                  </label>
+                                </OverlayTrigger>
+                              </div>
+                            )}
                           </div>
                         </Card.Body>
                       </Card>
@@ -1036,10 +1234,7 @@ const ManageScenarios = () => {
                   <Col sm={12}>
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
-                        <Row
-                          className="text-center"
-                          style={{ height: "70vh" }}
-                        >
+                        <Row className="text-center" style={{ height: "70vh" }}>
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{
@@ -1070,6 +1265,162 @@ const ManageScenarios = () => {
           )}
         </Col>
       </Row>
+      {/* <Modal
+        show={showExportModal}
+        onHide={() => setShowExportModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Export Scenarios</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Select Scenarios</Form.Label>
+            <Select
+              theme={(theme) => ({
+                ...theme,
+                colors: {
+                  ...theme.colors,
+                  primary25: "var(--primary-bg-color)",
+                  primary: "var(--primary-bg-color)",
+                },
+              })}
+              isMulti
+            styles={getScenarioSelectStyles()}
+              options={[
+                { value: "all", label: "Select All Scenarios" },
+                ...(Array.isArray(hasGetScenarioListSucc)
+                  ? hasGetScenarioListSucc.map((s) => ({
+                      value: s.scenarioid,
+                      label: s.scenariotitle,
+                    }))
+                  : []),
+              ]}
+              value={selectedScenarios}
+              onChange={(selected) => {
+                if (selected.some((s) => s.value === "all")) {
+                  setSelectedScenarios(
+                    (hasGetScenarioListSucc || []).map((s) => ({
+                      value: s.scenarioid,
+                      label: s.scenariotitle,
+                    }))
+                  );
+                } else {
+                  setSelectedScenarios(selected);
+                }
+              }}
+            />
+          </Form.Group>
+
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline-success"
+              onClick={handleExportExcel}
+              className="me-3"
+            >
+              <i className="fa fa-file-excel-o"></i> Export Excel
+            </Button>
+
+            <Button
+              variant="outline-primary"
+              // onClick={handleExportZip}
+            >
+              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios Zip
+            </Button>
+          </div>
+        </Modal.Body>
+      </Modal> */}
+      <Modal
+  show={showExportModal}
+  onHide={() => setShowExportModal(false)}
+  centered
+  size="lg"
+>
+  <Modal.Header closeButton>
+    <Modal.Title>Export Scenarios</Modal.Title>
+  </Modal.Header>
+
+  <Modal.Body>
+    <Form.Group>
+      <Form.Label>Select Scenarios</Form.Label>
+      <Select
+        theme={(theme) => ({
+          ...theme,
+          colors: {
+            ...theme.colors,
+            primary25: "var(--primary-bg-color)",
+            primary: "var(--primary-bg-color)",
+          },
+        })}
+        isMulti
+        styles={getScenarioSelectStyles()}
+        options={[
+          { value: "all", label: "Select All Scenarios" },
+          ...(Array.isArray(hasGetScenarioListSucc)
+            ? hasGetScenarioListSucc.map((s) => ({
+                value: s.scenarioid,
+                label: s.scenariotitle,
+              }))
+            : []),
+        ]}
+        value={selectedScenarios}
+        onChange={(selected) => {
+          if (selected.some((s) => s.value === "all")) {
+            setSelectedScenarios(
+              (hasGetScenarioListSucc || []).map((s) => ({
+                value: s.scenarioid,
+                label: s.scenariotitle,
+              }))
+            );
+          } else {
+            setSelectedScenarios(selected);
+          }
+        }}
+        placeholder="Select scenarios to Export"
+      />
+    </Form.Group>
+
+    <div className="mt-4 text-center">
+      <Button
+        variant="outline-success"
+        onClick={handleExportExcel}
+        className="me-3"
+      >
+        <i className="fa fa-file-excel-o"></i> Export Excel
+      </Button>
+
+      <Button
+        variant="outline-primary"
+        onClick={async () => {
+          if (!selectedScenarios.length) return alert("Select at least one scenario");
+
+          try {
+           const blob = await dispatch(
+  exportSelectedScenariosAction({ scenarioIds: selectedScenarios.map(s => s.value) })
+);
+
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", `scenarios_export.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+          } catch (err) {
+            console.error(err);
+            alert("Export failed");
+          }
+        }}
+      >
+        <i className="fa fa-file-archive-o"></i> Export Selected Scenarios Zip
+      </Button>
+    </div>
+  </Modal.Body>
+</Modal>
+
 
       {view == "Form" ? (
         <ScenarioForm
@@ -1079,9 +1430,17 @@ const ManageScenarios = () => {
           oneClick={oneClick}
           backView={backview}
         />
+
+        
       ) : (
         <></>
       )}
+         {/* <ImportScenarioZipFile
+              openImportModal={openImportModal}
+              handleImportModal={handleImportModal}
+              showListImort={showListImort}
+              setShowListImport={setShowListImport}
+            /> */}
     </>
   );
 };

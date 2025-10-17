@@ -261,7 +261,7 @@ const Normaluser = () => {
     });
 
     const header = [
-      "Normal User Id",
+      "Normal SIMUser Id",
       t("learner.columns.first_name"),
       t("learner.columns.last_name"),
       t("learner.columns.email_id"),
@@ -275,7 +275,7 @@ const Normaluser = () => {
     ];
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "User");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SIMUser");
 
     const timestamp = new Date()
       .toISOString()
@@ -283,7 +283,7 @@ const Normaluser = () => {
       .slice(0, 15);
     const filePrefix =
       compStatus === ""
-        ? "User All"
+        ? "SIMUser All"
         : compStatus === "true"
           ? "User_Active"
           : "User_Inactive";
@@ -752,7 +752,7 @@ const Normaluser = () => {
   };
   return (
     <>
-      <Seo title="Users" />
+      <Seo title="SIMUser" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -760,7 +760,7 @@ const Normaluser = () => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4> Users</h4>
+                  <h4> SIMUser</h4>
                   <div className="d-flex align-items-center">
                     {view === "card" && (
                       <>

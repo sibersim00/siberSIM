@@ -200,7 +200,7 @@ const NormalUsersView = () => {
                         fontWeight: activeTab === "profile" ? "bold" : "normal",
                       }}
                     >
-                      User Profile
+                      SIMUser Profile
                     </Nav.Link>
                   </Nav.Item>
 
@@ -297,7 +297,7 @@ const NormalUsersView = () => {
 
                           <p>
                             <i className="fe fe-user-check me-2 text-muted"></i>
-                            <strong>Instructor:</strong>{" "}
+                            <strong>SIMManager:</strong>{" "}
                             {rowValues.instructor_name}
                           </p>
                         </Col>
@@ -803,7 +803,7 @@ const NormalUsersView = () => {
                                 <th>Team Name</th>
                                 <th>Scenario Title</th>
  
-                                <th>User Status</th>
+                                <th>SIMUser Status</th>
                                 <th>Timer</th>
                                 <th>Start Time</th>
                               </tr>

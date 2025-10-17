@@ -30,13 +30,12 @@ const setEventLearnerConfiguration =
             data: response.data,
           });
       } catch (error) {
-        console.error("Axios request failed:");
-        if (error.response) {
-          console.error("Response Error:");
-        } else if (error.request) {
-          console.error(error.request);
-        } else {
-          console.error("Request Setup Error:", error.message);
+         if (error.response) {
+          return res.status(error.response.status).send({
+            statusCode: error.response.status,
+            message: error.response.data?.message || "Unexpected error in job service.",
+            errorData: error.response.data
+          });
         }
         try {
           const result = await dao.setEventLearnerConfigurationOnFailure({
@@ -48,7 +47,7 @@ const setEventLearnerConfiguration =
           });
           const message =
             result?.message ||
-            "Job service failed. Fallback handled via DB update.";
+            "Something went wrong. Please try later";
 
           return res.status(500).send({
             statusCode: 500,
@@ -197,7 +196,7 @@ const generateProxmoxAccessToken =
       );
       res.status(result.statusCode || 500).json(result);
     } catch (err) {
-      console.error("Error generating Proxmox token:", err);
+      console.error("Error generating siberSIM token:", err);
       res.status(500).json({ message: "Internal Server Error" });
     }
   };

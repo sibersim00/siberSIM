@@ -80,7 +80,7 @@ const generateProxmoxAccessToken =
     
     res.status(result.statusCode || 500).json(result);
   } catch (err) {
-    console.error("Error generating Proxmox token:", err);
+    console.error("Error generating siberSIM token:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

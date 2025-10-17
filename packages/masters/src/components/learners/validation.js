@@ -62,9 +62,9 @@ const updateSchema = joi.object({
     "number.base": "Mobile number must be a valid number."
   }),
   learner_uuid: joi.required().empty().messages({
-    "any.required": `User is required.`,
-    "number.base": `User must be a valid number.`,
-    "number.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "number.base": `SIMUser must be a valid number.`,
+    "number.empty": `SIMUser cannot be empty.`,
   }),
 });
 
@@ -75,32 +75,32 @@ const idSchema = joi.required().empty(null).messages({
 
 const mailSchema = joi.object({
   learner_id: joi.number().required().messages({
-      "string.base": `User id should be a string`,
-      "string.empty": `User id cannot be empty`,
-      "any.required": `User id is required.`,
+      "string.base": `SIMUser id should be a string`,
+      "string.empty": `SIMUser id cannot be empty`,
+      "any.required": `SIMUser id is required.`,
   }),
 })
 
 
 const messages = {
-  'add_success':  `User has been created successfully`,
-  'update_success':  `User has been updated successfully`,
-  'delete_success':  `User has been deleted successfully`,
+  'add_success':  `SIMUser has been created successfully`,
+  'update_success':  `SIMUser has been updated successfully`,
+  'delete_success':  `SIMUser has been deleted successfully`,
   'something_wrong_try_later':  `Something went wrong. Please try again later`,
-  'not_updated':  `User not found or not updated`,
-  'status_change' : "User Status Updated Successfully",
+  'not_updated':  `SIMUser not found or not updated`,
+  'status_change' : "SIMUser Status Updated Successfully",
   'email_mobile_duplicate' : "The provided email, mobile or user name is already registered. Please use a different one.",
   'email_duplicate' : "Email is already registered.",
   'mobile_duplicate' : "Mobile is already registered.",
   'username_duplicate' : "Username is already registered.",
   'student_list' : "Get Students List",
-  'mapped_instructor_list' : "Get Mapped Instructor List",
-  'student_detail': "Get User Details",
-  'student_not_found': "User details not found",
-  'student_mail_confirmation': "User email verification is already completed.",
-  'student_mail_confirmed': "Email verification successful! The User's account is now active.",
+  'mapped_instructor_list' : "Get Mapped SIMManager List",
+  'student_detail': "Get SIMUser Details",
+  'student_not_found': "SIMUser details not found",
+  'student_mail_confirmation': "SIMUser email verification is already completed.",
+  'student_mail_confirmed': "Email verification successfull! The SIMUser's account is now active.",
   'reset_password_success' : "Your password has been reset successfully..",
-  'update_instructor_mapping_success' : "Instructor mapping updated successfully",
+  'update_instructor_mapping_success' : "SIMManager mapping updated successfully",
   'verification_email': "Verification mail send successfully",
   'verification_success_email': "Your account has been verified successfully",
   'already_verification_email': "Account already verified",
@@ -109,40 +109,40 @@ const messages = {
 
 const statusUpdateSchema = joi.object({
   status: joi.required().messages({
-    "any.required": `User status is required`,
+    "any.required": `SIMUser status is required`,
   }),
   learner_uuid: joi.string().required().empty().messages({
-    "any.required": `User is required.`,
-    "string.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "string.empty": `SIMUser cannot be empty.`,
   }),
 });
 
 const deleteSchema = joi.object({
   learner_uuid: joi.string().required().empty().messages({
-    "any.required": `User is required.`,
-    "string.empty": `User cannot be empty.`,
+    "any.required": `SIMUser is required.`,
+    "string.empty": `SIMUser cannot be empty.`,
   }),
 });
 
 const resetPasswordSchema = joi.object({
   learner_id: joi.number().strict(true).required().messages({
-        "number.base": `User id should be a integer`,
-        "number.empty": `User id cannot be empty`,
-        "any.required": `User id is required.`,
+        "number.base": `SIMUser id should be a integer`,
+        "number.empty": `SIMUser id cannot be empty`,
+        "any.required": `SIMUser id is required.`,
     }),
 });
 const instructormappedSchema = joi.object({
   learner_id: joi.number().strict(true).required().messages({
-        "number.base": `User id should be a integer`,
-        "number.empty": `User id cannot be empty`,
-        "any.required": `User id is required.`,
+        "number.base": `SIMUser id should be a integer`,
+        "number.empty": `SIMUser id cannot be empty`,
+        "any.required": `SIMUser id is required.`,
     }),
 });
 const saveinstructormappedSchema = joi.object({
   learner_id: joi.number().strict(true).required().messages({
-        "number.base": `User id should be a integer`,
-        "number.empty": `User id cannot be empty`,
-        "any.required": `User id is required.`,
+        "number.base": `SIMUser id should be a integer`,
+        "number.empty": `SIMUser id cannot be empty`,
+        "any.required": `SIMUser id is required.`,
     }),
 });
 

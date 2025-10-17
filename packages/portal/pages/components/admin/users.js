@@ -355,7 +355,7 @@ let importAdUsers = (modal) => {
 
   return (
     <>
-      <Seo title="User" />
+      <Seo title="SIMUser" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -363,7 +363,7 @@ let importAdUsers = (modal) => {
             <Card.Body>
               <Col md={12} className="mg-b-10">
                 <div className="d-flex justify-content-between">
-                  <h5>Users</h5>
+                  <h5>SIMUser</h5>
                   <div className="row">
                     <div className="col-md-3">
                       <ToggleButtonGroup

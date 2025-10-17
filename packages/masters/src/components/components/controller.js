@@ -82,17 +82,35 @@ const getVms = ({ dao, db, validation }) => async (req, res) => {
     }
 }; 
 
-  const deleteById = ({ dao, db,validation }) => async (req, res) => {
-    try {
-        let body = req.body;
-        let session_userid = req.user.userid;
-        const result = await dao.deleteById({ db,validation })(body,session_userid);
-        res.status(200).send({ statusCode: 200, message: "Component Deleted Successfully" });
-    } catch (error) {
-        console.error("Error Deleting data:", error.message);
-        res.status(500).json({ error: "An error occurred. Please try again later." });
+const deleteById = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    let body = req.body;
+    let session_userid = req.user.userid;
+
+    const result = await dao.deleteById({ db, validation })(body, session_userid);
+
+    // Check DAO response
+    if (!result.status) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: result.message,
+      });
     }
+    // Success response
+    res.status(200).send({
+      statusCode: 200,
+      message: "Component Deleted Successfully",
+      data: result,
+    });
+
+  } catch (error) {
+    console.error("Error Deleting data:", error.message);
+    res.status(500).json({
+      error: "An error occurred. Please try again later.",
+    });
+  }
 };
+
 
 const fetchAndStoreOVSNetworks =
   ({ dao, db }) =>

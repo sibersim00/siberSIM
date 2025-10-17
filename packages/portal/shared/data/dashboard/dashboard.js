@@ -12,7 +12,7 @@ const Dashboardshare = () => {
                   <div className="col-xl-8 col-sm-6 col-12">
 
                     <h4 className="d-flex  mb-3">
-                      <span className="font-weight-bold text-white ">Welcome To siberSIM Admin Portal</span>
+                      <span className="font-weight-bold text-white ">Welcome To siberSIM SIMMaster Portal</span>
                     </h4>
                     <p className="tx-white-7 mb-1">You have two programs to finish, you had
                       completed <b className="text-warning">57%</b> from your montly

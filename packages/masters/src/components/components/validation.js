@@ -74,7 +74,7 @@ const updateSchema = joi.object({
 });
 
 const deleteSchema = joi.object({
-  component_id: joi.number().strict(true).required().messages({
+  component_id: joi.number().required().messages({
     "any.required": `Component id is required.`,
     "number.base": `Component id must be a valid number.`,
     "number.empty": `Component id cannot be empty.`,

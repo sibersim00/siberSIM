@@ -12,7 +12,7 @@ const setScenarioLearnerConfiguration =
       const statusVal = "Initializing";
       const [webSettings] = await db.sequelize.query(
         `SELECT base_clone_vmid FROM web_settings WHERE company_id = 1 LIMIT 1`,
-        { type: db.sequelize.QueryTypes.SELECT }
+        { type: db.sequelize.QueryTypes.SELECT }  
       );
       const [learnerData] = await db.sequelize.query(
         `SELECT learner_id, scenariolearnerid, scenariolearnersessionid FROM scenario_learner_session WHERE scenariolearnersessionid = ? AND status = ? ORDER BY scenariolearnersessionid DESC LIMIT 1`,
@@ -279,7 +279,7 @@ const updateCompleteTerminate =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              `Proxmox Service is down. Please try again later.`
+              `siberSIM Service is down. Please try again later.`
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -291,7 +291,7 @@ const updateCompleteTerminate =
                 hour12: true,
               }),
             });
-            throw new Error("Proxmox ticket generation failed.");
+            throw new Error("siberSIM ticket generation failed.");
           }
           await proxmoxService.stopVM(vmid, vmType).catch((err) => {
             new NotiTemplate(
@@ -300,7 +300,7 @@ const updateCompleteTerminate =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              `Proxmox Service is down. Please try again later.`
+              `siberSIM Service is down. Please try again later.`
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -368,7 +368,7 @@ const updateCompleteTerminate =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              `Proxmox Service is down. Please try again later.`
+              `siberSIM Service is down. Please try again later.`
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -380,7 +380,7 @@ const updateCompleteTerminate =
                 hour12: true,
               }),
             });
-            throw new Error("Proxmox ticket generation failed.");
+            throw new Error("siberSIM ticket generation failed.");
           }
           await proxmoxService.destroyVM(vmid, vmType).catch((err) => {
             new NotiTemplate(
@@ -389,7 +389,7 @@ const updateCompleteTerminate =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              `Proxmox Service is down. Please try again later.`
+              `siberSIM Service is down. Please try again later.`
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -477,7 +477,7 @@ const generateProxmoxAccessToken =
           { learner_id: 0, userid: 0 },
           "System",
           0,
-          "Proxmox Service is down. Please try again later."
+          "siberSIM Service is down. Please try again later."
         );
       }
       return {
@@ -488,14 +488,14 @@ const generateProxmoxAccessToken =
           : null,
       };
     } catch (error) {
-      console.error("Error generating Proxmox access token:", error);
+      console.error("Error generating siberSIM access token:", error);
       new NotiTemplate(
         db,
         "proxmox_down",
         { learner_id: 0, userid: 0 },
         "System",
         0,
-        "Proxmox Service is down. Please try again later."
+        "siberSIM Service is down. Please try again later."
       );
 
       return {
@@ -592,7 +592,7 @@ const stopAndDestroyFailedScenarios =
                 { learner_id: 0, userid: 0 },
                 "System",
                 0,
-                "Proxmox Service is down. Please try again later."
+                "siberSIM Service is down. Please try again later."
               );
               new MailTemplate(db, "proxmox_down_alert", {
                 downdatetime: new Date().toLocaleString("en-IN", {
@@ -604,7 +604,7 @@ const stopAndDestroyFailedScenarios =
                   hour12: true,
                 }),
               });
-              throw new Error("Proxmox connection failed.");
+              throw new Error("siberSIM connection failed.");
             }
             await proxmoxService.stopVM(vmid, vmType);
             await db.sequelize.query(
@@ -622,7 +622,7 @@ const stopAndDestroyFailedScenarios =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              "Proxmox Service is down. Please try again later."
+              "siberSIM Service is down. Please try again later."
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -650,7 +650,7 @@ const stopAndDestroyFailedScenarios =
                 { learner_id: 0, userid: 0 },
                 "System",
                 0,
-                "Proxmox Service is down. Please try again later."
+                "siberSIM Service is down. Please try again later."
               );
               new MailTemplate(db, "proxmox_down_alert", {
                 downdatetime: new Date().toLocaleString("en-IN", {
@@ -662,7 +662,7 @@ const stopAndDestroyFailedScenarios =
                   hour12: true,
                 }),
               });
-              throw new Error("Proxmox connection failed.");
+              throw new Error("siberSIM connection failed.");
             }
             await proxmoxService.destroyVM(vmid, vmType);
             await db.sequelize.query(
@@ -683,7 +683,7 @@ const stopAndDestroyFailedScenarios =
               { learner_id: 0, userid: 0 },
               "System",
               0,
-              "Proxmox Service is down. Please try again later."
+              "siberSIM Service is down. Please try again later."
             );
             new MailTemplate(db, "proxmox_down_alert", {
               downdatetime: new Date().toLocaleString("en-IN", {
@@ -800,7 +800,7 @@ return {
 };
 
       } catch (proxmoxErr) {
-        console.error("Proxmox Error:", proxmoxErr);
+        console.error("siberSIM Error:", proxmoxErr);
 
         new NotiTemplate(db, "proxmox_down", { learner_id: 0, userid: 0 }, "System", 0);
         new MailTemplate(db, "proxmox_down_alert", {
@@ -816,7 +816,7 @@ return {
 
         return {
           statusCode: 500,
-          message: "Proxmox is unreachable",
+          message: "siberSIM is unreachable",
           data: null,
         };
       }
@@ -875,7 +875,7 @@ return {
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -955,7 +955,7 @@ return {
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 
@@ -995,7 +995,7 @@ return {
         if (!tokenResult || tokenResult.status !== "400") {
           return {
             success: false,
-            message: `Could not connect to the Proxmox server for ${componentname}.`,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
           };
         }
 

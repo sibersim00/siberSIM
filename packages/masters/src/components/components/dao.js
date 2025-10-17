@@ -167,7 +167,7 @@ const save =
         };
       }
 
-      // Fetch VM details from Proxmox
+      // Fetch VM details from siberSIM
       const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
       const proxmoxData = vmDetailResponse?.data?.data || {};
       const vmConfig = proxmoxData || {};
@@ -314,7 +314,7 @@ const update =
         body.vmType = body.subcategoryTypeid.toLowerCase(); // 'QEMU' -> 'qemu'
       }
 
-      // Get updated Proxmox VM details
+      // Get updated siberSIM VM details
       const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
       const proxmoxData = vmDetailResponse?.data || {};
       const vmConfig = proxmoxData.data || {};
@@ -437,31 +437,69 @@ const update =
     }
   };
 
+
 const deleteById =
   ({ db }) =>
   async (body, session_userid) => {
     try {
-      let [res] = await db.sequelize.query(
+      const componentId = body.component_id;
+
+      // Check if componentId is used in the 'component_config' JSON array in the scenarios table
+      // This query uses the JSON_CONTAINS function (available in MySQL 5.7+) to check
+      // if any object in the 'component_config' array has a 'componentid' field equal to the target ID.
+      // let [b] = await db.sequelize.query(
+      //   // NOTE: The JSON_CONTAINS check below is complex because it looks for a value
+      //   // inside an array of objects. A simpler approach is to use JSON_SEARCH or LIKE
+      //   // but the most accurate way for the 'componentid' field is a JOIN/function:
+      //   `SELECT scenarioid 
+      //    FROM scenarios 
+      //    WHERE deletedon IS NULL 
+      //    AND JSON_CONTAINS(component_config, 
+      //                      JSON_OBJECT('componentid', :_id), 
+      //                      '$[*]')`,
+      //   {
+      //     replacements: { _id: componentId },
+      //   }
+      // );
+
+      // Alternative (and often simpler/faster) check using LIKE for JSON column content
+      // Note: This can lead to false positives if the ID appears elsewhere in the text.
+    
+      let [b] = await db.sequelize.query(
+        `SELECT scenarioid 
+         FROM scenarios 
+         WHERE deletedon IS NULL 
+         AND component_config LIKE '%"componentid":${componentId}%'`,
+        {
+          replacements: { _id: componentId }, // Still useful for clarity
+        }
+      );
+    
+      
+      if (b.length > 0) {
+        return {
+          status: false,
+          message: "Component is already used in active scenarios and cannot be deleted.",
+        };
+      }
+      
+      // Perform the soft delete on the component
+      await db.sequelize.query(
         `UPDATE components set deletedon=now(),modifiedby=:_userid where componentid=:_id`,
         {
           replacements: {
-            _id: body.component_id,
+            _id: componentId,
             _userid: session_userid,
           },
         }
       );
-      await db.sequelize.query(
-        `UPDATE component_checklist_map
-        SET deletedon = CURRENT_TIMESTAMP, modifiedon = CURRENT_TIMESTAMP
-        WHERE componentid=:_id`,
-        {
-          replacements: { _id: body.component_id },
-        }
-      );
-      return res;
+      
+      return { status: true, message: "Record has been Deleted Successfully." };
+
     } catch (err) {
       console.error("Error in DAO Delete:", err);
-      throw err;
+      // Throw an error for the calling service/controller to handle
+      throw new Error("Failed to delete component due to a database error.");
     }
   };
 
@@ -490,7 +528,7 @@ const getVms =
 
         data = listResponse?.data || [];
       } catch (proxmoxErr) {
-        console.error("Proxmox Error:", proxmoxErr);
+        console.error("siberSIM Error:", proxmoxErr);
         new NotiTemplate(
           db,
           "proxmox_down",
@@ -508,7 +546,7 @@ const getVms =
             hour12: true,
           }),
         });
-        throw new Error("Proxmox is unreachable.");
+        throw new Error("siberSIM is unreachable.");
       }
 
       const vmidMap = new Map();
@@ -595,9 +633,9 @@ const vmDetails =
           };
         }
       } catch (proxmoxErr) {
-        console.error("Proxmox Error:", proxmoxErr);
+        console.error("siberSIM Error:", proxmoxErr);
 
-        // Send system notification on Proxmox failure
+        // Send system notification on siberSIM failure
         new NotiTemplate(
           db,
           "proxmox_down",
@@ -616,7 +654,7 @@ const vmDetails =
           }),
         });
 
-        throw new Error("Proxmox is unreachable.");
+        throw new Error("siberSIM is unreachable.");
       }
 
       return {
@@ -641,7 +679,7 @@ const fetchAndStoreOVSNetworks =
         await proxmoxService.generateAccessTicket();
         response = await proxmoxService.GetNodeNetworkInfo();
       } catch (proxmoxErr) {
-        console.error("Proxmox Error:", proxmoxErr);
+        console.error("siberSIM Error:", proxmoxErr);
 
         new NotiTemplate(
           db,
@@ -661,13 +699,13 @@ const fetchAndStoreOVSNetworks =
           }),
         });
 
-        throw new Error("Proxmox is unreachable.");
+        throw new Error("siberSIM is unreachable.");
       }
 
       if (!response || !response.data) {
         return {
           statusCode: 500,
-          message: "Failed to retrieve network data from Proxmox",
+          message: "Failed to retrieve network data from siberSIM",
         };
       }
 

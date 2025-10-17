@@ -107,7 +107,7 @@ const saveMappedInstructor = ({ db, dao, validation }) => async (req, res) => {
     const session_userid = req.user.userid;
 
     if (!body.instructorlist || !Array.isArray(body.instructorlist) || body.instructorlist.length === 0) {
-      return res.status(400).send({ statusCode: 400, message: "Instructor list is required." });
+      return res.status(400).send({ statusCode: 400, message: "SIMManager list is required." });
     }
 
     const { learner_id, instructorlist } = body;
@@ -116,7 +116,7 @@ const saveMappedInstructor = ({ db, dao, validation }) => async (req, res) => {
 
     return res.status(200).send({
       statusCode: 200,
-      message: validation.messages.update_instructor_mapping_success || "Instructor mapping updated successfully.",
+      message: validation.messages.update_instructor_mapping_success || "SIMManager mapping updated successfully.",
     });
   } catch (error) {
     console.error("An error occurred while saving the instructor mapping:", error);
@@ -175,7 +175,7 @@ const generateProxmoxAccessToken =
     
     res.status(result.statusCode || 500).json(result);
   } catch (err) {
-    console.error("Error generating Proxmox token:", err);
+    console.error("Error generating siberSIM token:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

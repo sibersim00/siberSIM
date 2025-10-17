@@ -21,7 +21,7 @@ const fetchAndStoreOVSNetworks =
             { learner_id: 0, userid: 0 },
             'System',
             0,
-            'Proxmox Service is down. Please try again later.'
+            'siberSIM Service is down. Please try again later.'
           );
            new MailTemplate(db, "proxmox_down_alert", {
           downdatetime: new Date().toLocaleString("en-IN", {
@@ -36,20 +36,20 @@ const fetchAndStoreOVSNetworks =
 
           return {
             statusCode: 500,
-            message: "Unable to connect to the server. Please check the Proxmox login credentials or network connection.",
+            message: "Unable to connect to the server. Please check the siberSIM login credentials or network connection.",
           };
         }
       } catch (tokenError) {
         console.error("Token generation failed:", tokenError);
 
-        // Notification when Proxmox is unreachable
+        // Notification when siberSIM is unreachable
         new NotiTemplate(
           db,
           'proxmox_down',
           { learner_id: 0, userid: 0 },
           'System',
           0,
-          'Proxmox Service is down. Please try again later.'
+          'siberSIM Service is down. Please try again later.'
         );
          new MailTemplate(db, "proxmox_down_alert", {
           downdatetime: new Date().toLocaleString("en-IN", {
@@ -64,7 +64,7 @@ const fetchAndStoreOVSNetworks =
 
         return {
           statusCode: 500,
-          message: "Unable to reach the Proxmox server. Please ensure the server is online and accessible.",
+          message: "Unable to reach the siberSIM server. Please ensure the server is online and accessible.",
           error: tokenError.toString(),
         };
       }
@@ -74,7 +74,7 @@ const fetchAndStoreOVSNetworks =
       if (!response || !response.data) {
         return {
           statusCode: 500,
-          message: "Failed to fetch network details from the Proxmox server. Please try again later.",
+          message: "Failed to fetch network details from the siberSIM server. Please try again later.",
         };
       }
 
@@ -143,7 +143,7 @@ const fetchAndStoreOVSNetworks =
         { learner_id: 0, userid: 0 },
         'System',
         0,
-        'Proxmox Service is down. Please try again later.'
+        'siberSIM Service is down. Please try again later.'
       );
        new MailTemplate(db, "proxmox_down_alert", {
           downdatetime: new Date().toLocaleString("en-IN", {

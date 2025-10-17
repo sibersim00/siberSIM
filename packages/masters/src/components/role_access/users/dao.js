@@ -98,7 +98,7 @@ const create = ({ db, validation,keys }) => async (body, userId) => {
       };
     }
   } catch (error) {
-    console.log("Create User error:", error);
+    console.log("Create SIMUser error:", error);
     return { status: false };
   }
 };
@@ -158,7 +158,7 @@ const update = ({ db, validation }) => async (body, session_userid) => {
       return { statusCode: 500, status:  false, errors: [validation.messages.not_updated] };
     }
   } catch (error) {
-    console.log("Update User error:", error);
+    console.log("Update SIMUser error:", error);
     return { status: false, errors: [validation.messages.something_wrong_try_later] };
   }
 };
@@ -197,7 +197,7 @@ const updateProfile = ({ db, validation }) => async (body, session_userid) => {
     return { status: true, message: validation.messages.update_success };
 
   } catch (error) {
-    console.log("Update User error:", error);
+    console.log("Update SIMUser error:", error);
     return { status: false, errors: [validation.messages.something_wrong_try_later] };
   }
 };
@@ -215,7 +215,7 @@ const updateProfileImage = ({ db, validation }) => async (body, session_userid) 
     return { status: true, message: validation.messages.update_profile_success };
 
   } catch (error) {
-    console.log("Update User error:", error);
+    console.log("Update SIMUser error:", error);
     return { status: false, errors: [validation.messages.something_wrong_try_later] };
   }
 };
@@ -233,7 +233,7 @@ const changePassword = ({ db, validation }) => async (body, session_userid) => {
     if (!existingUser) {
       return {
         status: false,
-        errors: [validation?.messages?.invalid_password || "User not found."],
+        errors: [validation?.messages?.invalid_password || "SIMUser not found."],
       };
     }
     // Compare old password with stored hashed password
@@ -264,7 +264,7 @@ const changePassword = ({ db, validation }) => async (body, session_userid) => {
           };
         }
       } catch (error) {
-        console.log("Update User error:", error);
+        console.log("Update SIMUser error:", error);
         return {
           status: false,
           errors: [validation?.messages?.something_wrong_try_later || "Something went wrong. Please try again later."],
@@ -411,11 +411,11 @@ const userImport = ({ db }) => async ({ body, session_userid,orgid }) => {
     }
     return {
       statusCode: 200,
-      message: 'All User created successfully.',
+      message: 'All SIMUser created successfully.',
       data:[],
     };
   } catch (error) {
-    console.error('Error Save User Submit:', error);
+    console.error('Error Save SIMUser Submit:', error);
     throw error;
   }
 };

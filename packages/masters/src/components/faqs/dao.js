@@ -114,7 +114,7 @@ errors.push(validation.messages.order_by_duplicate);
 
   // Safety check
   if (!userid) {
-    throw new Error("User ID is required for saving FAQ.");
+    throw new Error("SIMUser ID is required for saving FAQ.");
   }
 
   try {

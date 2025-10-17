@@ -26,7 +26,7 @@
 // @import "lightgallery.js/dist/css/lightgallery.css";
 // @import "react-intl-tel-input/dist/main.css";
 @import "react-datepicker/dist/react-datepicker.css";
-// @import 'filepond/dist/filepond.min.css';
+@import 'filepond/dist/filepond.min.css';
 
 /* react-slick */
 @import "~slick-carousel/slick/slick.css";
@@ -3022,4 +3022,209 @@ border:1px solid #747272
 .dark-theme .ck-placeholder {
   color: #000000 !important;   /* placeholder */
   opacity: 0.8;                /* optional for readability */
+}
+
+
+.file-drop {
+  // border: 2px solid green;
+  // background-color: grey;
+  // padding: 5px;
+}
+
+.file-drop .input-file-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.file-drop .input-file-container .input-file-left {
+  background-color: var(--primary-bg-color);
+  color: white;
+  padding: 10px;
+  border: 1px solid var(--primary-bg-color);
+  border-radius: 5px 0px 0px 5px;
+  width: 50%;
+  font-size: 12px;
+  // height: 39px;
+  // overflow: hidden;
+}
+
+.file-drop .input-file-container .input-file-right {
+  width: 50%;
+  font-size: 12px;
+  background-color: #fff;
+  color: rgb(70, 172, 138);
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 0px 5px 5px 0px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+.dark-theme ::placeholder {
+  color: #ffffffe1 !important; /* pure white */
+  opacity: 1; /* ensure it's not faded */
+}
+
+
+.dark-theme .filepond--drop-label {
+  color: #ffffffe1 !important;  /* white text */
+}
+
+.dark-theme .filepond--drop-label .filepond--label-action {
+  color: #ffffffe1 !important;  /* also make "Browse" white */
+  text-decoration: underline; /* optional: keep the link look */
+}
+
+
+
+.dark-theme .ck-content {
+  color: #000000 !important;   /* value text */
+}
+
+.dark-theme .ck-placeholder {
+  color: #000000 !important;   /* placeholder */
+  opacity: 0.8;                /* optional for readability */
+}
+
+.dark-theme .table {
+  color: #000000 !important;   /* black text */
+}
+
+.dark-theme .table th{
+  color: #000000 !important;   /* force black for cells */
+}
+.dark-theme .table td {
+  color: #ffffff !important;   /* force black for cells */
+}
+
+
+.dark-theme .input-group-text-pass{
+  color: #fff; 
+}
+
+
+
+/* When dark theme is active, target CKEditor content */
+.dark-theme .ck-editor__editable_inline {
+  background-color: #0e0e23 !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .ck-editor__editable_inline p,
+.dark-theme .ck-editor__editable_inline h1,
+.dark-theme .ck-editor__editable_inline h2,
+.dark-theme .ck-editor__editable_inline h3,
+.dark-theme .ck-editor__editable_inline h4,
+.dark-theme .ck-editor__editable_inline h5,
+.dark-theme .ck-editor__editable_inline h6,
+.dark-theme .ck-editor__editable_inline li,
+.dark-theme .ck-editor__editable_inline span {
+  color: #ffffff !important;
+}
+
+.dark-theme .ck.ck-toolbar {
+  background-color: #0e0e23 !important;
+  color: #ffffff !important;
+}
+
+
+/* Toolbar background in dark mode */
+.dark-theme .ck.ck-toolbar {
+  background-color: #0e0e23 !important;
+  border-color: #ffffff !important;
+}
+
+/* Make toolbar icons white */
+.dark-theme .ck.ck-toolbar .ck-icon,
+.dark-theme .ck.ck-toolbar .ck-button .ck-icon,
+.dark-theme .ck.ck-toolbar .ck-button .ck-label {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Hover / active states */
+.dark-theme .ck.ck-toolbar .ck-button:hover,
+.dark-theme .ck.ck-toolbar .ck-button.ck-on {
+  background-color: #0e0e23 !important;
+}
+
+/* Dropdown text (like Paragraph, Heading, etc.) */
+.dark-theme .ck.ck-toolbar .ck-dropdown__button .ck-button__label {
+  color: #ffffff !important;
+}
+
+/* Dropdown panel background + items */
+.dark-theme .ck.ck-list {
+  background-color: #0e0e23 !important;
+}
+
+.dark-theme .ck.ck-list .ck-button__label {
+  color: #ffffff !important;
+}
+
+.dark-theme .ck.ck-list .ck-button:hover {
+  background-color: #0e0e23 !important;
+}
+
+
+
+
+//  /* Apply dark background to FilePond when in dark theme */
+// /* Outer wrapper */
+// .dark-theme .dark-fileupload-wrapper {
+//   background-color: #000;   /* black outer background */
+//   padding: 10px;
+//   border-radius: 8px;
+//   color: #fff;
+// }
+
+// /* FilePond drop area */
+// .dark-theme .filepond--root {
+//   background-color: #000 !important;
+//   color: #fff !important;
+//   border-radius: 8px;
+//   border: 1px solid #333 !important;
+// }
+
+// /* Drag & drop label */
+.dark-theme .filepond--drop-label {
+  color: #fff !important;
+}
+
+/* Uploaded file panel */
+.dark-theme .filepond--item-panel {
+  background-color: #0e0e23 !important; /* black panel for uploaded file */
+  color: #fff !important;
+  box-shadow: none !important;
+  border: 1px solid #333 !important; /* optional subtle border */
+}
+
+/* Uploaded file info (filename, size) */
+.dark-theme .filepond--file-info {
+  color: #fff !important;
+}
+
+/* Remove button / trash icon */
+.dark-theme .filepond--action-button {
+  color: #fff !important;
+}
+
+.dark-theme .filepond--drip{
+  position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 10;
+    border-radius: 2px;
+    background-color: #24243e;
 }

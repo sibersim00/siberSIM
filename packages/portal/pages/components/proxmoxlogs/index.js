@@ -301,7 +301,7 @@ const handleExport = () => {
   console.log("getResponseInfo", getResponseInfo);
   return (
     <>
-      <Seo title="Proxmox Logs" />
+      <Seo title="SiberSim Logs" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -309,7 +309,7 @@ const handleExport = () => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h5>Proxmox Logs</h5>
+                  <h5>SiberSim Logs</h5>
                   <div className="d-flex align-items-center">
                     <Button
                       type="button"

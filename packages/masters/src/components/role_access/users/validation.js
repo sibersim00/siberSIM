@@ -94,9 +94,9 @@ const updateSchema = joi.object({
 
 const statusSchema = joi.object({
     userid: joi.number().strict(true).required().messages({
-        "number.base": `User id should be a integer`,
-        "number.empty": `User id cannot be empty`,
-        "any.required": `User id is required.`,
+        "number.base": `SIMUser id should be a integer`,
+        "number.empty": `SIMUser id cannot be empty`,
+        "any.required": `SIMUser id is required.`,
     }),
     status: joi.string().allow('').required().messages({
         "any.required": `Status is required.`,
@@ -105,26 +105,26 @@ const statusSchema = joi.object({
 
 const mailSchema = joi.object({
     userid: joi.number().strict(true).required().messages({
-        "string.empty": `User Id cannot be an empty`,
-        "number.base": `User Id should be numeric.`,
-        "any.required": `User Id is a required.`,
+        "string.empty": `SIMUser Id cannot be an empty`,
+        "number.base": `SIMUser Id should be numeric.`,
+        "any.required": `SIMUser Id is a required.`,
     }),
 })
 const messages = {
     'duplicate_loginid':  `Loginid already exists.`,
     'invalid_password':  `Invalid Password`,
     'reset_success':  `A new password has been sent to your registered email ID.`,
-    'add_success':  `User has been created successfully`,
+    'add_success':  `SIMUser has been created successfully`,
     'something_wrong_try_later':  `Something went wrong. Please try again later`,
     'password_update':`Password has been updated successfully`,
-    'update_success':  `User has been updated successfully`, 
+    'update_success':  `SIMUser has been updated successfully`, 
     'update_profile_success':  `Profile has been updated successfully`,
     'not_updated':  `user not found or not updated`,
     'status_change' : "Status has been changed successfully",
     'resend_mail_success':  `Resend mail successfully`,
-    'user_not_found': "User details not found",
-    'user_mail_confirmation': "User email verification is already completed.",
-    'user_mail_confirmed': "Email verification successful! The User account is now active.",
+    'user_not_found': "SIMUser details not found",
+    'user_mail_confirmation': "SIMUser email verification is already completed.",
+    'user_mail_confirmed': "Email verification successful! The SIMUser account is now active.",
     'email_duplicate' : "Email is already registered.",
     'mobile_duplicate' : "Mobile is already registered.",
     'username_duplicate' : "Username is already registered.",

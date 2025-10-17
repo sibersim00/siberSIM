@@ -155,7 +155,7 @@ const userrolemapremove = ({ dao, db }) =>  async (req, res, next) => {
     try {
         let id = req.params.id;
         let result = await dao.userrolemapremove({ db })(id);
-        return res.status(200).send({statusCode:200, message: "User role was deleted successfully."});
+        return res.status(200).send({statusCode:200, message: "SIMUser role was deleted successfully."});
     }
     catch (err) { next(err) }
 }

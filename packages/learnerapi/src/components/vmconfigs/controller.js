@@ -52,7 +52,7 @@ const setScenarioLearnerConfiguration = ({ dao, db }) =>
 
           return res.status(500).send({
             statusCode: 500,
-            message: result?.message || "Job service failed. Fallback handled via DB update.",
+            message: result?.message || "Something went wrong. Please try later",
             fallback: result
           });
         } catch (fallbackError) {
@@ -131,7 +131,7 @@ const generateProxmoxAccessToken = ({ dao, db }) => async (req, res) => {
       const result = await dao.generateProxmoxAccessToken({ db, payload })(ipAddress);
       res.status(result.statusCode || 500).json(result);
     } catch (err) {
-      console.error("Error generating Proxmox token:", err);
+      console.error("Error generating siberSIM token:", err);
       res.status(500).json({ message: "Internal Server Error" });
     }
   };

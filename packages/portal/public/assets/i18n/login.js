@@ -1,10 +1,10 @@
-let title = "ADMIN LOGIN";
-let instructor_title = "INSTRUCTOR LOGIN";
+let title = "SIMMaster LOGIN";
+let instructor_title = "SIMManager LOGIN";
 let otp = "OTP";
 
 export const login_en = {
-    "meta_title" : "siberSIM-Admin",
-    "meta_title_instructor" : "siberSIM-Instructor",
+    "meta_title" : "siberSIM-SIMMaster",
+    "meta_title_instructor" : "siberSIM-SIMManager",
    
     'title' : title,
     'forget-title' : "FORGOT PASSWORD",

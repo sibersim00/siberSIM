@@ -61,12 +61,10 @@ const getById = ({ db }) => async (uuid) => {
 
     if (!res?.length) return null;
 
-    // Parse network config if available
     if (res[0].network_config) {
       res[0].network_config = JSON.parse(res[0].network_config);
     }
 
-    // Initialize component-related values
     res[0].component_count = 0;
     res[0].virtual_cpu = 0;
     res[0].virtual_memory = 0;
@@ -77,31 +75,31 @@ const getById = ({ db }) => async (uuid) => {
       let components = JSON.parse(res[0].component_config);
       res[0].component_count = components.length;
 
-      // Create a map of componentId -> component data (cores, memory, storage, image)
       const componentDetails = {};
 
       await Promise.all(
         components.map(async (element) => {
           try {
-            if (element.componentid) {
+            const compId = element.componentid || element.componentId || element.id;
+            if (compId) {
               let [rowData] = await db.sequelize.query(
                 `SELECT cores, memory, storage, componentimage
                  FROM components
                  WHERE componentid = ?`,
                 {
-                  replacements: [element.componentid],
+                  replacements: [compId],
                   type: db.sequelize.QueryTypes.SELECT,
                 }
               );
 
               if (rowData) {
-                componentDetails[element.componentid] = rowData;
+                componentDetails[compId] = rowData;
 
                 res[0].virtual_cpu += rowData.cores || 0;
                 res[0].virtual_memory += rowData.memory || 0;
                 res[0].storage_size += parseInt(rowData.storage) || 0;
 
-                if (rowData.componentimage) {
+                if (rowData.componentimage && !res[0].component_images.includes(rowData.componentimage)) {
                   res[0].component_images.push(rowData.componentimage);
                 }
               }
@@ -112,24 +110,45 @@ const getById = ({ db }) => async (uuid) => {
         })
       );
 
-      // If scenariodiagram exists, replace image URLs per node using componentDetails
+      // --- Update 'components' JSON ---
+      if (res[0].components) {
+        try {
+          let parsedComponents = JSON.parse(res[0].components);
+
+          parsedComponents = parsedComponents.map((comp) => {
+            const compId = comp.componentid || comp.componentId || comp.id;
+            if (compId && componentDetails[compId]) {
+              comp.imageUrl = componentDetails[compId].componentimage;
+            }
+            return comp;
+          });
+
+          res[0].components = JSON.stringify(parsedComponents);
+        } catch (err) {
+          console.error("Error parsing or updating s.components JSON:", err);
+        }
+      }
+
+      // --- Update 'scenariodiagram' JSON ---
       if (res[0].scenariodiagram) {
         try {
           const diagramObj = JSON.parse(res[0].scenariodiagram);
 
           if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
             diagramObj.nodes = diagramObj.nodes.map((node) => {
-              const componentId = node.data?.componentId || node.data?.componentid;
+              const componentId =
+                node.data?.componentid ||
+                node.data?.componentId ||
+                node.data?.id ||
+                node.data?.component_id;
 
               if (componentId && componentDetails[componentId]) {
-                // Replace node.data.image with componentimage from DB
                 node.data.image = componentDetails[componentId].componentimage;
               }
               return node;
             });
           }
 
-          // Convert back to string to keep the same structure
           res[0].scenariodiagram = JSON.stringify(diagramObj);
         } catch (err) {
           console.error("Error parsing or updating scenariodiagram JSON:", err);
@@ -146,51 +165,50 @@ const getById = ({ db }) => async (uuid) => {
 
 
 
-
-const create =({ db }) => async (body, session_userid) => {
-      try {
-        let [check_scenario] = await db.sequelize.query(`SELECT * FROM scenarios WHERE scenariotitle = :_title AND deletedon IS NULL`,
-          {
-            replacements: { _title: body.title },
-            type: db.sequelize.QueryTypes.SELECT,
+  const create =({ db }) => async (body, session_userid) => {
+        try {
+          let [check_scenario] = await db.sequelize.query(`SELECT * FROM scenarios WHERE scenariotitle = :_title AND deletedon IS NULL`,
+            {
+              replacements: { _title: body.title },
+              type: db.sequelize.QueryTypes.SELECT,
+            }
+          );
+          if (check_scenario) {
+          return {statusCode: 400, message:"The provided title is already registered. Please use a different one.",};
           }
-        );
-        if (check_scenario) {
-        return {statusCode: 400, message:"The provided title is already registered. Please use a different one.",};
+          const insertQuery = `INSERT INTO scenarios (scenarioidentification,scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, instructor_id, createdby, createdon, publishedon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,Now()) 
+        `;
+          const queryParams = [
+            body.identification,
+            body.title,
+            body.description,
+            body.level,
+            body.scenariocategoryid,
+            body.scenariosubcategoryid,
+            body.instruction_file,
+            body.scenariostatus,
+            body.duration,
+            body.scenarioimage,
+            body.instructor_id,
+            session_userid,
+          ];
+          await db.sequelize.query(insertQuery, {
+            replacements: queryParams,
+            type: db.sequelize.QueryTypes.INSERT,
+          });
+          const [idResult] = await db.sequelize.query(`SELECT LAST_INSERT_ID() AS scenarioid;`,
+            {
+              type: db.sequelize.QueryTypes.SELECT,
+            }
+          );
+          const scenarioid = idResult?.scenarioid;
+          return {statusCode: 200, message: "Scenario created successfully.",scenarioid,
+          };
+        } catch (error) {
+          console.error("Error Save Scenario Submit:", error);
+          throw error;
         }
-        const insertQuery = `INSERT INTO scenarios (scenarioidentification,scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, instructor_id, createdby, createdon, publishedon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,Now()) 
-      `;
-        const queryParams = [
-          body.identification,
-          body.title,
-          body.description,
-          body.level,
-          body.scenariocategoryid,
-          body.scenariosubcategoryid,
-          body.instruction_file,
-          body.scenariostatus,
-          body.duration,
-          body.scenarioimage,
-          body.instructor_id,
-          session_userid,
-        ];
-        await db.sequelize.query(insertQuery, {
-          replacements: queryParams,
-          type: db.sequelize.QueryTypes.INSERT,
-        });
-        const [idResult] = await db.sequelize.query(`SELECT LAST_INSERT_ID() AS scenarioid;`,
-          {
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
-        const scenarioid = idResult?.scenarioid;
-        return {statusCode: 200, message: "Scenario created successfully.",scenarioid,
-        };
-      } catch (error) {
-        console.error("Error Save Scenario Submit:", error);
-        throw error;
-      }
-    };
+      };
 
 const update = ({ db }) => async (body, session_userid) => {
       try {
@@ -234,23 +252,68 @@ const update = ({ db }) => async (body, session_userid) => {
       }
     };
 
+// const deleteById = ({ db }) => async (body, session_userid) => {
+//       try {
+//         let [res] = await db.sequelize.query(
+//           `UPDATE scenarios SET deletedon = NOW(), modifiedby = :modifiedBy WHERE scenarioid = :_id`,
+//           {
+//             replacements: {
+//               _id: body.scenarioid,
+//               modifiedBy: session_userid,
+//             },  
+//           }
+//         );
+//         return res;
+//       } catch (error) {
+//         console.error("Error in deleteById:", error);
+//         throw new Error("Failed to delete scenario");
+//       }
+//     };
 const deleteById = ({ db }) => async (body, session_userid) => {
-      try {
-        let [res] = await db.sequelize.query(
-          `UPDATE scenarios SET deletedon = NOW(), modifiedby = :modifiedBy WHERE scenarioid = :_id`,
-          {
-            replacements: {
-              _id: body.scenarioid,
-              modifiedBy: session_userid,
-            },
-          }
-        );
-        return res;
-      } catch (error) {
-        console.error("Error in deleteById:", error);
-        throw new Error("Failed to delete scenario");
+  try {
+    const scenarioId = body.scenarioid;
+
+    // 1️⃣ Check if the scenario is currently running
+    const [running] = await db.sequelize.query(
+      `SELECT sl.scenariolearnerid
+       FROM scenario_learner sl
+       WHERE sl.scenarioid = :scenarioId
+       AND sl.status = 'Running'`,
+      {
+        replacements: { scenarioId },
       }
+    );
+
+    if (running.length > 0) {
+      return {
+        status: false,
+        message: "Scenario is currently running and cannot be deleted.",
+      };
+    }
+
+    // 2️⃣ Soft delete scenario if not running
+    await db.sequelize.query(
+      `UPDATE scenarios 
+       SET deletedon = NOW(), modifiedby = :modifiedBy 
+       WHERE scenarioid = :scenarioId`,
+      {
+        replacements: {
+          scenarioId,
+          modifiedBy: session_userid,
+        },
+      }
+    );
+
+    return {
+      status: true,
+      message: "Scenario has been deleted successfully.",
     };
+  } catch (error) {
+    console.error("Error in deleteById:", error);
+    throw new Error("Failed to delete scenario due to database error.");
+  }
+};
+
 
 const saveDiagram = ({ db, validation }) => async (body, session_userid) => {
       const updateQuery = `UPDATE scenarios SET scenariodiagram = ?, components = ?, component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ? WHERE scenarioid = ?`;
@@ -376,6 +439,33 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
       throw error;
     }
   };
+
+  // export functionality
+// scenariosDao.js
+// const getScenarioInstructionFiles = ({ db }) => async (scenarioIds) => {
+//   if (!Array.isArray(scenarioIds) || scenarioIds.length === 0) return [];
+
+//   // Build a dynamic placeholders string for each ID
+//   const placeholders = scenarioIds.map(() => '?').join(',');
+
+//   const query = `
+//     SELECT scenarioid, scenariotitle, instruction_file 
+//     FROM scenarios 
+//     WHERE scenarioid IN (${placeholders})
+//   `;
+
+// const rows = await db.sequelize.query(query, {
+//   replacements: scenarioIds,
+//   type: db.sequelize.QueryTypes.SELECT,
+// });
+
+// console.log("rrrrrrrrrrrrrrrrr",rows);
+
+//   return rows;
+// };
+
+
+
 module.exports = {
   list,
   update,
@@ -386,4 +476,5 @@ module.exports = {
   saveDiagram,
   scenariodigramlist,
   saveComponentconfiguration,
+  // getScenarioInstructionFiles,
 };

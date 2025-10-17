@@ -30,7 +30,7 @@ const checklogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
 
     // If no user found, return error
     if (!user) {
-      return { statusCode: 404, message: "User not found" };
+      return { statusCode: 404, message: "SIMUser not found" };
     }
 
     // Compare provided password with hashed password from database

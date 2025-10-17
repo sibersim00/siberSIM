@@ -20,7 +20,7 @@ const getInstructorLogs = ({ dao, db }) => async (req, res) => {
     const logs = await dao.getInstructorLogs({ db });
     return res.status(200).send({
       statusCode: 200,
-      message: 'Instructor login logs fetched successfully',
+      message: 'SIMManager login logs fetched successfully',
       data: logs,
     });
   } catch (error) {

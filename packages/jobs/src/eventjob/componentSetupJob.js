@@ -205,7 +205,7 @@ async function cloneComponentVM(db, ipAddress, component) {
     sendProxmoxDownAlerts(db, learner_id);
     return {
       success: false,
-      message: `Could not connect to the Proxmox server while Cloning. Please check server status or credentials.`,
+      message: `Could not connect to the siberSIM server while Cloning. Please check server status or credentials.`,
     };
   }
   const result = await proxmoxService.cloneVM(
@@ -252,7 +252,7 @@ async function configureComponentVM(
       sendProxmoxDownAlerts(db, learner_id);
       return {
         success: false,
-        message: `Could not connect to the Proxmox server while Configuring. Please check server status or credentials.`,
+        message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,
       };
     }
     const bridgeJson = JSON.parse(network_bridge_json || "{}");
@@ -307,7 +307,7 @@ async function startComponentVM(
         sendProxmoxDownAlerts(db, learner_id);
         return {
           success: false,
-          message: `Could not connect to the Proxmox server while Starting. Please check server status or credentials.`,
+          message: `Could not connect to the siberSIM server while Starting. Please check server status or credentials.`,
         };
       }
 
@@ -519,7 +519,7 @@ await sendProxmoxDownAlerts(db, learner_id);
  
   await new NotiTemplate(
     db,
-    "Proxmox_Terminate",
+    "proxmox_terminate",
     {  userid: 0, },
     "Admin",
     0
@@ -633,7 +633,7 @@ async function stopAndDestroyComponentVM(
 
     const tokenResult = await proxmoxService.generateAccessTicket();
     if (!tokenResult || tokenResult.status !== "200") {
-        await handleFailureOnce(new Error("Proxmox connection failed before stop/destroy"));
+        await handleFailureOnce(new Error("siberSIM connection failed before stop/destroy"));
         continue;
     }
 
@@ -673,7 +673,7 @@ async function stopAndDestroyComponentVM(
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
         await handleFailureOnce(
-          new Error("Proxmox connection failed before destroy")
+          new Error("siberSIM connection failed before destroy")
         );
         continue;
       }

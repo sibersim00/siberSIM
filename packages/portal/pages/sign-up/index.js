@@ -250,7 +250,7 @@ const Signup = () => {
                         }) => (
                           <Form onSubmit={handleSubmit} className="mb-2">
                             <h2 className="text-center">
-                              Register to Become an Instructor
+                              Register to Become an SIMManager
                             </h2>
                             <p className="mb-4 text-muted tx-13 ms-0 text-center">
                               Kindly fill in all required fields with accurate

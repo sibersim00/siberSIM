@@ -195,7 +195,7 @@ const AddParticipantModal = (props) => {
             .array()
             .of(
               yup.object().shape({
-                learner_id: yup.string().required("User is required"),
+                learner_id: yup.string().required("SIMUser is required"),
               })
             )
             .min(1, "Required"),
@@ -467,7 +467,7 @@ const AddParticipantModal = (props) => {
                       <Form.Check
                         inline
                         type="radio"
-                        label="Existing User"
+                        label="Existing SIMUser"
                         id="existing"
                         checked={mode === "existing"}
                         onChange={() => setMode("existing")}
@@ -488,7 +488,7 @@ const AddParticipantModal = (props) => {
                   <>
                     <Form.Group as={Col} md="12" className="mb-3">
                       <Form.Label>
-                        User <span className="text-danger">*</span>
+                        SIMUser <span className="text-danger">*</span>
                       </Form.Label>
                       <Select
                         theme={(theme) => ({
@@ -505,7 +505,7 @@ const AddParticipantModal = (props) => {
                         options={studentDropdown}
                         getOptionLabel={(x) => x.Student_name}
                         getOptionValue={(x) => x.learner_id}
-                        placeholder="Select User"
+                        placeholder="Select SIMUser"
                         onChange={(e) => {
                           formValidation.setFieldValue("learner_id", [e]);
                         }}
@@ -673,7 +673,7 @@ const AddParticipantModal = (props) => {
                             type="text"
                             name="username"
                             autoComplete="off"
-                            placeholder="Enter User Name"
+                            placeholder="Enter SIMUser Name"
                             value={formValidation.values.username}
                             onChange={formValidation.handleChange}
                             isInvalid={

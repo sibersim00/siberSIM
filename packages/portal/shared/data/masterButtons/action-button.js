@@ -578,7 +578,7 @@ const ActionButtonRenderer = (props) => {
       )}
 
       {handleShowMapInstructort && (
-        <OverlayTrigger placement="bottom" overlay={<Tooltip>Map Instructor</Tooltip>}>
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>Map SIMManager</Tooltip>}>
           <Button
             id="mapBtn"
             type="button"
@@ -592,7 +592,7 @@ const ActionButtonRenderer = (props) => {
               data-bs-toggle="tooltip"
               title=""
               data-bs-placement="top"
-              data-bs-original-title="Map Instructor"
+              data-bs-original-title="Map SIMManager"
             ></i>
           </Button>
         </OverlayTrigger>
@@ -613,7 +613,7 @@ const ActionButtonRenderer = (props) => {
               data-bs-toggle="tooltip"
               title=""
               data-bs-placement="top"
-              data-bs-original-title="Map Instructor"
+              data-bs-original-title="Map SIMManager"
             ></i>
           </Button>
         </OverlayTrigger>

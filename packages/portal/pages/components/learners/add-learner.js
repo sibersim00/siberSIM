@@ -180,7 +180,7 @@ function AddLearner({ addLear, setAddLear, learnerData }) {
           viewDemoClose("addLear");
         }}
       >
-        <Modal.Title>{leaenerSubmitTitle} User</Modal.Title>
+        <Modal.Title>{leaenerSubmitTitle} SIMUser</Modal.Title>
       </Modal.Header>
       <Form
         noValidate

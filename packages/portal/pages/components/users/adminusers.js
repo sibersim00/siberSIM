@@ -184,7 +184,7 @@ const Adminuser = () => {
     });
 
     const header = [
-      "Admin User Id",
+      "SIMMaster User Id",
       "User Name",
       "First Name",
       "Last Name",
@@ -583,7 +583,7 @@ const Adminuser = () => {
   };
   return (
     <>
-      <Seo title="Admin User" />
+      <Seo title="SIMMaster" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -591,7 +591,7 @@ const Adminuser = () => {
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4>Admin Users</h4>
+                  <h4>SIMMaster</h4>
                   <div className="d-flex align-items-center">
                     {view === "card" && (
                       <>

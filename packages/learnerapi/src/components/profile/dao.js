@@ -66,7 +66,7 @@ const changePassword = ({ db, validation }) => async (body, learner_sessionid) =
       };
     }
   } catch (error) {
-    console.log("Update User error:", error);
+    console.log("Update SIMUser error:", error);
     return {status: false, errors: [validation?.messages?.something_wrong_try_later || "Something went wrong. Please try again later."],
     };
   }
@@ -81,7 +81,7 @@ const updateProfileImage = ({ db, validation }) => async (body, learner_sessioni
     });
     return { status: true, message: validation.messages.update_profile_image_success };
   } catch (error) {
-    console.log("Update User error:", error);
+    console.log("Update SIMUser error:", error);
     return { status: false, errors: [validation.messages.something_wrong_try_later] };
   }
 };

@@ -64,7 +64,7 @@ const sendMessageSchema = joi.object({
     "any.required": "Learner ID is required.",
   }),
   instructor_id: joi.number().integer().required().messages({
-    "any.required": "Instructor ID is required.",
+    "any.required": "SIMManager ID is required.",
   }),
   sender_type: joi.string().valid("Instructor", "Admin", "Learner").required().messages({
     "any.required": "Sender type is required.",
@@ -87,7 +87,7 @@ const markSeenSchema = joi.object({
     "any.required": "Learner ID is required.",
   }),
   instructor_id: joi.number().integer().required().messages({
-    "any.required": "Instructor ID is required.",
+    "any.required": "SIMManager ID is required.",
   }),
 });
 

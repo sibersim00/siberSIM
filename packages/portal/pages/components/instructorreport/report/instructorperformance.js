@@ -107,39 +107,61 @@ const Userperformance = () => {
     },
   });
 
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
-      ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-          ? "#00d683"
-          : styles.borderColor,
-      },
-    }),
-  };
-  const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-          ...customStyles,
-          control: (styles) => ({
-            ...styles,
-            borderColor: "#EB5757",
-            boxShadow: "0 0 0 0.001rem #EB5757",
-          }),
-        }
-      : customStyles;
+  // const customStyles = {
+  //   control: (styles, { isFocused, isDisabled }) => ({
+  //     ...styles,
+  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+  //     boxShadow: isDisabled
+  //       ? null
+  //       : isFocused
+  //       ? "0 0 0 0.001rem #00d683"
+  //       : null,
+  //     "&:hover": {
+  //       borderColor: isDisabled
+  //         ? "#e8e8f7"
+  //         : isFocused
+  //         ? "#00d683"
+  //         : styles.borderColor,
+  //     },
+  //   }),
+  // };
+  const customStyles = () => {
+    return {
+      control: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--dark-bg-color)",
+        borderColor: "#ced4da",
+        minHeight: "38px",
+      }),
+      multiValue: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--primary-bg-color)",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: "#fff",
+      }),
+      multiValueRemove: (styles) => ({
+        ...styles,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "#EB5757",
+          color: "white",
+        },
+      }),
+      input: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      singleValue: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      placeholder: (styles) => ({
+        ...styles,
+        color: "#aaa",
+      }),
+    };
   };
 
   const columnDefs = [
@@ -266,7 +288,7 @@ const Userperformance = () => {
 
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Instructor Performance");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SIMManager Performance");
 
     const timestamp = new Date()
       .toISOString()
@@ -349,14 +371,14 @@ const Userperformance = () => {
 
   return (
     <>
-      <Seo title="Instructor Performance" />
+      <Seo title="SIMManager Performance" />
       <Row className="row-sm">
         <Col md={12}>
           <Card className="custom-card overflow-hidden">
             <Card.Body className="p-3">
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center">
-                  <h4> Instructor Performance</h4>
+                  <h4> SIMManager Performance</h4>
 
                   <Form.Group as={Col} md="3" className="">
                     <Select
@@ -369,25 +391,13 @@ const Userperformance = () => {
                         },
                       })}
                       isMulti
-                      styles={{
-                        ...customStyles,
-                        multiValue: (base) => ({
-                          ...base,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          borderRadius: "2px",
-                          fontSize: "85%",
-                          padding: "3px 3px 3px 6px",
-                          boxSizing: "border-box",
-                        }),
-                      }}
+                      styles={customStyles()}
                       name="instructor_id"
                       value={formValidation.values.instructor_id}
                       options={InstructorDropdown}
                       getOptionLabel={(x) => x.name}
                       getOptionValue={(x) => x.instructor_id}
-                      placeholder="Select Instructors"
+                      placeholder="Select SIMManager"
                       onChange={(selectedOptions) => {
                         formValidation.setFieldValue(
                           "instructor_id",
@@ -420,19 +430,7 @@ const Userperformance = () => {
                   <Form.Group as={Col} md="4" className="">
                     <Select
                       isMulti
-                      styles={{
-                        ...customStyles,
-                        multiValue: (base) => ({
-                          ...base,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          borderRadius: "2px",
-                          fontSize: "85%",
-                          padding: "3px 3px 3px 6px",
-                          boxSizing: "border-box",
-                        }),
-                      }}
+                      styles={customStyles()}
                       theme={(theme) => ({
                         ...theme,
                         colors: {

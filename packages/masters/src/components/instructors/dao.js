@@ -214,7 +214,7 @@ const save =
 
         return { statusCode: 200, message: validation.messages.add_success };
       } catch (error) {
-        console.error("Error Save Instructor Submit:", error);
+        console.error("Error Save SIMManager Submit:", error);
         throw error;
       }
     };

@@ -47,11 +47,11 @@ const schema = joi.object({
 
   instructor_id: joi.alternatives().try(
     joi.number().strict().messages({
-      "number.base": `"Instructor Id" must be a number`,
+      "number.base": `"SIMManager Id" must be a number`,
     }),
     joi.valid(null),
     joi.string().valid('').messages({
-      "string.base": `"Instructor Id" must be an empty string or a number`,
+      "string.base": `"SIMManager Id" must be an empty string or a number`,
     })
   ).optional(),
 
@@ -89,8 +89,8 @@ const updateSchema = joi.object({
   }),
 
   instructor_id: joi.alternatives().try(
-    joi.number().messages({ "number.base": `"Instructor Id" must be a number` }),   // Must be a number if provided
-    joi.valid(null).messages({ "any.only": `"Instructor Id" must be null or a number` }), // Can be null
+    joi.number().messages({ "number.base": `"SIMManager Id" must be a number` }),   // Must be a number if provided
+    joi.valid(null).messages({ "any.only": `"SIMManager Id" must be null or a number` }), // Can be null
   ),
 
   instruction_file: joi.string().trim().strict().required().messages({

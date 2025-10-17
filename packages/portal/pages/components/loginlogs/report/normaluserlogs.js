@@ -95,7 +95,7 @@ const Normaluser = () => {
       responsive: true,
       plugins: {
         legend: { position: "top" },
-        title: { display: true, text: "User Login/Logout Stats" },
+        title: { display: true, text: "SIMUser Login/Logout Stats" },
       },
     };
 
@@ -361,7 +361,7 @@ const Normaluser = () => {
   };
   return (
     <>
-      <Seo title="User Logs" />
+      <Seo title="SIMUser Logs" />
       <ToastContainer />
       <Row className="row-sm">
         <Col md={12}>
@@ -370,7 +370,7 @@ const Normaluser = () => {
               {/* Header with Buttons */}
               <Col md={12}>
                 <div className="d-flex justify-content-between align-items-center flex-wrap">
-                  <h4>User Logs</h4>
+                  <h4>SIMUser Logs</h4>
                   <div className="d-flex align-items-center flex-wrap">
                     {/* View Buttons */}
                     <Button

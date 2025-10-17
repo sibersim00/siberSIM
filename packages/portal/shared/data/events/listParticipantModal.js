@@ -141,7 +141,7 @@ const ListParticipantModal = (props) => {
       maxWidth: 90,
     },
     {
-      headerName: "User Name",
+      headerName: "SIMUser Name",
       // Use valueGetter to combine firstname and lastname
       valueGetter: (params) => {
         const first = params.data?.firstname || "";
@@ -257,10 +257,10 @@ const ListParticipantModal = (props) => {
             .array()
             .of(
               yup.object().shape({
-                learner_id: yup.string().required("User is required"),
+                learner_id: yup.string().required("SIMUser is required"),
               })
             )
-            .min(1, "User is required"),
+            .min(1, "SIMUser is required"),
         });
       } else {
         return yup.object().shape({

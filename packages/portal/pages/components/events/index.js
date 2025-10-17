@@ -241,6 +241,7 @@ const ManageEvents = () => {
       sortable: true,
       filter: true,
       resizable: true,
+      minWidth: 180,
       flex: 2,
       cellStyle: { whiteSpace: "normal", wordWrap: "break-word" },
     },
@@ -407,20 +408,42 @@ const ManageEvents = () => {
       router.push(`/event-dashboard?eventuuid=${event.eventuuid}`);
     }
   };
+  // const frameworkComponents = {
+  //   srNoRender: (props) => props.node.rowIndex + 1,
+  //   actionButtonRenderer: (props) => (
+  //     <ActionButtonRenderer
+  //       addparticipants={handleFormModal}
+  //       handleaddparticipants={true}
+  //       listparticipants={handlelistModal}
+  //       handlelistparticipants={true}
+  //       handleEdit={handleEdit}
+  //       handleShowEdit={true}
+  //       propsVal={props}
+  //     />
+  //   ),
+  // };
+  
   const frameworkComponents = {
-    srNoRender: (props) => props.node.rowIndex + 1,
-    actionButtonRenderer: (props) => (
+  srNoRender: (props) => props.node.rowIndex + 1,
+  actionButtonRenderer: (props) => {
+    const canShowParticipantBtns =
+      new Date(props.data.eventendtime) > new Date() &&
+      props.data.status?.toLowerCase() === "pending";
+
+    return (
       <ActionButtonRenderer
         addparticipants={handleFormModal}
-        handleaddparticipants={true}
+        handleaddparticipants={canShowParticipantBtns}
         listparticipants={handlelistModal}
-        handlelistparticipants={true}
+        handlelistparticipants={canShowParticipantBtns}
         handleEdit={handleEdit}
         handleShowEdit={true}
         propsVal={props}
       />
-    ),
-  };
+    );
+  },
+};
+
   const handleCallBack = (data) => {
     setRowValues(data);
     setformModal(true);

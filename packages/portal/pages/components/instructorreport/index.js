@@ -83,7 +83,7 @@ const Master = () => {
                               <Nav.Link
                                 eventKey={"tab1"}
                                 className="masterlist"
-                              >Instructor Profile
+                              >SIMManager Profile
                               </Nav.Link>
                             </Nav.Item>
 
@@ -96,7 +96,7 @@ const Master = () => {
                               <Nav.Link
                                 eventKey={"tab2"}
                                 className="masterlist"
-                              >Instructor Performance
+                              >SIMManager Performance
                               </Nav.Link>
                             </Nav.Item>
                           </Nav>

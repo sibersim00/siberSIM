@@ -13,7 +13,7 @@ function safeReadDirSync (path) {
 		dirData = FS.readdirSync(path);
 	} catch(ex) {
 		if (ex.code == "EACCES" || ex.code == "EPERM") {
-			//User does not have permissions, ignore directory
+			//SIMUser does not have permissions, ignore directory
 			return null;
 		}
 		else throw ex;

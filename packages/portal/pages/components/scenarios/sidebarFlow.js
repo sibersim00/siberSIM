@@ -309,19 +309,20 @@ return (
           }
       }}
       isMulti
-  styles={{
-    ...customStyles,
-    multiValue: (base) => ({
-      ...base,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-      borderRadius: "2px",
-      fontSize: "85%",
-      padding: "3px 3px 3px 6px",
-      boxSizing: "border-box",
-    }),
-  }}
+       styles={customStyles()}
+  // styles={{
+  //   ...customStyles,
+  //   multiValue: (base) => ({
+  //     ...base,
+  //     overflow: "hidden",
+  //     textOverflow: "ellipsis",
+  //     whiteSpace: "nowrap",
+  //     borderRadius: "2px",
+  //     fontSize: "85%",
+  //     padding: "3px 3px 3px 6px",
+  //     boxSizing: "border-box",
+  //   }),
+  // }}
   /> 
   </div>
 
@@ -384,17 +385,59 @@ return (
 };
 export default sidebarFlow;
 
- const customStyles = {
-        control: (styles, { isFocused, isDisabled }) => ({
-            ...styles,
-            borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-            boxShadow: isDisabled ? null : isFocused ? "0 0 0 0.001rem #00d683" : null,
-            "&:hover": {
-                borderColor: isDisabled
-                    ? "#e8e8f7"
-                    : isFocused
-                        ? "#00d683"
-                        : styles.borderColor,
-            },
-        }),
-    }; 
+//  const customStyles = {
+//         control: (styles, { isFocused, isDisabled }) => ({
+//             ...styles,
+//             borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+//             boxShadow: isDisabled ? null : isFocused ? "0 0 0 0.001rem #00d683" : null,
+//             "&:hover": {
+//                 borderColor: isDisabled
+//                     ? "#e8e8f7"
+//                     : isFocused
+//                         ? "#00d683"
+//                         : styles.borderColor,
+//             },
+//         }),
+//     }; 
+
+
+
+
+     const customStyles = () => {
+  return {
+    control: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
+    }),
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
+    }),
+    multiValueLabel: (styles) => ({
+      ...styles,
+      color: "#fff",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
+      },
+    }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
+    }),
+  };
+};

@@ -6,7 +6,7 @@ const setScenarioLearnerConfigSchema = Joi.object({
     "any.required": `scenarioid is required.`,
   }),
   learnerid: Joi.number().required().messages({
-    "number.base": `User ID must be a number.`,
+    "number.base": `SIMUser ID must be a number.`,
     "any.required": `learnerid is required.`,
   }),
   scenariolearnersessionid: Joi.number().required().messages({
@@ -35,7 +35,7 @@ const updateCompleteTerminate = Joi.object({
 
 const ERROR_MESSAGES = {
    CONFIG_NOT_FOUND: "Component configuration not found.",
-  LEARNER_NOT_FOUND: "User data not found.",
+  LEARNER_NOT_FOUND: "SIMUser data not found.",
   NETWORK_BRIDGES: "Not enough available network bridges.",
   COM_TYPE_NOT_FOUND: "Component Type not found.",
   PREVIOUS_NETWORK: "Failed to resolve previously assigned network bridge.",

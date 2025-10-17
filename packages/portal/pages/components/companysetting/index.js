@@ -658,12 +658,12 @@ const CompanySettings = () => {
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        <Form.Label>Proxmox Alert Time (Minutes)</Form.Label>
+                        <Form.Label>SiberSim Alert Time (Minutes)</Form.Label>
                         <Form.Control
                           type="text"
                           name="proxmox_alert_time"
                           autoComplete="off"
-                          placeholder="Enter Proxmox Alert Time"
+                          placeholder="Enter SiberSim Alert Time"
                           onChange={formValidation.handleChange}
                           value={formValidation.values.proxmox_alert_time}
                           isInvalid={
@@ -681,12 +681,12 @@ const CompanySettings = () => {
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        <Form.Label>Proxmox Email Sent</Form.Label>
+                        <Form.Label>SiberSim Email Sent</Form.Label>
                         <Form.Control
                           type="text"
                           name="proxmox_email_sent"
                           autoComplete="off"
-                          placeholder="Enter Proxmox Email Sent"
+                          placeholder="Enter SiberSim Email Sent"
                           onChange={formValidation.handleChange}
                           value={formValidation.values.proxmox_email_sent}
                           isInvalid={
@@ -929,7 +929,7 @@ const CompanySettings = () => {
                           <div className="picture avatar-lg online text-center mt-2">
                             <div className="pointer overflow-hidden">
                               {isDefaultFavicon && (
-                                <img alt="Admin Panel Logo Preview"
+                                <img alt="SIMMaster Panel Logo Preview"
                                 src={`${defaultFavicon.src}`}
                                 style={{
                                   objectFit: "cover",
@@ -938,7 +938,7 @@ const CompanySettings = () => {
                                 }}/>)}
                               {formValidation.values.favicon && formValidation.values.favicon!="" && (
                                 <img
-                                  alt="Admin Panel Logo Preview"
+                                  alt="SIMMaster Panel Logo Preview"
                                   src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.favicon}`}
                                   onError={(e) => {
                                     e.target.onerror = null;
@@ -962,7 +962,7 @@ const CompanySettings = () => {
                         className="mb-3"
                       >
                         <Form.Label className="d-flex justify-content-between">
-                          <span>Admin and Instructor panel logo</span>
+                          <span>SIMMaster and SIMManager panel logo</span>
                           <OverlayTrigger
                             placement="bottom"
                             overlay={<Tooltip>Use Default</Tooltip>}
@@ -994,7 +994,7 @@ const CompanySettings = () => {
                           <div className="picture avatar-lg online text-center mt-2">
                             <div className="pointer overflow-hidden">
                               {isDefaultPanel && (
-                                <img alt="Admin Panel Logo Preview"
+                                <img alt="SIMMaster Panel Logo Preview"
                                 src={`${defaultAdminLogin.src}`}
                                 style={{
                                   objectFit: "cover",
@@ -1003,7 +1003,7 @@ const CompanySettings = () => {
                                 }}/>)}
                               {formValidation.values.admin_panel_logo && formValidation.values.admin_panel_logo!="" && (
                                 <img
-                                  alt="Admin Panel Logo Preview"
+                                  alt="SIMMaster Panel Logo Preview"
                                   src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.admin_panel_logo}`}
                                   onError={(e) => {
                                     e.target.onerror = null;
@@ -1027,7 +1027,7 @@ const CompanySettings = () => {
                         className="mb-3"
                       >
                         <Form.Label className="d-flex justify-content-between">
-                          <span>User Panel logo</span>
+                          <span>SIMUser Panel logo</span>
                           <OverlayTrigger
                             placement="bottom"
                             overlay={<Tooltip>Use Default</Tooltip>}
@@ -1059,7 +1059,7 @@ const CompanySettings = () => {
                           <div className="picture avatar-lg online text-center mt-2">
                             <div className="pointer overflow-hidden">
                               {isDefaultWeb && (
-                                <img alt="Admin Panel Logo Preview"
+                                <img alt="SIMMaster Panel Logo Preview"
                                 src={`${defaultAdminLogin.src}`}
                                 style={{
                                   objectFit: "cover",
@@ -1068,7 +1068,7 @@ const CompanySettings = () => {
                                 }}/>)}
                               {formValidation.values.web_panel_logo && formValidation.values.web_panel_logo!="" && (
                                 <img
-                                  alt="Admin Panel Logo Preview"
+                                  alt="SIMMaster Panel Logo Preview"
                                   src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.web_panel_logo}`}
                                   onError={(e) => {
                                     e.target.onerror = null;

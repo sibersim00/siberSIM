@@ -217,6 +217,15 @@ const learnermenu =
         selected: false,
         title: "FAQs",
       },
+      {
+        source: "/custom_scenarios  ",
+        path: "/components/custom_scenarios ",
+        icon: "ti ti-help-alt",
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Custom Scenarios",
+      },
     ];
   };
 const register =
