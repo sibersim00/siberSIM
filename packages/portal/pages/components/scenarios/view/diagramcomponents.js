@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Row, Col, Card, Button, Form } from "react-bootstrap";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-
 import { AgGridReact } from "ag-grid-react";
 import {
   saveComponentConfiguration, getSingleScenarios, clearSingleScenarios, clearSaveComponentConfiguration, getScenarioList
@@ -43,13 +41,10 @@ const DiagramComponents = (props) => {
   const [rowData, setRowData] = useState([]);
   const [rowData2, setRowData2] = useState([]);
   const [publishedDate, setPublishedDate] = useState(null);
-  const isDark = document.body.classList.contains("dark-theme");
+  // const isDark = document.body.classList.contains("dark-theme");
   const columnDefs = [
-    { headerName: '', field: 'drag', rowDrag: true, width: 25, flex: 0, suppressSizeToFit: true,
-  cellStyle: {
-    color: isDark ? "#fff" : "#333",
-  },
-}, // Drag handle 
+    { headerName: '', field: 'drag', rowDrag: true, width: 25, flex: 0, suppressSizeToFit: true},
+// Drag handle 
     // {
     //   headerName: "",
     //   field: "imageurl",
