@@ -2,7 +2,7 @@ let title = "SIMUSER LOGIN";
 let otp = "OTP";
 
 export const login_en = {
-  "meta_title": "siberSIM-User",
+  "meta_title": "siberSIM-SIMUser",
   'title_student': title,
   'title-forget': "FORGOT PASSWORD",
   "labels": {

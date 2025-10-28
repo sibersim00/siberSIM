@@ -4028,3 +4028,16 @@ table thead tr .table-title-heading {
     border-radius: 2px;
     background-color: #24243e;
 }
+
+
+/* Default (light theme) */
+.ag-row-drag {
+  color: #333; /* normal dark handle for light mode */
+  filter: none;
+}
+
+/* Dark theme */
+body.dark-theme .ag-row-drag {
+  color: #fff !important;       /* make drag icon white */
+  filter: brightness(2);        /* enhances visibility on dark bg */
+}

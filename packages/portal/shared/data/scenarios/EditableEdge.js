@@ -117,6 +117,7 @@ console.log('shouldAnimate',shouldAnimate,data?.source)
                 borderRadius: 4,
                 padding: '2px 4px',
                 width: '100%',
+                color:'#000',
               }}
             />
           ) : (

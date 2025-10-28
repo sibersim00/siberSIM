@@ -216,7 +216,16 @@ const learnermenu =
         active: false,
         selected: false,
         title: "FAQs",
-      }
+      },
+      // {
+      //   source: "/customscenarios",
+      //   path: "/components/customscenarios",
+      //   icon: "ti ti-dropbox",
+      //   type: "link",
+      //   active: false,
+      //   selected: false,
+      //   title: "Custom Scenarios",
+      // },
     ];
   };
 const register =

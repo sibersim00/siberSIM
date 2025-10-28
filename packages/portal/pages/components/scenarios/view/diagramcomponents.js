@@ -43,8 +43,13 @@ const DiagramComponents = (props) => {
   const [rowData, setRowData] = useState([]);
   const [rowData2, setRowData2] = useState([]);
   const [publishedDate, setPublishedDate] = useState(null);
+  const isDark = document.body.classList.contains("dark-theme");
   const columnDefs = [
-    { headerName: '', field: 'drag', rowDrag: true, width: 25, flex: 0, suppressSizeToFit: true }, // Drag handle 
+    { headerName: '', field: 'drag', rowDrag: true, width: 25, flex: 0, suppressSizeToFit: true,
+  cellStyle: {
+    color: isDark ? "#fff" : "#333",
+  },
+}, // Drag handle 
     // {
     //   headerName: "",
     //   field: "imageurl",

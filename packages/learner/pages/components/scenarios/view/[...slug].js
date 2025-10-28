@@ -575,7 +575,8 @@ const ScenariosView = () => {
                           variant="primary"
                           onClick={() => window.open(pdfUrl, "_blank")}
                         >
-                            <i className="fa fa-cloud-download"></i> View / Download PDF
+                          <i className="fa fa-cloud-download"></i> View /
+                          Download PDF
                         </Button>
                       </Col>
                     )}
@@ -1262,18 +1263,24 @@ const ScenariosView = () => {
 
                                               return (
                                                 <tr key={index}>
+                                                  
                                                   <td>
-                                                    {new Date(
-                                                      log.startedon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
+                                                    {log.startedon
+                                                      ? new Date(
+                                                          log.startedon
+                                                        ).toLocaleString(
+                                                          "en-US",
+                                                          {
+                                                            year: "numeric",
+                                                            month: "short",
+                                                            day: "2-digit",
+                                                            hour: "numeric",
+                                                            minute: "2-digit",
+                                                            second: "2-digit",
+                                                            hour12: true,
+                                                          }
+                                                        )
+                                                      : "-"}
                                                   </td>
 
                                                   <td>
