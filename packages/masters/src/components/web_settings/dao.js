@@ -2,7 +2,7 @@ const getWebSettings =
   ({ db }) =>
   async () => {
     let [webSettings] = await db.sequelize.query(
-      `select id, name, phone_number, website,proxmox_base_url,qemu_url,lxc_url,max_questions,otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay, address,  is_default_web_logo, is_default_ad_logo, is_default_favicon from web_settings where company_id = 1`,
+      `select id, name, phone_number, website,proxmox_base_url,qemu_url,lxc_url,max_questions,otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay,cloning_delay, address,  is_default_web_logo, is_default_ad_logo, is_default_favicon from web_settings where company_id = 1`,
       {
         type: db.sequelize.QueryTypes.SELECT,
       }
@@ -24,7 +24,7 @@ const addWebSettings =
   async (body, userid) => {
     try {
       await db.sequelize.query(
-        `INSERT INTO web_settings (uuid, createdon, name, phone_number, website,proxmox_base_url,qemu_url,lxc_url,max_questions,otp_verification, email, system_name, system_footer, is_default_favicon, is_default_ad_logo, is_default_web_logo, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay, address, createdby, company_id) VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO web_settings (uuid, createdon, name, phone_number, website,proxmox_base_url,qemu_url,lxc_url,max_questions,otp_verification, email, system_name, system_footer, is_default_favicon, is_default_ad_logo, is_default_web_logo, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay,cloning_delay, address, createdby, company_id) VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         {
           replacements: [
             body.name,
@@ -48,6 +48,7 @@ const addWebSettings =
             body.proxmox_email_sent,
             body.termination_delay,
             body.configuration_delay,
+            body.cloning_delay,
             body.address,
             userid,
             1,
@@ -72,7 +73,7 @@ const updateWebSettings =
         proxmox_base_url = ?, qemu_url = ?, lxc_url = ?,max_questions = ?,otp_verification = ?,
         email = ?, system_name = ?, system_footer = ?,
         is_default_favicon = ?, is_default_ad_logo = ?, is_default_web_logo = ?,
-        favicon = ?, admin_panel_logo = ?, web_panel_logo = ?, proxmox_alert_time = ?, proxmox_email_sent = ?,termination_delay=?,configuration_delay=?, address = ?, 
+        favicon = ?, admin_panel_logo = ?, web_panel_logo = ?, proxmox_alert_time = ?, proxmox_email_sent = ?,termination_delay=?,configuration_delay=?,cloning_delay=?, address = ?, 
         modifiedon = CURRENT_TIMESTAMP, modifiedby = ?
       WHERE id = ?`;
 
@@ -99,6 +100,7 @@ const updateWebSettings =
           body.proxmox_email_sent ?? "",
           body.termination_delay ?? "",
           body.configuration_delay ?? "",
+          body.cloning_delay ?? "",
           body.address ?? "",
           userid,
           body.id,

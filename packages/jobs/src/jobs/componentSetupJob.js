@@ -5,25 +5,39 @@ const MailTemplate = require("../utils/mailUtility");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getConfigurationDelay = async (db) => {
+const getDelays = async (db) => {
   try {
     const settings = await db.sequelize.query(
-      `SELECT configuration_delay FROM web_settings WHERE status = 1 LIMIT 1`,
+      `SELECT cloning_delay, configuration_delay 
+       FROM web_settings 
+       WHERE status = 1 
+       LIMIT 1`,
       { type: db.sequelize.QueryTypes.SELECT }
     );
 
-    const delaySeconds =
+    const cloningDelaySeconds =
+      settings?.[0]?.cloning_delay && Number.isFinite(settings[0].cloning_delay)
+        ? settings[0].cloning_delay
+        : 3;
+
+    const configurationDelaySeconds =
       settings?.[0]?.configuration_delay &&
       Number.isFinite(settings[0].configuration_delay)
         ? settings[0].configuration_delay
-        : 10;
+        : 5;
 
-    return delaySeconds * 1000; // convert to ms
+    // ✅ Convert both to milliseconds
+    const cloningDelayMs = cloningDelaySeconds * 1000;
+    const configurationDelayMs = configurationDelaySeconds * 1000;
+
+    return { cloningDelayMs, configurationDelayMs };
   } catch (err) {
-    console.error("Error fetching configuration_delay:", err);
-    return 10000; // fallback to 10 sec
+    console.error("Error fetching delays:", err);
+    // fallback defaults (in ms)
+    return { cloningDelayMs: 10000, configurationDelayMs: 15000 };
   }
 };
+
 
 async function componentSetupJob(
   db,
@@ -83,6 +97,9 @@ async function componentSetupJob(
       }
     );
 
+    //Fetch Clone & Configruation Delays
+    const { cloningDelayMs, configurationDelayMs } = await getDelays(db);
+
     // 🧠 Step 1: Cloning
     for (const component of componentConfig) {
       console.log(`Starting component Cloning:`, component);
@@ -92,12 +109,22 @@ async function componentSetupJob(
         component,
         scenariolearnersessionid
       );
+      console.log("componentcomponentcomponentcomponent",component);
+      
       if (!cloneResult?.success) {
         console.log(
           "cloneComponentVM=======================>",
           cloneResult.message
         );
         throw new Error(cloneResult.message);
+      }
+      if (component.componenttype?.toLowerCase() === "lxc") {
+        console.log(
+          `Waiting ${
+            cloningDelayMs / 1000
+          } seconds before cloning next LXC component...`
+        );
+        await sleep(cloningDelayMs);
       }
     }
     await db.sequelize.query(
@@ -108,9 +135,8 @@ async function componentSetupJob(
       }
     );
 
-    const delayMs = await getConfigurationDelay(db);
-    console.log(`Waiting ${delayMs / 1000} seconds before configuration...`);
-    await sleep(delayMs);
+    console.log(`Waiting ${configurationDelayMs / 1000} seconds before configuration...`);
+    await sleep(configurationDelayMs);
 
     const updatedComponents = await db.sequelize.query(
       `SELECT vmconfigurationid, vmid, componenttype, componentname AS name, network_bridge_json, duration, status FROM vm_configuration WHERE scenariolearnersessionid = ? AND status = 'Cloning'`,
@@ -166,7 +192,7 @@ async function componentSetupJob(
       "Final Catch stopAndDestroyComponentVM================================>",
       reason
     );
-     await handleComponentFailure(
+    await handleComponentFailure(
       db,
       scenarioid,
       learnerid,
@@ -183,7 +209,6 @@ async function componentSetupJob(
       "Final Catch handleComponentFailure================================>",
       reason
     );
-   
   }
 }
 
@@ -306,7 +331,7 @@ async function startComponentVM(
           message: `Could not connect to the siberSIM server while Starting. Please check server status or credentials.`,
         };
       }
-     
+
       const result = await proxmoxService.startVM(vmid, vmType);
       if (!result || result.status !== 200 || !result.data) {
         return {
@@ -314,7 +339,7 @@ async function startComponentVM(
           message: `${vmid}-${name} - ${ERROR_MESSAGES.START_FAILED}`,
         };
       }
-     
+
       console.log(`Started '${name}' successfully.`);
       await db.sequelize.query(
         `UPDATE vm_configuration SET status = 'Starting', modifiedon = NOW() WHERE vmconfigurationid = ?`,
@@ -442,8 +467,8 @@ async function startComponentVM(
           const { vmid, componenttype, componentname } = vmData;
           node.data.label = `${vmid} - ${componentname}`;
           node.data.isOnline = "Yes";
-           node.data.vmid = vmid;
- node.data.vmType = componenttype;
+          node.data.vmid = vmid;
+          node.data.vmType = componenttype;
           // if (componenttype === "qemu") {
           //   node.data.url = qemuUrl
           //     .replace("{vmid}", vmid)
@@ -505,7 +530,6 @@ async function startComponentVM(
   }
 }
 
-
 // handler for stop and destroy
 async function markOperationFailedAndNotify(
   db,
@@ -519,7 +543,13 @@ async function markOperationFailedAndNotify(
   // 1. Send notification & email alert
   await sendProxmoxDownAlerts(db, learner_id);
 
-  await new NotiTemplate(db, "proxmox_terminate",  { userid: 0, scenarioid, learner_id }, "Admin", 0);
+  await new NotiTemplate(
+    db,
+    "proxmox_terminate",
+    { userid: 0, scenarioid, learner_id },
+    "Admin",
+    0
+  );
 
   await db.sequelize.query(
     `UPDATE scenario_learner_session
@@ -532,7 +562,7 @@ async function markOperationFailedAndNotify(
   );
 
   // 4. Insert log entry
-await db.sequelize.query(
+  await db.sequelize.query(
     `INSERT INTO scenario_learner_logs
       (scenariolearnersessionid, scenarioid, learner_id, scenariolearnerid, type, remark, status, createdon)
       SELECT
@@ -712,18 +742,19 @@ async function stopAndDestroyComponentVM(
     }
 
     if (!hasFailed) {
-      console.log("All applicable VMs stopped, destroyed, and marked as Completed.");
+      console.log(
+        "All applicable VMs stopped, destroyed, and marked as Completed."
+      );
     } else {
       console.log("Some VMs failed during stop/destroy process.");
     }
   } catch (err) {
-    console.error(`Unhandled error in stopAndDestroyComponentVM: ${err.message}`);
+    console.error(
+      `Unhandled error in stopAndDestroyComponentVM: ${err.message}`
+    );
     await handleFailureOnce(err);
   }
 }
-
-
-
 
 async function handleComponentFailure(
   db,
@@ -854,5 +885,5 @@ async function sendProxmoxDownAlerts(db, learner_id = 0) {
 module.exports = {
   componentSetupJob,
   handleComponentFailure,
-  sendProxmoxDownAlerts
+  sendProxmoxDownAlerts,
 };

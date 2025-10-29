@@ -256,6 +256,7 @@ const CompanySettings = () => {
       proxmox_email_sent: cmpSettingData?.proxmox_email_sent ? cmpSettingData?.proxmox_email_sent : "",
       termination_delay: cmpSettingData?.termination_delay ? cmpSettingData?.termination_delay : "",
       configuration_delay: cmpSettingData?.configuration_delay ? cmpSettingData?.configuration_delay : "",
+      cloning_delay: cmpSettingData?.cloning_delay ? cmpSettingData?.cloning_delay : "",
       address: cmpSettingData?.address ? cmpSettingData?.address : "",
       favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
       admin_panel_logo: cmpSettingData?.admin_panel_logo ? cmpSettingData?.admin_panel_logo : "",
@@ -285,6 +286,7 @@ const CompanySettings = () => {
         proxmox_email_sent: data?.proxmox_email_sent ? data?.proxmox_email_sent : "",
         termination_delay: data?.termination_delay ? data?.termination_delay : "",
         configuration_delay: data?.configuration_delay ? data?.configuration_delay : "",
+        cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
         address: data?.address ? data?.address : "",
         otp_verification: data?.otp_verification.toString(),
         favicon: isDefaultFavicon ? "" : data?.favicon || "",
@@ -772,7 +774,7 @@ const CompanySettings = () => {
                             placement="bottom"
                             overlay={
                               <Tooltip>
-                              Configuration delay between stopping and terminating the process in seconds.
+                              Configuration delay between cloning and Configuration the process in seconds.
                               </Tooltip>
                             }
                           >
@@ -796,6 +798,46 @@ const CompanySettings = () => {
                         />
                         <Form.Control.Feedback type="invalid">
                           {formValidation.errors.configuration_delay}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    
+                    
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>Cloning Delay (Seconds)</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                              Cloning delay between the components in seconds.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="cloning_delay"
+                          autoComplete="off"
+                          placeholder="Enter Cloning Delay"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.cloning_delay}
+                          isInvalid={
+                            formValidation.touched.cloning_delay &&
+                            formValidation.errors.cloning_delay
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.cloning_delay}
                         </Form.Control.Feedback>
                       </Form.Group>
                       <Form.Group

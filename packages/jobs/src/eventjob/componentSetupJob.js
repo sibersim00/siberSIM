@@ -5,23 +5,36 @@ const MailTemplate = require("../utils/mailUtility");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getConfigurationDelay = async (db) => {
+const getDelays = async (db) => {
   try {
     const settings = await db.sequelize.query(
-      `SELECT configuration_delay FROM web_settings WHERE status = 1 LIMIT 1`,
+      `SELECT cloning_delay, configuration_delay 
+       FROM web_settings 
+       WHERE status = 1 
+       LIMIT 1`,
       { type: db.sequelize.QueryTypes.SELECT }
     );
 
-    const delaySeconds =
+    const cloningDelaySeconds =
+      settings?.[0]?.cloning_delay && Number.isFinite(settings[0].cloning_delay)
+        ? settings[0].cloning_delay
+        : 3;
+
+    const configurationDelaySeconds =
       settings?.[0]?.configuration_delay &&
       Number.isFinite(settings[0].configuration_delay)
         ? settings[0].configuration_delay
-        : 10;
+        : 5;
 
-    return delaySeconds * 1000; // convert to ms
+    // ✅ Convert both to milliseconds
+    const cloningDelayMs = cloningDelaySeconds * 1000;
+    const configurationDelayMs = configurationDelaySeconds * 1000;
+
+    return { cloningDelayMs, configurationDelayMs };
   } catch (err) {
-    console.error("Error fetching configuration_delay:", err);
-    return 10000; // fallback to 10 sec
+    console.error("Error fetching delays:", err);
+    // fallback defaults (in ms)
+    return { cloningDelayMs: 10000, configurationDelayMs: 15000 };
   }
 };
 
@@ -38,17 +51,16 @@ async function componentSetupJob(
 
   try {
     const componentConfig = await db.sequelize.query(
-  `SELECT vmconfigurationid, componentid, \`order\`, vmid AS clone_vmid, 
+      `SELECT vmconfigurationid, componentid, \`order\`, vmid AS clone_vmid, 
           componentname AS name, duration, componenttype, master_vmid AS source_vmid
    FROM vm_configuration
    WHERE eventlearnerid = ?
      AND status NOT IN ('Failed', 'Stopped', 'Destroyed', 'Operation Failed', 'Completed')`,
-  {
-    replacements: [eventlearnerid],
-    type: db.sequelize.QueryTypes.SELECT,
-  }
-);
-
+      {
+        replacements: [eventlearnerid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
 
     if (componentConfig.length == 0) {
       console.error(ERROR_MESSAGES.CONFIG_NOT_FOUND);
@@ -83,6 +95,7 @@ async function componentSetupJob(
         type: db.sequelize.QueryTypes.INSERT,
       }
     );
+    const { cloningDelayMs, configurationDelayMs } = await getDelays(db);
 
     // 🧠 Step 1: Cloning
     for (const component of componentConfig) {
@@ -100,6 +113,14 @@ async function componentSetupJob(
         );
         throw new Error(cloneResult.message);
       }
+      if (component.componenttype?.toLowerCase() === "lxc") {
+        console.log(
+          `Waiting ${
+            cloningDelayMs / 1000
+          } seconds before cloning next LXC component...`
+        );
+        await sleep(cloningDelayMs);
+      }
     }
     await db.sequelize.query(
       `UPDATE event_learners SET vm_steps = 'Cloning', modifiedon = NOW() WHERE eventlearnerid = ?`,
@@ -109,9 +130,8 @@ async function componentSetupJob(
       }
     );
 
-    const delayMs = await getConfigurationDelay(db);
-    console.log(`Waiting ${delayMs / 1000} seconds before configuration...`);
-    await sleep(delayMs);
+    console.log(`Waiting ${configurationDelayMs / 1000} seconds before configuration...`);
+    await sleep(configurationDelayMs);
 
     const updatedComponents = await db.sequelize.query(
       `SELECT vmconfigurationid, vmid, componenttype, componentname AS name, network_bridge_json, duration, status FROM vm_configuration WHERE eventlearnerid = ? AND status = 'Cloning'`,
@@ -184,7 +204,6 @@ async function componentSetupJob(
       "Final Catch handleComponentFailure================================>",
       reason
     );
-    
   }
 }
 
@@ -265,15 +284,14 @@ async function configureComponentVM(
     }
     console.log(`Bridge configure succeeded for ${vmid}-${name}`);
     await db.sequelize.query(
-  `UPDATE vm_configuration
+      `UPDATE vm_configuration
   SET status = 'Bridge Configuration', modifiedon = NOW()
   WHERE vmconfigurationid = ?`,
-  {
-    replacements: [vmconfigurationid],
-    type: db.sequelize.QueryTypes.UPDATE,
-  }
-);
-
+      {
+        replacements: [vmconfigurationid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      }
+    );
   }
 
   await db.sequelize.query(
@@ -446,8 +464,8 @@ async function startComponentVM(
           const { vmid, componenttype, componentname } = vmData;
           node.data.label = `${vmid} - ${componentname}`;
           node.data.isOnline = "Yes";
-           node.data.vmid = vmid;
- node.data.vmType = componenttype;
+          node.data.vmid = vmid;
+          node.data.vmType = componenttype;
           // if (componenttype === "qemu") {
           //   node.data.url = qemuUrl
           //     .replace("{vmid}", vmid)
@@ -509,22 +527,19 @@ async function startComponentVM(
   }
 }
 
-
-
-async function markOperationFailedAndNotify(db, eventlearnerid, err, learner_id) {
+async function markOperationFailedAndNotify(
+  db,
+  eventlearnerid,
+  err,
+  learner_id
+) {
   const OP_FAILED = "Operation Failed";
   console.error("Operation failed:", err?.message || err);
   // 1. Send notification & email alert
-await sendProxmoxDownAlerts(db, learner_id);
- 
-  await new NotiTemplate(
-    db,
-    "proxmox_terminate",
-    {  userid: 0, },
-    "Admin",
-    0
-  );
- 
+  await sendProxmoxDownAlerts(db, learner_id);
+
+  await new NotiTemplate(db, "proxmox_terminate", { userid: 0 }, "Admin", 0);
+
   // 2. Mark scenario session as failed
   await db.sequelize.query(
     `UPDATE event_learners
@@ -535,7 +550,7 @@ await sendProxmoxDownAlerts(db, learner_id);
       type: db.sequelize.QueryTypes.UPDATE,
     }
   );
- 
+
   // 4. Insert log entry
   await db.sequelize.query(
     `INSERT INTO event_learner_logs
@@ -577,8 +592,6 @@ const getTerminationDelay = async (db) => {
   }
 };
 
-
-
 async function stopAndDestroyComponentVM(
   db,
   ipAddress,
@@ -586,7 +599,7 @@ async function stopAndDestroyComponentVM(
 ) {
   const OP_FAILED = "Operation Failed";
   let hasFailed = false;
-  console.log("Inside stoppppppppppppppppppp======>>>>>>>>>")
+  console.log("Inside stoppppppppppppppppppp======>>>>>>>>>");
 
   const handleFailureOnce = async (err) => {
     if (!hasFailed) {
@@ -602,7 +615,7 @@ async function stopAndDestroyComponentVM(
   };
 
   try {
-     const components = await db.sequelize.query(
+    const components = await db.sequelize.query(
       `SELECT vmconfigurationid, vmid, componenttype, componentname AS name, status
        FROM vm_configuration
        WHERE scenarioid = ? AND learner_id = ? AND eventlearnerid = ?`,
@@ -626,37 +639,41 @@ async function stopAndDestroyComponentVM(
     });
 
     for (const component of components) {
-    const { vmid, componenttype, name, vmconfigurationid, status } = component;
+      const { vmid, componenttype, name, vmconfigurationid, status } =
+        component;
 
-    const vmType = componenttype.toLowerCase();
-    const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+      const vmType = componenttype.toLowerCase();
+      const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
-    const tokenResult = await proxmoxService.generateAccessTicket();
-    if (!tokenResult || tokenResult.status !== "200") {
-        await handleFailureOnce(new Error("siberSIM connection failed before stop/destroy"));
+      const tokenResult = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        await handleFailureOnce(
+          new Error("siberSIM connection failed before stop/destroy")
+        );
         continue;
-    }
+      }
 
-    console.log(`${vmid}-${name} stop process started. Current Status: ${status}`);
+      console.log(
+        `${vmid}-${name} stop process started. Current Status: ${status}`
+      );
 
-    if (["Starting", "Running", "Initializing"].includes(status)) {
+      if (["Starting", "Running", "Initializing"].includes(status)) {
         const stopResult = await proxmoxService.stopVM(vmid, vmType);
         if (stopResult?.status === 200 && stopResult?.data) {
-            console.log(`Stopped '${name}' (VMID: ${vmid})`);
-            vmConfig[vmid].stop = true;
+          console.log(`Stopped '${name}' (VMID: ${vmid})`);
+          vmConfig[vmid].stop = true;
         } else {
-            console.log(`Failed: Stop '${name}' (VMID: ${vmid})`);
-            await db.sequelize.query(
-                `UPDATE vm_configuration SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
-                { replacements: ["Stopped", vmconfigurationid] }
-            );
-            await handleFailureOnce(new Error(`Stop failed for ${name}`));
+          console.log(`Failed: Stop '${name}' (VMID: ${vmid})`);
+          await db.sequelize.query(
+            `UPDATE vm_configuration SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
+            { replacements: ["Stopped", vmconfigurationid] }
+          );
+          await handleFailureOnce(new Error(`Stop failed for ${name}`));
         }
-    } else {
+      } else {
         vmConfig[vmid].stop = true; // already stopped
+      }
     }
-}
-
 
     // ⏳ Wait before destroy
     await sleep(await getTerminationDelay(db));
@@ -680,7 +697,7 @@ async function stopAndDestroyComponentVM(
 
       const destroyResult = await proxmoxService.destroyVM(vmid, vmType);
       if (destroyResult?.status === 200 && destroyResult?.data) {
-         console.log("Stop VM failed for", name);
+        console.log("Stop VM failed for", name);
         console.log(`Destroyed '${name}' (VMID: ${vmid})`);
         vmConfig[vmid].destroy = true;
 
@@ -710,12 +727,16 @@ async function stopAndDestroyComponentVM(
     }
 
     if (!hasFailed) {
-      console.log("All applicable VMs stopped, destroyed, and marked as Completed.");
+      console.log(
+        "All applicable VMs stopped, destroyed, and marked as Completed."
+      );
     } else {
       console.log("Some VMs failed during stop/destroy process.");
     }
   } catch (err) {
-    console.error(`Unhandled error in stopAndDestroyComponentVM: ${err.message}`);
+    console.error(
+      `Unhandled error in stopAndDestroyComponentVM: ${err.message}`
+    );
     await handleFailureOnce(err);
   }
 }
