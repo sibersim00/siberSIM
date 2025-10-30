@@ -235,7 +235,23 @@ const theme = ({ dao, db }) => async (req, res, next) => {
   }
 };
 
+  const scenariocategorycustomlist = ({ dao, db }) => async (req, res, next) => {
+  try {
+    const result = await dao.scenariocategorycustomlist({ db })();
+    return res.status(200).send({ statusCode: 200, data: result });
+  }
+  catch (err) { next(err) }
+}
 
+const scenariosubcategorycustomlist = ({ dao, db, validation }) => async (req, res, next) => {
+  try {
+   const body = req.body;
+    const result = await dao.scenariosubcategorycustomlist({ db,body })();
+    return res.status(200).send({ statusCode: 200, data: result });
+   
+  }
+  catch (err) { next(err) }
+}
 
 module.exports = {
   instructorlist,
@@ -258,6 +274,8 @@ module.exports = {
   eventScenarioList,
   studentlist,
   theme,
+  scenariosubcategorycustomlist,
+  scenariocategorycustomlist
   
   
 

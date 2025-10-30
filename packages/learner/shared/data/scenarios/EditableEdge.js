@@ -25,7 +25,7 @@ const EditableEdge = ({
     targetPosition,
     borderRadius: 20,
   });
-console.log('parameter',data)
+console.log('allEdgesallEdgesallEdgesallEdges',allEdges)
   const getInitialLabel = () => {
     if (data?.label) return data.label;
     const currentEdge = allEdges.find((e) => e.id === id);
@@ -53,7 +53,9 @@ console.log('parameter',data)
   };
 
 const currentEdge = allEdges.find(e => e.id === id);
-const shouldAnimate = currentEdge?.isAttacked === 'Yes';
+console.log("currentEdge",currentEdge);
+
+const shouldAnimate = currentEdge?.isAttacked === "Yes";
 console.log('shouldAnimate', shouldAnimate, allEdges.find(e => e.id === id));
 
 

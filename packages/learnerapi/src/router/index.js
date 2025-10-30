@@ -1,6 +1,7 @@
 const dashboardRouter = require("../components/dashboard");
 const profileRouter = require("../components/profile");
 const scenarioRouter = require("../components/scenarios");
+const customscenariosRouter = require("../components/custom_scenarios");
 const vmconfigsRouter = require("../components/vmconfigs");
 const eventlearnerRouter = require("../components/eventlearner");
 const chatBoxRouter = require("../components/chatbox");
@@ -20,6 +21,7 @@ module.exports = function (iocContainer) {
   router.use("/dashboard", authJwt.authenticateToken, dashboardRouter(iocContainer));
   router.use("/profile", authJwt.authenticateToken, profileRouter(iocContainer));
   router.use("/scenarios", authJwt.authenticateToken, scenarioRouter(iocContainer));
+  router.use("/custom_scenarios", authJwt.authenticateToken, customscenariosRouter(iocContainer));
   router.use("/eventlearner", authJwt.authenticateToken, eventlearnerRouter(iocContainer));
   router.use("/chatbox", authJwt.authenticateToken, chatBoxRouter(iocContainer));
   router.use("/scenario_quiz", authJwt.authenticateToken, scenarioQuizRouter(iocContainer));

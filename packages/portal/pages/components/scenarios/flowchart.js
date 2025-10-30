@@ -47,18 +47,11 @@ const DnDFlow = ({
   setRowValues,
   selectedScenario,
 }) => {
-  console.log(
-    "selectedScenarioselectedScenarioselectedScenario",
-    selectedScenario
-  );
-
   const dispatch = useDispatch();
 
   const reactFlowWrapper = useRef(null);
   const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
   const { push } = useRouter();
-
-  console.log("imageNodeData", imageNodeData);
   const [initialNodes, setInitialNodes] = useState(() => {
     const nodesArray = [];
 
@@ -70,8 +63,6 @@ const DnDFlow = ({
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
-
-  console.log(nodes, "initialNodes", initialNodes);
   const resolveImageUrl = (url) => {
     if (!url) return "";
 
@@ -100,8 +91,6 @@ const DnDFlow = ({
   };
   //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    console.log("urlurlurlurlurtttttttttttttt", data);
-
     const networkPorts = data.networkport || [];
     const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
     //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
@@ -345,10 +334,8 @@ const DnDFlow = ({
       selectedScenario.scenariodiagram != ""
     ) {
       const data = selectedScenario.scenariodiagram;
-      console.log("datadatadatadatadatadatadatadatadatadata", data);
-
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-      console.log(selectedScenario, "parsedDatawww", parsedData);
+   
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
         setEdges(parsedData.edges);
@@ -357,8 +344,6 @@ const DnDFlow = ({
 
     if (selectedScenario && selectedScenario.digramcomponent) {
       const componentsdata = selectedScenario.digramcomponent;
-      console.log("componentsdatacomponentsdata", componentsdata);
-
       const parsedcomponentData = JSON.parse(componentsdata);
       setImageNodeData(parsedcomponentData);
       setDroppedImages(parsedcomponentData.map((comp) => comp.id));
@@ -403,8 +388,7 @@ const DnDFlow = ({
         id = `dndnode_${numberId}`;
       }
 
-      let number = parseInt(id.split("_")[1], 10); //
-      console.log("^^^draggedNode", draggedNode);
+      let number = parseInt(id.split("_")[1], 10);
       setDraggedComponent((prev) => [...prev, draggedNode]);
       const position = screenToFlowPosition({
         x: event.clientX,
@@ -429,7 +413,6 @@ const DnDFlow = ({
     },
     [screenToFlowPosition, draggedNode, droppedImages]
   );
-  console.log(draggedNode, "draggedNodesss", nodes);
 
   const deleteNode = (nodeId) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
@@ -438,12 +421,12 @@ const DnDFlow = ({
     );
     // Find the image used in the node and remove it from the droppedImages array
     const nodeToDelete = nodes.find((node) => node.id === nodeId);
-    console.log(nodeId, "nodeToDelete", edges);
+
 
     if (nodeToDelete && nodeToDelete.data && nodeToDelete.data.componentId) {
       const imageUrl = nodeToDelete.data.image;
       const imageComponent = nodeToDelete.data.componentId;
-      console.log(imageComponent, "imageComponent");
+   
 
       // Find the id associated with the image URL
       const imageNode = imageNodeData.find(
@@ -462,16 +445,15 @@ const DnDFlow = ({
     }
   };
   function generateComponentConfig(nodes, edges) {
+
     const config = [];
     const networkIdSet = new Set();
 
     nodes.forEach((node, index) => {
       const { id: nodeId, data } = node;
       const network_ids = {};
-      console.log(edges, "datadatadatadata", nodeId, node);
       edges.forEach((edge) => {
         const label = edge.data?.label;
-        // console.log('label****',edge)
         if (edge.source === nodeId && edge.sourceHandle) {
           const port = edge.sourceHandle.split("-")[0];
           network_ids[port] = label;
@@ -506,13 +488,11 @@ const DnDFlow = ({
   }
   const saveFlowchart = async (status) => {
     const flowchartData = { nodes, edges };
-    console.log("flowchartData", edges);
     let componentsData = [];
     const configData = generateComponentConfig(
       flowchartData.nodes,
       flowchartData.edges
     );
-    //console.log(configData,'configconfig',edges);
     if (nodes && nodes.length > 0) {
       const mapped = nodes
         .filter((node) => node.data && node.data.componentId)
@@ -520,6 +500,8 @@ const DnDFlow = ({
           const data = node.data;
           return {
             id: data.componentId,
+            componentid: data.componentId,
+            duration:data.duration,
             imageUrl: data.image || "",
             label: data.label || "",
             networkport: data.networkport || [],
@@ -546,10 +528,8 @@ const DnDFlow = ({
       component_config: configData.component_config,
       network_config: configData.network_config,
     };
-    // console.log('@@Payload',payload);return false;
     dispatch(saveScenarioFlow(payload));
   };
-
   useEffect(() => {
     if (saveScenarioFlowChart && saveScenarioFlowChart.statusCode === 200) {
       //  setScenarioId('');
@@ -583,14 +563,8 @@ const DnDFlow = ({
   );
 
   const handleKeyDown = (event) => {
-    console.log("eventttt", event.key);
     if (event.key === "Backspace" || event.key === "Delete") {
       const selectedNode = nodes.find((node) => node.selected);
-      console.log(
-        "selectedNodeId",
-        nodes.find((node) => node.selected)
-      );
-
       if (selectedNode) {
         deleteNode(selectedNode.id);
       }

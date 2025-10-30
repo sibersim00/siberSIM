@@ -31,6 +31,7 @@ const ScenarioView = () => {
   const [rowValues, setRowValues] = useState({});
   const [activeTab, setActiveTab] = useState("description");
   const backTo = query && query.backView;
+  const backType = query?.backType;
   const tab = query && query.tab;
 
   useEffect(() => {
@@ -84,10 +85,25 @@ const ScenarioView = () => {
                       View Scenario
                     </h4>
                     <div>
-                      <Button
+                      {/* <Button
                         variant="outline-secondary"
                         onClick={() => {
                           push(`/scenarios?view=${backTo || "list"}`);
+                          dispatch(clearSingleScenarios());
+                          dispatch(cleargetScenarioFlow());
+                        }}
+                      >
+                        <i className="fe fe-arrow-left"></i>&nbsp;
+                        {t("")}
+                      </Button> */}
+                      <Button
+                        variant="outline-secondary"
+                        onClick={() => {
+                          push(
+                            `/scenarios?view=${backTo || "list"}&type=${
+                              backType || "Public"
+                            }`
+                          );
                           dispatch(clearSingleScenarios());
                           dispatch(cleargetScenarioFlow());
                         }}

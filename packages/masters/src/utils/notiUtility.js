@@ -1,3 +1,4 @@
+
 class NotiTemplate {
   constructor(db, templateAction, payload, type, type_id) {
     this._db = db;
@@ -19,7 +20,7 @@ class NotiTemplate {
     let finalBody = "";
 
     if (this._templateAction === "publish_scenario") {
-      // ✅ Special logic for publish_scenario
+      // Special logic for publish_scenario
       const [scenario] = await this._db.sequelize.query(
         `SELECT component_config
          FROM scenarios
@@ -32,11 +33,31 @@ class NotiTemplate {
 
       const config = JSON.parse(scenario?.component_config || "[]");
       const title =
-        config.find((item) => item.key === "scenariotitle")?.value ||
-        "Scenario";
+        config.find((item) => item.key === "scenariotitle")?.value || "Scenario";
       finalBody = title;
+
+    } else if (this._templateAction === "scenario_status_notification") {
+      // Special logic for scenario status (approved/rejected)
+      const [templateData] = await this._db.sequelize.query(
+        `SELECT body FROM noti_templates
+         WHERE template_action = :template_action AND status = 'Active' LIMIT 1`,
+        {
+          replacements: { template_action: this._templateAction },
+          type: this._db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      let rawTemplate = templateData?.body || "";
+      finalBody = rawTemplate;
+
+      // Replace placeholders (learner_name, scenariotitle, status)
+      for (const key in this._payload) {
+        const placeholder = `$$${key}$$`;
+        finalBody = finalBody.replaceAll(placeholder, this._payload[key]);
+      }
+
     } else {
-      // ✅ This block will handle proxmox_terminate (and all other normal templates)
+      // Handles proxmox_terminate and all normal templates
       const [templateData] = await this._db.sequelize.query(
         `SELECT body FROM noti_templates
          WHERE template_action = :template_action AND status = 'Active' LIMIT 1`,

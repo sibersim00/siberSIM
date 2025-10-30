@@ -48,5 +48,16 @@ module.exports = (iocContainer) => {
   router.get("/faqlist", controller.faqlist(iocContainer));
   router.get("/getallscenario", controller.eventScenarioList(iocContainer));
     router.get("/theme", controller.theme(iocContainer));
+
+    router.get(
+    "/scenariocategorycustomlist",
+    controller.scenariocategorycustomlist(iocContainer)
+  );
+    router.post(
+    "/scenariosubcategorycustomlist",
+    controller.scenariosubcategorycustomlist(iocContainer)
+  );
+
+
   return router;
 };

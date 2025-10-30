@@ -67,6 +67,7 @@ import widgets from "./slices/masters/widgets";
 import faq from "./slices/masters/Faqs";
 import dashboarData from "./slices/Dashboard/dashboardManage";
 import eventDashboardData from "./slices/EventDashboard/eventdashboardManage";
+import customScenario from "./slices/customScenarios/customscenarioManage";
 import eventchatboxData from "./slices/eventchatbox/eventchatboxManage";
 import reportData from "./slices/reports/reportManage";
 import userreportsManage from "./slices/userreports/userreportsManage";
@@ -138,6 +139,7 @@ const rootReducer = (state, action) => {
     instructorreportsManage: instructorreportsManage,
     reportData : reportData ,
     company_setting :company_setting,
+    customScenario: customScenario,
   })(state, action);
 };
 

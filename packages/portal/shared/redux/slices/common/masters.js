@@ -24,6 +24,8 @@ const initialState = {
   getCommonScenarioData : [],
   getCommonInstructorData :[],
   getScnarioComponentByCatData : [],
+  getScenarioSubCategorycustom : [],
+  getScenarioSubCategorycustomId : [],
   getFaqData:[],
   theme:"",
 };
@@ -53,6 +55,15 @@ const slice = createSlice({
     hasGetChildCategoriesListSucc(state, action){
     state.isLoading = false,
     state.getScenarioSubCategorybyId = action.payload;
+  },
+  //customs
+    hasGetScenarioSubCategoriescustomListSucc(state, action){
+    state.isLoading = false,
+    state.getScenarioSubCategorycustom= action.payload;
+  },
+    hasGetChildCategoriescustomListSucc(state, action){
+    state.isLoading = false,
+    state.getScenarioSubCategorycustomId= action.payload;
   },
 
     //----student dropdown
@@ -120,17 +131,7 @@ export default slice.reducer;
 export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
-export function getCategoriesList() {
-  return async () => {
-    dispatch(slice.actions.startLoading());
-    try {
-      const response = await axios.get(`${api.master_component_cat_get}`);
-      dispatch(slice.actions.hasGetMasterCatListSucc(response.data));
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-} 
+
 
 export function getSubCategorybyId(payload) {
   return async () => {
@@ -149,8 +150,6 @@ export function getScenarioSubCategoriesList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-   
-
       const response = await axios.get(`${api.scenario_sub_category_list}`);
       dispatch(slice.actions.hasGetScenarioSubCategoriesListSucc(response.data));
     } catch (error) { 
@@ -165,6 +164,29 @@ export function getScenarioSubCategorybyId(payload) {
     try {
       const response = await axios.post(`${api.scenario_child_category_list}`,payload);
       dispatch(slice.actions.hasGetChildCategoriesListSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+} 
+export function getScenarioSubCategoriescustomList() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.scenario_sub_category_custom_list}`);
+      dispatch(slice.actions.hasGetScenarioSubCategoriescustomListSucc(response.data));
+    } catch (error) { 
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getScenarioSubCategorycustombyId(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenario_child_category_custom_list}`,payload);
+      dispatch(slice.actions.hasGetChildCategoriescustomListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -234,6 +256,7 @@ export function saveScenarioFlow(payload) {
     }
   };
 }
+
 
 export function getScenarioFlow(payload) {
   return async () => {
@@ -329,7 +352,19 @@ export function getCommonInstructorList(payload) {
     }
   };
 } 
-
+export function getCategoriesList() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.master_component_cat_get}`);
+      console.log("responserttttttttttesponseresponse",response);
+      
+      dispatch(slice.actions.hasGetMasterCatListSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+} 
 export function getScenarioComponentListbyCategory(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());

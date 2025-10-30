@@ -3,7 +3,7 @@ const getAll =
   async (learner_sessionid) => {
     try {
       let result = await db.sequelize.query(
-        `SELECT s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, sls.isnotitermination, sls.scenariolearnersessionid, sl.currentsession_id, sc.categoryname AS scenariocategory_name, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory_name, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN scenario_learner sl ON sl.scenarioid = s.scenarioid AND sl.learner_id = ? LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id WHERE s.deletedon IS NULL AND s.scenariostatus = 'Publish' And s.status = 'Active' ORDER BY CASE WHEN s.modifiedon IS NOT NULL THEN s.modifiedon ELSE s.createdon END DESC;`,
+        `SELECT s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, sls.isnotitermination, sls.scenariolearnersessionid, sl.currentsession_id, sc.categoryname AS scenariocategory_name, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory_name, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN scenario_learner sl ON sl.scenarioid = s.scenarioid AND sl.learner_id = ? LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id WHERE s.deletedon IS NULL AND s.scenariostatus = 'Publish' And s.status = 'Active' And s.scenario_type = 'Public' ORDER BY CASE WHEN s.modifiedon IS NOT NULL THEN s.modifiedon ELSE s.createdon END DESC;`,
         {
           replacements: [learner_sessionid],
           type: db.sequelize.QueryTypes.SELECT,
@@ -14,6 +14,38 @@ const getAll =
       console.log("sceanrios err==>", error);
     }
   };
+// const getAll =
+//   ({ db }) =>
+//   async (learner_id) => {
+//     try {
+//       let result = await db.sequelize.query(
+//         `SELECT s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle,s.learner_id,
+//  s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus,s.scenario_type,
+// sls.isnotitermination, sls.scenariolearnersessionid, sl.currentsession_id,
+//  sc.categoryname AS scenariocategory_name,
+//  sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, 
+// scc.scenariocategoryid AS scenariosubcategoryid, 
+// scc.categoryname AS scenariosubcategory_name,
+//  scc.categoryimage AS subcategory_image, 
+// scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s
+//  INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid
+//  LEFT JOIN scenario_categories scc ON scc.scenariocategoryid =
+//  s.scenariosubcategoryid LEFT JOIN scenario_learner sl ON sl.scenarioid =
+//  s.scenarioid AND sl.learner_id = ? LEFT JOIN scenario_learner_session sls ON 
+// sls.scenariolearnersessionid = sl.currentsession_id WHERE s.deletedon IS NULL AND
+//  s.scenariostatus = 'Publish' And s.status = 'Active' AND (s.scenario_type = 
+// 'Public' OR (s.scenario_type = 'Private' AND s.learner_id = ?)) ORDER BY CASE 
+// WHEN s.modifiedon IS NOT NULL THEN s.modifiedon ELSE s.createdon END DESC;`,
+//         {
+//           replacements: [learner_id, learner_id],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+//       return result;
+//     } catch (error) {
+//       console.log("sceanrios err==>", error);
+//     }
+//   };
 
 const getByID =
   ({ db }) =>

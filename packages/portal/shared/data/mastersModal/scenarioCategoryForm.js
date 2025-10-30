@@ -1,26 +1,45 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { useFormik } from "formik";
-import { Modal, Button, Row, Col, Form, OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  Row,
+  Col,
+  Form,
+  OverlayTrigger,
+  Tooltip,
+  Spinner,
+} from "react-bootstrap";
 import * as Yup from "yup";
 import dynamic from "next/dynamic";
 import { useTranslation } from "react-i18next";
 import { emojiRegex } from "../../utils/regex";
-import { saveSubCategories, updateCategories } from "../../redux/slices/masters/ScenarioCategories";
-import { regex, error } from '../../data/common/vaidationMessage/formValidationMsg';
+import {
+  saveSubCategories,
+  updateCategories,
+} from "../../redux/slices/masters/ScenarioCategories";
+import {
+  regex,
+  error,
+} from "../../data/common/vaidationMessage/formValidationMsg";
 import { useDispatch, useSelector } from "react-redux";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 
-const FileUploader = dynamic(() => import("../../data/common/fileuploads/fileuploader"), { ssr: false });
+const FileUploader = dynamic(
+  () => import("../../data/common/fileuploads/fileuploader"),
+  { ssr: false }
+);
 import { FilePath } from "../../data/common/fileuploads/filepath";
 import { toast } from "react-toastify";
 
 const FormScenarioCategory = (props) => {
-  const { openFlag, handleFormModal, rowValues, oneClick, handleOneClick } = props;
+  const { openFlag, handleFormModal, rowValues, oneClick, handleOneClick } =
+    props;
   const dispatch = useDispatch();
   const [catDropDownData, setCatDropDownData] = useState([]);
   const category_path = FilePath.scenario_categories;
   const ismulti = false;
-  const [modalTitle, setModalTitle] = useState('Add');
+  const [modalTitle, setModalTitle] = useState("Add");
   const { t } = useTranslation();
 
   const { saveSubCategoriesData, errorData } = useSelector((state) => ({
@@ -55,42 +74,44 @@ const FormScenarioCategory = (props) => {
   useEffect(() => {
     if (rowValues) {
       setModalTitle(rowValues.title || "Update");
-
     }
   }, [rowValues]);
-
-
-
-
-
   const formValidation = useFormik({
     enableReinitialize: true,
     initialValues: {
-      categoryname: rowValues?.categoryname || '',
-      categoryimage: rowValues?.categoryimage || '',
-      scenariocategoryid: catDropDownData.find(
-        (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
-      ) || "",
-
+      categoryname: rowValues?.categoryname || "",
+      categoryimage: rowValues?.categoryimage || "",
+      categorytype: rowValues?.categorytype || "Public", // ✅ default Public
+      scenariocategoryid:
+        catDropDownData.find(
+          (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
+        ) || "",
     },
     validationSchema: Yup.object().shape({
       categoryname: Yup.string()
         .required(error?.required)
         .test("no-emoji", "Emojis are not allowed", noEmojiTest)
-        .test("no-leading-trailing-spaces", "No leading or trailing spaces allowed", (value) => !/^\s|\s$/.test(value || "")),
-
-      categoryimage: Yup.string()
-        .required(error?.required),   // Always required on Submit (whether add or edit)
+        .test(
+          "no-leading-trailing-spaces",
+          "No leading or trailing spaces allowed",
+          (value) => !/^\s|\s$/.test(value || "")
+        ),
+      categoryimage: Yup.string().required(error?.required),
     }),
 
-
     onSubmit: (data) => {
-
       const payload = {
-        ...(rowValues?.scenariocategoryid && { scenariocategoryid: rowValues?.scenariocategoryid }),
+        ...(rowValues?.scenariocategoryid && {
+          scenariocategoryid: rowValues?.scenariocategoryid,
+        }),
         categoryname: data.categoryname,
-        categoryimage: data.categoryimage !== undefined ? data.categoryimage : rowValues?.categoryimage,
+        categoryimage:
+          data.categoryimage !== undefined
+            ? data.categoryimage
+            : rowValues?.categoryimage,
+        categorytype: data.categorytype || "Public", // ✅ send categorytype
       };
+
       handleOneClick(true);
       if (rowValues?.scenariocategoryid) {
         dispatch(updateCategories(payload));
@@ -98,7 +119,6 @@ const FormScenarioCategory = (props) => {
         dispatch(saveSubCategories(payload));
       }
     },
-
   });
 
   const handleUpload = (name = "", files = "", flag = "") => {
@@ -137,10 +157,41 @@ const FormScenarioCategory = (props) => {
           </Modal.Header>
           <Modal.Body>
             <Row>
-              <Form.Group as={Col} md="12" controlId="validationFormik102" className="mb-3">
-                <Form.Label>
-                  Scenario Category <span className="text-danger">*</span>
-                </Form.Label>
+              <Form.Group
+                as={Col}
+                md="12"
+                controlId="validationFormik102"
+                className="mb-3"
+              >
+                <div className="d-flex align-items-center justify-content-between">
+                  <Form.Label className="mb-0">
+                    Scenario Category <span className="text-danger">*</span>
+                  </Form.Label>
+
+                  {/* ✅ Private Checkbox added */}
+                  <div className="form-check form-check-inline mb-0 d-flex align-items-center">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="privateCheckbox"
+                      style={{ marginTop: 0 }}
+                      checked={formValidation.values.categorytype === "Private"}
+                      onChange={(e) =>
+                        formValidation.setFieldValue(
+                          "categorytype",
+                          e.target.checked ? "Private" : "Public"
+                        )
+                      }
+                    />
+                    <label
+                      className="form-check-label ms-1 mb-0"
+                      htmlFor="privateCheckbox"
+                    >
+                      Private
+                    </label>
+                  </div>
+                </div>
+
                 <Form.Control
                   type="text"
                   autoComplete="off"
@@ -148,15 +199,24 @@ const FormScenarioCategory = (props) => {
                   value={formValidation.values.categoryname}
                   onChange={formValidation.handleChange}
                   placeholder="Enter Scenario Category"
-                  isValid={formValidation.touched.categoryname && !formValidation.errors.categoryname}
-                  isInvalid={formValidation.touched.categoryname && !!formValidation.errors.categoryname}
+                  isValid={
+                    formValidation.touched.categoryname &&
+                    !formValidation.errors.categoryname
+                  }
+                  isInvalid={
+                    formValidation.touched.categoryname &&
+                    !!formValidation.errors.categoryname
+                  }
                 />
                 <Form.Control.Feedback type="invalid">
                   {formValidation.errors.categoryname}
                 </Form.Control.Feedback>
               </Form.Group>
 
-              <Form.Group controlId="imageUpload" className="d-flex flex-column">
+              <Form.Group
+                controlId="imageUpload"
+                className="d-flex flex-column"
+              >
                 <div className="position-relative">
                   <Form.Label>
                     {t("Category Image")} <span className="text-danger">*</span>
@@ -165,7 +225,8 @@ const FormScenarioCategory = (props) => {
                         placement="top"
                         overlay={
                           <Tooltip id={`tooltip-${rowValues.id}`}>
-                            Removing the file will permanently delete it from storage and update the record.
+                            Removing the file will permanently delete it from
+                            storage and update the record.
                           </Tooltip>
                         }
                       >
@@ -198,10 +259,9 @@ const FormScenarioCategory = (props) => {
                 </div>
 
                 <Form.Control.Feedback type="invalid" className="d-block">
-                  {formValidation.touched.categoryimage && formValidation.errors.categoryimage}
+                  {formValidation.touched.categoryimage &&
+                    formValidation.errors.categoryimage}
                 </Form.Control.Feedback>
-
-
 
                 {formValidation.values.categoryimage && (
                   <div className="picture avatar-lg online text-center mt-2">
@@ -214,20 +274,27 @@ const FormScenarioCategory = (props) => {
                           width: "100%",
                           height: "100%",
                         }}
-                        onError={(e) => { e.target.onerror = null; e.target.src = dummy_network.src }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = dummy_network.src;
+                        }}
                       />
                     </div>
                   </div>
                 )}
-
               </Form.Group>
-
             </Row>
           </Modal.Body>
           <Modal.Footer>
             {oneClick ? (
               <Button variant="primary" disabled>
-                <Spinner as="span" animation="grow" size="sm" role="status" aria-hidden="true" />
+                <Spinner
+                  as="span"
+                  animation="grow"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                />
                 Loading...
               </Button>
             ) : (
@@ -235,10 +302,13 @@ const FormScenarioCategory = (props) => {
                 {modalTitle === "Add" ? "Submit" : "Update"}
               </Button>
             )}
-            <Button variant="secondary" onClick={() => {
-              formValidation.resetForm();
-              handleFormModal(false);
-            }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                formValidation.resetForm();
+                handleFormModal(false);
+              }}
+            >
               Close
             </Button>
           </Modal.Footer>

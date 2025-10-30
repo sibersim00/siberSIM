@@ -59,6 +59,8 @@ const Dashboard = () => {
   ];
 
   const handleReturnView = (props) => {
+    console.log("propspropspropspropsddddd",props);
+    
     router.push(`/scenarios_view/${props?.scenariouuid}`);
   };
 

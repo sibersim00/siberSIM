@@ -188,88 +188,106 @@ const handleClick = (dataobj) => {
   );
 };
 
+
 const ScenarioDiagram = ({ scenariodiagram, isTimerVisible }) => {
-  const [elements, setelements] = useState({ nodes: [], edges: [] });
+  console.log("scenariodiagram",scenariodiagram);
+  
+  const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const reactFlowWrapper = useRef(null);
+  const flowRef = useRef(null);
 
   useEffect(() => {
-    if (scenariodiagram && scenariodiagram !== '') {
-      try {
-        const cleanData = scenariodiagram.replace('flowchartData ', '');
-        const parsedData = JSON.parse(cleanData);
-        const backendBaseUrl = process.env.API_URL_FILEMANAGER;
-        const updatedNodes = parsedData.nodes.map(node => {
-          const imageUrl = node.data.image;
-          if (imageUrl && imageUrl.startsWith('/uploads')) {
-            node.data.image = `${backendBaseUrl}${imageUrl}`;
-          }
-          return node;
-        });
-        setelements({
-          nodes: updatedNodes,
-          edges: parsedData.edges,
-        });
-      } catch (err) {
-        console.error('Failed to parse scenariodiagram:', err);
-      }
+    if (!scenariodiagram) return;
+
+    try {
+      const cleanData = scenariodiagram.replace('flowchartData ', '');
+      console.log("cleanDatacleanDatacleanData",cleanData);
+      
+      const parsedData = JSON.parse(cleanData);
+      console.log("parsedDataparsedDataparsedData",parsedData);
+      
+      const backendBaseUrl = process.env.API_URL_FILEMANAGER;
+
+      const updatedNodes = parsedData.nodes.map(node => ({
+        ...node,
+        position: node.position || { x: 0, y: 0 }, // Ensure position exists
+        data: {
+          ...node.data,
+          image:
+            node.data.image && node.data.image.startsWith('/uploads')
+              ? `${backendBaseUrl}${node.data.image}`
+              : node.data.image,
+        },
+      }));
+
+      setElements({ nodes: updatedNodes, edges: parsedData.edges });
+    } catch (err) {
+      console.error('Failed to parse scenariodiagram:', err);
     }
   }, [scenariodiagram]);
 
-  const FlowViewportController = ({ nodes }) => null;
-  const reactFlowWrapper = useRef(null);
-  const EditableEdgeWrapper = (edgeProps) => {
-    const { getEdges, setEdges } = useReactFlow();
-    const edges = getEdges();
-    return (
-      <EditableEdge
-        {...edgeProps}
-        allEdges={edges}
-        setEdges={setEdges}
-      />
-    );
-  };
+  // Center graph after nodes are rendered
+  // useEffect(() => {
+  //   if (flowRef.current && elements.nodes.length > 0) {
+  //     requestAnimationFrame(() => {
+  //       flowRef.current.fitView({ padding: 0.3 });
+  //     });
+  //   }
+  // }, [elements]);
+  // Center graph after nodes are rendered
+useEffect(() => {
+  if (!flowRef.current || elements.nodes.length === 0) return;
+
+  // Wait for the next paint to ensure nodes are mounted
+  const id = requestAnimationFrame(() => {
+    flowRef.current.fitView({ padding: 0.3 });
+  });
+
+  return () => cancelAnimationFrame(id);
+}, [elements.nodes]); // Only run when nodes change
+
+
   const nodeTypes = {
-    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} />
+    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} />,
   };
+    const EditableEdgeWrapper = (edgeProps) => {
+      const { getEdges, setEdges } = useReactFlow();
+  
+      // You can also pull labelMap or other shared state from context/store here
+      const edges = getEdges(); // all current edges
+      console.log("fffffffffffffffffffffffffff",edges);
+      
+  
+      return (
+        <EditableEdge
+          {...edgeProps}
+          allEdges={edges}
+          setEdges={setEdges}
+        />
+      );
+    };
   const edgeTypes = { custom: EditableEdgeWrapper };
+
   return (
-    <>
-      <style>
-        {`
-          .react-flow__container{
-            top : -75px;
-            left: 115px;
-          }
-        `}
-      </style>
-      <div
-        className="reactflow-wrapper"
-        ref={reactFlowWrapper}
-        style={{
-          width: '100%',
-          height: '80vh',
-          borderRadius: '8px',
-        }}
-      >
-        {elements.nodes.length > 0 && elements.edges.length > 0 && (
-          <ReactFlow
-            nodes={elements.nodes}
-            edges={elements.edges}
-            nodeTypes={nodeTypes}
-            onInit={(reactFlowInstance) => {
-              setTimeout(() => {
-                reactFlowInstance.fitView();
-              }, 100);
-            }}
-            zoomOnDoubleClick={false}
-            edgeTypes={edgeTypes}
-          >
-            <FlowViewportController nodes={elements.nodes} />
-            <Background />
-          </ReactFlow>
-        )}
-      </div>
-    </>
+    <div
+      ref={reactFlowWrapper}
+      style={{ width: '100%', height: '80vh', borderRadius: 8 }}
+    >
+      {elements.nodes.length > 0 && (
+        <ReactFlow
+          nodes={elements.nodes}
+          edges={elements.edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          zoomOnDoubleClick={false}
+          onInit={(instance) => (flowRef.current = instance)}
+        >
+          <Background />
+        </ReactFlow>
+      )}
+    </div>
   );
 };
+
 ScenarioDiagram.layout = "Contentlayout";
 export default ScenarioDiagram;

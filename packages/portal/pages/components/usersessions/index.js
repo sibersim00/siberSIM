@@ -23,6 +23,8 @@ import {
 } from "../../../shared/redux/slices/usersession/usersessionManage";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
+import CustomToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import ChatBox from "./chatbox"; // Import the ChatBox component
 // import { color } from "@mui/system";
@@ -37,6 +39,8 @@ const UserSession = () => {
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
   const [showChat, setShowChat] = useState(false);
+    const [scenType, setScenType] = useState("Public"); // Public/Private
+  
   const [selectedSession, setSelectedSession] = useState(null); // State to manage chat visibility
   const { push } = useRouter();
   const {
@@ -358,6 +362,22 @@ const UserSession = () => {
     setRowData(hasGetUserSessionListSucc);
     setGridData(hasGetUserSessionListSucc);
   };
+  useEffect(() => {
+      if (hasGetUserSessionListSucc) {
+        let filtered = [...hasGetUserSessionListSucc];
+  
+        // if (scenStatus !== "") {
+        //   filtered = filtered.filter((d) => d.status.toString() === scenStatus);
+        // }
+  
+        if (scenType !== "") {
+          filtered = filtered.filter((d) => d.scenario_type === scenType);
+        }
+  
+        setRowData(filtered);
+        setGridData(filtered);
+      }
+    }, [hasGetUserSessionListSucc, scenType]);
 
   return (
     <>
@@ -416,6 +436,23 @@ const UserSession = () => {
                         <i className="fe fe-list"></i>
                       </Button>
                       &nbsp;
+                       <ToggleButtonGroup
+                                               color="success"
+                                               value={scenType}
+                                               size="small"
+                                               exclusive
+                                               onChange={(e) => {
+                                                 setScenType(e.target.value);
+                                               }}
+                                             >
+                                               <CustomToggleButton value="Public">
+                                                 Public
+                                               </CustomToggleButton>
+                                               <CustomToggleButton value="Private">
+                                                 Private
+                                               </CustomToggleButton>
+                                             </ToggleButtonGroup>
+                                           &nbsp;
                       <input
                         className="form-control bd bd-2 ms-2 w-auto"
                         value={quickFilter}

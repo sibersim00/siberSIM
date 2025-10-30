@@ -97,6 +97,7 @@ const ScenarioCategory = () => {
         state && state.scenariocategories && state.scenariocategories.error,
     };
   });
+  console.log("listCatDatalistCatData", listCatData);
 
   const columnDefs = [
     {
@@ -113,6 +114,15 @@ const ScenarioCategory = () => {
       filter: true,
       floatingFilter: true,
     },
+    {
+      headerName: "Category Type",
+      field: "categorytype",
+      filter: true,
+      cellRenderer: "statusRenderer",
+
+      width: 120,
+    },
+
     {
       headerName: "Status",
       field: "status",
@@ -469,6 +479,7 @@ const ScenarioCategory = () => {
         title: "Update",
         categoryname: props.categoryname,
         categoryimage: props.categoryimage,
+        categorytype: props.categorytype,
         parentscenariocategoryid: props.parentscenariocategoryid,
         status: props.status,
         scenariocategoryid: props.scenariocategoryid,
@@ -541,6 +552,25 @@ const ScenarioCategory = () => {
           handleShowEdit={true}
           propsVal={props}
         />
+      );
+    },
+    statusRenderer: (params) => {
+      const status = params.value || "";
+      let badgeClass = "badge bg-secondary";
+      if (status === "Public") badgeClass = "badge bg-success";
+      else if (status === "Private") badgeClass = "badge bg-danger";
+      return (
+        <span
+          className={badgeClass}
+          style={{
+            padding: "0.4em 0.75em",
+            fontSize: "0.9em",
+            fontWeight: "500",
+            borderRadius: "0.5em",
+          }}
+        >
+          {status}
+        </span>
       );
     },
 
@@ -749,9 +779,9 @@ const ScenarioCategory = () => {
                                 <img
                                   alt="avatar"
                                   style={{
-                                  width: "100px",
-                                  height: "100px",
-                                }}
+                                    width: "100px",
+                                    height: "100px",
+                                  }}
                                   src={
                                     item?.categoryimage
                                       ? `${process.env.API_URL_FILEMANAGER}${item.categoryimage}`
@@ -814,6 +844,19 @@ const ScenarioCategory = () => {
                                   </label>
                                 </OverlayTrigger>
                               </div>
+                              <span
+                                className={`badge rounded-pill ${
+                                  item.categorytype === "Public"
+                                    ? "bg-success"
+                                    : "bg-secondary text-dark"
+                                }`}
+                                style={{
+                                  fontSize: "0.8rem",
+                                  padding: "0.3em 0.6em",
+                                }}
+                              >
+                                {item.categorytype}
+                              </span>
                             </div>
                           </Card.Body>
                         </Card>
@@ -826,10 +869,7 @@ const ScenarioCategory = () => {
                   <Col sm={12}>
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
-                        <Row
-                          className="text-center"
-                          style={{ height: "70vh" }}
-                        >
+                        <Row className="text-center" style={{ height: "70vh" }}>
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{

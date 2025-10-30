@@ -217,21 +217,22 @@ const learnermenu =
         selected: false,
         title: "FAQs",
       },
-      // {
-      //   source: "/customscenarios",
-      //   path: "/components/customscenarios",
-      //   icon: "ti ti-dropbox",
-      //   type: "link",
-      //   active: false,
-      //   selected: false,
-      //   title: "Custom Scenarios",
-      // },
+      {
+        source: "/customscenarios",
+        path: "/components/customscenarios",
+        icon: "ti ti-dropbox",
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Custom Scenarios",
+      },
     ];
   };
 const register =
   ({ db, validation, keys }) =>
   async (body) => {
     try {
+      
       const errors = [];
       if (body.mobile && body.mobile !== "") {
         let [check_learner_mobile] = await db.sequelize.query(

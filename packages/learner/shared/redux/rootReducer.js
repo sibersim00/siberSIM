@@ -8,6 +8,7 @@ import commons from "./slices/commons/commons";
 import dashboard from "./slices/dashboard/dashboard";
 import loadingReducer from "./slices/loadingSlice";
 import scenarios from "./slices/scenarios/scenarios"; 
+import customScenario from "./slices/customScenarios/customscenarioManage"; 
 import chatboxManage from "./slices/chatbox/chatboxManage";
 import quiz from "./slices/scenarios/quiz";
 import faqs from "./slices/faqs/faqs";
@@ -43,6 +44,7 @@ const rootReducer = (state, action) => {
     events: events,
     eventLogin: eventLogin,
     eventChatboxManage: eventChatboxManage,
+    customScenario: customScenario,
 
   })(state, action);
 };

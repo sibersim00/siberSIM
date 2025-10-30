@@ -163,13 +163,22 @@ const api = {
 
   //--------Scenario-------------
   scenario_get: "/scenario/list",
+  scenario_custom_get: "/custom_scenarios/list_custom",
   scenario_change_status: "/scenario/status",
   scenario_save: "/scenario/save",
   scenario_update: "/scenario/update",
+  scenario_custom_update: "/custom_scenarios/update",
   scenario_delete: "/scenario/delete",
   scenario_single: "/scenario/get",
+  // scenario_custom_single: "/scenario/get",
+  scenario_single_custom_get: "/custom_scenarios/get",
   scenario_digram_list: "/scenario/scenariodigramlist",
+  scenario_digram_custom_list: "/custom_scenarios/scenariodigramlist",
   save_component_config: "/scenario/savecomponentconfiguration",
+  // custom config
+  save_component_custom_config: "/custom_scenarios/savecomponentconfiguration",
+  scenario_export_zip: "/scenario/export_selected_scenarios",
+  scenario_import_zip: "/scenario/import_scenario_zip",
 
   // --- Scenario sub  Categories -----
 
@@ -184,6 +193,10 @@ const api = {
   // --- master api for component Scenario Categories -----
   scenario_sub_category_list: "/commons/scenariocategorylist",
   scenario_child_category_list: "/commons/scenariosubcategorylist",
+
+
+  scenario_sub_category_custom_list: "/commons/scenariocategorycustomlist",
+  scenario_child_category_custom_list: "/commons/scenariosubcategorycustomlist",
   scenario_instructor_list: "/commons/instructorlist",
 
   //-----master api for component
@@ -240,6 +253,7 @@ const api = {
   //---------------------flowchart------------------
   scenario_flowchart_get: "/commons/getactivescenariodiagram",
   scenario_flowchart_save: "/scenario/save_diagram",
+  scenario_custom_flowchart_save: "/custom_scenarios/save_diagram",
 
   // --- Scenario Categories -----
   scenario_categories_get: "/scenario-categories/get",

@@ -83,22 +83,12 @@ const sidebarFlow = ({
       dispatch(getSingleScenarios(scenarioId));
     }
   }, [scenarioId]);
-  console.log("scenarioId", scenarioId);
-
-  // const handleDragStart = (e, node) => {
-  //  // if (droppedImages.includes(node.id)) return; // Disable dragging if image is dropped
-  //   setDraggedNode(node);  // Set the dragged node data directly
-  //   console.log('nodenodenodenodettttttttttttttttttttttttt',node)
-  // };
   const handleDragStart = (e, node) => {
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
     };
-    console.log("nodenodenodenodettttttttttttttttttttttttt", node);
-
     setDraggedNode(normalizedNode);
-    console.log("nodenodenodenode normalized", normalizedNode);
   };
 
   const [oneClick, setOneClick] = useState(false);
@@ -115,7 +105,6 @@ const sidebarFlow = ({
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
-  console.log("componentDropDownData", componentDropDownData);
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -164,37 +153,11 @@ const sidebarFlow = ({
       setComponentDropDown(filteredData);
     }
   }, [getComponentByCatData]);
-  console.log(
-    "selectedScenarioselectedScenarioselectedScenario",
-    selectedScenario
-  );
 
-  // useEffect(() => {
-  //     if (selectedScenario  && selectedScenario.scenariodiagram && selectedScenario.scenariodiagram!='' ) {
 
-  //       const data = selectedScenario.scenariodiagram;
-  //       const parsedData = JSON.parse(data.replace('flowchartData ', ''));
-  //       console.log(selectedScenario,'parsedDatawww',parsedData)
-  //       if (parsedData?.nodes && parsedData?.edges) {
-  //         setNodes(parsedData.nodes);
-  //         setEdges(parsedData.edges);
-  //       }
-  //     }
-
-  //     if (selectedScenario && selectedScenario.digramcomponent) {
-
-  //       const componentsdata = selectedScenario.digramcomponent;
-  //       const parsedcomponentData = JSON.parse(componentsdata);
-  //       setImageNodeData(parsedcomponentData);
-  //       setDroppedImages(parsedcomponentData.map((comp) => comp.id))
-  //       setDraggedComponent( parsedcomponentData );
-  //     }
-  //   }, [selectedScenario]);
-
-  console.log("imageNodeDataimageNodeData", imageNodeData);
+  
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
-      console.log("selectedComponent", selectedComponent);
       setToBeDragComponent((prev) => {
         const existingIds = new Set(prev.map((item) => item.value));
         const newItems = selectedComponent.filter(
@@ -231,8 +194,6 @@ const sidebarFlow = ({
       });
     }
   }, [toBeDragComponent]);
-
-  console.log("toBeDragComponentrrrrrrrrrrr", getScenarioFlowchart);
   useEffect(() => {
     if (
       getScenarioFlowchart &&
@@ -241,7 +202,6 @@ const sidebarFlow = ({
     ) {
       const data = getScenarioFlowchart.scenariodiagram;
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-      console.log("parsedData", parsedData);
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
         setEdges(parsedData.edges);
@@ -259,26 +219,15 @@ const sidebarFlow = ({
     if (getScenarioFlowchart && getScenarioFlowchart.components) {
       const componentsdata = getScenarioFlowchart.components;
       const parsedcomponentData = JSON.parse(componentsdata);
-
-      console.log("gggggggggggggggggggggggggggggggg", parsedcomponentData);
-
-      // 🧠 Normalize componentid for consistency
       const normalizedData = parsedcomponentData.map((node) => ({
         ...node,
         componentid: node.componentid || node.componentId || node.id,
       }));
-
-      console.log(
-        "normalizedDatanormalizedDatanormalizedDatanormalizedDatanormalizedData",
-        normalizedData
-      );
-
       setImageNodeData(normalizedData);
       setDroppedImages(normalizedData.map((comp) => comp.id));
       setDraggedComponent(normalizedData);
     }
   }, [getScenarioFlowchart]);
-
   useEffect(() => {
     if (getScenarioDigListData && getScenarioDigListData.length > 0) {
       let temp = getScenarioDigListData.map((scenario) => ({

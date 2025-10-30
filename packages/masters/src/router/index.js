@@ -37,6 +37,7 @@ const instructorreportsRouter = require("../components/instructor_reports");
 const reportRouter = require("../components/report");
 const authRouter = require("../components/auth");
 const companySettingRouter = require("../components/company_setting");
+const customscenariosRouter = require("../components/custom_scenarios");
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
   const router = express.Router();
@@ -207,7 +208,7 @@ module.exports = function (iocContainer) {
   );
   router.use("/report", authJwt.authenticateToken, reportRouter(iocContainer));
   router.use("/company_setting", companySettingRouter(iocContainer));
-
+router.use("/custom_scenarios", authJwt.authenticateToken, customscenariosRouter(iocContainer));
   router.get("/", (_req, res) => res.json("Masters Module"));
   return router;
 };

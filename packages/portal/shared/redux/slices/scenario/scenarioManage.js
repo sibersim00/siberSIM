@@ -6,20 +6,22 @@ import api from "../../api_urls";
 const initialState = {
   isLoading: false,
   error: null,
-  getScenarioListData :[],
+  getScenarioListData: [],
   statusChangeScenarios: [],
   deleteScenarios: [],
-  saveScenarios: [], 
-  updateScenarios:[],
+  saveScenarios: [],
+  updateScenarios: [],
   singleScenarios: [],
   assignScenario: [],
   saveTermination: [],
   saveTerminationlogs: [],
   saveTerminationevents: [],
   viewNameResp: "card",
-  getScenarioDigListData:[],
-  saveComponentConfigData:[],
-  saveTerminationeventslogs:[],
+  getScenarioDigListData: [],
+  saveComponentConfigData: [],
+  saveTerminationeventslogs: [],
+  importResp: [],
+  success: null,
 };
 
 const slice = createSlice({
@@ -30,73 +32,67 @@ const slice = createSlice({
     startLoading(state) {
       state.isLoading = true;
     },
-    hasGetScenarioListSucc(state,action){
-      state.isLoading = false,
-      state. getScenarioListData = action.payload;
+    hasGetScenarioListSucc(state, action) {
+      (state.isLoading = false), (state.getScenarioListData = action.payload);
     },
     // hasGetSaveScenariosSucc(state,action){
     //     state.isLoading = false,
     //     state.saveScenarios = action.payload;
     // },
     hasScenariosStatusSucc(state, action) {
-        state.isLoading = false;
-        state.statusChangeScenarios = action.payload;
-      },
-      hasGetdeleteScenariosSucc(state, action) {
-        state.isLoading = false;
-        state.deleteScenarios = action.payload;
-      },
-          hasGetterminateFailedScenario(state, action) {
-      state.isLoading = false,
-        state.saveTermination = action.payload;
-
+      state.isLoading = false;
+      state.statusChangeScenarios = action.payload;
     },
-          hasGetterminateFailedEvents(state, action) {
-      state.isLoading = false,
-        state.saveTerminationevents = action.payload;
-
+    hasGetdeleteScenariosSucc(state, action) {
+      state.isLoading = false;
+      state.deleteScenarios = action.payload;
     },
-          hasGetterminateFailedLogs(state, action) {
-      state.isLoading = false,
-        state.saveTerminationlogs = action.payload;
-
+    hasGetterminateFailedScenario(state, action) {
+      (state.isLoading = false), (state.saveTermination = action.payload);
     },
-          hasGetterminateFailedeventsLogs(state, action) {
-      state.isLoading = false,
-        state.saveTerminationeventslogs = action.payload;
-
+    hasGetterminateFailedEvents(state, action) {
+      (state.isLoading = false), (state.saveTerminationevents = action.payload);
+    },
+    hasGetterminateFailedLogs(state, action) {
+      (state.isLoading = false), (state.saveTerminationlogs = action.payload);
+    },
+    hasGetterminateFailedeventsLogs(state, action) {
+      (state.isLoading = false),
+        (state.saveTerminationeventslogs = action.payload);
+    },
+    hasImportSucc(state, action) {
+      state.isLoading = false;
+      state.importResp = action.payload;
     },
 
-      hasGetSaveScenariosSucc(state,action){
-        state.isLoading = false,
-        state.saveScenarios = action.payload;
+    hasGetSaveScenariosSucc(state, action) {
+      (state.isLoading = false), (state.saveScenarios = action.payload);
     },
-    hasGetUpdateScenariosSucc(state,action){
-      state.isLoading = false,
-      state.updateScenarios = action.payload;
-  },
+    hasGetUpdateScenariosSucc(state, action) {
+      (state.isLoading = false), (state.updateScenarios = action.payload);
+    },
 
-    hasGetSingleScenariosSucc(state,action){
-      state.isLoading = false,
-      state.singleScenarios = action.payload;
-  },
-  hasGetAssignScenariosSucc(state,action){
-    state.isLoading = false,
-    state.assignScenario = action.payload;
-  },
-  hasHandleMAnageSuc(state,action){
-    console.log("action.payloadaction.payload",action.payload)
-    state.isLoading = false,
-    state.viewNameResp = action.payload;
-  }, 
-  hasGetScenarioDigListSucc(state,action){
-    state.isLoading = false,
-    state. getScenarioDigListData = action.payload;
-  },
-    hasGetSaveConfigSucc(state,action){
-    state.isLoading = false,
-    state. saveComponentConfigData = action.payload;
-  },
+    hasGetSingleScenariosSucc(state, action) {
+      (state.isLoading = false), (state.singleScenarios = action.payload);
+    },
+    hasGetAssignScenariosSucc(state, action) {
+      (state.isLoading = false), (state.assignScenario = action.payload);
+    },
+    hasHandleMAnageSuc(state, action) {
+      console.log("action.payloadaction.payload", action.payload);
+      (state.isLoading = false), (state.viewNameResp = action.payload);
+    },
+    hasGetScenarioDigListSucc(state, action) {
+      (state.isLoading = false),
+        (state.getScenarioDigListData = action.payload);
+    },
+    hasExportSucc(state, action) {
+      (state.isLoading = false), (state.success = action.payload);
+    },
+    hasGetSaveConfigSucc(state, action) {
+      (state.isLoading = false),
+        (state.saveComponentConfigData = action.payload);
+    },
     //HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -115,24 +111,27 @@ export function getScenarioList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-     const response = await axios.get(`${api.scenario_get }`);
+      const response = await axios.get(`${api.scenario_get}`);
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
     } catch (error) {
-     dispatch(slice.actions.hasError(error));
+      dispatch(slice.actions.hasError(error));
     }
   };
 }
 
 export function changeStatusScenarios(payload) {
-   return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        const response = await axios.post(`${api?.scenario_change_status}`, payload);
-        dispatch(slice.actions.hasScenariosStatusSucc(response.data));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(
+        `${api?.scenario_change_status}`,
+        payload
+      );
+      dispatch(slice.actions.hasScenariosStatusSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
 }
 
 export function clearScenariosChangeStatus() {
@@ -147,56 +146,55 @@ export function clearScenariosChangeStatus() {
 }
 
 export function deleteScenarios(payload) {
-  
-    return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        const response = await axios.post(`${api.scenario_delete}`,payload);
-        dispatch(slice.actions.hasGetdeleteScenariosSucc(response.data));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
-}
-
-export function cleardeleteScenarios() {
-    return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        dispatch(slice.actions.hasGetdeleteScenariosSucc([]));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
-} 
- 
-export function saveScenarios(payload) {
-    return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        const response = await axios.post(`${api.scenario_save}`,payload);
-        dispatch(slice.actions.hasGetSaveScenariosSucc(response.data));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
-}
-export function clearSaveScenarios() {
-    return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        dispatch(slice.actions.hasGetSaveScenariosSucc([]));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
-} 
-
-export function updateScenarios(payload) { 
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.scenario_update}`,payload);
+      const response = await axios.post(`${api.scenario_delete}`, payload);
+      dispatch(slice.actions.hasGetdeleteScenariosSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function cleardeleteScenarios() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetdeleteScenariosSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function saveScenarios(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenario_save}`, payload);
+      dispatch(slice.actions.hasGetSaveScenariosSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearSaveScenarios() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveScenariosSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function updateScenarios(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenario_update}`, payload);
       dispatch(slice.actions.hasGetUpdateScenariosSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -212,7 +210,7 @@ export function clearUpdateScenarios() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 
 export function getSingleScenarios(id) {
   return async () => {
@@ -224,7 +222,7 @@ export function getSingleScenarios(id) {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 export function clearSingleScenarios() {
   return async () => {
     dispatch(slice.actions.startLoading());
@@ -234,13 +232,13 @@ export function clearSingleScenarios() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 
 export function saveAssignScenario(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.assign_scenario}`,payload);
+      const response = await axios.post(`${api.assign_scenario}`, payload);
       dispatch(slice.actions.hasGetAssignScenariosSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -256,7 +254,7 @@ export function clearsaveAssignScenario() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 
 export function clearHasError() {
   return async () => {
@@ -269,9 +267,7 @@ export function clearHasError() {
   };
 }
 
-
 export function handleManageView(payload) {
-
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
@@ -282,7 +278,6 @@ export function handleManageView(payload) {
   };
 }
 export function clearhandleManageView() {
-
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
@@ -297,10 +292,10 @@ export function getSenarioDigramList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-     const response = await axios.get(`${api.scenario_digram_list }`);
+      const response = await axios.get(`${api.scenario_digram_list}`);
       dispatch(slice.actions.hasGetScenarioDigListSucc(response.data));
     } catch (error) {
-     dispatch(slice.actions.hasError(error));
+      dispatch(slice.actions.hasError(error));
     }
   };
 }
@@ -308,7 +303,10 @@ export function saveComponentConfiguration(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.save_component_config}`,payload);
+      const response = await axios.post(
+        `${api.save_component_config}`,
+        payload
+      );
       dispatch(slice.actions.hasGetSaveConfigSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -324,7 +322,7 @@ export function clearSaveComponentConfiguration() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 //----------------------------------------------------------------------
 //----------scenario termination----------
 
@@ -348,7 +346,7 @@ export function clearterminateFailedScenario() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 export function terminateFailedEvents() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -369,7 +367,7 @@ export function clearterminateFailedEvents() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
+}
 export function terminateFailedLogs() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -390,5 +388,47 @@ export function terminateFailedEventLogs() {
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
+  };
+}
+
+// zip file
+export function exportSelectedScenariosAction(payload) {
+  return async (dispatch) => {
+    // ⚠️ Add dispatch param here
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.scenario_export_zip, payload, {
+        responseType: "arraybuffer", // ✅ use arraybuffer, not blob
+      });
+
+      dispatch(slice.actions.hasExportSucc(response.data));
+      console.log("responseresponseresponseeeeeeeeeeeeeeeeeee", response);
+      // return the binary data
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
+//import
+export function importScenarioZip(formData) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.scenario_import_zip, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      dispatch(slice.actions.hasImportSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearimportMastersAction() {
+  return (dispatch) => {
+    dispatch(slice.actions.hasImportSucc(null));
   };
 }

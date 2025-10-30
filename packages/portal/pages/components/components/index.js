@@ -31,8 +31,10 @@ import "../../../shared/utils/i18n";
 import ComponentForm from "../../../shared/data/component/componentForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
+import { useTranslation } from "react-i18next";
 
 const ManageComponent = () => {
+    const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
   const [openImportModal, setOpenImportModal] = useState(false);
@@ -94,13 +96,15 @@ const ManageComponent = () => {
       errorData: state && state.componentManage && state.componentManage.error,
     };
   });
+  console.log("hasGetComponentListSucc",hasGetComponentListSucc);
+  
   const columnDefs = [
     {
       headerName: "Sr No.",
       field: "Sr No.",
       cellRenderer: "srNoRender",
       minWidth: 80,
-      sortable: false
+      sortable: false,
     },
     {
       headerName: "Component Category",
@@ -201,7 +205,7 @@ const ManageComponent = () => {
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 90,
+      minWidth: 130,
       cellRenderer: "actionButtonRenderer",
     },
   ];
@@ -320,8 +324,8 @@ const ManageComponent = () => {
       compStatus === ""
         ? "Component_All"
         : compStatus === "true"
-          ? "Component_Active"
-          : "Component_Inactive";
+        ? "Component_Active"
+        : "Component_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -409,9 +413,20 @@ const ManageComponent = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              }
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -419,17 +434,6 @@ const ManageComponent = () => {
               theme: "colored",
             }
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -543,6 +547,38 @@ const ManageComponent = () => {
       }
     });
   };
+
+  const handleDeletecard = (item) => {
+    console.log("itemitemitemitemitemitemitem",item);
+    
+    Swal.fire({
+      title: t("common.swal.title"),
+      text: t("common.swal.text_delete"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: t("common.swal.yes"),
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const payload = {
+          component_id: item?.componentid,
+        };
+        dispatch(deleteComponent(payload));
+      }
+    });
+  };
+  const handleDelete = (props, flag) => {
+    if (flag == true) {
+      const payload = {
+        component_id: props?.componentid,
+      };
+      dispatch(deleteComponent(payload));
+    }
+  };
+
+
   const frameworkComponents = {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
@@ -554,7 +590,9 @@ const ManageComponent = () => {
           handleShowEditView={true}
           handleEdit={handleEdit}
           propsVal={props}
+          handleDelete={handleDelete}
           handleShowEdit={true}
+
         />
       );
     },
@@ -573,21 +611,22 @@ const ManageComponent = () => {
         ? `${process.env.API_URL_FILEMANAGER}${data.componentimage}`
         : dummy_network;
 
-
       return (
         <div className="d-flex align-items-center gap-2">
           <span>{data?.vmid} - </span>
           <img
             src={imageUrl}
             alt="vm"
-             onError={(e) => { e.target.onerror = null; e.target.src = dummy_network.src }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = dummy_network.src;
+            }}
             style={{
               width: "22px",
               height: "22px",
               objectFit: "cover",
             }}
           />
-
         </div>
       );
     },
@@ -643,6 +682,7 @@ const ManageComponent = () => {
     dispatch(clearVerifyComponentCategoryModel());
     setOpenImportModal(!openImportModal);
   };
+
   return (
     <>
       <Seo title="Components" />
@@ -717,8 +757,7 @@ const ManageComponent = () => {
                           Inactive
                         </CustomToggleButton>
                       </ToggleButtonGroup>
-                      &nbsp;&nbsp;
-                      &nbsp;
+                      &nbsp;&nbsp; &nbsp;
                       <Button
                         type="button"
                         variant="outline-info"
@@ -855,6 +894,7 @@ const ManageComponent = () => {
                               </OverlayTrigger>
                             </div>
                             <div className="contact-info mb-0 text-center">
+                              
                               <div className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle">
                                 <OverlayTrigger
                                   placement="bottom"
@@ -875,6 +915,20 @@ const ManageComponent = () => {
                                   overlay={<Tooltip>Update</Tooltip>}
                                 >
                                   <i className="fe fe-edit"></i>
+                                </OverlayTrigger>
+                              </div>
+                              &nbsp;
+                              <div
+                                className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
+                                onClick={() => {
+                                   handleDeletecard(item);
+                                }}
+                              >
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Delete</Tooltip>}
+                                >
+                                  <i className="fe fe-trash"></i>
                                 </OverlayTrigger>
                               </div>
                               &nbsp;

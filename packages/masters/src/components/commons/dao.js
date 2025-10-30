@@ -451,6 +451,49 @@ const theme = ({ db }) => async (userid, themeParam) => {
   }
 };
 
+const scenariocategorycustomlist = ({ db }) => async () => {
+  try {
+    let [result] = await db.sequelize.query(
+      `select scenariocategoryid,categoryname as scenariocategory from scenario_categories where status = 'Active' and categorytype = 'Private' and (parentscenariocategoryid='0' OR parentscenariocategoryid is NULL) and deletedon is NULL ORDER by categoryname`
+    );
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// const scenariosubcategorylist = ({ db, body }) => async () => {
+//   let scenariocategoryid = body.scenariocategoryid;
+//   try {
+//     let [result] = await db.sequelize
+//       .query(`select sc.scenariocategoryid,sc.parentscenariocategoryid,sc.categoryname as scenariocategory,scc.categoryname as parentscenariocategory from scenario_categories sc left join  scenario_categories scc on scc.scenariocategoryid= sc.parentscenariocategoryid
+// where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
+//     return result;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+const scenariosubcategorycustomlist = ({ db }) => async () => {
+  try {
+    const [result] = await db.sequelize.query(`
+      SELECT 
+        sc.scenariocategoryid,
+        sc.parentscenariocategoryid,
+        sc.categoryname AS scenariocategory,
+        scc.categoryname AS parentscenariocategory
+      FROM scenario_categories sc
+      LEFT JOIN scenario_categories scc 
+        ON scc.scenariocategoryid = sc.parentscenariocategoryid
+      WHERE sc.status = 'Active'
+        AND sc.deletedon IS NULL
+      ORDER BY sc.categoryname
+    `);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 
 
 
@@ -473,6 +516,8 @@ module.exports = {
   faqlist,
   eventScenarioList,
   studentlist,
-  theme
+  theme,
+  scenariocategorycustomlist,
+  scenariosubcategorycustomlist
   
 };

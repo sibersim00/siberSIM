@@ -1,3 +1,5 @@
+
+
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
 const withTM = require("next-transpile-modules")([
@@ -10,7 +12,7 @@ const withTM = require("next-transpile-modules")([
   "@fullcalendar/timegrid"
 ]);
 const nextConfig = withTM({
-  reactStrictMode: true,
+  reactStrictMode: false,
   trailingSlash: true,
   swcMinify: true,
   basePath: "",
@@ -65,7 +67,9 @@ const nextConfig = withTM({
         { source: '/dashboard', destination: '/components/dashboard/dashboard'},
         { source: '/profile', destination: '/components/profile' },
         { source: '/scenarios', destination: '/components/scenarios'},
+        { source: '/customscenarios', destination: '/components/customscenarios'},
         { source: '/scenarios_view/:slug*', destination: '/components/scenarios/view/:slug*' },
+         {source: "/custom_scenarios_view/:slug*",destination: "/components/customscenarios/view/:slug*",},
         { source: '/users-verification/:slug*', destination: '/components/normalusers/:slug*' },
         { source: '/scenario_quiz/:slug*', destination: '/components/scenarios/quiz/:slug*' },
         { source: '/faqs', destination: '/components/faqs'},
