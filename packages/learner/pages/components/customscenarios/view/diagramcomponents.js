@@ -1,26 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Row, Col, Card, Button, Form } from "react-bootstrap";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-
 import { AgGridReact } from "ag-grid-react";
-import {
-  saveComponentConfiguration, getSingleScenarios, clearSingleScenarios, clearSaveComponentConfiguration, getScenarioList
-} from "../../../../shared/redux/slices/scenario/scenarioManage";
 import dummy_network from '../../../../public/assets/img/dummy.jpg';
-import { toast } from "react-toastify";
-import { maxWidth } from "@mui/system";
-
 const DiagramComponents = (props) => {
   const { scenarioId, setScenarioId, setTabIndex, setView, setRowValues } = props;
   const [networkconfigData, setNetworkconfigData] = useState([]);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    if (scenarioId) {
-      dispatch(getSingleScenarios(scenarioId));
-    }
-  }, []);
 
   const {
     hasGetScenarioListSucc, saveComponentConfigRes,
@@ -182,49 +168,7 @@ const DiagramComponents = (props) => {
     });
     setRowData(updatedData); // Update the state with the new order
   }, []);
-  const onSubmit = (status) => {
-    let list = []
-    rowData.map((obj, index) => {
-      list.push({
-        order: index + 1,
-        componentid: obj.componentid,
-        network_ids: obj.network_ids,
-        vmid: obj.vmid,
-        componentname: obj.componentname,
-        duration: obj.duration,
-        imageurl: obj.imageurl,
-        nodeid: obj.nodeid,
-      })
-    })
-    const payload = {
-      component_config: list,
-      network_config: networkconfigData,
-      scenariostatus: status,
-      scenarioid: scenarioId
-    }
-    dispatch(saveComponentConfiguration(payload))
-  }
-  console.log('nodee', saveComponentConfigRes)
-  useEffect(() => {
-    if (saveComponentConfigRes && saveComponentConfigRes.statusCode === 200) {
-      setScenarioId('');
-      setRowValues({});
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {saveComponentConfigRes?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-      dispatch(clearSaveComponentConfiguration());
-      dispatch(clearSingleScenarios());
-      setView("list");
-      dispatch(getScenarioList());
-    }
-  }, [saveComponentConfigRes]);
+
 
   const onDragEnd = (result) => {
     if (!result.destination) return;

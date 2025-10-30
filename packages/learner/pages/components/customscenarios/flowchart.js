@@ -679,7 +679,30 @@ const DnDFlow = ({
     </>
   );
 };
-export default ({
+// export default ({
+//   numLans,
+//   scenarioId,
+//   setScenarioId,
+//   setTabIndex,
+//   setView,
+//   setRowValues,
+//   selectedScenario,
+// }) => (
+//   <>
+//     <ReactFlowProvider>
+//       <DnDFlow
+//         numLans={numLans}
+//         scenarioId={scenarioId}
+//         setScenarioId={setScenarioId}
+//         setTabIndex={setTabIndex}
+//         setView={setView}
+//         setRowValues={setRowValues}
+//         selectedScenario={selectedScenario}
+//       />
+//     </ReactFlowProvider>
+//   </>
+// );
+const Flowchart = ({
   numLans,
   scenarioId,
   setScenarioId,
@@ -688,17 +711,21 @@ export default ({
   setRowValues,
   selectedScenario,
 }) => (
-  <>
-    <ReactFlowProvider>
-      <DnDFlow
-        numLans={numLans}
-        scenarioId={scenarioId}
-        setScenarioId={setScenarioId}
-        setTabIndex={setTabIndex}
-        setView={setView}
-        setRowValues={setRowValues}
-        selectedScenario={selectedScenario}
-      />
-    </ReactFlowProvider>
-  </>
+  <ReactFlowProvider>
+    <DnDFlow
+      numLans={numLans}
+      scenarioId={scenarioId}
+      setScenarioId={setScenarioId}
+      setTabIndex={setTabIndex}
+      setView={setView}
+      setRowValues={setRowValues}
+      selectedScenario={selectedScenario}
+    />
+  </ReactFlowProvider>
 );
+
+// ✅ Give it a display name for better debugging and to silence ESLint
+Flowchart.displayName = "Flowchart";
+
+export default Flowchart;
+

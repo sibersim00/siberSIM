@@ -13,7 +13,7 @@ import {
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
 // import CopyScenarioModal from "../../../shared/data/scenarios/copyScenarioModal";
 
-const sidebarFlow = ({
+const SidebarFlow = ({
   setDraggedNode,
   scenarioId,
   setNodes,
@@ -479,7 +479,7 @@ const sidebarFlow = ({
     </div>
   );
 };
-export default sidebarFlow;
+export default SidebarFlow;
 
 const customStyles = () => {
   return {

@@ -4,16 +4,16 @@ import TB from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx";
+// import * as XLSX from "xlsx";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
-import { getScenarioQuizlist, changeQuizStatus, clearchangeQuizStatus, deleteScenarioQuiz, clearDeleteQuiz, clearVerifyScenarioImportQuiz, clearSaveImportQuestion, clearHasError } from "../../../../shared/redux/slices/scenarioquiz/quizManage";
-import CreateQuestions from "../../../../shared/data/scenarioQuiz/create-quiz";
-import ImportScenarioQuizList from "../../../../shared/data/scenarioQuiz/import-quiz";
+// import { getScenarioQuizlist, changeQuizStatus, clearchangeQuizStatus, deleteScenarioQuiz, clearDeleteQuiz, clearVerifyScenarioImportQuiz, clearSaveImportQuestion, clearHasError } from "../../../../shared/redux/slices/scenarioquiz/quizManage";
+// import CreateQuestions from "../../../../shared/data/scenarioQuiz/create-quiz";
+// import ImportScenarioQuizList from "../../../../shared/data/scenarioQuiz/import-quiz";
 import { maxWidth, width } from "@mui/system";
 
 const ScenarioQuiz = () => {
@@ -66,12 +66,7 @@ const ScenarioQuiz = () => {
     setQuestionModal(!questionModal);
   };
 
-  useEffect(() => {
-    if (query.slug && query.slug.length > 0) {
-      setQuerySlug(query.slug[0]);
-      dispatch(getScenarioQuizlist(query.slug[0]));
-    }
-  }, [query.slug]);
+
 
  
 
@@ -89,39 +84,7 @@ const ScenarioQuiz = () => {
     }
   }, [ScenarioQuizData, empStatus]);
 
-  useEffect(() => {
-    if (changeStatusResp?.statusCode) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {changeStatusResp?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-      dispatch(getScenarioQuizlist(querySlug));
-      dispatch(clearchangeQuizStatus());
-    }
-  }, [changeStatusResp]);
-
-
-  useEffect(() => {
-    if (deleteQuizResp?.statusCode) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0">{deleteQuizResp?.message}</p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-      dispatch(getScenarioQuizlist(querySlug));
-      dispatch(clearDeleteQuiz());
-    }
-  }, [deleteQuizResp]);
-
+ 
   const columnDefs = [
     {
       headerName: "Sr. No",
@@ -194,26 +157,7 @@ const ScenarioQuiz = () => {
     setQuickFilter(data);
   };
 
-  const handleStatusSwitch = (data) => {
-    Swal.fire({
-      title: t("common.swal.title"),
-      text: t("common.swal.text_status"),
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: " var(--primary-bg-color)",
-      cancelButtonColor: "var(--secondary)",
-      confirmButtonText: t("common.swal.yes"),
-      allowOutsideClick: false,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const payload = {
-          scenarioquestionid: data?.scenarioquestionid,
-          status: data.status === "Active" ? "false" : "true",
-        };
-        dispatch(changeQuizStatus(payload));
-      }
-    });
-  };
+
 
   const autoSizeAll = useCallback((skipHeader) => {
     const allColumnIds = [];
@@ -235,13 +179,6 @@ const ScenarioQuiz = () => {
     setQuestionModal(true);
       // setIsLoading(false);  
   };
-
-  // const handleDelete = (data, flag) => {
-  //   if (flag) {
-  //     dispatch(deleteScenarioQuiz(data?.scenarioquestionid));
-  //   }
-  // };
-
   const frameworkComponents = {
     actionButtonRenderer: function (props) {
       return (
@@ -276,79 +213,79 @@ const ScenarioQuiz = () => {
   //   hanldeImportModal();
   // };
 
-  const handleExport = () => {
-    const exportData = ScenarioQuizData?.map((row, index) => {
-      // Parse createdon and modifiedon from your row (assuming those fields exist)
-      const createdDate = row.createdon ? new Date(row.createdon) : null;
-      const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
+  // const handleExport = () => {
+  //   const exportData = ScenarioQuizData?.map((row, index) => {
+  //     // Parse createdon and modifiedon from your row (assuming those fields exist)
+  //     const createdDate = row.createdon ? new Date(row.createdon) : null;
+  //     const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
 
-      const createdDateOnly =
-        createdDate && !isNaN(createdDate)
-          ? createdDate.toLocaleDateString()
-          : "N/A";
-      const createdTime =
-        createdDate && !isNaN(createdDate)
-          ? createdDate.toLocaleTimeString()
-          : "N/A";
+  //     const createdDateOnly =
+  //       createdDate && !isNaN(createdDate)
+  //         ? createdDate.toLocaleDateString()
+  //         : "N/A";
+  //     const createdTime =
+  //       createdDate && !isNaN(createdDate)
+  //         ? createdDate.toLocaleTimeString()
+  //         : "N/A";
 
-      const modifiedDateOnly =
-        modifiedDate && !isNaN(modifiedDate)
-          ? modifiedDate.toLocaleDateString()
-          : "N/A";
-      const modifiedTime =
-        modifiedDate && !isNaN(modifiedDate)
-          ? modifiedDate.toLocaleTimeString()
-          : "N/A";
+  //     const modifiedDateOnly =
+  //       modifiedDate && !isNaN(modifiedDate)
+  //         ? modifiedDate.toLocaleDateString()
+  //         : "N/A";
+  //     const modifiedTime =
+  //       modifiedDate && !isNaN(modifiedDate)
+  //         ? modifiedDate.toLocaleTimeString()
+  //         : "N/A";
 
-      // Existing options extraction
-      const answers = row.answers || [];
-      const optionColumns = Array.from({ length: 6 }, (_, i) => {
-        return answers[i] ? answers[i].answer_text : "No answer";
-      });
+  //     // Existing options extraction
+  //     const answers = row.answers || [];
+  //     const optionColumns = Array.from({ length: 6 }, (_, i) => {
+  //       return answers[i] ? answers[i].answer_text : "No answer";
+  //     });
 
-      const correctOptions = answers
-        .map((ans, idx) => (ans.is_correct === "Yes" ? `Option${idx + 1}` : null))
-        .filter(Boolean);
+  //     const correctOptions = answers
+  //       .map((ans, idx) => (ans.is_correct === "Yes" ? `Option${idx + 1}` : null))
+  //       .filter(Boolean);
 
-      return [
-        index + 1,
-        row.scenarioquestionid,
-        row.question_text,
-        row.question_type,
-        ...optionColumns,
-        correctOptions.length > 0 ? correctOptions.join(",") : "",
-        createdDateOnly,
-        createdTime,
-        modifiedDateOnly,
-        modifiedTime,
-      ];
-    });
+  //     return [
+  //       index + 1,
+  //       row.scenarioquestionid,
+  //       row.question_text,
+  //       row.question_type,
+  //       ...optionColumns,
+  //       correctOptions.length > 0 ? correctOptions.join(",") : "",
+  //       createdDateOnly,
+  //       createdTime,
+  //       modifiedDateOnly,
+  //       modifiedTime,
+  //     ];
+  //   });
 
-    const header = [
-      "S.No",
-      "ID",
-      "Question",
-      "Question Type (MCQ & SCQ)",
-      "Option 1",
-      "Option 2",
-      "Option 3",
-      "Option 4",
-      "Option 5",
-      "Option 6",
-      "Correct Option",
-      "Created Date",
-      "Created Time",
-      "Modified Date",
-      "Modified Time",
-    ];
+  //   const header = [
+  //     "S.No",
+  //     "ID",
+  //     "Question",
+  //     "Question Type (MCQ & SCQ)",
+  //     "Option 1",
+  //     "Option 2",
+  //     "Option 3",
+  //     "Option 4",
+  //     "Option 5",
+  //     "Option 6",
+  //     "Correct Option",
+  //     "Created Date",
+  //     "Created Time",
+  //     "Modified Date",
+  //     "Modified Time",
+  //   ];
 
-    if (exportData?.length > 0) {
-      const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Scenario Questions Data");
-      XLSX.writeFile(workbook, "Questions_Data.xlsx");
-    }
-  };
+  //   if (exportData?.length > 0) {
+  //     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
+  //     const workbook = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(workbook, worksheet, "Scenario Questions Data");
+  //     XLSX.writeFile(workbook, "Questions_Data.xlsx");
+  //   }
+  // };
 
 
   const handleAddModal = () => {
@@ -364,13 +301,6 @@ const ScenarioQuiz = () => {
     console.log("Adding question with scenarioid:", setRowValues);
     setQuestionModal(true);
     setIsLoading(false);
-  };
-
-  const handleImportModal = () => {
-    dispatch(clearVerifyScenarioImportQuiz());
-    dispatch(clearSaveImportQuestion());
-
-    setOpenImportModal(!openImportModal);
   };
 
   return (
@@ -505,22 +435,7 @@ const ScenarioQuiz = () => {
           </Card>
         </Col>
       </Row>
-      <CreateQuestions
-        openModal={questionModal}
-        handleModal={handleQuestionModal}
-        rowValues={rowValues}
-        scenarioid={scenarioQuizResponseId}
-        questionlist={ScenarioQuizData}
-
-      />
-      <ImportScenarioQuizList
-        openImportModal={openImportModal}
-        handleImportModal={handleImportModal}
-        showListImort={showListImort}
-        setShowListImport={setShowListImport}
-        scenarioid={scenarioQuizResponseId}
-        rowValues={rowValues}
-      />
+      
 
     </>
   );

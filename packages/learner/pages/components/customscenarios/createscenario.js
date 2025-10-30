@@ -3,7 +3,7 @@ import { Row, Col, Card, Button, Form } from "react-bootstrap";
 import Flowchart from "./flowchart";  
 import { useRouter } from "next/router";  
      
-const createScenario = (props) => {
+const CreateScenario = (props) => {
   const { scenarioId,setScenarioId, setTabIndex, setView, setRowValues} = props;
 
     const { query, push } = useRouter();
@@ -34,5 +34,5 @@ const createScenario = (props) => {
     );
 };
 
-createScenario.layout = "Contentlayout";
-export default createScenario;
+CreateScenario.layout = "Contentlayout";
+export default CreateScenario;
