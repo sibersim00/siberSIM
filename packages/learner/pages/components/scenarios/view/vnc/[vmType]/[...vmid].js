@@ -8,6 +8,8 @@ import {
   vmRestartScenario,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
+import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
+
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
   const containerRef = useRef(null);
@@ -386,7 +388,17 @@ const fetchVNCTicket = async () => {
               textAlign: "center",
             }}
           >
-            <h2 style={{ marginBottom: "20px" }}>Siber Sim VM Console</h2>
+            <img alt="SIMMaster Panel Logo Preview"
+                                            src={`${defaultFavicon.src}`}
+                                            style={{
+                                              objectFit: "cover",
+                                              width: "15%",
+                                              height: "15%",
+                                            }}/>
+           <h2 style={{ marginBottom: "20px" }}>
+  <span style={{ color: "#0077B6" }}>siber</span>
+  <span style={{ color: "#D21F3C" }}>SIM</span> Console
+</h2>
             <button
               onClick={connect}
               disabled={loading}

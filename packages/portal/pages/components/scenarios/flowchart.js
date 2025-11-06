@@ -57,7 +57,9 @@ const DnDFlow = ({
 
     return nodesArray;
   });
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+
+
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
   const [draggedNode, setDraggedNode] = useState(null);
@@ -335,10 +337,15 @@ const DnDFlow = ({
     ) {
       const data = selectedScenario.scenariodiagram;
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-   
+
       if (parsedData?.nodes && parsedData?.edges) {
+
         setNodes(parsedData.nodes);
         setEdges(parsedData.edges);
+        // setNodes(parsedData.nodes.map(n => ({ ...n })));
+        // setEdges(parsedData.edges.map(e => ({ ...e })));
+
+
       }
     }
 
@@ -350,6 +357,34 @@ const DnDFlow = ({
       setDraggedComponent(parsedcomponentData);
     }
   }, [selectedScenario]);
+
+  // useEffect(() => {
+  //   if (selectedScenario?.scenariodiagram) {
+  //     const data = selectedScenario.scenariodiagram;
+  //     const parsedData = JSON.parse(data.replace("flowchartData ", ""));
+
+  //     if (parsedData?.nodes && parsedData?.edges) {
+  //       // Deep clone nodes
+  //       const clonedNodes = parsedData.nodes.map((n) => ({
+  //         ...n,
+  //         position: { ...(n.position || {}) },
+  //         style: { ...(n.style || {}) },
+  //         data: { ...(n.data || {}) },
+  //       }));
+
+  //       // Deep clone edges
+  //       const clonedEdges = parsedData.edges.map((e) => ({
+  //         ...e,
+  //         data: { ...(e.data || {}) },
+  //       }));
+
+  //       setNodes(clonedNodes);
+  //       setEdges(clonedEdges);
+  //     }
+  //   }
+  // }, [selectedScenario]);
+
+
 
   const onConnect = useCallback((params) => {
     console.log("params 111", params) /
@@ -426,7 +461,7 @@ const DnDFlow = ({
     if (nodeToDelete && nodeToDelete.data && nodeToDelete.data.componentId) {
       const imageUrl = nodeToDelete.data.image;
       const imageComponent = nodeToDelete.data.componentId;
-   
+
 
       // Find the id associated with the image URL
       const imageNode = imageNodeData.find(
@@ -501,7 +536,7 @@ const DnDFlow = ({
           return {
             id: data.componentId,
             componentid: data.componentId,
-            duration:data.duration,
+            duration: data.duration,
             imageUrl: data.image || "",
             label: data.label || "",
             networkport: data.networkport || [],
@@ -644,9 +679,9 @@ const DnDFlow = ({
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
 
-            // edgeTypes={{ straight: StraightEdge }}
-            // connectionLineStyle={{ stroke: '#363837', strokeWidth: 1 }}
-            // connectionLineType="straight"
+          // edgeTypes={{ straight: StraightEdge }}
+          // connectionLineStyle={{ stroke: '#363837', strokeWidth: 1 }}
+          // connectionLineType="straight"
           >
             {/* <Controls /> */}
             <Background />

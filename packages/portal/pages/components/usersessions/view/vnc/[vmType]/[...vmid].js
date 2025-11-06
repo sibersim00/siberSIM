@@ -7,6 +7,8 @@ import {
   vmStartScenario,
   vmRestartScenario,
 } from "../../../../../../shared/redux/slices/usersession/usersessionManage";
+import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
+
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
@@ -63,7 +65,7 @@ export default function ProxmoxConsole() {
   const intentionalDisconnect = useRef(false);
   const connect = async (reconnecting = false) => {
     console.log(" ");
-    
+
     try {
       setLoading(true);
       updateStatus("Requesting ticket...");
@@ -389,7 +391,22 @@ export default function ProxmoxConsole() {
               textAlign: "center",
             }}
           >
-            <h2 style={{ marginBottom: "20px" }}>Siber Sim VM Console</h2>
+            <img
+              alt="SIMMaster Panel Logo Preview"
+              src={`${defaultFavicon.src}`}
+              style={{
+                objectFit: "cover",
+                width: "15%",
+                height: "15%",
+              }}
+            />
+            {/* <h2 style={{ marginBottom: "20px" }}>siberSIM VM Console</h2> */}
+          <h2 style={{ marginBottom: "20px" }}>
+  <span style={{ color: "#0077B6" }}>siber</span>
+  <span style={{ color: "#D21F3C" }}>SIM</span> Console
+</h2>
+
+
             <button
               onClick={connect}
               disabled={loading}

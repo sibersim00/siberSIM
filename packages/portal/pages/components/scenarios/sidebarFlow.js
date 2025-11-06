@@ -84,9 +84,19 @@ const sidebarFlow = ({
     }
   }, [scenarioId]);
   const handleDragStart = (e, node) => {
+    console.log("nodetytttttttttttttttttttttt", node);
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
+      vmid:
+        node.vmid ||
+        (() => {
+          try {
+            return (node.label || "").split(" - ")[0].trim();
+          } catch (err) {
+            return "";
+          }
+        })(),
     };
     setDraggedNode(normalizedNode);
   };
@@ -105,6 +115,14 @@ const sidebarFlow = ({
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
+  const [rowValues, setRowValues] = useState(null);
+
+  useEffect(() => {
+    if (getScenarioFlowchart) {
+      setRowValues(getScenarioFlowchart);
+    }
+  }, [getScenarioFlowchart])
+  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -125,6 +143,9 @@ const sidebarFlow = ({
       setScenarioDropDownData(temp);
     }
   }, [getScenarioDigListData]);
+
+
+
   const handleCategoryChange = (selectedOption) => {
     setSelectedCategory(selectedOption);
     setComponentDropDown([]);
@@ -140,6 +161,9 @@ const sidebarFlow = ({
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
   };
+
+
+
   useEffect(() => {
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({
@@ -154,8 +178,6 @@ const sidebarFlow = ({
     }
   }, [getComponentByCatData]);
 
-
-  
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
       setToBeDragComponent((prev) => {
@@ -207,23 +229,16 @@ const sidebarFlow = ({
         setEdges(parsedData.edges);
       }
     }
-
-    // if (getScenarioFlowchart && getScenarioFlowchart.components) {
-
-    //   const componentsdata = getScenarioFlowchart.components;
-    //   const parsedcomponentData = JSON.parse(componentsdata);
-    //   setImageNodeData(parsedcomponentData);
-    //   setDroppedImages(parsedcomponentData.map((comp) => comp.id))
-    // setDraggedComponent( parsedcomponentData );
-    // }
     if (getScenarioFlowchart && getScenarioFlowchart.components) {
       const componentsdata = getScenarioFlowchart.components;
       const parsedcomponentData = JSON.parse(componentsdata);
       const normalizedData = parsedcomponentData.map((node) => ({
         ...node,
         componentid: node.componentid || node.componentId || node.id,
+        imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl || node.subcategoryimage || ""}`, // 👈 ensure full URL
       }));
-      setImageNodeData(normalizedData);
+
+      setImageNodeData(normalizedData); // 👈 update sidebar immediately
       setDroppedImages(normalizedData.map((comp) => comp.id));
       setDraggedComponent(normalizedData);
     }
@@ -257,7 +272,6 @@ const sidebarFlow = ({
         overflowY: "auto",
       }}
     >
-      {/* Row 1: Copy Button + First Select (single horizontal line) */}
       <div
         className="mb-2"
         style={{
@@ -329,19 +343,19 @@ const sidebarFlow = ({
           }}
           isMulti
           styles={customStyles()}
-          // styles={{
-          //   ...customStyles,
-          //   multiValue: (base) => ({
-          //     ...base,
-          //     overflow: "hidden",
-          //     textOverflow: "ellipsis",
-          //     whiteSpace: "nowrap",
-          //     borderRadius: "2px",
-          //     fontSize: "85%",
-          //     padding: "3px 3px 3px 6px",
-          //     boxSizing: "border-box",
-          //   }),
-          // }}
+        // styles={{
+        //   ...customStyles,
+        //   multiValue: (base) => ({
+        //     ...base,
+        //     overflow: "hidden",
+        //     textOverflow: "ellipsis",
+        //     whiteSpace: "nowrap",
+        //     borderRadius: "2px",
+        //     fontSize: "85%",
+        //     padding: "3px 3px 3px 6px",
+        //     boxSizing: "border-box",
+        //   }),
+        // }}
         />
       </div>
 
@@ -401,27 +415,18 @@ const sidebarFlow = ({
         scenarioDropDownData={scenarioDropDownData}
         handleOneClick={handleOneClick}
         setSelectedScenario={setSelectedScenario}
+        setNodes={setNodes}
+        setEdges={setEdges}
+        setDraggedComponent={setDraggedComponent}
+        setImageNodeData={setImageNodeData}
+
+
+
       />
     </div>
   );
 };
 export default sidebarFlow;
-
-//  const customStyles = {
-//         control: (styles, { isFocused, isDisabled }) => ({
-//             ...styles,
-//             borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-//             boxShadow: isDisabled ? null : isFocused ? "0 0 0 0.001rem #00d683" : null,
-//             "&:hover": {
-//                 borderColor: isDisabled
-//                     ? "#e8e8f7"
-//                     : isFocused
-//                         ? "#00d683"
-//                         : styles.borderColor,
-//             },
-//         }),
-//     };
-
 const customStyles = () => {
   return {
     control: (styles) => ({

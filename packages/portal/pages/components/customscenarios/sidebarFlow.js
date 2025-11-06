@@ -126,14 +126,11 @@ const sidebarFlow = ({
   const handleCategoryChange = (selectedOption) => {
     setSelectedCategory(selectedOption);
     setComponentDropDown([]);
-
-    // Fetch components for the selected category
     dispatch(
       getScenarioComponentListbyCategory({
         componentcategoryid: selectedOption.value,
       })
     );
-
     // Restore previously selected components (if any)
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
@@ -165,7 +162,6 @@ const sidebarFlow = ({
         setEdges(parsedData.edges);
       }
     }
-
     if (selectedScenario && selectedScenario.digramcomponent) {
       const componentsdata = selectedScenario.digramcomponent;
       const parsedcomponentData = JSON.parse(componentsdata);
@@ -197,7 +193,6 @@ const sidebarFlow = ({
         duration: cat?.duration,
         componentid: cat?.componentid,
       }));
-
       setImageNodeData((prevData) => {
         const existingIds = new Set(prevData.map((item) => item.id));
         const merged = [...prevData];
@@ -207,12 +202,10 @@ const sidebarFlow = ({
             merged.push(node);
           }
         });
-
         return merged;
       });
     }
   }, [toBeDragComponent]);
-
   useEffect(() => {
     if (
       getScenarioFlowchart &&
@@ -226,32 +219,14 @@ const sidebarFlow = ({
         setEdges(parsedData.edges);
       }
     }
-
-    // if (getScenarioFlowchart && getScenarioFlowchart.components) {
-    //   const componentsdata = getScenarioFlowchart.components;
-    //   const parsedcomponentData = JSON.parse(componentsdata);
-    //   setImageNodeData(parsedcomponentData);
-    //   setDroppedImages(parsedcomponentData.map((comp) => comp.id));
-    //   setDraggedComponent(parsedcomponentData);
-    // }
         if (getScenarioFlowchart && getScenarioFlowchart.components) {
       const componentsdata = getScenarioFlowchart.components;
       const parsedcomponentData = JSON.parse(componentsdata);
-
-      console.log("gggggggggggggggggggggggggggggggg", parsedcomponentData);
-
-      // 🧠 Normalize componentid for consistency
       const normalizedData = parsedcomponentData.map((node) => ({
         ...node,
         componentid: node.componentid || node.componentId || node.id,
         duration:node.duration,
       }));
-
-      console.log(
-        "normalizedDatanormalizedDatanormalizedDatanormalizedDatanormalizedData",
-        normalizedData
-      );
-
       setImageNodeData(normalizedData);
       setDroppedImages(normalizedData.map((comp) => comp.id));
       setDraggedComponent(normalizedData);
@@ -269,14 +244,6 @@ const sidebarFlow = ({
       setScenarioDropDownData(temp);
     }
   }, [getScenarioDigListData]);
-
-  // const handleCopyScenario = () => {
-  //   handleOneClick(false);
-  //   if (scenarioId && scenarioId != "") {
-  //     setcopyModal(true);
-  //   }
-  // };
-
   return (
     <div
       style={{
@@ -297,23 +264,6 @@ const sidebarFlow = ({
           maxWidth: "400px",
         }}
       >
-        {/* <Button
-          variant="light"
-          size="sm"
-          title="Copy"
-          // onClick={handleCopyScenario}
-          style={{
-            padding: "6px 8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "38px",
-            border: "1px solid #ced4da",
-          }}
-        >
-           <i className="fa  fa-github" aria-hidden="true"></i> 
-          <i className="fas fa-code-branch" aria-hidden="true"></i>
-        </Button> */}
         <div style={{ flex: 1 }}>
           <Select
             theme={(theme) => ({
