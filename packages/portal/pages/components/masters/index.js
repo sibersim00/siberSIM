@@ -12,7 +12,7 @@ import ScenarioCategory from "./masters/scenariocaregories";
 import ScenarioSubCategory from "./masters/scenariosubcategories";
 import Faqs from "./masters/faqs";
 import Widgets from "./masters/widgets";
-import ScenarioTabs from "./masters/scenariotabs";
+
 
 // import Componenets from "../components/index";
 
@@ -48,7 +48,7 @@ const Master = () => {
     }
   }, [getSubMenus]);
 
-  
+
   const onFilterChanged = (e) => {
     const inputValue = e.target.value;
     if (inputValue) {
@@ -199,9 +199,7 @@ const Master = () => {
                 {selectedSubMenu.source === "/widgets" && (
                   <Widgets />
                 )}
-                {selectedSubMenu.source === "/scenariotabs" && (
-                  <ScenarioTabs />
-                )}
+
               </div>
             )}
           </Col>
