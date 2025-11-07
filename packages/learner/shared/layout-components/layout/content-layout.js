@@ -42,7 +42,8 @@ const Contentlayout = ({ children }) => {
   );
 
   // Add default layout classes
-  body.classList.add("main-body", "leftmenu", "ltr", "main-sidebar-hide");
+  // body.classList.add("main-body", "leftmenu", "ltr", "main-sidebar-hide");
+  body.classList.add("main-body", "leftmenu", "ltr", "main-sidebar-show");
 
   // Apply theme based on localStorage
   const storedTheme = localStorage.getItem("theme_preference"); // "dark" or "light"

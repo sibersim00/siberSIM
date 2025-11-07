@@ -264,7 +264,7 @@ const SideBar = () => {
     if (body) {
       // if (body !== !body) {
       if (innerWidth >= 992) {
-        document.querySelector("body")?.classList.toggle("main-sidebar-hide");
+        // document.querySelector("body")?.classList.toggle("main-sidebar-hide");
         document.querySelector("body")?.classList.remove("main-sidebar-show");
       } else if (document.body.classList.contains("horizontalmenu")) {
         document.querySelector("body")?.classList.toggle("main-navbar-show");

@@ -277,14 +277,29 @@ const ManageScenarios = () => {
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
+
   //Function to Download Excel file
   const handleExportExcel = () => {
-    // Filter data based on scenStatus ("" = all, "true" = active, "false" = inactive)
-    const filteredData = hasGetScenarioListSucc.filter((row) => {
-      if (scenStatus === "") return true; // All
+    // If no scenario selected → export all (with scenStatus filter)
+    let filteredData = hasGetScenarioListSucc.filter((row) => {
+      if (scenStatus === "") return true; // All statuses
       return row.status === scenStatus;
     });
 
+    // If specific scenarios are selected → filter by those scenario IDs
+    if (selectedScenarios && selectedScenarios.length > 0) {
+      const selectedIds = selectedScenarios.map((s) => s.value);
+      filteredData = filteredData.filter((row) =>
+        selectedIds.includes(row.scenarioid)
+      );
+    }
+
+    if (!filteredData.length) {
+      alert("No scenarios found to export!");
+      return;
+    }
+
+    // Prepare Excel data
     const exportData = filteredData.map((row) => {
       const createdDate = row.createdon ? new Date(row.createdon) : null;
       const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
@@ -312,6 +327,10 @@ const ManageScenarios = () => {
         row.scenarioidentification,
         row.scenariotitle,
         row.scenariodescription,
+        row.components,
+        row.scenariodiagram,
+        row.component_config,
+        row.network_config,
         row.scenariocategory,
         row.scenariosubcategory,
         row.scenariolevel,
@@ -331,6 +350,10 @@ const ManageScenarios = () => {
       "Identification no",
       "Title",
       "Desciption",
+      "Components",
+      "Scenario Diagram",
+      "Component Config",
+      "Network Config",
       "Scenario Category",
       "Scenario Sub Category",
       "Level",
@@ -352,12 +375,15 @@ const ManageScenarios = () => {
       .toISOString()
       .replace(/[-T:\.]/g, "")
       .slice(0, 15);
-    const filePrefix =
-      scenStatus === ""
-        ? "Scenarios_All"
-        : scenStatus === "true"
-        ? "Scenarios_Active"
-        : "Scenarios_Inactive";
+
+    let filePrefix = "Scenarios_All";
+    if (selectedScenarios.length > 0) {
+      filePrefix = "Scenarios_Selected";
+    } else if (scenStatus === "true") {
+      filePrefix = "Scenarios_Active";
+    } else if (scenStatus === "false") {
+      filePrefix = "Scenarios_Inactive";
+    }
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -700,11 +726,11 @@ const ManageScenarios = () => {
     handleOneClick(false);
     setPreviousView(view);
     setBackView(view);
-    if (props && props.scenariouuid) {
-      title: "Add", setRowId(props.scenariouuid);
+    if (props && props.scenarioid) {
+      title: "Add", setRowId(props.scenarioid);
       // setView("Form");
       dispatch(handleManageView("Form"));
-      console.log("first", props.scenariouuid);
+      console.log("first", props.scenarioid);
     }
   };
 
@@ -774,7 +800,7 @@ const ManageScenarios = () => {
   // };
   const handleReturnView = (props) => {
     push({
-      pathname: `/scenarios_view/${props?.scenariouuid}`,
+      pathname: `/scenarios_view/${props?.scenarioid}`,
       query: { backType: scenType },
     });
   };
@@ -965,7 +991,7 @@ const ManageScenarios = () => {
                           Private
                         </CustomToggleButton>
                       </ToggleButtonGroup>
-                      &nbsp;&nbsp; &nbsp;
+                      &nbsp;
                       {/* main */}
                       {/* <Button
                         type="button"
@@ -973,16 +999,16 @@ const ManageScenarios = () => {
                         onClick={() => handleExport()}
                       >
                         <i className="fa fa-file-excel-o"></i> Export
-                      </Button> */}
-                      {/*<Button
+                      </Button>  */}
+                      <Button
                         type="button"
                         variant="outline-info"
                         onClick={() => setShowExportModal(true)}
                       >
                         <i className="fa fa-file-excel-o"></i> Export
-                      </Button> */}
+                      </Button>
                       &nbsp;
-                      {/*<Button
+                      <Button
                         type="button"
                         variant="outline-warning"
                         onClick={() => {
@@ -991,7 +1017,7 @@ const ManageScenarios = () => {
                         }}
                       >
                         <i className="fa fa-file-excel-o"></i> Import
-                      </Button>*/}
+                      </Button>
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -1240,7 +1266,7 @@ const ManageScenarios = () => {
                               className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                               onClick={() =>
                                 push({
-                                  pathname: `/scenarios_view/${item?.scenariouuid}`,
+                                  pathname: `/scenarios_view/${item?.scenarioid}`,
                                   query: { backType: scenType },
                                 })
                               }

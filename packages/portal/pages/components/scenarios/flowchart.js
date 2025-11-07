@@ -59,12 +59,13 @@ const DnDFlow = ({
   });
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
 
-
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
+  console.log("selectedScenario", selectedScenario);
+
   const resolveImageUrl = (url) => {
     if (!url) return "";
 
@@ -91,11 +92,11 @@ const DnDFlow = ({
     net2: Position.Left,
     net3: Position.Top,
   };
-  //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    const networkPorts = data.networkport || [];
-    const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
-    //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
+    const networkPorts = data.networkport || {};
+    const portKeys = Array.isArray(networkPorts)
+      ? networkPorts.flatMap((obj) => Object.keys(obj))
+      : Object.keys(networkPorts);
     const totalPorts = portKeys.length;
 
     const sides = ["Right", "Bottom", "Left", "Top"];
@@ -337,18 +338,11 @@ const DnDFlow = ({
     ) {
       const data = selectedScenario.scenariodiagram;
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-
       if (parsedData?.nodes && parsedData?.edges) {
-
         setNodes(parsedData.nodes);
         setEdges(parsedData.edges);
-        // setNodes(parsedData.nodes.map(n => ({ ...n })));
-        // setEdges(parsedData.edges.map(e => ({ ...e })));
-
-
       }
     }
-
     if (selectedScenario && selectedScenario.digramcomponent) {
       const componentsdata = selectedScenario.digramcomponent;
       const parsedcomponentData = JSON.parse(componentsdata);
@@ -357,34 +351,19 @@ const DnDFlow = ({
       setDraggedComponent(parsedcomponentData);
     }
   }, [selectedScenario]);
-
-  // useEffect(() => {
-  //   if (selectedScenario?.scenariodiagram) {
-  //     const data = selectedScenario.scenariodiagram;
-  //     const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-
-  //     if (parsedData?.nodes && parsedData?.edges) {
-  //       // Deep clone nodes
-  //       const clonedNodes = parsedData.nodes.map((n) => ({
-  //         ...n,
-  //         position: { ...(n.position || {}) },
-  //         style: { ...(n.style || {}) },
-  //         data: { ...(n.data || {}) },
-  //       }));
-
-  //       // Deep clone edges
-  //       const clonedEdges = parsedData.edges.map((e) => ({
-  //         ...e,
-  //         data: { ...(e.data || {}) },
-  //       }));
-
-  //       setNodes(clonedNodes);
-  //       setEdges(clonedEdges);
-  //     }
-  //   }
-  // }, [selectedScenario]);
-
-
+  useEffect(() => {
+    if (nodes.length > 0) {
+      const fixedNodes = nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          // force resolve image every time scenario updates
+          image: resolveImageUrl(node.data.image),
+        },
+      }));
+      setNodes(fixedNodes);
+    }
+  }, [selectedScenario]);
 
   const onConnect = useCallback((params) => {
     console.log("params 111", params) /
@@ -457,11 +436,9 @@ const DnDFlow = ({
     // Find the image used in the node and remove it from the droppedImages array
     const nodeToDelete = nodes.find((node) => node.id === nodeId);
 
-
     if (nodeToDelete && nodeToDelete.data && nodeToDelete.data.componentId) {
       const imageUrl = nodeToDelete.data.image;
       const imageComponent = nodeToDelete.data.componentId;
-
 
       // Find the id associated with the image URL
       const imageNode = imageNodeData.find(
@@ -480,10 +457,8 @@ const DnDFlow = ({
     }
   };
   function generateComponentConfig(nodes, edges) {
-
     const config = [];
     const networkIdSet = new Set();
-
     nodes.forEach((node, index) => {
       const { id: nodeId, data } = node;
       const network_ids = {};
@@ -494,14 +469,12 @@ const DnDFlow = ({
           network_ids[port] = label;
           networkIdSet.add(label);
         }
-
         if (edge.target === nodeId && edge.targetHandle) {
           const port = edge.targetHandle.split("-")[0];
           network_ids[port] = label;
           networkIdSet.add(label);
         }
       });
-
       config.push({
         order: index + 1,
         componentid: data.componentId,
@@ -513,8 +486,6 @@ const DnDFlow = ({
         network_ids,
       });
     });
-
-    // Convert to array
     const network_config = [...networkIdSet];
     return {
       component_config: config,
@@ -542,15 +513,12 @@ const DnDFlow = ({
             networkport: data.networkport || [],
           };
         });
-
-      // Deduplicate by `id` using Map
       const uniqueByIdMap = new Map();
       mapped.forEach((component) => {
         if (!uniqueByIdMap.has(component.id)) {
           uniqueByIdMap.set(component.id, component);
         }
       });
-
       componentsData = Array.from(uniqueByIdMap.values());
     }
     const payload = {
@@ -558,7 +526,6 @@ const DnDFlow = ({
       scenarioid: scenarioId,
       numberoflan: numLans.toString(),
       components: componentsData,
-      //components : drggerdComponent,
       scenariostatus: status,
       component_config: configData.component_config,
       network_config: configData.network_config,
@@ -567,8 +534,6 @@ const DnDFlow = ({
   };
   useEffect(() => {
     if (saveScenarioFlowChart && saveScenarioFlowChart.statusCode === 200) {
-      //  setScenarioId('');
-      //  setRowValues({});
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
           {saveScenarioFlowChart?.message}
@@ -581,22 +546,18 @@ const DnDFlow = ({
       );
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
-      //  setView("list");
       dispatch(getScenarioList());
-      //    push(`/scenarios_view/${scenarioId}?tab=diagram`);
       setNodes([]);
       setEdges([]);
       setTabIndex("tab3");
     }
   }, [saveScenarioFlowChart]);
-
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => <ImageNode {...props} deleteNode={deleteNode} />,
     }),
     [deleteNode]
   );
-
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
       const selectedNode = nodes.find((node) => node.selected);
@@ -605,14 +566,12 @@ const DnDFlow = ({
       }
     }
   };
-
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [nodes]);
-
   const defaultEdgeOptions = {
     type: "straight",
     style: { stroke: "#000", strokeWidth: 2 },
@@ -620,10 +579,7 @@ const DnDFlow = ({
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
     const { getEdges, setEdges } = useReactFlow();
-
-    // You can also pull labelMap or other shared state from context/store here
     const edges = getEdges(); // all current edges
-
     return (
       <EditableEdge
         {...edgeProps}
@@ -636,7 +592,6 @@ const DnDFlow = ({
   const edgeTypes = {
     custom: EditableEdgeWrapper,
   };
-
   return (
     <>
       <div
@@ -678,12 +633,7 @@ const DnDFlow = ({
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
-
-          // edgeTypes={{ straight: StraightEdge }}
-          // connectionLineStyle={{ stroke: '#363837', strokeWidth: 1 }}
-          // connectionLineType="straight"
           >
-            {/* <Controls /> */}
             <Background />
           </ReactFlow>
         </div>

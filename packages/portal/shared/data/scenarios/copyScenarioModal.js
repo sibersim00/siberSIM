@@ -49,6 +49,7 @@ const CopyScenarioModal = ({
   const [selectedScenario, setSelectedScenario] = useState(null);
 
   const handleClose = () => setcopyModal(false);
+
   const customStyles = () => {
     return {
       control: (styles) => ({
@@ -87,75 +88,77 @@ const CopyScenarioModal = ({
       }),
     };
   };
-  const handleSubmit = () => {
-    try {
-      let diagramData = selectedScenario?.scenariodiagram;
 
-      if (!diagramData) {
-        alert("This scenario has no diagram data.");
-        return;
-      }
-      // Parse diagram data if it's a string
-      if (typeof diagramData === "string") {
-        diagramData = diagramData.replace("flowchartData ", "");
-        diagramData = JSON.parse(diagramData);
-      }
-      // anitize before setting state
-      const { nodes, edges } = sanitizeFlowchartData(diagramData);
-      if (nodes.length > 0 && edges.length >= 0) {
-        setNodes(nodes);
-        setEdges(edges);
-      } else {
-        alert("Diagram data is incomplete.");
-        return;
-      }
-      // let componentData = selectedScenario?.digramcomponent;
-      // if (componentData) {
-      //   if (typeof componentData === "string") {
-      //     componentData = JSON.parse(componentData);
-      //   }
-      //   const normalizedComponents = componentData.map((node) => ({
-      //     ...node,
-      //     componentid: node.componentid || node.componentId || node.id,
-      //   }));
-      //   setImageNodeData(normalizedComponents);
-      //   setDraggedComponent(normalizedComponents);
-      // }
-      let componentData = selectedScenario?.digramcomponent;
-
-if (componentData) {
-  if (typeof componentData === "string") {
-    componentData = JSON.parse(componentData);
-  }
-
-  // Map and attach image URL if missing
-  const normalizedComponents = componentData.map((node) => {
-    const nodeFromDiagram = diagramData?.nodes?.find(
-      (n) => n.data?.componentid === node.componentid || n.id === node.componentid
-    );
-
-    return {
-      ...node,
-      componentid: node.componentid || node.componentId || node.id,
-      imageurl:
-        node.componentimage ||
-        node.imageurl ||
-        nodeFromDiagram?.data?.image ||
-        "",
-    };
-  });
-
-  // Update sidebar + flowchart states
-  setImageNodeData(normalizedComponents);
-  setDraggedComponent(normalizedComponents);
-}
-
-      handleClose();
-    } catch (error) {
-      console.error("Error applying scenario:", error);
-      alert("Something went wrong while applying the diagram.");
+const handleSubmit = () => {
+  try {
+    let diagramData = selectedScenario?.scenariodiagram;
+    if (!diagramData) {
+      alert("This scenario has no diagram data.");
+      return;
     }
-  };
+
+    // Parse diagram data if string
+    if (typeof diagramData === "string") {
+      diagramData = diagramData.replace("flowchartData ", "");
+      diagramData = JSON.parse(diagramData);
+    }
+
+    const { nodes, edges } = sanitizeFlowchartData(diagramData);
+
+    let componentData = selectedScenario?.digramcomponent;
+    if (componentData) {
+      if (typeof componentData === "string") {
+        componentData = JSON.parse(componentData);
+      }
+
+      // Normalize and resolve full image URLs
+      const normalizedComponents = componentData.map((node) => {
+        let fullImageUrl = node.imageUrl || node.subcategoryimage || "";
+        if (fullImageUrl && !fullImageUrl.startsWith("http")) {
+          fullImageUrl = `${process.env.API_URL_FILEMANAGER}${fullImageUrl}`;
+        }
+        return {
+          ...node,
+          componentid: node.componentid || node.componentId || node.id,
+          imageUrl: fullImageUrl,
+        };
+      });
+
+      // 🧠 Merge matching component images into flow nodes
+      const updatedNodes = nodes.map((node) => {
+        const matched = normalizedComponents.find(
+          (comp) =>
+            comp.label?.trim()?.toLowerCase() ===
+              node.data?.label?.trim()?.toLowerCase() ||
+            comp.id === node.data?.id
+        );
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            image:
+              matched?.imageUrl ||
+              node.data?.image ||
+              "/assets/img/brand/default.png", // fallback image
+          },
+        };
+      });
+      setNodes(updatedNodes);
+      setEdges(edges);
+      setImageNodeData(normalizedComponents);
+      setDraggedComponent(normalizedComponents);
+    } else {
+      setNodes(nodes);
+      setEdges(edges);
+    }
+
+    handleClose();
+  } catch (error) {
+    console.error("Error applying scenario:", error);
+    alert("Something went wrong while applying the diagram.");
+  }
+};
   return (
     <Fragment>
       <Modal show={openFlag} backdrop="static" centered>

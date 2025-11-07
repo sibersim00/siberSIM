@@ -72,6 +72,7 @@ const sidebarFlow = ({
       }),
     };
   };
+  
   useEffect(() => {
     dispatch(getCategoriesList());
     dispatch(getSenarioDigramList());
@@ -84,7 +85,6 @@ const sidebarFlow = ({
     }
   }, [scenarioId]);
   const handleDragStart = (e, node) => {
-    console.log("nodetytttttttttttttttttttttt", node);
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
@@ -261,6 +261,57 @@ const sidebarFlow = ({
       setcopyModal(true);
     }
   };
+console.log("imageNodeDataimageNodeData",imageNodeData);
+
+  useEffect(() => {
+  if (imageNodeData && imageNodeData.length > 0) {
+    const updated = imageNodeData.map((node) => {
+      if (node.imageUrl && !node.imageUrl.startsWith("http")) {
+        return {
+          ...node,
+          imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl}`,
+        };
+      }
+      return node;
+    });
+
+    // Only update if there’s a change (to prevent infinite loops)
+    const changed = JSON.stringify(updated) !== JSON.stringify(imageNodeData);
+    if (changed) {
+      console.log("Fixed missing image URLs after render");
+      setImageNodeData(updated);
+    }
+  }
+}, [imageNodeData]);
+
+useEffect(() => {
+  if (!imageNodeData || imageNodeData.length === 0) return;
+
+  setNodes((prevNodes) => {
+    const updated = prevNodes.map((node) => {
+      const match = imageNodeData.find(
+        (imgNode) =>
+          imgNode.componentid === node.data?.componentId ||
+          imgNode.label === node.data?.label
+      );
+
+      if (match && match.imageUrl && node.data?.image !== match.imageUrl) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            image: match.imageUrl,
+          },
+        };
+      }
+      return node;
+    });
+
+    return updated;
+  });
+}, [imageNodeData]);
+
+
 
   return (
     <div
@@ -282,22 +333,27 @@ const sidebarFlow = ({
         }}
       >
         <Button
-          variant="light"
-          size="sm"
-          title="Copy"
-          onClick={handleCopyScenario}
-          style={{
-            padding: "6px 8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "38px",
-            border: "1px solid #ced4da",
-          }}
-        >
-          {/* <i className="fa  fa-github" aria-hidden="true"></i> */}
-          <i className="fas fa-code-branch" aria-hidden="true"></i>
-        </Button>
+  variant="light"
+  size="sm"
+  title="Copy"
+  onClick={handleCopyScenario}
+  style={{
+    padding: "6px 8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "38px",
+    border: "1px solid #ced4da",
+  }}
+>
+  Copy
+  <i
+    className="fas fa-copy"
+    aria-hidden="true"
+    style={{ marginLeft: "6px" }}
+  ></i>
+</Button>
+
         <div style={{ flex: 1 }}>
           <Select
             theme={(theme) => ({

@@ -24,7 +24,6 @@ const nextConfig = withTM({
    NEXT_PUBLIC_BASE_PATH : `http://sibersim.battlerangers.com/app`,
    API_URL_LOGIN : `http://sibersim.battlerangers.com/authapi`,
    API_URL_MASTERS : `http://sibersim.battlerangers.com/masterapi`,
-   API_URL_LEARNER : `http://sibersim.battlerangers.com/learnerapi`,
    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
    LEARNER_BASE_PATH: 'http://sibersim.battlerangers.com',
    BASE_PATH : `/app/`,
@@ -109,6 +108,10 @@ const nextConfig = withTM({
       {
         source: "/widgets",
         destination: "/components/masters/masters/widgets",
+      },
+      {
+        source: "/scenariotabs",
+        destination: "/components/masters/masters/scenariotabs",
       },
       { source: "/admin", destination: "/components/admin" },
       { source: "/menus", destination: "/components/admin/menus" },
