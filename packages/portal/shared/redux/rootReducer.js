@@ -68,10 +68,12 @@ import faq from "./slices/masters/Faqs";
 import dashboarData from "./slices/Dashboard/dashboardManage";
 import eventDashboardData from "./slices/EventDashboard/eventdashboardManage";
 import customScenario from "./slices/customScenarios/customscenarioManage";
+import scenarioTabs from "./slices/scenariotabs/scenariotabsManage";
 import eventchatboxData from "./slices/eventchatbox/eventchatboxManage";
 import reportData from "./slices/reports/reportManage";
 import userreportsManage from "./slices/userreports/userreportsManage";
 import instructorreportsManage from "./slices/instructorreports/instructorreportsManage";
+import customerData from "./slices/customers/customer";
 
 import company_setting  from "./slices/companySetting/companySetting";
 
@@ -140,6 +142,8 @@ const rootReducer = (state, action) => {
     reportData : reportData ,
     company_setting :company_setting,
     customScenario: customScenario,
+    scenarioTabs:scenarioTabs,
+    customerData: customerData,
   })(state, action);
 };
 

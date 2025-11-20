@@ -654,6 +654,382 @@ function ProxMoxService(db, payload, ip_address) {
       return null;
     }
   }
+
+
+  async function createLXCSnapshot(vmid, snapname) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot`;
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data: `snapname=${encodeURIComponent(snapname)}`,
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.SNAPSHOT_LXC
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.SNAPSHOT_LXC
+    );
+
+    console.error("Error creating LXC snapshot:", errorMessage);
+    return false;
+  }
+}
+
+async function createQEMUSnapshot(vmid, snapname, vmstate) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot`;
+
+  const formData = new URLSearchParams();
+  formData.append("snapname", snapname);
+  formData.append("vmstate", vmstate); // MUST be provided explicitly
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data: formData.toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.SNAPSHOT_QEMU
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.SNAPSHOT_QEMU
+    );
+
+    console.error("Error creating QEMU snapshot:", errorMessage);
+    return false;
+  }
+}
+
+async function deleteQEMUSnapshot(vmid, snapname) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot/${snapname}`;
+
+  const config = {
+    method: "delete",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
+    );
+
+    console.error("Error deleting QEMU snapshot:", errorMessage);
+    return false;
+  }
+}
+
+async function deleteLXCSnapshot(vmid, snapname) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot/${snapname}`;
+
+  const config = {
+    method: "delete",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT
+    );
+
+    console.error("Error deleting LXC snapshot:", errorMessage);
+    return false;
+  }
+}
+
+async function restoreLXCSnapshot(vmid, snapname, startValue) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot/${snapname}/rollback`;
+
+  const formData = new URLSearchParams();
+  formData.append("start", startValue); // must be passed explicitly (1 or 0)
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data: formData.toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT
+    );
+
+    console.error("Error restoring LXC snapshot:", errorMessage);
+    return false;
+  }
+}
+
+async function restoreQEMUSnapshot(vmid, snapname, startValue) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  if (!snapname) {
+    throw new Error("Snapshot name (snapname) is required.");
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot/${snapname}/rollback`;
+
+  const formData = new URLSearchParams();
+  formData.append("start", startValue); // must be provided (1 or 0)
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data: formData.toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
+    );
+
+    console.error("Error restoring QEMU snapshot:", errorMessage);
+    return false;
+  }
+}
+
   return {
     generateAccessTicket,
     QEMU_List,
@@ -666,6 +1042,12 @@ function ProxMoxService(db, payload, ip_address) {
     stopVM,
     destroyVM,
     GetNodeNetworkInfo,
+    createLXCSnapshot,
+    createQEMUSnapshot,
+    deleteQEMUSnapshot,
+    deleteLXCSnapshot,
+    restoreLXCSnapshot,
+    restoreQEMUSnapshot,
   };
 }
 

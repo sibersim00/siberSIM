@@ -111,7 +111,20 @@ const messages = {
   SESSION_STATUS_ERROR: 'Error fetching session status.',
   LOGS_FETCH_SUCCESS: 'Scenario logs fetched successfully.',
   LOGS_FETCH_ERROR: 'Failed to fetch scenario logs.',
+  save_success: "Scenario tab saved successfully",
+  server_error: "Server error, please try again later.",
+  order_duplicate: "Tab ordering already exists.",
+  fixed_tab_name_edit: "Cannot rename a Fixed type tab.",
 };
+
+const saveSchema = joi.object({
+  scenariotabid: joi.number().optional(),
+  tab_name: joi.string().max(100).required(),
+  tab_status: joi.string().valid("True", "False").default("True"),
+  tab_type: joi.string().valid("Fixed", "Flexible").default("Fixed"),
+  widget_url: joi.string().max(255).allow(null, ""),
+  tab_ordering: joi.number().integer().allow(null),
+});
 
 module.exports = {
   startScenarioSchema,
@@ -120,4 +133,5 @@ module.exports = {
   sendMessageSchema,
   markSeenSchema,
   messages,
+  saveSchema
 };

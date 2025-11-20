@@ -9,7 +9,7 @@ const list = ({ db }) => async (id = null) => {
     const [res] = await db.sequelize.query(`SELECT  m.userid, m.orgid, m.loginid,CONCAT(m.firstname, ' ', m.lastname) AS name, m.firstname, m.lastname, m.email, m.mobile, CASE WHEN m.status = 'Active' THEN 'true' ELSE 'false' END AS status,m.profile,
        DATE_FORMAT(m.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
         DATE_FORMAT(m.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon 
-      FROM ad_users m WHERE m.deletedon IS NULL AND isverified='Yes' AND m.usertype='Admin' AND (:id IS NULL OR m.userid = :id) ORDER BY name ASC `,
+      FROM ad_users m WHERE m.loginid!='superadmin' AND m.deletedon IS NULL AND isverified='Yes' AND m.usertype='Admin' AND (:id IS NULL OR m.userid = :id) ORDER BY name ASC `,
       {
         replacements: { id }
       }

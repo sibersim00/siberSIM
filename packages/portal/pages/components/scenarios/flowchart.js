@@ -94,9 +94,20 @@ const DnDFlow = ({
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
     const networkPorts = data.networkport || {};
-    const portKeys = Array.isArray(networkPorts)
-      ? networkPorts.flatMap((obj) => Object.keys(obj))
-      : Object.keys(networkPorts);
+    console.log("networkPorts",)
+    // const portKeys = Array.isArray(networkPorts)
+    //   ? networkPorts.flatMap((obj) => Object.keys(obj))
+    //   : Object.keys(networkPorts);
+    let portKeys = [];
+    if (Array.isArray(data.networkport)) {
+      portKeys = data.networkport
+        .flatMap(obj => Object.keys(obj))
+        .sort();
+    } else if (typeof data.networkport === "object" && data.networkport !== null) {
+      portKeys = Object.keys(data.networkport).sort();
+    } else {
+      portKeys = [];
+    }
     const totalPorts = portKeys.length;
 
     const sides = ["Right", "Bottom", "Left", "Top"];
@@ -106,6 +117,7 @@ const DnDFlow = ({
     const baseSize = 90;
     const portSpacing = 15;
     const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    console.log("portKeys", portKeys)
 
     return (
       <div

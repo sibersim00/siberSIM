@@ -15,19 +15,24 @@ module.exports = function (iocContainer) {
   );
 
   router.post(
-  "/auto-terminate-expired-scenarios",
-  controller.autoTerminateFailedScenarios(iocContainer)
-);
+    "/auto-terminate-expired-scenarios",
+    controller.autoTerminateFailedScenarios(iocContainer)
+  );
 
   router.post(
-  "/start-scenario-learner",
-  controller.startScenarioLearner(iocContainer)
-);
+    "/start-scenario-learner",
+    controller.startScenarioLearner(iocContainer)
+  );
 
-  router.post("/restart-scenario-learner", controller.restartscenarioLearner(iocContainer));
+  router.post(
+    "/restart-scenario-learner",
+    controller.restartscenarioLearner(iocContainer)
+  );
+  router.post("/create-snapshot", controller.createSnapshot(iocContainer));
+  router.delete("/delete-snapshot", controller.deleteSnapshot(iocContainer));
+  router.post("/restore-snapshot", controller.restoreSnapshot(iocContainer));
 
-
- router.post(
+  router.post(
     "/generate-access-token",
     controller.generateProxmoxAccessToken(iocContainer)
   );

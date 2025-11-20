@@ -22,7 +22,7 @@ const corsOptions = {
             callback(new Error('Not allowed by CORS'));    
         }  
     },
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST','DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));

@@ -28,7 +28,7 @@ const api = {
   terminated_scenario_get: "/dashboard/scenario-terminated",
   completed_scenario_get: "/dashboard/scenario-completed",
   get_student_dashboard: "/dashboard/get-student-dashboard",
- scenario_single_custom_get: "/custom_scenarios/get",
+  scenario_single_custom_get: "/custom_scenarios/get",
   // profile
   profile_get: "/profile",
   changePassword: "/profile/change-password",
@@ -39,7 +39,7 @@ const api = {
   scenarios_get: "/scenarios/get",
   scenarios_single: "/scenarios/get",
   scenarios_save: "/scenarios/start-scenario",
-   scenario_custom_update: "/custom_scenarios/update",
+  scenario_custom_update: "/custom_scenarios/update",
   scenario_status_update: "/scenarios/update-session-status",
   get_session_status: "/scenarios/get-session-status",
   get_configurations: "/vmconfigs/set-scenario-learner-config",
@@ -49,6 +49,7 @@ const api = {
   custom_scenario_save: "/custom_scenarios/save",
   get_logs: "/scenarios/get-logs",
   scenario_digram_custom_list: "/custom_scenarios/scenariodigramlist",
+  tab_status :"/scenarios/list",
 
 
   /// chatbox
@@ -100,7 +101,6 @@ const api = {
 
 
   scenario_flowchart_save: "/custom_scenarios/save_diagram",
-
   master_component_cat_get: "/commons/componentcategorylist",
   scenario_component_by_catId: "/commons/scenariocomponentlist",
 };

@@ -27,6 +27,7 @@ import {
   getLogs,
   clearGetSessionStatusList,
   clearUpdateCompletedTerminated,
+  getTabList,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
@@ -48,7 +49,7 @@ const ScenariosView = () => {
   const { backView, categoryId, subcategoryName } = router.query;
   const [rowId, setRowId] = useState("");
   const [rowValues, setRowValues] = useState({});
-  const [activeTab, setActiveTab] = useState("basic_info");
+  const [activeTab, setActiveTab] = useState("Basic Inforamtion");
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -69,6 +70,7 @@ const ScenariosView = () => {
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfNotFound, setPdfNotFound] = useState(false);
+  const [dynamicTab, setDynamicTab] = useState("Basic Inforamtion");
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
     useState(false);
   const vmStepsOrder = [
@@ -113,7 +115,9 @@ const ScenariosView = () => {
     hasGetSessionStatusListData,
     hasGetLogsListData,
     hasUpdateCompletedTerminatedSucc,
+    tabListSucc,
     errorData,
+
   } = useSelector((state) => ({
     getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
     saveScenariosData: state?.scenarios?.saveScenarios,
@@ -123,17 +127,43 @@ const ScenariosView = () => {
     hasGetLogsListData: state?.scenarios?.getLogsData?.data,
     hasUpdateCompletedTerminatedSucc:
       state?.scenarios?.updateCompletedTerminatedData?.data,
+    tabListSucc: state?.scenarios?.getTabListData?.data,
     errorData: state?.scenarios?.error,
   }));
 
+  console.log("tabListSucc", tabListSucc)
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
 
-  console.log(
-    "getSingleScenariosSuccgetSingleScenariosSucc",
-    getSingleScenariosSucc
-  );
+  useEffect(() => {
+    dispatch(getTabList())
+  }, [dispatch])
+
+  const formatEventKey = (name) =>
+    name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
+
+  useEffect(() => {
+    if (tabListSucc && Array.isArray(tabListSucc)) {
+      const enabledTabs = tabListSucc
+        .filter((tab) => tab.tab_status === "True")
+        .sort((a, b) => a.tab_ordering - b.tab_ordering);
+      if (enabledTabs.length > 0) {
+        const basicTab = enabledTabs.find(
+          (tab) => tab.tab_name?.toLowerCase() === "Basic Inforamtion"
+        );
+        if (basicTab) {
+          setDynamicTab(formatEventKey(basicTab.tab_name));
+          setActiveTab(basicTab.tab_name);
+        } else {
+          const firstActive = enabledTabs[0];
+          setDynamicTab(formatEventKey(firstActive.tab_name));
+          setActiveTab(firstActive.tab_name);
+        }
+      }
+    }
+  }, [tabListSucc]);
+
 
   useEffect(() => {
     if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
@@ -199,7 +229,7 @@ const ScenariosView = () => {
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
 
   useEffect(() => {
-    if (activeTab === "logs") {
+    if (activeTab === "Logs") {
       const payload = {
         scenariouuid: rowValues?.scenariouuid,
       };
@@ -212,20 +242,9 @@ const ScenariosView = () => {
       setIsScenarioError400(true);
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -233,6 +252,17 @@ const ScenariosView = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       dispatch(clearHasError());
     }
   }, [errorData]);
@@ -533,27 +563,26 @@ const ScenariosView = () => {
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                              ? 2
-                              : level === "Hard"
-                              ? 3
-                              : 0;
+                                ? 2
+                                : level === "Hard"
+                                  ? 3
+                                  : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                              ? "text-warning"
-                              : level === "Hard"
-                              ? "text-danger"
-                              : "text-muted";
+                                ? "text-warning"
+                                : level === "Hard"
+                                  ? "text-danger"
+                                  : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
                               key={star}
-                              className={`me-1 ${
-                                star <= filledStars
-                                  ? `fas fa-star ${colorClass}`
-                                  : "far fa-star text-muted"
-                              }`}
+                              className={`me-1 ${star <= filledStars
+                                ? `fas fa-star ${colorClass}`
+                                : "far fa-star text-muted"
+                                }`}
                               style={{ fontSize: "18px" }}
                             ></i>
                           ));
@@ -589,14 +618,12 @@ const ScenariosView = () => {
                         onClick={() => {
                           if (categoryId && subcategoryName) {
                             router.push(
-                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
-                                backView || "list"
+                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView || "list"
                               }`
                             );
                           } else if (categoryId) {
                             router.push(
-                              `/scenarios?categoryId=${categoryId}&view=${
-                                backView || "list"
+                              `/scenarios?categoryId=${categoryId}&view=${backView || "list"
                               }`
                             );
                           } else {
@@ -618,9 +645,9 @@ const ScenariosView = () => {
                   className="d-flex justify-content-between align-items-center my-3"
                 >
                   {isScenarioError400 ||
-                  ["Terminated", "Completed", "Pending", "Failed"].includes(
-                    scenarioStatus
-                  ) ? (
+                    ["Terminated", "Completed", "Pending", "Failed"].includes(
+                      scenarioStatus
+                    ) ? (
                     <div style={{ display: "flex", gap: "10px" }}>
                       <Button variant="success" size="sm" onClick={handleStart}>
                         <i className="fe fe-play"></i> Start
@@ -741,24 +768,24 @@ const ScenariosView = () => {
                             Raise Request
                             {rowValues.unseen_instructor_admin_message_count >
                               0 && (
-                              <span
-                                className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                style={{
-                                  fontSize: "0.6rem",
-                                  minWidth: "18px",
-                                  height: "18px",
-                                  padding: " 5px",
-                                }}
-                              >
-                                {rowValues.unseen_instructor_admin_message_count >
-                                99
-                                  ? "99+"
-                                  : rowValues.unseen_instructor_admin_message_count}
-                                <span className="visually-hidden">
-                                  unread messages
+                                <span
+                                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style={{
+                                    fontSize: "0.6rem",
+                                    minWidth: "18px",
+                                    height: "18px",
+                                    padding: " 5px",
+                                  }}
+                                >
+                                  {rowValues.unseen_instructor_admin_message_count >
+                                    99
+                                    ? "99+"
+                                    : rowValues.unseen_instructor_admin_message_count}
+                                  <span className="visually-hidden">
+                                    unread messages
+                                  </span>
                                 </span>
-                              </span>
-                            )}
+                              )}
                           </Button>
                         </>
                       </div>
@@ -837,530 +864,278 @@ const ScenariosView = () => {
                       <Tab.Container id="scenario-tabs" activeKey={activeTab}>
                         <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
                           <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white w-100">
-                            <Nav.Item
-                              onClick={() => setActiveTab("basic_info")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="basic_info"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "basic_info"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "basic_info"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Basic Information
-                              </Nav.Link>
-                            </Nav.Item>
+                            {tabListSucc
+                              ?.filter((tab) => tab.tab_status === "True")
+                              ?.sort((a, b) => a.tab_ordering - b.tab_ordering)
+                              ?.map((tab) => (
+                                <Nav.Item
+                                  key={tab.scenariotabid}
+                                  onClick={() => {
+                                    setActiveTab(tab.tab_name);
 
-                            <Nav.Item
-                              onClick={() => setActiveTab("instruction")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="instruction"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "instruction"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "instruction"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Instruction Details
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("diagram")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="diagram"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "diagram"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "diagram" ? "bold" : "normal",
-                                }}
-                              >
-                                Scenario Diagram
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("quiz")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="quiz"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "quiz" ? "#007bff" : "gray",
-                                  fontWeight:
-                                    activeTab === "quiz" ? "bold" : "normal",
-                                }}
-                              >
-                                Quiz
-                              </Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item
-                              onClick={() => setActiveTab("logs")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="logs"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "logs" ? "#007bff" : "gray",
-                                  fontWeight:
-                                    activeTab === "logs" ? "bold" : "normal",
-                                }}
-                              >
-                                Logs
-                              </Nav.Link>
-                            </Nav.Item>
+                                    dispatch(clearSingleScenarios());
+                                  }}
+                                  style={{ flex: 1, textAlign: "start" }}
+                                >
+                                  <Nav.Link
+                                    eventKey={tab.tab_name}
+                                    className="masterlist"
+                                    style={{
+                                      color: activeTab === tab.tab_name ? "#007bff" : "gray",
+                                      fontWeight: activeTab === tab.tab_name ? "bold" : "normal",
+                                    }}
+                                  >
+                                    {tab.tab_name}
+                                  </Nav.Link>
+                                </Nav.Item>
+                              ))}
                           </Nav>
                         </Row>
 
                         <Row>
                           <Col md={12} className="pt-3">
                             <Tab.Content>
-                              <Tab.Pane eventKey="basic_info">
-                                <Row className="gy-4">
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-layers text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariocategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Category
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                              {tabListSucc
+                                ?.filter((tab) => tab.tab_status === "True")
+                                ?.sort((a, b) => a.tab_ordering - b.tab_ordering)
+                                ?.map((tab) => (
+                                  <Tab.Pane eventKey={tab.tab_name} key={tab.scenariotabid}>
+                                    {/* 👇 Conditional rendering per tab name */}
+                                    {tab.tab_name === "Basic Inforamtion" && (
+                                      <Row className="gy-4">
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-layers text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariocategory_name ||
+                                                  "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Scenario Category
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-tag text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariosubcategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Subcategory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-tag text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariosubcategory_name ||
+                                                  "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Scenario Subcategory
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-clock text-danger fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.duration
-                                            ? `${rowValues.duration} mins`
-                                            : "0 mins"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Duration (In Minutes)
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-clock text-danger fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.duration
+                                                  ? `${rowValues.duration} mins`
+                                                  : "0 mins"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Duration (In Minutes)
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariolevel || "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Level
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariolevel || "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Level
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-server text-primary fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.component_count}
-                                        </div>
-                                        <small className="text-muted">
-                                          Total VM
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-server text-primary fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.component_count}
+                                              </div>
+                                              <small className="text-muted">
+                                                Total VM
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-cpu text-info fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_cpu} Cores
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual CPU
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-cpu text-info fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.virtual_cpu} Cores
+                                              </div>
+                                              <small className="text-muted">
+                                                Virtual CPU
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-box text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_memory} M
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual Memory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-box text-warning fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.virtual_memory} M
+                                              </div>
+                                              <small className="text-muted">
+                                                Virtual Memory
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-hard-drive text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.storage_size} GB
-                                        </div>
-                                        <small className="text-muted">
-                                          Storage Size
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-hard-drive text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.storage_size} GB
+                                              </div>
+                                              <small className="text-muted">
+                                                Storage Size
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={12}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
-                                      <div>
-                                        <div
-                                          className="fw-semibold text-dark mb-2"
-                                          dangerouslySetInnerHTML={{
-                                            __html:
-                                              rowValues?.scenariodescription ||
-                                              "—",
-                                          }}
-                                        />
-                                        <small className="text-muted">
-                                          Description
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </Tab.Pane>
-
-                              {/* <Tab.Pane eventKey="instruction">
-                                {pdfUrl ? (
-                                  <PdfLoader fileUrl={pdfUrl} />
-                                ) : (
-                                  <Row>
-                                    <Col sm={12}>
-                                      <Card className="custom-card">
-                                        <Card.Body className="overflow-auto pd-t-10">
-                                          <Row className="text-center">
-                                            <Col md={10} className="mx-auto">
-                                              <Card
-                                                style={{
-                                                  border: "none",
+                                        <Col md={12}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
+                                            <div>
+                                              <div
+                                                className="fw-semibold text-dark mb-2"
+                                                dangerouslySetInnerHTML={{
+                                                  __html:
+                                                    rowValues?.scenariodescription ||
+                                                    "—",
                                                 }}
-                                              >
-                                                <Card.Body>
-                                                  <div className="text-center">
-                                                    <img
-                                                      src={crossEvalicon.src}
-                                                      alt="No data"
-                                                      className="wd-150"
-                                                    />
-                                                    <h5 className="mt-4">
-                                                      No instruction PDF
-                                                      provided.
-                                                    </h5>
-                                                  </div>
-                                                </Card.Body>
-                                              </Card>
-                                            </Col>
-                                          </Row>
-                                        </Card.Body>
-                                      </Card>
-                                    </Col>
-                                  </Row>
-                                )}
-                              </Tab.Pane> */}
-                              {/* <Tab.Pane eventKey="instruction">
-  <Row className="align-items-center mb-2">
-    <Col>
-      <h5 className="d-inline">Instruction Details</h5>
-    </Col>
- 
-    {pdfUrl && (
-      <Col className="text-end">
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => window.open(pdfUrl, "_blank")}
-        >
-          View / Download PDF
-        </Button>
-      </Col>
-    )}
-  </Row>
+                                              />
+                                              <small className="text-muted">
+                                                Description
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
+                                      </Row>
+                                    )}
 
-  {pdfUrl ? (
-    <PdfLoader fileUrl={pdfUrl} />
-  ) : (
-    <Row>
-      <Col sm={12}>
-        <Card className="custom-card">
-          <Card.Body className="overflow-auto pd-t-10">
-            <Row className="text-center">
-              <Col md={10} className="mx-auto">
-                <Card style={{ border: "none" }}>
-                  <Card.Body>
-                    <div className="text-center">
-                      <img
-                        src={crossEvalicon.src}
-                        alt="No data"
-                        className="wd-150"
-                      />
-                      <h5 className="mt-4">No instruction PDF provided.</h5>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </Col>
-    </Row>
-  )}
-</Tab.Pane> */}
-                              <Tab.Pane eventKey="instruction">
-                                <Row className="align-items-center mb-2">
-                                  <Col>
-                                    <h5 className="d-inline">
-                                      Instruction Details
-                                    </h5>
-                                  </Col>
-                                  {/* Only show button if PDF exists and is valid */}
-                                  {/* {pdfUrl && !pdfNotFound && (
-                                    <Col className="text-end">
-                                      <Button
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={() =>
-                                          window.open(pdfUrl, "_blank")
+                                    {tab.tab_name === "Instruction Details" && (
+                                      <Row className="align-items-center mb-2">
+                                        <Col>
+                                          <h5>Instruction Details</h5>
+                                        </Col>
+                                        <PdfLoader
+                                          fileUrl={pdfUrl}
+                                          setPdfNotFound={setPdfNotFound}
+                                        />
+                                      </Row>
+                                    )}
+
+                                    {tab.tab_name === "Scenario Diagram" && (
+                                      <ScenarioDiagram
+                                        scenarioId={rowId}
+                                        isTimerVisible={isTimerVisible}
+                                        scenariodiagram={
+                                          rowValues?.scenariodiagram?.trim() !== ""
+                                            ? rowValues.scenariodiagram
+                                            : ""
                                         }
-                                      >
-                                        View / Download PDF
-                                      </Button>
-                                    </Col>
-                                  )} */}
-                                </Row>
+                                      />
+                                    )}
 
-                                {/* Pass setPdfNotFound to PdfLoader so it can update parent state */}
-                                <PdfLoader
-                                  fileUrl={pdfUrl}
-                                  setPdfNotFound={setPdfNotFound}
-                                />
-                              </Tab.Pane>
+                                    {tab.tab_name === "Quiz" && (
+                                      <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+                                        <ScenarioQuiz />
+                                      </div>
+                                    )}
 
-                              <Tab.Pane eventKey="diagram">
-                                <div>
-                                  <ScenarioDiagram
-                                    scenarioId={rowId}
-                                    isTimerVisible={isTimerVisible}
-                                    scenariodiagram={
-                                      rowValues?.scenariodiagram &&
-                                      rowValues.scenariodiagram.trim() !== ""
-                                        ? rowValues.scenariodiagram
-                                        : ""
-                                    }
-                                  />
-                                </div>
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="quiz">
-                                <div
-                                  style={{
-                                    maxHeight: "600px",
-                                    overflowY: "auto",
-                                  }}
-                                >
-                                  <ScenarioQuiz />
-                                </div>
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="logs">
-                                <div>
-                                  {hasGetLogsListData &&
-                                  hasGetLogsListData.length > 0 ? (
-                                    <div
-                                      style={{
-                                        maxHeight: "600px",
-                                        overflowY: "auto",
-                                        border: "1px solid #ddd",
-                                        borderRadius: "6px",
-                                      }}
-                                    >
-                                      <table className="table text-nowrap table-bordered">
-                                        <thead className="table-info">
-                                          <tr>
-                                            <th>Session Start</th>
-                                            <th>Type</th>
-                                            <th>Status</th>
-                                            <th>Log Date</th>
-                                            <th>Remark</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {hasGetLogsListData.map(
-                                            (log, index) => {
-                                              const statusColor =
-                                                statusBadgeMap[log.status] ||
-                                                "light-transparent";
-                                              const typeColor =
-                                                typeBadgeMap[log.type] ||
-                                                "light-transparent";
-
-                                              const statusTextClass =
-                                                badgeTextColorMap[
-                                                  statusColor
-                                                ] || "text-dark";
-                                              const typeTextClass =
-                                                badgeTextColorMap[typeColor] ||
-                                                "text-dark";
-
-                                              return (
-                                                <tr key={index}>
-                                                  
-                                                  <td>
-                                                    {log.startedon
-                                                      ? new Date(
-                                                          log.startedon
-                                                        ).toLocaleString(
-                                                          "en-US",
-                                                          {
-                                                            year: "numeric",
-                                                            month: "short",
-                                                            day: "2-digit",
-                                                            hour: "numeric",
-                                                            minute: "2-digit",
-                                                            second: "2-digit",
-                                                            hour12: true,
-                                                          }
-                                                        )
-                                                      : "-"}
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={typeColor}
-                                                      className={`rounded-pill ${typeTextClass}`}
-                                                    >
-                                                      {log.type}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={statusColor}
-                                                      className={`rounded-pill ${statusTextClass}`}
-                                                    >
-                                                      {log.status}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    {new Date(
-                                                      log.createdon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
-                                                  </td>
-
-                                                  <td>{log.remark}</td>
+                                    {tab.tab_name === "Logs" && (
+                                      <div>
+                                        {hasGetLogsListData?.length > 0 ? (
+                                          <div
+                                            style={{
+                                              maxHeight: "600px",
+                                              overflowY: "auto",
+                                              border: "1px solid #ddd",
+                                              borderRadius: "6px",
+                                            }}
+                                          >
+                                            <table className="table text-nowrap table-bordered">
+                                              <thead className="table-info">
+                                                <tr>
+                                                  <th>Session Start</th>
+                                                  <th>Type</th>
+                                                  <th>Status</th>
+                                                  <th>Log Date</th>
+                                                  <th>Remark</th>
                                                 </tr>
-                                              );
-                                            }
-                                          )}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  ) : (
-                                    <Row>
-                                      <Col sm={12}>
-                                        <Card className="custom-card">
-                                          <Card.Body className="overflow-auto pd-t-10">
-                                            <Row className="text-center">
-                                              <Col md={10} className="mx-auto">
-                                                <Card
-                                                  style={{
-                                                    border: "none",
-                                                  }}
-                                                >
-                                                  <Card.Body>
-                                                    <div className="text-center mt-5">
-                                                      <img
-                                                        src={crossEvalicon.src}
-                                                        alt="No data"
-                                                        className="wd-150 mt-5"
-                                                      />
-                                                      <h5 className="mt-4">
-                                                        No logs available.
-                                                      </h5>
-                                                    </div>
-                                                  </Card.Body>
-                                                </Card>
-                                              </Col>
-                                            </Row>
-                                          </Card.Body>
-                                        </Card>
-                                      </Col>
-                                    </Row>
-                                  )}
-                                </div>
-                              </Tab.Pane>
+                                              </thead>
+                                              <tbody>
+                                                {hasGetLogsListData.map((log, index) => (
+                                                  <tr key={index}>
+                                                    <td>
+                                                      {log.startedon
+                                                        ? new Date(log.startedon).toLocaleString()
+                                                        : "-"}
+                                                    </td>
+                                                    <td>{log.type}</td>
+                                                    <td>{log.status}</td>
+                                                    <td>
+                                                      {new Date(log.createdon).toLocaleString()}
+                                                    </td>
+                                                    <td>{log.remark}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-4">No logs available</div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* 👇 Flexible / Custom tab support */}
+                                    {tab.tab_type === "Flexible" && tab.widget_url && (
+                                      <iframe
+                                        src={tab.widget_url}
+                                        title={tab.tab_name}
+                                        style={{
+                                          width: "100%",
+                                          height: "600px",
+                                          border: "none",
+                                          borderRadius: "8px",
+                                        }}
+                                      ></iframe>
+                                    )}
+                                  </Tab.Pane>
+                                ))}
                             </Tab.Content>
                           </Col>
                         </Row>
                       </Tab.Container>
+
                     </div>
                   </div>
                 </div>
@@ -1370,7 +1145,7 @@ const ScenariosView = () => {
 
           <Modal
             show={showCloneModal}
-            onHide={() => {}}
+            onHide={() => { }}
             backdrop="static"
             keyboard={false}
             size="md"
@@ -1444,8 +1219,8 @@ const ScenariosView = () => {
                               {getStepClass(item.step).includes(
                                 "text-warning"
                               ) && (
-                                <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
-                              )}
+                                  <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
+                                )}
                             </li>
                           );
                         })}

@@ -22,7 +22,13 @@ const VM_PROCESSES = {
   START_VM: "Start VM",
   STOP_VM: "Stop VM",
   DESTROY_VM: "Destroy VM",
-  NETWORK_INFO:"VM Networks"
+  NETWORK_INFO:"VM Networks",
+  SNAPSHOT_LXC:"LXC Snapshot",
+  SNAPSHOT_QEMU:"QEMU Snapshot",
+  DELETE_QEMU_SNAPSHOT:"Delete QEMU Snapshot",
+  DELETE_LXC_SNAPSHOT:"Delete LXC Snapshot",
+  RESTORE_LXC_SNAPSHOT:"Restore LXC Snapshot",
+  RESTORE_QEMU_SNAPSHOT:"Restore QEMU Snapshot",
 };
 
 module.exports = {

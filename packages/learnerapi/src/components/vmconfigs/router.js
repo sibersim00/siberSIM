@@ -30,6 +30,10 @@ module.exports = function (iocContainer) {
 );
 
   router.post("/restart-scenario-learner", controller.restartscenarioLearner(iocContainer));
+  router.post("/create-snapshot", controller.createsnapshot(iocContainer));
+  router.delete("/delete-snapshot", controller.deletesnapshot(iocContainer));
+  router.post("/restore-snapshot", controller.restoresnapshot(iocContainer));
+  router.post("/get-snapshots", controller.getSnapshotsByVmid(iocContainer));
 
   router.post("/vnc-proxy-console", controller.vncProxyConsole(iocContainer));
   return router;

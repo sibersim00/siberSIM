@@ -194,7 +194,125 @@ const restartscenarioLearner =
   };
 
 
+  const createSnapshot =
+  ({ dao, db, validation }) =>
+  async (req, res, next) => {
+    try {
+      const { vmid, vmType, vmstate } = req.body;
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
+      if (!vmid || !vmType) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: "vmid, vmType are required.",
+        });
+      }
+      const result = await dao.createSnapshot({
+        db,
+        ipAddress,
+        validation,
+      })(vmid, vmType, vmstate);
+
+      if (result.success) {
+        return res.status(200).send({
+          statusCode: 200,
+          message: result.message,
+        });
+      } else {
+        return res.status(500).send({
+          statusCode: 500,
+          message: result.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in creating snapshot:", err);
+      next(err);
+    }
+  };
+
+
+
+const deleteSnapshot =
+  ({ dao, db, validation }) =>
+  async (req, res, next) => {
+    try {
+      const { vmid, vmType, snapname } = req.body;
+      console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",req.body);
+      
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+      if (!vmid || !vmType || !snapname) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: "vmid, vmType and snapname are required.",
+        });
+      }
+
+      const result = await dao.deleteSnapshot({
+        db,
+        ipAddress,
+        validation,
+      })(vmid, vmType, snapname);
+
+      if (result.success) {
+        return res.status(200).send({
+          statusCode: 200,
+          message: result.message,
+        });
+      } else {
+        return res.status(500).send({
+          statusCode: 500,
+          message: result.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in deleting snapshot:", err);
+      next(err);
+    }
+  };
+
+const restoreSnapshot =
+  ({ dao, db, validation }) =>
+  async (req, res, next) => { 
+    try {
+      const { vmid, vmType, snapname, start } = req.body;
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+      if (!vmid || !vmType || !snapname) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: "vmid, vmType and snapname are required.",
+        });
+      }
+
+      // start must be 0 or 1
+      const startValue = Number(start) === 1 ? 1 : 0;
+
+      const result = await dao.restoreSnapshot({
+        db,
+        ipAddress,
+        validation,
+      })(vmid, vmType, snapname, startValue);
+
+      if (result.success) {
+        return res.status(200).send({
+          statusCode: 200,
+          message: result.message,
+        });
+      } else {
+        return res.status(500).send({
+          statusCode: 500,
+          message: result.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in restoring snapshot:", err);
+      next(err);
+    }
+  };
 
 
 
@@ -205,5 +323,10 @@ module.exports = {
   generateProxmoxAccessToken,
   autoTerminateFailedScenarios,
   restartscenarioLearner,
-  startScenarioLearner
+  startScenarioLearner,
+  createSnapshot,
+  deleteSnapshot,
+restoreSnapshot ,
+
+
 };

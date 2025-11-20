@@ -375,13 +375,25 @@ const api = {
   export_scenarios: "/company_setting/export_scenarios",
   import_masters: "/company_setting/import_masters",
 
-
   // start and restart
-
   vm_start_scenario: "/usersession/start-scenario-learner",
 	vm_restart_scenario: "/usersession/restart-scenario-learner",
 
+  //scenario tabs
+  scenario_tab_list: "/scenarios_tabs/list",
+  scenario_tab_save: "/scenarios_tabs/save",
+  scenario_tab_widget: "/scenarios_tabs/widgetlist",
 
+ // customers
+  customer_api_list: "/customers/get",
+  customer_change_status: "/customers/change-status",
+  customer_save : "/customers/save",
+  customer_update: "/customers/update",
+  // customer license
+  customer_license_get: "customers/get-license",
+  customer_license_save : "/customers/license-save",
+  customer_license_update: "/customers/license-update",
+  
 
 
 

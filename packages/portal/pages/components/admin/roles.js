@@ -51,6 +51,7 @@ const Roles = () => {
     editStatusRoleResData,
     storeRoleMenusData,
     componentData,
+    getUserDataFromLocal,
     errorData,
   } = useSelector((state) => {
     return {
@@ -71,6 +72,11 @@ const Roles = () => {
       componentData:
         state && state.localData && state.localData.componentData,
 
+           getUserDataFromLocal:
+          state &&
+          state.localData &&
+          state.localData.getLocalData,
+
       errorData: state && state.roles && state.roles.error,
     };
   });
@@ -84,6 +90,7 @@ const Roles = () => {
    useEffect(() => {
       if (typeof window !== "undefined") {
         dispatch(getLocalStorageData("selectedmenu"));
+        dispatch(getLocalStorageData("user"));
       }
     }, []);
 
@@ -94,6 +101,9 @@ const Roles = () => {
       setSubTitle(componentData?.subtitle ? componentData.subtitle : componentData?.title ? componentData.title : "");
     }
   }, [componentData]);
+
+   // Determine if user is superadmin
+  const isSuperAdmin = getUserDataFromLocal?.loginid === "superadmin";
 
   const columnDefs = [
     {
@@ -127,20 +137,25 @@ const Roles = () => {
       filter: true,
       floatingFilter: true,
     },
-    {
-      headerName: "Status",
-      field: "status",
-      cellRenderer: "actionSwitchRenderer",
-      pinned: "right",
-      width: 80,
-    },
+   // Show Status column only for superadmin
+    ...(isSuperAdmin
+      ? [
+          {
+            headerName: "Status",
+            field: "status",
+            cellRenderer: "actionSwitchRenderer",
+            pinned: "right",
+            width: 80,
+          },
+        ]
+      : []),
     {
       headerName: "Action",
       field: "isactive",
       sortable: false,
       cellRenderer: "actionButtonRenderer",
       pinned: "right",
-      width: 80,
+      width: 100,
     },
   ];
 
@@ -194,23 +209,31 @@ const Roles = () => {
     setQuickFilter(data);
   };
 
+    // Role filtering logic (superadmin = all, others = default_role = "Yes")
   useEffect(() => {
-    if (listRoleData) {
+    if (listRoleData && getUserDataFromLocal) {
+       const isSuperAdmin = getUserDataFromLocal?.loginid === "superadmin";
+
+      const visibleRoles = isSuperAdmin
+        ? listRoleData
+        : listRoleData.filter((role) => role?.default_role === "Yes");
+
+      let finalData = visibleRoles;
       if (compStatus === "") {
-        setRowData(listRoleData);
-      } else if (compStatus == "true") {
-        const filteredData = listRoleData.filter(
-          (data) => data?.status?.toString() == "true"
+        finalData = visibleRoles;
+      } else if (compStatus === "true") {
+        finalData = visibleRoles.filter(
+          (data) => data?.status?.toString() === "true"
         );
-        setRowData(filteredData);
-      } else if (compStatus == "false") {
-        const filteredData = listRoleData.filter(
-          (data) => data?.status?.toString() == "false"
+      } else if (compStatus === "false") {
+        finalData = visibleRoles.filter(
+          (data) => data?.status?.toString() === "false"
         );
-        setRowData(filteredData);
       }
+
+      setRowData(finalData);
     }
-  }, [listRoleData, compStatus]);
+  }, [listRoleData, compStatus, getUserDataFromLocal]);
 
   useEffect(() => {
     if (gridApi) {
@@ -426,9 +449,18 @@ const Roles = () => {
                     <Button type="button" variant="outline-info" onClick={() => handleExport()}>
                       <i className="fa fa-file-excel-o"></i> Export
                     </Button>&nbsp;
-                    <Button type="button" variant="outline-primary" onClick={() => handleFormModal(true)}>
-                      <i className="fa fa-plus"></i> Add
-                    </Button>&nbsp;
+                
+
+                       {/* Show Add button only for superadmin */}
+                    {isSuperAdmin && (
+                      <Button
+                        type="button"
+                        variant="outline-primary"
+                        onClick={() => handleFormModal(true)}
+                      >
+                        <i className="fa fa-plus"></i> Add
+                      </Button>
+                    )}&nbsp;
                     <input className="form-control bd bd-2 ms-2 w-auto" value={quickFilter} placeholder="Search..." type="text" onChange={(e) => onFilterChanged(e.target.value)} />
                   </div>
                 </div>

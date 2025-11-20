@@ -39,8 +39,11 @@ const Admin = () => {
       setSelectedMenu(getSubMenus);
       if(getSubMenus?.children && getSubMenus?.children.length > 0){
         setSubmenus(getSubMenus.children)
+        console.log("getSubMenus.children====>",getSubMenus.children);
         setfilteredSubMenus(getSubMenus.children)
-        setSelectedSubMenu(getSubMenus.children[0])
+        if(!selectedSubMenu?.menuid){
+          setSelectedSubMenu(getSubMenus.children[0])
+        }
       }
     }
   },[getSubMenus]);
@@ -59,7 +62,7 @@ const Admin = () => {
       setfilteredSubMenus(subMenus);
     }
   };
-
+console.log("getSubMenus.children====>",selectedSubMenu);
   return (
     <>
       <Seo title={selectedMenu?.title} />

@@ -1046,6 +1046,96 @@ return {
 
 
 
+// const getSnapshotsByVmid =
+//   ({ db }) =>
+//   async (vmid) => {
+//     try {
+//       const snapshots = await db.sequelize.query(
+//         `SELECT snapshotid, vmid, snapshot_name, snapshot_status, createdon 
+//          FROM snapshot_details
+//          WHERE vmid = ? AND deletedon IS NULL`,
+//         {
+//           replacements: [vmid],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       return snapshots;
+//     } catch (error) {
+//       console.error("DAO Error fetching snapshots:", error);
+//       return [];
+//     }
+//   };
+const getSnapshotsByVmid =
+  ({ db }) =>
+  async (vmid) => {
+    try {
+      const rows = await db.sequelize.query(
+        `
+        SELECT 
+            sd.snapshotid,
+            sd.vmid,
+            sd.snapshot_name,
+            sd.snapshot_status,
+            sd.createdon,
+            vc.componentname,
+            vc.componenttype,
+            s.scenariotitle
+        FROM snapshot_details sd
+        LEFT JOIN vm_configuration vc 
+            ON sd.vmid = vc.vmid
+        LEFT JOIN scenarios s
+            ON vc.scenarioid = s.scenarioid
+        WHERE sd.vmid = ?
+          AND sd.deletedon IS NULL
+        ORDER BY sd.createdon DESC;
+        `,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      // No snapshots found
+      if (!rows.length) {
+        return {
+          componentname: null,
+          scenariotitle: null,
+          snapshots: [],
+        };
+      }
+
+      // extract componentname & scenario title only once
+      const componentname = rows[0].componentname;
+      const componenttype = rows[0].componenttype;
+      const scenariotitle = rows[0].scenariotitle;
+
+      // clean snapshot array
+      const snapshots = rows.map((r) => ({
+        snapshotid: r.snapshotid,
+        vmid: r.vmid,
+        snapshot_name: r.snapshot_name,
+        snapshot_status: r.snapshot_status,
+        createdon: r.createdon,
+      }));
+
+      return {
+        componentname,
+        componenttype,
+        scenariotitle,
+        snapshots,
+      };
+    } catch (error) {
+      console.error("DAO Error fetching snapshots:", error);
+      return {
+        componentname: null,
+        scenariotitle: null,
+        snapshots: [],
+      };
+    }
+  };
+
+
 
 
 
@@ -1059,5 +1149,6 @@ module.exports = {
   getOperationFailedLogs,
   startScenarioLearner,
   restartscenarioLearner,
-  vncProxyConsole
+  vncProxyConsole,
+  getSnapshotsByVmid
 };

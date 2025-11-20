@@ -37,12 +37,14 @@ const getDashboardStats = ({ db }) => async ({ userid, usertype }) => {
     // 3. ADMIN STATS
     const [adminStats = { total_admins: 0, active_admins: 0 }] = await db.sequelize.query(
       `
-  SELECT 
-    COUNT(*) AS total_admins,
-    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_admins
-  FROM ad_users
-  WHERE usertype = 'Admin'
-    AND deletedon IS NULL
+SELECT 
+  COUNT(*) AS total_admins,
+  SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_admins
+FROM ad_users
+WHERE usertype = 'Admin'
+  AND loginid != 'superadmin'
+  AND deletedon IS NULL;
+
   `,
       { type: db.sequelize.QueryTypes.SELECT }
     );

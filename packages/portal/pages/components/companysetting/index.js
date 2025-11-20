@@ -257,6 +257,7 @@ const CompanySettings = () => {
       termination_delay: cmpSettingData?.termination_delay ? cmpSettingData?.termination_delay : "",
       configuration_delay: cmpSettingData?.configuration_delay ? cmpSettingData?.configuration_delay : "",
       cloning_delay: cmpSettingData?.cloning_delay ? cmpSettingData?.cloning_delay : "",
+      pause_limit: cmpSettingData?.pause_limit ? cmpSettingData?.pause_limit : "",
       address: cmpSettingData?.address ? cmpSettingData?.address : "",
       favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
       admin_panel_logo: cmpSettingData?.admin_panel_logo ? cmpSettingData?.admin_panel_logo : "",
@@ -287,6 +288,7 @@ const CompanySettings = () => {
         termination_delay: data?.termination_delay ? data?.termination_delay : "",
         configuration_delay: data?.configuration_delay ? data?.configuration_delay : "",
         cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
+        pause_limit: data?.pause_limit ? data?.pause_limit : "",
         address: data?.address ? data?.address : "",
         otp_verification: data?.otp_verification.toString(),
         favicon: isDefaultFavicon ? "" : data?.favicon || "",
@@ -838,6 +840,44 @@ const CompanySettings = () => {
                         />
                         <Form.Control.Feedback type="invalid">
                           {formValidation.errors.cloning_delay}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>Pause Limit</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                              Cloning delay between the scenario.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="pause_limit"
+                          autoComplete="off"
+                          placeholder="Enter Pause Limit"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.pause_limit}
+                          isInvalid={
+                            formValidation.touched.pause_limit &&
+                            formValidation.errors.pause_limit
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.pause_limit}
                         </Form.Control.Feedback>
                       </Form.Group>
                       <Form.Group

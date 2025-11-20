@@ -263,31 +263,6 @@ const setScenarioLearnerConfiguration =
           success: false,
           message: ERROR_MESSAGES.COMPONENT_NOT_FOUND,
         };
-
-        // await db.sequelize.query(
-        //   `UPDATE scenario_learner_session
-        //   SET vm_steps = ?, status = ?, network_bridges = ?, modifiedon = NOW()
-        //   WHERE scenariolearnersessionid = ?`,
-        //   {
-        //     replacements: [
-        //       "Failed",
-        //       "Failed",
-        //       JSON.stringify(availableNetworks),
-        //       learnerData.scenariolearnersessionid,
-        //     ],
-        //     type: db.sequelize.QueryTypes.UPDATE,
-        //   }
-        // );
-        // // 2. Update session to 'Terminated'
-        // await db.sequelize.query(
-        //   `UPDATE scenario_learner
-        //     SET status = 'Terminated', modifiedon = NOW()
-        //     WHERE scenariolearnerid = ?`,
-        //   {
-        //     replacements: [learnerData.scenariolearnerid],
-        //     type: db.sequelize.QueryTypes.UPDATE,
-        //   }
-        // );
       }
     } catch (err) {
       console.error(err);
@@ -397,7 +372,6 @@ const getTerminationDelay = async (db) => {
 const updateCompleteTerminatelearner =
   ({ db, ipAddress }) =>
   async (scenariolearnersessionid, status, type) => {
-    console.log("Update Terminate......");
     const RUNNING = "Running";
     const STOPPED = "Stopped";
     const DESTROYED = "Destroyed";
@@ -829,7 +803,7 @@ const restartscenarioLearner =
         ipAddress
       );
 
-      // 1️⃣ Generate Proxmox ticket
+      // Generate Proxmox ticket
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
         return {
@@ -838,7 +812,7 @@ const restartscenarioLearner =
         };
       }
 
-      // 2️⃣ Stop the VM
+      //Stop the VM
       const stopResult = await proxmoxService.stopVM(
         vmid,
         vmType.toLowerCase()
@@ -850,10 +824,10 @@ const restartscenarioLearner =
         };
       }
 
-      // 3️⃣ Wait before starting
+      //Wait before starting
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
-      // 4️⃣ Start the VM again
+      // Start the VM again
       const startResult = await proxmoxService.startVM(
         vmid,
         vmType.toLowerCase()
@@ -879,6 +853,349 @@ const restartscenarioLearner =
     }
   };
 
+
+const createSnapshot =
+  ({ db, ipAddress }) =>
+  async (vmid, vmType, vmstate) => {
+    try {
+      // Fetch config with componentname
+      const vmConfig = await db.sequelize.query(
+        `SELECT master_vmid, learner_id, scenarioid, componentname
+         FROM vm_configuration
+         WHERE vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!vmConfig.length) {
+        return { success: false, message: `VM ID ${vmid} not found.` };
+      }
+
+      const { master_vmid, learner_id, scenarioid, componentname } =
+        vmConfig[0];
+
+      // Fetch active snapshots (limit = 3)
+      const activeSnapshots = await db.sequelize.query(
+        `SELECT snapshot_name 
+         FROM snapshot_details
+         WHERE vmid = ? AND deletedon IS NULL`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (activeSnapshots.length >= 3) {
+        return {
+          success: false,
+          message: `Maximum 3 snapshots allowed for VM ${vmid}. Delete an existing snapshot.`,
+        };
+      }
+
+      // Fetch ALL snapshots (including deleted ones)
+      const allSnapshots = await db.sequelize.query(
+        `SELECT snapshot_name
+         FROM snapshot_details
+         WHERE vmid = ?`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      // Extract max number from "_snapshot_X"
+      let maxNumber = 0;
+
+      allSnapshots.forEach((s) => {
+        const match = s.snapshot_name.match(/_snapshot_(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNumber) maxNumber = num;
+        }
+      });
+
+      const nextNumber = maxNumber + 1;
+
+      // -------------------------------
+      //  SANITIZE COMPONENT NAME
+      // -------------------------------
+      const sanitizeComponentName = (name) => {
+        if (!name) return "component";
+
+        // Split by ANY non-alphanumeric character (dot, space, hyphen, etc.)
+        const parts = name.split(/[^a-zA-Z0-9]+/).filter(Boolean);
+
+        // Convert to camelCase
+        const camelCase = parts
+          .map((p, index) =>
+            index === 0
+              ? p.toLowerCase()
+              : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
+          )
+          .join("");
+
+        return camelCase;
+      };
+
+      const formattedComponentName = sanitizeComponentName(componentname);
+
+      // Final snapshot name
+      const snapname = `${formattedComponentName}_snapshot_${nextNumber}`;
+
+      // --------------------------------
+      // PROXMOX CREATE SNAPSHOT
+      // --------------------------------
+      const proxmoxService = ProxMoxService(
+        db,
+        { vmType: vmType.toLowerCase() },
+        ipAddress
+      );
+
+      const tokenResult = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        return { success: false, message: `Proxmox connection failed.` };
+      }
+
+      let snapshotResult;
+
+      if (vmType.toLowerCase() === "lxc") {
+        snapshotResult = await proxmoxService.createLXCSnapshot(vmid, snapname);
+      } else {
+        if (!vmstate)
+          return { success: false, message: "vmstate required for QEMU." };
+
+        snapshotResult = await proxmoxService.createQEMUSnapshot(
+          vmid,
+          snapname,
+          vmstate
+        );
+      }
+
+      if (snapshotResult?.status !== 200) {
+        return { success: false, message: `Snapshot creation failed.` };
+      }
+
+      // --------------------------------
+      // INSERT INTO DB
+      // --------------------------------
+      await db.sequelize.query(
+        `INSERT INTO snapshot_details 
+         (master_vmid, vmid, learner_id, scenarioid, component_type,
+          snapshot_name, snapshot_status, createdon)
+         VALUES (?, ?, ?, ?, ?, ?, 'Capture', NOW())`,
+        {
+          replacements: [
+            master_vmid,
+            vmid,
+            learner_id,
+            scenarioid,
+            vmType.toUpperCase(),
+            snapname,
+          ],
+          type: db.sequelize.QueryTypes.INSERT,
+        }
+      );
+
+      return {
+        success: true,
+        message: `Snapshot '${snapname}' created successfully.`,
+      };
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: "Unexpected error occurred." };
+    }
+  };
+
+
+
+const deleteSnapshot =
+  ({ db, ipAddress }) =>
+  async (vmid, vmType, snapname) => {
+    try {
+      const proxmoxService = ProxMoxService(
+        db,
+        { vmType: vmType.toLowerCase() },
+        ipAddress
+      );
+
+      const tokenResult = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        return {
+          success: false,
+          message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+        };
+      }
+      let deleteResult;
+
+      if (vmType.toLowerCase() === "lxc") {
+        deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, snapname);
+      } else if (vmType.toLowerCase() === "qemu") {
+        deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, snapname);
+      } else {
+        return {
+          success: false,
+          message: "Invalid vmType. Must be 'lxc' or 'qemu'.",
+        };
+      }
+
+      if (deleteResult?.status !== 200) {
+        return {
+          success: false,
+          message: `Failed to delete snapshot '${snapname}' for VM ${vmid}.`,
+        };
+      }
+      await db.sequelize.query(
+        `UPDATE snapshot_details
+         SET 
+            snapshot_status = 'Delete',
+            deletedon = NOW()
+         WHERE vmid = ? 
+           AND snapshot_name = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid, snapname],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+      return {
+        success: true,
+        message: `Snapshot '${snapname}' deleted successfully for VM ${vmid}.`,
+      };
+    } catch (err) {
+      console.error(
+        `Error deleting snapshot '${snapname}' for VM ${vmid}:`,
+        err
+      );
+      return {
+        success: false,
+        message: "Unexpected error occurred while deleting snapshot.",
+      };
+    }
+  };
+
+
+const restoreSnapshot =
+  ({ db, ipAddress }) =>
+  async (vmid, vmType, snapname, startValue) => {
+    try {
+      const snapshots = await db.sequelize.query(
+        `SELECT snapshot_name
+         FROM snapshot_details
+         WHERE vmid = ? AND deletedon IS NULL
+         ORDER BY createdon ASC`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (snapshots.length === 0) {
+        return { success: false, message: "No snapshots found." };
+      }
+
+      const snapshotNames = snapshots.map((s) => s.snapshot_name);
+      const latestSnapshot = snapshotNames[snapshotNames.length - 1];
+      if (snapname === latestSnapshot) {
+        const result = await performRestore(
+          vmid,
+          vmType,
+          snapname,
+          startValue,
+          ipAddress,
+          db
+        );
+
+        // If restore succeeded → UPDATE DB STATUS
+        if (result.success) {
+          await db.sequelize.query(
+            `UPDATE snapshot_details
+             SET snapshot_status = 'Restore'
+             WHERE vmid = ? AND snapshot_name = ? AND deletedon IS NULL`,
+            {
+              replacements: [vmid, snapname],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+
+        return result;
+      }
+
+      // If NOT latest → tell user which snapshots must be deleted
+      const snapIndex = snapshotNames.indexOf(snapname);
+
+      if (snapIndex === -1) {
+        return { success: false, message: "Snapshot not found." };
+      }
+
+      const snapshotsToDelete = snapshotNames.slice(snapIndex + 1);
+
+      return {
+        success: false,
+        message: `Cannot restore '${snapname}' because it is not the latest snapshot. Delete these snapshots first: ${snapshotsToDelete.join(
+          ", "
+        )}`,
+        snapshotsToDelete,
+      };
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: "Unexpected error occurred." };
+    }
+  };
+
+
+async function performRestore(
+  vmid,
+  vmType,
+  snapname,
+  startValue,
+  ipAddress,
+  db
+) {
+  const proxmoxService = ProxMoxService(
+    db,
+    { vmType: vmType.toLowerCase() },
+    ipAddress
+  );
+
+  const tokenResult = await proxmoxService.generateAccessTicket();
+  if (!tokenResult || tokenResult.status !== "200") {
+    return { success: false, message: `Failed to connect to Proxmox.` };
+  }
+
+  let restoreResult;
+
+  if (vmType.toLowerCase() === "lxc") {
+    restoreResult = await proxmoxService.restoreLXCSnapshot(
+      vmid,
+      snapname,
+      startValue
+    );
+  } else {
+    restoreResult = await proxmoxService.restoreQEMUSnapshot(
+      vmid,
+      snapname,
+      startValue
+    );
+  }
+
+  if (restoreResult?.status === 200) {
+    return {
+      success: true,
+      message: `Snapshot '${snapname}' restored successfully.`,
+    };
+  }
+
+  return {
+    success: false,
+    message: `Failed to restore snapshot '${snapname}'.`,
+  };
+}
+
+
 module.exports = {
   setScenarioLearnerConfiguration,
   updateCompleteTerminatelearner,
@@ -886,4 +1203,7 @@ module.exports = {
   autoTerminateFailedScenarios,
   startScenarioLearner,
   restartscenarioLearner,
+  createSnapshot,
+  deleteSnapshot,
+  restoreSnapshot
 };

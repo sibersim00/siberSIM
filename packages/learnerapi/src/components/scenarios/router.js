@@ -7,8 +7,12 @@ module.exports = function (iocContainer) {
   router.post("/start-scenario", validator(validation.startScenarioSchema, "body"), controller.startScenario(iocContainer));
   router.post("/update-session-status", validator(validation.updateSessionStatusSchema, "body"), controller.updateSessionStatus(iocContainer));
   router.post("/getMessages", validator(validation.getMessagesSchema, "body"), controller.getMessagesByScenario(iocContainer));
-  router.post("/get-logs",controller.getLogs(iocContainer));
+  router.post("/get-logs", controller.getLogs(iocContainer));
   router.post("/send", validator(validation.sendMessageSchema, "body"), controller.sendMessage(iocContainer));
   router.post("/markSeen", validator(validation.markSeenSchema, "body"), controller.markMessagesSeen(iocContainer));
+  router.get(
+    "/list",
+    controller.getTabList(iocContainer)
+  );
   return router;
 };

@@ -38,6 +38,8 @@ const reportRouter = require("../components/report");
 const authRouter = require("../components/auth");
 const companySettingRouter = require("../components/company_setting");
 const customscenariosRouter = require("../components/custom_scenarios");
+const scenariosTabs = require("../components/scenarios_tabs");
+const customersRouter = require("../components/customers");
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
   const router = express.Router();
@@ -208,7 +210,9 @@ module.exports = function (iocContainer) {
   );
   router.use("/report", authJwt.authenticateToken, reportRouter(iocContainer));
   router.use("/company_setting", companySettingRouter(iocContainer));
-router.use("/custom_scenarios", authJwt.authenticateToken, customscenariosRouter(iocContainer));
+  router.use("/custom_scenarios", authJwt.authenticateToken, customscenariosRouter(iocContainer));
+  router.use("/scenarios_tabs", authJwt.authenticateToken, scenariosTabs(iocContainer));
   router.get("/", (_req, res) => res.json("Masters Module"));
+  router.use("/customers",authJwt.authenticateToken,customersRouter(iocContainer));
   return router;
 };

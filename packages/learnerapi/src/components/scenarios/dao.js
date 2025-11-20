@@ -1,19 +1,19 @@
 const getAll =
   ({ db }) =>
-  async (learner_sessionid) => {
-    try {
-      let result = await db.sequelize.query(
-        `SELECT s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, sls.isnotitermination, sls.scenariolearnersessionid, sl.currentsession_id, sc.categoryname AS scenariocategory_name, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory_name, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN scenario_learner sl ON sl.scenarioid = s.scenarioid AND sl.learner_id = ? LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id WHERE s.deletedon IS NULL AND s.scenariostatus = 'Publish' And s.status = 'Active' And s.scenario_type = 'Public' ORDER BY CASE WHEN s.modifiedon IS NOT NULL THEN s.modifiedon ELSE s.createdon END DESC;`,
-        {
-          replacements: [learner_sessionid],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.log("sceanrios err==>", error);
-    }
-  };
+    async (learner_sessionid) => {
+      try {
+        let result = await db.sequelize.query(
+          `SELECT s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, sls.isnotitermination, sls.scenariolearnersessionid, sl.currentsession_id, sc.categoryname AS scenariocategory_name, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory_name, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN scenario_learner sl ON sl.scenarioid = s.scenarioid AND sl.learner_id = ? LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id WHERE s.deletedon IS NULL AND s.scenariostatus = 'Publish' And s.status = 'Active' And s.scenario_type = 'Public' ORDER BY CASE WHEN s.modifiedon IS NOT NULL THEN s.modifiedon ELSE s.createdon END DESC;`,
+          {
+            replacements: [learner_sessionid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.log("sceanrios err==>", error);
+      }
+    };
 // const getAll =
 //   ({ db }) =>
 //   async (learner_id) => {
@@ -49,10 +49,10 @@ const getAll =
 
 const getByID =
   ({ db }) =>
-  async (scenarioUUID, learner_id) => {
-    try {
-      let result = await db.sequelize.query(
-        `SELECT sl.scenariolearnerid, sls.scenariolearnersessionid, sls.scenariolearnersessionuuid,
+    async (scenarioUUID, learner_id) => {
+      try {
+        let result = await db.sequelize.query(
+          `SELECT sl.scenariolearnerid, sls.scenariolearnersessionid, sls.scenariolearnersessionuuid,
               COALESCE(sls.scenariodiagram, s.scenariodiagram) AS scenariodiagram,
               s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariodescription,
               s.scenariolevel, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name,
@@ -78,15 +78,15 @@ const getByID =
        ) AS chat_instructor_admin ON chat_instructor_admin.scenariolearnerid = sl.scenariolearnerid
        WHERE s.scenariouuid = ? AND sl.learner_id = ? AND s.deletedon IS NULL
        ORDER BY s.scenarioid DESC;`,
-        {
-          replacements: [learner_id, scenarioUUID, learner_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [learner_id, scenarioUUID, learner_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      if (result.length === 0) {
-        result = await db.sequelize.query(
-          `SELECT s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenariodiagram, s.scenarioidentification,
+        if (result.length === 0) {
+          result = await db.sequelize.query(
+            `SELECT s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenariodiagram, s.scenarioidentification,
                 s.scenariodescription, s.scenariolevel, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name,
                 ssc.categoryname AS scenariosubcategory_name, s.duration, 'Pending' as status
          FROM scenarios s
@@ -94,199 +94,199 @@ const getByID =
          INNER JOIN scenario_categories ssc ON s.scenariosubcategoryid = ssc.scenariocategoryid
          WHERE s.scenariouuid = ? AND s.deletedon IS NULL
          ORDER BY s.scenarioid DESC;`,
-          {
-            replacements: [scenarioUUID],
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
-      }
-
-      if (!result[0]) return null;
-
-      let components = JSON.parse(result[0].component_config || "[]");
-
-      // Initialize totals
-      result[0].component_count = components.length;
-      result[0].virtual_cpu = 0;
-      result[0].virtual_memory = 0;
-      result[0].storage_size = 0;
-
-      // Map componentId to component details (including image)
-      const componentDetails = {};
-
-      await Promise.all(
-        components.map(async (element) => {
-          try {
-            if (element.componentid) {
-              const [rowData] = await db.sequelize.query(
-                `SELECT cores, memory, storage, componentimage FROM components WHERE componentid = ?`,
-                {
-                  replacements: [element.componentid],
-                  type: db.sequelize.QueryTypes.SELECT,
-                }
-              );
-
-              if (rowData) {
-                componentDetails[element.componentid] = rowData;
-
-                result[0].virtual_cpu += rowData.cores || 0;
-                result[0].virtual_memory += rowData.memory || 0;
-                result[0].storage_size += parseInt(rowData.storage) || 0;
-              }
+            {
+              replacements: [scenarioUUID],
+              type: db.sequelize.QueryTypes.SELECT,
             }
-          } catch (err) {
-            console.error(
-              `Error fetching componentid ${element.componentid}:`,
-              err
-            );
-          }
-        })
-      );
-
-      // Update scenariodiagram node images using component images
-      if (result[0].scenariodiagram) {
-        try {
-          let diagramObj = JSON.parse(result[0].scenariodiagram);
-
-          if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
-            diagramObj.nodes = diagramObj.nodes.map((node) => {
-              // componentid key might be componentId or componentid depending on case
-              const compId = node.data?.componentId || node.data?.componentid;
-
-              if (compId && componentDetails[compId]) {
-                node.data.image =
-                  componentDetails[compId].componentimage || node.data.image;
-              }
-
-              return node;
-            });
-          }
-
-          result[0].scenariodiagram = JSON.stringify(diagramObj);
-        } catch (err) {
-          console.error("Error parsing or updating scenariodiagram JSON:", err);
+          );
         }
-      }
 
-      return result;
-    } catch (error) {
-      console.error("Error fetching scenario by ID:", error);
-      throw error;
-    }
-  };
+        if (!result[0]) return null;
+
+        let components = JSON.parse(result[0].component_config || "[]");
+
+        // Initialize totals
+        result[0].component_count = components.length;
+        result[0].virtual_cpu = 0;
+        result[0].virtual_memory = 0;
+        result[0].storage_size = 0;
+
+        // Map componentId to component details (including image)
+        const componentDetails = {};
+
+        await Promise.all(
+          components.map(async (element) => {
+            try {
+              if (element.componentid) {
+                const [rowData] = await db.sequelize.query(
+                  `SELECT cores, memory, storage, componentimage FROM components WHERE componentid = ?`,
+                  {
+                    replacements: [element.componentid],
+                    type: db.sequelize.QueryTypes.SELECT,
+                  }
+                );
+
+                if (rowData) {
+                  componentDetails[element.componentid] = rowData;
+
+                  result[0].virtual_cpu += rowData.cores || 0;
+                  result[0].virtual_memory += rowData.memory || 0;
+                  result[0].storage_size += parseInt(rowData.storage) || 0;
+                }
+              }
+            } catch (err) {
+              console.error(
+                `Error fetching componentid ${element.componentid}:`,
+                err
+              );
+            }
+          })
+        );
+
+        // Update scenariodiagram node images using component images
+        if (result[0].scenariodiagram) {
+          try {
+            let diagramObj = JSON.parse(result[0].scenariodiagram);
+
+            if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
+              diagramObj.nodes = diagramObj.nodes.map((node) => {
+                // componentid key might be componentId or componentid depending on case
+                const compId = node.data?.componentId || node.data?.componentid;
+
+                if (compId && componentDetails[compId]) {
+                  node.data.image =
+                    componentDetails[compId].componentimage || node.data.image;
+                }
+
+                return node;
+              });
+            }
+
+            result[0].scenariodiagram = JSON.stringify(diagramObj);
+          } catch (err) {
+            console.error("Error parsing or updating scenariodiagram JSON:", err);
+          }
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Error fetching scenario by ID:", error);
+        throw error;
+      }
+    };
 
 const { v4: uuidv4 } = require("uuid");
 
 const startScenario =
   ({ db, validation }) =>
-  async (body) => {
-    try {
-      const [inProgress] = await db.sequelize.query(
-        `SELECT scenarioid, status FROM scenario_learner  WHERE learner_id = :learner_id AND status IN ('Initializing', 'Running')`,
-        {
-          replacements: { learner_id: body.learner_id },
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      if (inProgress) {
-        return {
-          statusCode: 400,
-          message: validation.messages.ONE_ACTIVE_SCENARIO,
-        };
-      }
-      const [existing] = await db.sequelize.query(
-        `SELECT scenariolearnerid FROM scenario_learner WHERE scenarioid = :scenarioid AND learner_id = :learner_id LIMIT 1`,
-        {
-          replacements: {
-            scenarioid: body.scenarioid,
-            learner_id: body.learner_id,
-          },
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      let scenariolearnerid;
-      let scenariolearnersessionid;
-      let scenariolearnersessionuuid = uuidv4();
-      if (existing) {
-        await db.sequelize.query(
-          `UPDATE scenario_learner SET status = 'Initializing', modifiedon = CURRENT_TIMESTAMP WHERE scenarioid = ? AND learner_id = ?`,
+    async (body) => {
+      try {
+        const [inProgress] = await db.sequelize.query(
+          `SELECT scenarioid, status FROM scenario_learner  WHERE learner_id = :learner_id AND status IN ('Initializing', 'Running')`,
           {
-            replacements: [body.scenarioid, body.learner_id],
-            type: db.sequelize.QueryTypes.UPDATE,
+            replacements: { learner_id: body.learner_id },
+            type: db.sequelize.QueryTypes.SELECT,
           }
         );
-        scenariolearnerid = existing.scenariolearnerid;
-      } else {
+        if (inProgress) {
+          return {
+            statusCode: 400,
+            message: validation.messages.ONE_ACTIVE_SCENARIO,
+          };
+        }
+        const [existing] = await db.sequelize.query(
+          `SELECT scenariolearnerid FROM scenario_learner WHERE scenarioid = :scenarioid AND learner_id = :learner_id LIMIT 1`,
+          {
+            replacements: {
+              scenarioid: body.scenarioid,
+              learner_id: body.learner_id,
+            },
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        let scenariolearnerid;
+        let scenariolearnersessionid;
+        let scenariolearnersessionuuid = uuidv4();
+        if (existing) {
+          await db.sequelize.query(
+            `UPDATE scenario_learner SET status = 'Initializing', modifiedon = CURRENT_TIMESTAMP WHERE scenarioid = ? AND learner_id = ?`,
+            {
+              replacements: [body.scenarioid, body.learner_id],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+          scenariolearnerid = existing.scenariolearnerid;
+        } else {
+          await db.sequelize.query(
+            `INSERT INTO scenario_learner (scenariolearneruuid, scenarioid, learner_id, instructor_id)VALUES (UUID(), ?, ?, ?)`,
+            {
+              replacements: [
+                body.scenarioid,
+                body.learner_id,
+                body.instructor_id,
+              ],
+              type: db.sequelize.QueryTypes.INSERT,
+            }
+          );
+          const [idResult] = await db.sequelize.query(
+            `SELECT LAST_INSERT_ID() AS scenariolearnerid`,
+            {
+              type: db.sequelize.QueryTypes.SELECT,
+            }
+          );
+          scenariolearnerid = idResult?.scenariolearnerid;
+        }
         await db.sequelize.query(
-          `INSERT INTO scenario_learner (scenariolearneruuid, scenarioid, learner_id, instructor_id)VALUES (UUID(), ?, ?, ?)`,
+          `INSERT INTO scenario_learner_session (scenariolearnersessionuuid, scenariolearnerid, scenarioid, learner_id, timer, status) VALUES (?, ?, ?, ?, ?, ?)`,
           {
             replacements: [
+              scenariolearnersessionuuid,
+              scenariolearnerid,
               body.scenarioid,
               body.learner_id,
-              body.instructor_id,
+              body.timer,
+              body.status,
             ],
             type: db.sequelize.QueryTypes.INSERT,
           }
         );
-        const [idResult] = await db.sequelize.query(
-          `SELECT LAST_INSERT_ID() AS scenariolearnerid`,
+        const [sessionResult] = await db.sequelize.query(
+          `SELECT LAST_INSERT_ID() AS scenariolearnersessionid`,
           {
             type: db.sequelize.QueryTypes.SELECT,
           }
         );
-        scenariolearnerid = idResult?.scenariolearnerid;
-      }
-      await db.sequelize.query(
-        `INSERT INTO scenario_learner_session (scenariolearnersessionuuid, scenariolearnerid, scenarioid, learner_id, timer, status) VALUES (?, ?, ?, ?, ?, ?)`,
-        {
-          replacements: [
-            scenariolearnersessionuuid,
-            scenariolearnerid,
-            body.scenarioid,
-            body.learner_id,
-            body.timer,
-            body.status,
-          ],
-          type: db.sequelize.QueryTypes.INSERT,
-        }
-      );
-      const [sessionResult] = await db.sequelize.query(
-        `SELECT LAST_INSERT_ID() AS scenariolearnersessionid`,
-        {
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      scenariolearnersessionid = sessionResult?.scenariolearnersessionid;
-      await db.sequelize.query(
-        `UPDATE scenario_learner SET currentsession_id = ? WHERE scenariolearnerid = ?`,
-        {
-          replacements: [scenariolearnersessionid, scenariolearnerid],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
+        scenariolearnersessionid = sessionResult?.scenariolearnersessionid;
+        await db.sequelize.query(
+          `UPDATE scenario_learner SET currentsession_id = ? WHERE scenariolearnerid = ?`,
+          {
+            replacements: [scenariolearnersessionid, scenariolearnerid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
 
-      await insertLog(db, {
-        scenarioid: body.scenarioid,
-        learner_id: body.learner_id,
-        scenariolearnerid,
-        status: "Start",
-        scenariolearnersessionid,
-        instructor_id: body.instructor_id || null,
-        type: "Learner",
-        remark: "Scenario started by SIMUser",
-      });
-      return {
-        statusCode: 200,
-        message: validation.messages.CONFIGURATION_STARTED,
-        scenariolearnerid,
-        scenariolearnersessionid,
-        scenariolearnersessionuuid,
-      };
-    } catch (error) {
-      console.error("Error in create/update scenario_learner:", error);
-      throw error;
-    }
-  };
+        await insertLog(db, {
+          scenarioid: body.scenarioid,
+          learner_id: body.learner_id,
+          scenariolearnerid,
+          status: "Start",
+          scenariolearnersessionid,
+          instructor_id: body.instructor_id || null,
+          type: "Learner",
+          remark: "Scenario started by SIMUser",
+        });
+        return {
+          statusCode: 200,
+          message: validation.messages.CONFIGURATION_STARTED,
+          scenariolearnerid,
+          scenariolearnersessionid,
+          scenariolearnersessionuuid,
+        };
+      } catch (error) {
+        console.error("Error in create/update scenario_learner:", error);
+        throw error;
+      }
+    };
 
 async function insertLog(db, logData) {
   const logQuery = `INSERT INTO scenario_learner_logs (scenariolearnersessionid, scenarioid, learner_id,scenariolearnerid,instructor_id, type, remark, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -308,190 +308,209 @@ async function insertLog(db, logData) {
 
 const updateSessionStatus =
   ({ db, validation }) =>
-  async (body) => {
-    try {
-      await db.sequelize.query(
-        `UPDATE scenario_learner_session SET status = ?, modifiedon = CURRENT_TIMESTAMP, terminatedon = CASE WHEN ? = 'Terminated' THEN CURRENT_TIMESTAMP ELSE terminatedon END, completedon = CASE WHEN ? = 'Completed' THEN CURRENT_TIMESTAMP ELSE completedon END, startedon = CASE WHEN ? = 'Start' AND startedon IS NULL THEN CURRENT_TIMESTAMP ELSE startedon END, resumeon = CASE WHEN ? = 'Resume' THEN CURRENT_TIMESTAMP ELSE resumeon END, timer = CASE WHEN ? IN ('Pause', 'Completed', 'Terminated') THEN ? ELSE timer END, isnotitermination = CASE WHEN ? IN ('Completed', 'Terminated') THEN 'No' ELSE isnotitermination END WHERE scenariolearnersessionid = ?`,
-        {
-          replacements: [
-            body.status,
-            body.status,
-            body.status,
-            body.status,
-            body.status,
-            body.status,
-            body.timer,
-            body.status,
-            body.scenariolearnersessionid,
-          ],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-      insertLog(db, {
-        scenarioid: body.scenarioid,
-        learner_id: body.learner_id,
-        scenariolearnerid: body.scenariolearnerid,
-        status: body.status,
-        scenariolearnersessionid: body.scenariolearnersessionid,
-        instructor_id: null,
-        type: "Learner",
-        remark: `Scenario status changed to ${body.status} by SIMUser`,
-      });
-      if (body.status == "Terminated" || body.status == "Completed") {
+    async (body) => {
+      try {
         await db.sequelize.query(
-          `UPDATE scenario_learner SET status = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenariolearnerid = ?`,
+          `UPDATE scenario_learner_session SET status = ?, modifiedon = CURRENT_TIMESTAMP, terminatedon = CASE WHEN ? = 'Terminated' THEN CURRENT_TIMESTAMP ELSE terminatedon END, completedon = CASE WHEN ? = 'Completed' THEN CURRENT_TIMESTAMP ELSE completedon END, startedon = CASE WHEN ? = 'Start' AND startedon IS NULL THEN CURRENT_TIMESTAMP ELSE startedon END, resumeon = CASE WHEN ? = 'Resume' THEN CURRENT_TIMESTAMP ELSE resumeon END, timer = CASE WHEN ? IN ('Pause', 'Completed', 'Terminated') THEN ? ELSE timer END, isnotitermination = CASE WHEN ? IN ('Completed', 'Terminated') THEN 'No' ELSE isnotitermination END WHERE scenariolearnersessionid = ?`,
           {
-            replacements: [body.status, body.scenariolearnerid],
+            replacements: [
+              body.status,
+              body.status,
+              body.status,
+              body.status,
+              body.status,
+              body.status,
+              body.timer,
+              body.status,
+              body.scenariolearnersessionid,
+            ],
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
+        insertLog(db, {
+          scenarioid: body.scenarioid,
+          learner_id: body.learner_id,
+          scenariolearnerid: body.scenariolearnerid,
+          status: body.status,
+          scenariolearnersessionid: body.scenariolearnersessionid,
+          instructor_id: null,
+          type: "Learner",
+          remark: `Scenario status changed to ${body.status} by SIMUser`,
+        });
+        if (body.status == "Terminated" || body.status == "Completed") {
+          await db.sequelize.query(
+            `UPDATE scenario_learner SET status = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenariolearnerid = ?`,
+            {
+              replacements: [body.status, body.scenariolearnerid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+        return {
+          statusCode: 200,
+          message: validation.messages.CONFIGURATION_STARTED,
+          scenariolearnerid: body.scenariolearnerid,
+          scenariolearnersessionid: body.scenariolearnersessionid,
+        };
+      } catch (error) {
+        console.error(
+          "Error updating scenario learner session status/ scenario learner status:",
+          error
+        );
+        throw error;
       }
-      return {
-        statusCode: 200,
-        message: validation.messages.CONFIGURATION_STARTED,
-        scenariolearnerid: body.scenariolearnerid,
-        scenariolearnersessionid: body.scenariolearnersessionid,
-      };
-    } catch (error) {
-      console.error(
-        "Error updating scenario learner session status/ scenario learner status:",
-        error
-      );
-      throw error;
-    }
-  };
+    };
 
 const getSessionStatus =
   ({ db }) =>
-  async (scenariolearnersessionuuid) => {
-    try {
-      const [result] = await db.sequelize.query(
-        `SELECT vm_steps FROM scenario_learner_session WHERE scenariolearnersessionuuid = ?`,
-        {
-          replacements: [scenariolearnersessionuuid],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("getSessionStatus DAO Error:", error);
-      throw error;
-    }
-  };
+    async (scenariolearnersessionuuid) => {
+      try {
+        const [result] = await db.sequelize.query(
+          `SELECT vm_steps FROM scenario_learner_session WHERE scenariolearnersessionuuid = ?`,
+          {
+            replacements: [scenariolearnersessionuuid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("getSessionStatus DAO Error:", error);
+        throw error;
+      }
+    };
 
 const getMessagesByScenario =
   ({ db, validation }) =>
-  async ({ scenariolearnerid }) => {
-    if (!scenariolearnerid) {
-      throw new Error(validation.messages.MISSING_SCENARIOLEARNERID);
-    }
-    try {
-      const result = await db.sequelize.query(
-        `SELECT *, CASE WHEN DATE(createdon) = CURDATE() THEN CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p')) WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p')) ELSE DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p') END AS formatted_time FROM scenario_learner_chats WHERE scenariolearnerid = ? ORDER BY createdon ASC`,
-        {
-          replacements: [scenariolearnerid],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      await db.sequelize.query(
-        `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenariolearnerid = ? AND sender_type IN ('Admin', 'Instructor') AND status = 'sent'`,
-        {
-          replacements: [scenariolearnerid],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("Error fetching or updating messages:", error);
-      throw new Error(validation.messages.INTERNAL_SERVER_ERROR);
-    }
-  };
+    async ({ scenariolearnerid }) => {
+      if (!scenariolearnerid) {
+        throw new Error(validation.messages.MISSING_SCENARIOLEARNERID);
+      }
+      try {
+        const result = await db.sequelize.query(
+          `SELECT *, CASE WHEN DATE(createdon) = CURDATE() THEN CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p')) WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p')) ELSE DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p') END AS formatted_time FROM scenario_learner_chats WHERE scenariolearnerid = ? ORDER BY createdon ASC`,
+          {
+            replacements: [scenariolearnerid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        await db.sequelize.query(
+          `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenariolearnerid = ? AND sender_type IN ('Admin', 'Instructor') AND status = 'sent'`,
+          {
+            replacements: [scenariolearnerid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("Error fetching or updating messages:", error);
+        throw new Error(validation.messages.INTERNAL_SERVER_ERROR);
+      }
+    };
 
 const sendMessage =
   ({ db, validation }) =>
-  async (body, sender_id) => {
-    try {
-      const {
-        scenariolearnerid,
-        scenarioid,
-        learner_id,
-        instructor_id,
-        sender_type,
-        message,
-        attachment = null,
-      } = body;
-      await db.sequelize.query(
-        `INSERT INTO scenario_learner_chats (scenariolearnerid,scenarioid, learner_id, instructor_id,sender_type, message, attachment, status, createdon) VALUES (?,?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
-        {
-          replacements: [
-            scenariolearnerid,
-            scenarioid,
-            learner_id,
-            instructor_id,
-            sender_type,
-            message,
-            attachment,
-          ],
-          type: db.sequelize.QueryTypes.INSERT,
-        }
-      );
-      const [result] = await db.sequelize.query(
-        `SELECT * FROM scenario_learner_chats WHERE scenariolearnerchatid = LAST_INSERT_ID()`,
-        { type: db.sequelize.QueryTypes.SELECT }
-      );
-      return {
-        statusCode: 200,
-        message: validation.messages.MESSAGE_SENT,
-        data: result,
-      };
-    } catch (error) {
-      console.error("Error:", error.message);
-      return { statusCode: 500, message: "Internal Server Error" };
-    }
-  };
+    async (body, sender_id) => {
+      try {
+        const {
+          scenariolearnerid,
+          scenarioid,
+          learner_id,
+          instructor_id,
+          sender_type,
+          message,
+          attachment = null,
+        } = body;
+        await db.sequelize.query(
+          `INSERT INTO scenario_learner_chats (scenariolearnerid,scenarioid, learner_id, instructor_id,sender_type, message, attachment, status, createdon) VALUES (?,?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
+          {
+            replacements: [
+              scenariolearnerid,
+              scenarioid,
+              learner_id,
+              instructor_id,
+              sender_type,
+              message,
+              attachment,
+            ],
+            type: db.sequelize.QueryTypes.INSERT,
+          }
+        );
+        const [result] = await db.sequelize.query(
+          `SELECT * FROM scenario_learner_chats WHERE scenariolearnerchatid = LAST_INSERT_ID()`,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+        return {
+          statusCode: 200,
+          message: validation.messages.MESSAGE_SENT,
+          data: result,
+        };
+      } catch (error) {
+        console.error("Error:", error.message);
+        return { statusCode: 500, message: "Internal Server Error" };
+      }
+    };
 
 const markMessagesSeen =
   ({ db }) =>
-  async ({ scenarioid, learner_id, instructor_id, viewer_type }) => {
-    try {
-      const oppositeSenderType =
-        viewer_type === "learner" ? "Instructor" : "Learner";
-      const [result] = await db.sequelize.query(
-        `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenarioid = ? AND learner_id = ? AND instructor_id = ? AND sender_type = ? AND status != 'seen'`,
-        {
-          replacements: [
-            scenarioid,
-            learner_id,
-            instructor_id,
-            oppositeSenderType,
-          ],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("Error:", error.message);
-      return { statusCode: 500, message: "Internal Server Error" };
-    }
-  };
+    async ({ scenarioid, learner_id, instructor_id, viewer_type }) => {
+      try {
+        const oppositeSenderType =
+          viewer_type === "learner" ? "Instructor" : "Learner";
+        const [result] = await db.sequelize.query(
+          `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenarioid = ? AND learner_id = ? AND instructor_id = ? AND sender_type = ? AND status != 'seen'`,
+          {
+            replacements: [
+              scenarioid,
+              learner_id,
+              instructor_id,
+              oppositeSenderType,
+            ],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("Error:", error.message);
+        return { statusCode: 500, message: "Internal Server Error" };
+      }
+    };
 
 const getLogs =
   ({ db }) =>
-  async (scenariouuid, learner_id) => {
-    try {
-      let result = await db.sequelize.query(
-        `SELECT sll.status, DATE_FORMAT(sll.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, sll.type, sll.remark, IFNULL(DATE_FORMAT(sls.startedon, '%Y-%m-%d %H:%i:%s'), '') AS startedon FROM scenario_learner_logs sll INNER JOIN scenarios s ON s.scenarioid = sll.scenarioid INNER JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sll.scenariolearnersessionid WHERE s.scenariouuid = ? AND sll.learner_id = ? ORDER BY sll.createdon DESC;`,
-        {
-          replacements: [scenariouuid, learner_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("Error fetching scenario logs:", error);
-      throw error;
-    }
-  };
+    async (scenariouuid, learner_id) => {
+      try {
+        let result = await db.sequelize.query(
+          `SELECT sll.status, DATE_FORMAT(sll.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, sll.type, sll.remark, IFNULL(DATE_FORMAT(sls.startedon, '%Y-%m-%d %H:%i:%s'), '') AS startedon FROM scenario_learner_logs sll INNER JOIN scenarios s ON s.scenarioid = sll.scenarioid INNER JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sll.scenariolearnersessionid WHERE s.scenariouuid = ? AND sll.learner_id = ? ORDER BY sll.createdon DESC;`,
+          {
+            replacements: [scenariouuid, learner_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("Error fetching scenario logs:", error);
+        throw error;
+      }
+    };
+
+const getTabList = ({ db }) => async () => {
+  try {
+    const [res] = await db.sequelize.query(`SELECT 
+        scenariotabid,
+        tab_name,
+        tab_status,
+        tab_type,
+        widget_url,
+        tab_ordering,
+        createdon,
+        modifiedon
+      FROM scenario_tabs`);
+    return res;
+  } catch (error) {
+    console.error("Error fetching scenario tab list:", error);
+    throw error;
+  }
+};
 
 module.exports = {
   getAll,
@@ -503,4 +522,5 @@ module.exports = {
   updateSessionStatus,
   getSessionStatus,
   getLogs,
+  getTabList,
 };

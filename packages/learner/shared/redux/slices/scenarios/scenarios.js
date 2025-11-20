@@ -19,10 +19,11 @@ const initialState = {
   getConfigurationsData: [],
   updateCompletedTerminatedData: [],
   getLogsData: [],
+  getTabListData: [],
   getToken: [],
   getvmStartScenario: [],
   getvmRestartScenario: [],
-  getVncProxyConsole:[],
+  getVncProxyConsole: [],
 };
 
 
@@ -101,6 +102,10 @@ const slice = createSlice({
     hasGetLogsListData(state, action) {
       state.isLoading = false,
         state.getLogsData = action.payload;
+    },
+    hasGetTabListData(state, action) {
+      state.isLoading = false,
+        state.getTabListData = action.payload;
     },
     hasGetToken(state, action) {
       state.isLoading = false,
@@ -413,6 +418,30 @@ export function getLogs(payload) {
   };
 }
 
+
+export function getTabList() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.tab_status}`);
+      dispatch(slice.actions.hasGetTabListData(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearTabList() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetTabListData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
 export function getAccessToken() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -444,7 +473,7 @@ export function vncProxyConsole(payload) {
     dispatch(slice.actions.startLoading());
     try {
 
-      const response = await axios.post(`${api.vnc_proxy_console}`,payload);
+      const response = await axios.post(`${api.vnc_proxy_console}`, payload);
 
       dispatch(slice.actions.hasGetVncProxyConsole(response.data));
     } catch (error) {
