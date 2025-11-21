@@ -49,7 +49,7 @@ const ScenariosView = () => {
   const { backView, categoryId, subcategoryName } = router.query;
   const [rowId, setRowId] = useState("");
   const [rowValues, setRowValues] = useState({});
-  const [activeTab, setActiveTab] = useState("Basic Inforamtion");
+  const [activeTab, setActiveTab] = useState("Basic Information");
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -70,7 +70,7 @@ const ScenariosView = () => {
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfNotFound, setPdfNotFound] = useState(false);
-  const [dynamicTab, setDynamicTab] = useState("Basic Inforamtion");
+  const [dynamicTab, setDynamicTab] = useState("Basic Information");
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
     useState(false);
   const vmStepsOrder = [
@@ -150,7 +150,7 @@ const ScenariosView = () => {
         .sort((a, b) => a.tab_ordering - b.tab_ordering);
       if (enabledTabs.length > 0) {
         const basicTab = enabledTabs.find(
-          (tab) => tab.tab_name?.toLowerCase() === "Basic Inforamtion"
+          (tab) => tab.tab_name?.toLowerCase() === "Basic Information"
         );
         if (basicTab) {
           setDynamicTab(formatEventKey(basicTab.tab_name));
@@ -901,7 +901,7 @@ const ScenariosView = () => {
                                 ?.map((tab) => (
                                   <Tab.Pane eventKey={tab.tab_name} key={tab.scenariotabid}>
                                     {/* 👇 Conditional rendering per tab name */}
-                                    {tab.tab_name === "Basic Inforamtion" && (
+                                    {tab.tab_name === "Basic Information" && (
                                       <Row className="gy-4">
                                         <Col md={3}>
                                           <div className="d-flex align-items-start gap-3">
