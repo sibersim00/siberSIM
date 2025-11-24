@@ -164,7 +164,7 @@ const ScenariosView = () => {
     }
   }, [tabListSucc]);
 
-
+  console.log("activeTab", activeTab)
   useEffect(() => {
     if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
       const scenario = getSingleScenariosSucc[0];
@@ -196,6 +196,7 @@ const ScenariosView = () => {
         learnerid: getUserDataFromLocal?.learner_id,
         scenariolearnersessionid: saveScenariosData?.scenariolearnersessionid,
       };
+      console.log("getConfigurationspayload",payload)
       dispatch(getConfigurations(payload));
       setShowCloneModal(true);
       dispatch(clearSaveScenarios());
@@ -332,7 +333,7 @@ const ScenariosView = () => {
         scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
         type: "learner",
       };
-
+      console.log("payload", payload)
       if (confirmAction === "initializing") {
         dispatch(saveScenarios(payload));
       } else if (
@@ -459,6 +460,7 @@ const ScenariosView = () => {
 
   useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
+    console.log("step",step)
     setVmStep(step);
     if (step === "Running") {
       setCountdown(10);
@@ -872,8 +874,6 @@ const ScenariosView = () => {
                                   key={tab.scenariotabid}
                                   onClick={() => {
                                     setActiveTab(tab.tab_name);
-
-                                    dispatch(clearSingleScenarios());
                                   }}
                                   style={{ flex: 1, textAlign: "start" }}
                                 >
@@ -1057,7 +1057,8 @@ const ScenariosView = () => {
                                         scenarioId={rowId}
                                         isTimerVisible={isTimerVisible}
                                         scenariodiagram={
-                                          rowValues?.scenariodiagram?.trim() !== ""
+                                          rowValues?.scenariodiagram &&
+                                            rowValues.scenariodiagram.trim() !== ""
                                             ? rowValues.scenariodiagram
                                             : ""
                                         }
@@ -1117,18 +1118,110 @@ const ScenariosView = () => {
                                     )}
 
                                     {/* 👇 Flexible / Custom tab support */}
-                                    {tab.tab_type === "Flexible" && tab.widget_url && (
-                                      <iframe
-                                        src={tab.widget_url}
-                                        title={tab.tab_name}
-                                        style={{
-                                          width: "100%",
-                                          height: "600px",
-                                          border: "none",
-                                          borderRadius: "8px",
-                                        }}
-                                      ></iframe>
-                                    )}
+                                    {tab.tab_type === "Flexible" &&
+                                      tab.widget_url && (
+                                        <div
+                                          style={{
+                                            width: "100%",
+                                            position: "relative",
+                                          }}
+                                        >
+                                          {/* === TOP BUTTON BAR === */}
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                              marginBottom: "8px",
+                                            }}
+                                          >
+                                            {/* LEFT SIDE BUTTONS */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                gap: "8px",
+                                              }}
+                                            >
+                                              <button
+                                                onClick={() =>
+                                                  window.history.back()
+                                                }
+                                                className="btn btn-light"
+                                                title="Back (Alt + ←)"
+                                              >
+                                                <i className="fe fe-arrow-left"></i>
+                                              </button>
+
+                                              {/* Forward Button (Alt + Right Arrow) */}
+                                              <button
+                                                onClick={() =>
+                                                  window.history.forward()
+                                                }
+                                                className="btn btn-light"
+                                                title="Forward (Alt + →)"
+                                              >
+                                                <i className="fe fe-arrow-right"></i>
+                                              </button>
+                                            </div>
+
+                                            {/* RIGHT SIDE BUTTONS */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                gap: "8px",
+                                              }}
+                                            >
+                                              {/* Refresh Iframe */}
+                                              <button
+                                                onClick={() => {
+                                                  const frame =
+                                                    document.getElementById(
+                                                      `flex-iframe-${tab.tab_name}`
+                                                    );
+                                                  if (frame)
+                                                    frame.src = frame.src;
+                                                }}
+                                                className="btn btn-light"
+                                                title="Refresh"
+                                              >
+                                                <i className="fe fe-refresh-cw"></i>
+                                              </button>
+
+                                              {/* Fullscreen Iframe */}
+                                              <button
+                                                onClick={() => {
+                                                  const frame =
+                                                    document.getElementById(
+                                                      `flex-iframe-${tab.tab_name}`
+                                                    );
+                                                  if (
+                                                    frame &&
+                                                    frame.requestFullscreen
+                                                  ) {
+                                                    frame.requestFullscreen();
+                                                  }
+                                                }}
+                                                className="btn btn-light"
+                                                title="Fullscreen"
+                                              >
+                                                <i className="fe fe-maximize"></i>
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* === IFRAME === */}
+                                          <iframe
+                                            id={`flex-iframe-${tab.tab_name}`}
+                                            src={tab.widget_url}
+                                            title={tab.tab_name}
+                                            style={{
+                                              width: "100%",
+                                              height: "900px",
+                                              border: "none",
+                                              borderRadius: "8px",
+                                            }}
+                                          ></iframe>
+                                        </div>
+                                      )}
                                   </Tab.Pane>
                                 ))}
                             </Tab.Content>
