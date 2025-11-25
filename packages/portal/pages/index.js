@@ -73,7 +73,7 @@ const Home = () => {
   useEffect(() => {
     dispatch(clearDispatchFromForget());
      const domain = window.location;
-        dispatch(getCompanyList({domain_url : domain?.origin}));
+        dispatch(getCompanyList({domain_url : domain?.hostname}));
 
   }, [dispatch]);
 

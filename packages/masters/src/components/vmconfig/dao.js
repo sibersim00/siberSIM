@@ -1063,7 +1063,7 @@ ORDER BY el.startedon DESC;`,
             ON vc.scenarioid = s.scenarioid
         WHERE sd.vmid = ?
           AND sd.deletedon IS NULL
-        ORDER BY sd.createdon DESC;
+        ORDER BY sd.createdon ASC;
         `,
         {
           replacements: [vmid],

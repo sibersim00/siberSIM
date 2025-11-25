@@ -11,7 +11,7 @@ import {
   clearSaveSnapshot,
   getSnapshot,
   deleteSnapshot,
-  restoresnapshot
+  restoresnapshot,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
@@ -37,6 +37,7 @@ export default function ProxmoxConsole() {
   const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showWarning, setShowWarning] = useState(false);
   const snapshotApiData = useSelector(
     (state) => state.scenarios?.getSnapshot?.data?.snapshots || []
   );
@@ -46,8 +47,6 @@ export default function ProxmoxConsole() {
   const rollSnapdata = useSelector(
     (state) => state.scenarios?.getrestoresnapshot || []
   );
-
-  console.log("rollSnapdata", snapshotApiData)
   const handleSelectSnapshot = (snapshotId) => {
     setSelectedSnapshotId(snapshotId);
   };
@@ -69,9 +68,11 @@ export default function ProxmoxConsole() {
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
-      `/ticket?vmid=${encodeURIComponent(realVmid)}&vmType=${encodeURIComponent(
-        vmType
-      )}&cleanName=${encodeURIComponent(cleanName)}`,
+        `/ticket?vmid=${encodeURIComponent(
+          realVmid
+        )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
+          cleanName
+        )}`,
       {
         method: "GET",
         headers: {
@@ -99,7 +100,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
         rfbRef.current = null;
       }
 
@@ -148,7 +149,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
       }
     };
   }, []);
@@ -178,7 +179,6 @@ export default function ProxmoxConsole() {
     }
     setSidebarOpen(true);
   };
-
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (document.fullscreenElement) setSidebarOpen(true);
@@ -206,14 +206,12 @@ export default function ProxmoxConsole() {
       setSelectedSnapshotId(null);
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
       setShowErrorModal(false);
-
     } catch (err) {
       console.log("ERROR", err);
     } finally {
       setOverlayLoading(false);
     }
   };
-
   const handleStartClick = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -310,7 +308,6 @@ export default function ProxmoxConsole() {
         text: result?.message || "Snapshot created successfully.",
       });
       dispatch(clearSaveSnapshot());
-
     } catch (err) {
       const errMsg =
         err?.error?.error?.message ||
@@ -325,8 +322,6 @@ export default function ProxmoxConsole() {
     } finally {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
       setOverlayLoading(false);
-
-
     }
   };
   useEffect(() => {
@@ -371,18 +366,15 @@ export default function ProxmoxConsole() {
       setShowRollbackModal(false);
       setConnected(false);
     } catch (err) {
-      console.log("rolllback  error ", err)
+      console.log("rolllback  error ", err);
       const errMsg =
-        err?.error?.message ||
-        err?.message ||
-        "Unable to rollback snapshot.";
+        err?.error?.message || err?.message || "Unable to rollback snapshot.";
 
       Swal.fire({
         icon: "error",
         title: "Rollback Failed",
         text: errMsg,
       });
-
     } finally {
       setOverlayLoading(false);
     }
@@ -403,13 +395,9 @@ export default function ProxmoxConsole() {
         confirmButtonText: "Yes, delete",
         cancelButtonText: "Cancel",
       });
-
       if (!confirm.isConfirmed) return;
-
       setOverlayLoading(true);
-
       const result = await dispatch(deleteSnapshot(payload));
-      console.log("result", result)
       Swal.fire({
         icon: "success",
         title: "Snapshot Deleted",
@@ -418,11 +406,9 @@ export default function ProxmoxConsole() {
           result?.message ||
           "Snapshot deleted successfully.",
       });
-
       setSnapshotList((prev) =>
         prev.filter((s) => s.snapshot_name !== snapName)
       );
-
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -432,7 +418,6 @@ export default function ProxmoxConsole() {
           err?.message ||
           "Unable to delete snapshot.",
       });
-
     } finally {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
       setOverlayLoading(false);
@@ -454,17 +439,42 @@ export default function ProxmoxConsole() {
           <div className="p-3 rounded" style={{ background: "#24243E" }}>
             <div
               className=" justify-content-between align-items-center p-3 rounded-5"
-              style={{ background: "#0E0E23", fontSize: "13px", border: "3px dashed #6f6f8a" }}
+              style={{
+                background: "#0E0E23",
+                fontSize: "13px",
+                border: "3px dashed #6f6f8a",
+              }}
             >
-              <h6><span style={{ fontSize: "12px", fontWeight: "400" }}>Component Name :</span> <span className="fs-6 fw-bold" style={{ color: "#dc3545" }}>{snapshotApiData1?.componentname}</span></h6>
-              <h6><span style={{ fontSize: "12px", fontWeight: "400" }}> Scenario Name : </span><span className="fs-6 fw-bold" style={{ color: "#dc3545" }}>{snapshotApiData1?.scenariotitle}</span></h6>
-              {/* <p>Component Type : {snapshotApiData1?.componenttype}</p> */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "100px 10px auto",
+                  rowGap: "6px",
+                }}
+              >
+                {/* Row 1 */}
+                <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                  Component Name
+                </div>
+                <div>:</div>
+                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                  {snapshotApiData1?.componentname}
+                </div>
+
+                {/* Row 2 */}
+                <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                  Scenario Name
+                </div>
+                <div>:</div>
+                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                  {snapshotApiData1?.scenariotitle}
+                </div>
+              </div>
             </div>
           </div>
           <div className="p-2 rounded" style={{ background: "#24243E" }}>
             <div className="p-4 rounded" style={{ background: "#24243E" }}>
               <div className="d-flex justify-content-center align-items-center gap-4">
-
                 {snapshotList.slice(0, 3).map((snap, index) => (
                   <React.Fragment key={snap.snapshotid}>
                     <div
@@ -513,7 +523,10 @@ export default function ProxmoxConsole() {
                       >
                         {snap.snapshot_name}
                       </h5>
-                      <p className="text-center m-0" style={{ fontSize: "11px", opacity: 0.7 }}>
+                      <p
+                        className="text-center m-0"
+                        style={{ fontSize: "11px", opacity: 0.7 }}
+                      >
                         Created: {new Date(snap.createdon).toLocaleString()}
                       </p>
                       <div className="d-flex justify-content-center gap-2 mt-2">
@@ -555,7 +568,9 @@ export default function ProxmoxConsole() {
                             fontSize: "12px",
                             color: "#fff",
                           }}
-                          onClick={() => handleDeleteSnapshot(snap.snapshot_name)}
+                          onClick={() =>
+                            handleDeleteSnapshot(snap.snapshot_name)
+                          }
                         >
                           <OverlayTrigger
                             placement="bottom"
@@ -564,13 +579,16 @@ export default function ProxmoxConsole() {
                             <i className="fe fe-trash"></i>
                           </OverlayTrigger>
                         </button>
-
                       </div>
                     </div>
                     {index < snapshotList.slice(0, 3).length - 1 && (
                       <div
                         className="align-self-center"
-                        style={{ fontSize: "26px", color: "#fff", opacity: 0.5 }}
+                        style={{
+                          fontSize: "26px",
+                          color: "#fff",
+                          opacity: 0.5,
+                        }}
                       >
                         {/* → */}
                         <i class="fa fa-arrow-right"></i>
@@ -578,22 +596,27 @@ export default function ProxmoxConsole() {
                     )}
                   </React.Fragment>
                 ))}
-
               </div>
             </div>
           </div>
           {/* NOTE */}
-          <div className="text-center p-1 rounded" style={{ fontSize: "12px", color: "#FFA500" }}>
-            Note : Restoring the parent snapshot will automatically delete all of its child snapshots.
+          <div
+            className="text-center p-1 rounded"
+            style={{ fontSize: "12px", color: "#FFA500" }}
+          >
+            Note : Restoring the parent snapshot will automatically delete all
+            of its child snapshots.
           </div>
 
           {/* CLOSE BUTTON */}
           <div className="text-center mt-3">
-            <Button variant="secondary" onClick={() => setShowRollbackModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowRollbackModal(false)}
+            >
               Close
             </Button>
           </div>
-
         </Modal.Body>
       </Modal>
       <Modal
@@ -605,20 +628,23 @@ export default function ProxmoxConsole() {
       >
         <Modal.Body className="text-white" style={{ background: "#24243E" }}>
           {/* HEADER */}
-          <h3
-            className="text-center mb-2"
-            style={{ color: "#ff7272" }}
-          >
+          <h3 className="text-center mb-2" style={{ color: "#ff7272" }}>
             Snapshot Failed
           </h3>
-          <p className="text-center mb-4" style={{ opacity: 0.8, fontSize: "15px" }}>
+          <p
+            className="text-center mb-4"
+            style={{ opacity: 0.8, fontSize: "15px" }}
+          >
             {errorMessage}
           </p>
           <hr className="border-secondary" />
           {/* SNAPSHOT CARD CONTAINER */}
           <div className="p-3 rounded" style={{ background: "#24243E" }}>
             <div className="p-4 rounded" style={{ background: "#24243E" }}>
-              <div className="d-flex justify-content-center align-items-center gap-3">
+              <div
+                className={`d-flex justify-content-center align-items-center gap-3
+  ${showWarning ? "snapshot-warning-animate" : ""}`}
+              >
                 {snapshotList.slice(0, 3).map((snap) => (
                   <div
                     key={snap.snapshotid}
@@ -663,14 +689,25 @@ export default function ProxmoxConsole() {
                     </p>
                   </div>
                 ))}
-
               </div>
             </div>
           </div>
+          {showWarning && (
+            <div
+              className="text-center mb-3 rounded"
+              style={{
+                // background: "#FFE066",
+                color: "#FFA500",
+                // fontWeight: "600",
+                fontSize: "12px",
+              }}
+            >
+              Please select at least one snapshot.
+            </div>
+          )}
 
           {/* BUTTONS: CLOSE & SUBMIT */}
           <div className="d-flex justify-content-center gap-3 mt-2">
-
             {/* CLOSE BUTTON */}
             <button
               className="btn"
@@ -684,6 +721,7 @@ export default function ProxmoxConsole() {
               onClick={() => {
                 setSelectedSnapshotId(null);
                 setShowErrorModal(false);
+                  setShowWarning(false);
               }}
             >
               Close
@@ -704,8 +742,10 @@ export default function ProxmoxConsole() {
                 const selected = snapshotList.find(
                   (s) => s.snapshotid === selectedSnapshotId
                 );
-                if (!selected) return;
-
+                if (!selected) {
+                  setShowWarning(true);
+                  return;
+                }
                 handleDeleteSnapshott(
                   selected.snapshot_name,
                   selected.snapshotid
@@ -714,9 +754,7 @@ export default function ProxmoxConsole() {
             >
               Submit
             </button>
-
           </div>
-
         </Modal.Body>
       </Modal>
       <div
@@ -849,9 +887,10 @@ export default function ProxmoxConsole() {
                           Rollback
                         </Button> */}
                         <Button
-                          disabled={snapshotApiData.length === 0}   // <<✔ disable when no snapshots
+                          disabled={snapshotApiData.length === 0} // <<✔ disable when no snapshots
                           onClick={() => {
-                            if (snapshotApiData.length > 0) {       // ✔ only open modal if snapshots exist
+                            if (snapshotApiData.length > 0) {
+                              // ✔ only open modal if snapshots exist
                               dispatch(
                                 getSnapshot({ vmid: Number(realVmid), vmType })
                               );
@@ -860,14 +899,15 @@ export default function ProxmoxConsole() {
                           }}
                           style={{
                             ...subButtonStyle,
-                            opacity: snapshotApiData.length === 0 ? 0.5 : 1,  // UI feedback
-                            cursor: snapshotApiData.length === 0 ? "not-allowed" : "pointer",
+                            opacity: snapshotApiData.length === 0 ? 0.5 : 1, // UI feedback
+                            cursor:
+                              snapshotApiData.length === 0
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
                           Rollback
                         </Button>
-
-
                       </div>
                     )}
                   </div>
@@ -900,13 +940,15 @@ export default function ProxmoxConsole() {
               textAlign: "center",
             }}
           >
-            <img alt="SIMMaster Panel Logo Preview"
+            <img
+              alt="SIMMaster Panel Logo Preview"
               src={`${defaultFavicon.src}`}
               style={{
                 objectFit: "cover",
                 width: "15%",
                 height: "15%",
-              }} />
+              }}
+            />
             <h2 style={{ marginBottom: "20px" }}>
               <span style={{ color: "#0077B6" }}>siber</span>
               <span style={{ color: "#D21F3C" }}>SIM</span> Console
@@ -993,7 +1035,7 @@ export default function ProxmoxConsole() {
             outline: none;
           }
         `}</style>
-      </div >
+      </div>
     </>
   );
 }
@@ -1023,5 +1065,3 @@ const subButtonStyle = {
   cursor: "pointer",
   whiteSpace: "nowrap",
 };
-
-

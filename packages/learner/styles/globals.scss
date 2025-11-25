@@ -3238,3 +3238,35 @@ border:1px solid #747272
 .swal2-popup {
   z-index: 999999 !important;
 }
+
+
+/* Shake + Scale effect */
+.snapshot-warning-animate {
+  animation: shakeScale 0.4s ease-in-out;
+}
+ 
+@keyframes shakeScale {
+  0% {
+    transform: scale(1) translateX(0);
+  }
+ 
+  20% {
+    transform: scale(1.03) translateX(-4px);
+  }
+ 
+  40% {
+    transform: scale(1.03) translateX(4px);
+  }
+ 
+  60% {
+    transform: scale(1.03) translateX(-4px);
+  }
+ 
+  80% {
+    transform: scale(1.03) translateX(4px);
+  }
+ 
+  100% {
+    transform: scale(1) translateX(0);
+  }
+}
