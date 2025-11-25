@@ -15,7 +15,7 @@ import {
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
-import snapicon from "../../../../../../public/assets/img/pngs/imageimg.png";
+import snapicon from "../../../../../../public/assets/img/pngs/snap.png";
 
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
@@ -322,8 +322,11 @@ export default function ProxmoxConsole() {
     } finally {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
       setOverlayLoading(false);
+      setShowWarning(false);
     }
   };
+  console.log("showWarning",showWarning);
+  
   useEffect(() => {
     if (realVmid && vmType) {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
@@ -721,7 +724,7 @@ export default function ProxmoxConsole() {
               onClick={() => {
                 setSelectedSnapshotId(null);
                 setShowErrorModal(false);
-                  setShowWarning(false);
+                setShowWarning(false);
               }}
             >
               Close

@@ -36,6 +36,7 @@ import defaultAdminLogin from "../../../public/assets/img/brand/logo-light.png";
 import axios from "axios";
 import dynamic from "next/dynamic";
 import ImportSqlSourceFile from "../companySettingModal/companySettingModal";
+import { logOutData, clearlogOutData } from "../../redux/slices/authentication/Auth";
 
 const FileUploader = dynamic(
   () => {
@@ -60,6 +61,7 @@ const CompanySettingsCommon = ({isSL}) => {
   const favicon_path = (FilePath?.logos).replace("{name}", "Favicon");
   const panel_path = (FilePath?.logos).replace("{name}", "AdminPanelLogo");
   const web_path = (FilePath?.logos).replace("{name}", "WebPanelLogo");
+  let navigate = useRouter();
 
   const {
     cmpSettingData,
@@ -70,6 +72,7 @@ const CompanySettingsCommon = ({isSL}) => {
     uploadLogoResp,
     hasExportSucc,
     importStatus,
+    logoutData
   } = useSelector((data) => {
     return {
       cmpSettingData: data && data.companySetting && data.companySetting.cmpSettingData && data.companySetting.cmpSettingData.data,
@@ -82,15 +85,17 @@ const CompanySettingsCommon = ({isSL}) => {
       componentData: data && data.localData && data.localData.componentData,
       hasExportSucc: data && data.company_setting && data.company_setting.exportResp,
       importStatus: data && data.company_setting && data.company_setting.importResp,
-
+       logoutData: data && data.authData && data.authData.logout,
       errorData: data && data.companySetting && data.companySetting.error,
     };
   });
-
+console.log("logoutDatalogoutData", logoutData)
   useEffect(() => {
     dispatch(getWebSettings());
     dispatch(getComponentDetails("/company-setting"));
-    return () => { };
+    return () => { 
+      dispatch(clearlogOutData()); 
+    };
   }, []);
 
   useEffect(() => {
@@ -144,6 +149,40 @@ const CompanySettingsCommon = ({isSL}) => {
     setOneClick(flag);
   };
 
+    useEffect(() => {
+      if (logoutData?.statusCode === 200) {
+        toast.success(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+            {logoutData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: false,
+            theme: "colored",
+          }
+        );
+        const signOut = () => {
+          const user = JSON.parse(localStorage.getItem("user"));
+          const usertype = user?.usertype;
+           document.body.classList.remove("dark-theme");
+          localStorage.removeItem("user");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("menus");
+          localStorage.clear();
+          if (usertype == "Admin") {
+            navigate.replace("/admin-login", "", { shallow: true });
+          } else {
+            navigate.replace("/", "", { shallow: true });
+          }
+        };
+  
+        dispatch(clearlogOutData());
+        signOut();
+  
+  
+      }
+    }, [logoutData]);
+
   useEffect(() => {
     if (addDataResp?.statusCode) {
       setOneClick(false);
@@ -158,13 +197,14 @@ const CompanySettingsCommon = ({isSL}) => {
         }
       );
       if(isSL){
-        router.push('/admin-login')
-      }else{
-        dispatch(getWebSettings());
-      }
+      dispatch(logOutData());
+    } else {
+      dispatch(getWebSettings());
+    }
       dispatch(clearAddWebSetting());
     }
   }, [addDataResp]);
+
 
   useEffect(() => {
     if (updateDataResp?.statusCode) {
@@ -179,7 +219,11 @@ const CompanySettingsCommon = ({isSL}) => {
           theme: "colored",
         }
       );
+       if(isSL){
+      dispatch(logOutData());
+    } else {
       dispatch(getWebSettings());
+    }
       dispatch(clearUpdateWebSetting());
     }
   }, [updateDataResp]);

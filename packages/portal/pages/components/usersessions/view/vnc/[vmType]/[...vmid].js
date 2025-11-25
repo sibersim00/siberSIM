@@ -21,7 +21,7 @@ import {
   getSnapshot,
 } from "../../../../../../shared/redux/slices/usersession/usersessionManage";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
-import snapicon from "../../../../../../public/assets/img/pngs/imageimg.png";
+import snapicon from "../../../../../../public/assets/img/pngs/snap.png";
 
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 export default function ProxmoxConsole() {
@@ -363,31 +363,31 @@ export default function ProxmoxConsole() {
                 border: "3px dashed #6f6f8a",
               }}
             >
-<div style={{
-  display: "grid",
-  gridTemplateColumns: "95px 10px auto",
-  rowGap: "6px",
-}}>
-  {/* Row 1 */}
-  <div style={{ fontSize: "12px", fontWeight: 400 }}>
-    Component Name
-  </div>
-  <div>:</div>
-  <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
-    {snapshotApiData1?.componentname}
-  </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "95px 10px auto",
+                  rowGap: "6px",
+                }}
+              >
+                {/* Row 1 */}
+                <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                  Component Name
+                </div>
+                <div>:</div>
+                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                  {snapshotApiData1?.componentname}
+                </div>
 
-  {/* Row 2 */}
-  <div style={{  fontSize: "12px", fontWeight: 400 }}>
-    Scenario Name
-  </div>
-  <div >:</div>
-  <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
-    {snapshotApiData1?.scenariotitle}
-  </div>
-</div>
-
-
+                {/* Row 2 */}
+                <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                  Scenario Name
+                </div>
+                <div>:</div>
+                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                  {snapshotApiData1?.scenariotitle}
+                </div>
+              </div>
 
               {/* <p>Component Type : {snapshotApiData1?.componenttype}</p> */}
             </div>
@@ -467,14 +467,6 @@ export default function ProxmoxConsole() {
                 ))}
               </div>
             </div>
-          </div>
-          {/* NOTE */}
-          <div
-            className="text-center p-1 rounded"
-            style={{ fontSize: "12px", color: "#FFA500" }}
-          >
-            Note : Restoring the parent snapshot will automatically delete all
-            of its child snapshots.
           </div>
 
           {/* CLOSE BUTTON */}
@@ -766,13 +758,6 @@ export default function ProxmoxConsole() {
                         >
                           Hard Reset
                         </button>
-                        {/* <button
-                          onClick={handleCreateSnapshot}
-                          style={subButtonStyle}
-                          title="Snapshot VM"
-                        >
-                          Snapshot
-                        </button> */}
 
                         <Button
                           onClick={() => {

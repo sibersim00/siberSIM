@@ -54,6 +54,7 @@ const Forgotpassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({});
   let [timerval, settimerval] = useState(0);
+  let navigate = useRouter();
   // const [cookies, setCookie] = useCookies(["user"]);
 
   const timeOutCallback = useCallback(
@@ -85,6 +86,7 @@ const Forgotpassword = () => {
     }
   );
   const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
+  const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
   // ---------------handle errors msg in slice----------------------------
   useEffect(() => {
     if (errorData?.statusCode) {
@@ -120,6 +122,11 @@ const Forgotpassword = () => {
     }
   }, [errorData]);
 
+ useEffect(() => {
+        if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+            navigate.replace("/503");
+        }
+      }, [getCompanySettingsData]);
 
   useEffect(() => {
     dispatch(getCompanyList());

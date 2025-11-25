@@ -42,6 +42,7 @@ const Forgetpassword = () => {
   const [arrow, setArrow] = useState("fa-caret-right");
   const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
   const [showpassIcon2, setPassicon2] = useState("fe fe-eye-off");
+  let navigate = useRouter();
 
   const [data, setData] = useState({
     orgid: "1",
@@ -76,6 +77,14 @@ const Forgetpassword = () => {
         errorData: state && state.instLoginData && state.instLoginData.error,
       };
     });
+
+  const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
+
+   useEffect(() => {
+        if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+            navigate.replace("/503");
+        }
+      }, [getCompanySettingsData]);
 
   useEffect(() => {
     dispatch(getCompanyList());
