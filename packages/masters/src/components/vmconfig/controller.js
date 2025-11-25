@@ -212,6 +212,30 @@ const getOperationFailedLogs =
   };
 
 
+    const getSnapshotsByVmid =
+  ({ dao, db }) =>
+  async (req, res, next) => {
+    try {
+      const { vmid } = req.body;
+      if (!vmid) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: "vmid is required.",
+        });
+      }
+      const result = await dao.getSnapshotsByVmid({ db })(vmid);
+      return res.status(200).send({
+        statusCode: 200,
+        message: "Snapshots fetched successfully.",
+        data: result,
+      });
+    } catch (err) {
+      console.error("Error fetching snapshots:", err);
+      next(err);
+    }
+  };
+
+
 module.exports = {
   setScenarioLearnerConfiguration,
   updateCompleteTerminate,
@@ -219,5 +243,6 @@ module.exports = {
   stopAndDestroyFailedScenarios,
   getOperationFailedLogs,
   stopAndDestroyFailedEvents,
-  getEventOperationFailedLogs
+  getEventOperationFailedLogs,
+  getSnapshotsByVmid
 };

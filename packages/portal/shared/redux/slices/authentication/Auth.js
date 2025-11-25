@@ -23,6 +23,7 @@ const initialState = {
   verifyInstructorData: [],
   verifylearnerData: [],
   logout: [],
+  addLicenseKeyResp: []
 };
 
 const slice = createSlice({
@@ -92,6 +93,10 @@ const slice = createSlice({
       state.isLoading = false;
       state.logout = action.payload;
     },
+    hasAddLicenseKeySucc(state, action) {
+      state.isLoading = false;
+      state.addLicenseKeyResp = action.payload;
+    },
   },
 });
 
@@ -103,17 +108,18 @@ export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
 
-export function getCompanyList() {
+export function getCompanyList(data) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.get(api?.company_list);
+      const response = await axios.post(api?.company_list, data);
       dispatch(slice.actions.hasGetCompanyList(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
+
 export function clearGetCompanyList() {
   return async () => {
     try {
@@ -350,6 +356,29 @@ export function clearlogOutData() {
   return async () => {
     try {
       dispatch(slice.actions.haslogOutData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function addLicenseKey(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api?.add_license_key, payload);
+      dispatch(slice.actions.hasAddLicenseKeySucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearAddLicenseKey() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasAddLicenseKeySucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

@@ -189,6 +189,9 @@ const CustomerLicenseAdd = (props) => {
                         touched.sim_user_count && errors.sim_user_count
                       }
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.sim_user_count}
+                    </Form.Control.Feedback>
                   </Form.Group>
 
                   <Form.Group as={Col} md="4" className="mb-3">
@@ -201,6 +204,9 @@ const CustomerLicenseAdd = (props) => {
                       onChange={handleChange}
                       isInvalid={touched.sim_mst_count && errors.sim_mst_count}
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.sim_mst_count}
+                    </Form.Control.Feedback>
                   </Form.Group>
 
                   <Form.Group as={Col} md="4" className="mb-3">
@@ -215,6 +221,9 @@ const CustomerLicenseAdd = (props) => {
                         touched.sim_investor_count && errors.sim_investor_count
                       }
                     />
+                     <Form.Control.Feedback type="invalid">
+                      {errors.sim_investor_count}
+                    </Form.Control.Feedback>
                   </Form.Group>
                 </Row>
               </Modal.Body>

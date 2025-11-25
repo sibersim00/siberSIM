@@ -49,9 +49,12 @@ const api = {
   custom_scenario_save: "/custom_scenarios/save",
   get_logs: "/scenarios/get-logs",
   scenario_digram_custom_list: "/custom_scenarios/scenariodigramlist",
-  tab_status :"/scenarios/list",
-
-
+  tab_status: "/scenarios/list",
+  // snapshot
+  save_snapshot: "/vmconfigs/create-snapshot",
+  get_snapshot: "/vmconfigs/get-snapshots",
+  delete_snapshot: "/vmconfigs/delete-snapshot",
+  restore_snapshot: "/vmconfigs/restore-snapshot",
   /// chatbox
   chatmessage_get: "/chatbox/getMessages",
   chat_save: "/chatbox/send",

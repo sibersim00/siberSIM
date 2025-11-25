@@ -53,33 +53,21 @@ const Home = () => {
   let navigate = useRouter();
   const [userInfo, setUserInfo] = useState({});
 
-  const { getCompanyListData, otpSuccessData, directLoginData, loginSuccData, orgData, errorData } = useSelector(
-    (state) => {
-      return {
-        getCompanyListData:
-          state && state.authData && state.authData.getCompanyListData.data,
-        otpSuccessData:
-          state && state.authData && state.authData.otpSuccessData,
-        directLoginData:
-          state && state.authData && state.authData.directLoginData,
-        loginSuccData:
-          state && state.authData && state.authData.loginSuccessData,
-
-        orgData:
-          state &&
-          state.authData &&
-          state.authData.orgData &&
-          state.authData.orgData.data,
-        errorData: state && state.authData && state.authData.error,
-      };
-    }
-  );
-
+  const otpSuccessData = useSelector((state) => state?.authData?.otpSuccessData);
+  const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
+  const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
+  const loginSuccData = useSelector((state) => state?.authData?.loginSuccessData);
+  const directLoginData = useSelector((state) => state?.authData?.directLoginData);
+  const errorData = useSelector((state) => state?.authData?.error);
+  
   useEffect(() => {
     dispatch(clearDispatchFromForget());
-    dispatch(getCompanyList());
+    const domain = window.location;
+    console.log("domain=====>",domain?.hostname);
+    dispatch(getCompanyList({domain_url : domain?.hostname}));
 
   }, [dispatch]);
+  
 
   useEffect(() => {
     if (errorData?.statusCode) {
@@ -291,9 +279,14 @@ const Home = () => {
       localStorage.setItem("apps", JSON.stringify([]));
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       dispatch(clearDispatchDirectLogin());
-      setTimeout(() => {
+       setTimeout(() => {
+      if (getCompanySettingsData?.redirect == true) {
+      
+        navigate.replace("/checklicense");
+      } else {
+       
         navigate.replace("/dashboard", "", { shallow: true });
-        //window.location.href = '/dashboard';
+      }
       }, 1500);
     }
   }, [directLoginData]);

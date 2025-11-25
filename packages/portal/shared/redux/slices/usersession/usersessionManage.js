@@ -17,12 +17,12 @@ const initialState = {
   viewNameResp: "card",
   saveTermination: [],
   sendNotification: [],
-  sendTermination:[],
-  singleUserSession:[],
-    getvmStartScenario: [],
+  sendTermination: [],
+  singleUserSession: [],
+  getvmStartScenario: [],
+  getSnapshot: [],
   getvmRestartScenario: [],
-  getLogsData:[]
-
+  getLogsData: [],
 };
 
 const slice = createSlice({
@@ -34,68 +34,51 @@ const slice = createSlice({
       state.isLoading = true;
     },
     hasGetUserSessionListSucc(state, action) {
-      state.isLoading = false,
-        state.getUserSessionListData = action.payload;
+      (state.isLoading = false),
+        (state.getUserSessionListData = action.payload);
     },
     hasHandleMAnageSuc(state, action) {
-      console.log("action.payloadaction.payload", action.payload)
-      state.isLoading = false,
-        state.viewNameResp = action.payload;
+      console.log("action.payloadaction.payload", action.payload);
+      (state.isLoading = false), (state.viewNameResp = action.payload);
     },
 
     hasGetGetChatMessagesSucc(state, action) {
-      state.isLoading = false,
-        state.getChatMessagesListData = action.payload;
-
+      (state.isLoading = false),
+        (state.getChatMessagesListData = action.payload);
     },
     hasGetvmStartScenario(state, action) {
-      state.isLoading = false,
-        state.getvmStartScenario = action.payload;
-
+      (state.isLoading = false), (state.getvmStartScenario = action.payload);
     },
     hasGetvmRestartScenario(state, action) {
-      state.isLoading = false,
-        state.getvmRestartScenario = action.payload;
-
+      (state.isLoading = false), (state.getvmRestartScenario = action.payload);
     },
 
     hasGetSaveChatMessageSucc(state, action) {
-      state.isLoading = false,
-        state.saveChatMessage = action.payload;
-
+      (state.isLoading = false), (state.saveChatMessage = action.payload);
     },
 
     hasGetChatMessageSeenSucc(state, action) {
-      state.isLoading = false,
-        state.saveChatMessageSeen = action.payload;
-
+      (state.isLoading = false), (state.saveChatMessageSeen = action.payload);
     },
 
     hasGetTerminationSucc(state, action) {
-      state.isLoading = false,
-        state.saveTermination = action.payload;
-
+      (state.isLoading = false), (state.saveTermination = action.payload);
     },
     hasSendNotificationSucc(state, action) {
-      state.isLoading = false,
-        state.sendNotification = action.payload;
-
+      (state.isLoading = false), (state.sendNotification = action.payload);
     },
     hasGetTerminationByAdInstSucc(state, action) {
-      state.isLoading = false,
-        state.sendTermination = action.payload;
-
+      (state.isLoading = false), (state.sendTermination = action.payload);
     },
 
     hasGetSingleUserSessionSucc(state, action) {
-      state.isLoading = false,
-        state.singleUserSession = action.payload;
-
+      (state.isLoading = false), (state.singleUserSession = action.payload);
+    },
+    hasGetSnapshot(state, action) {
+      (state.isLoading = false), (state.getSnapshot = action.payload);
     },
     hasGetLogsListData(state, action) {
-      state.isLoading = false,
-        state.getLogsData = action.payload;
-
+      (state.isLoading = false), (state.getLogsData = action.payload);
     },
 
     //HAS ERROR
@@ -111,7 +94,7 @@ export default slice.reducer;
 // Actions
 export const { openModal, closeModal, selectEvent } = slice.actions;
 
-// Chatbox APIS 
+// Chatbox APIS
 
 export function getChatMessages(payload) {
   return async (dispatch) => {
@@ -148,7 +131,6 @@ export function getSingleUserSession(id) {
   };
 }
 
-
 export function clearSingleUserSession() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -158,20 +140,17 @@ export function clearSingleUserSession() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
-
+}
 
 export function getLogs(payload) {
-console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
+  console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
+      const response = await axios.post(`${api.get_logs}`, payload);
 
-      const response = await axios.post(`${api.get_logs}`,payload);
-      
       dispatch(slice.actions.hasGetLogsListData(response.data));
-    } catch (error) { 
-
+    } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -203,14 +182,14 @@ console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
 // }
 
 export function saveChatMessage(payload) {
-  console.log("-----------------------------------------")
+  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
 
-      console.log("response", response)
+      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -253,7 +232,7 @@ export function clearchatMessageSeen() {
 
 // ----------------------------------------------------------------------
 export function getUserSessionList() {
-  console.log("notification_sendnotification_send")
+  console.log("notification_sendnotification_send");
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
@@ -276,9 +255,6 @@ export function clearGetUserSessionList() {
   };
 }
 
-
-
-
 export function getSingleScenarios(id) {
   return async () => {
     dispatch(slice.actions.startLoading());
@@ -291,19 +267,18 @@ export function getSingleScenarios(id) {
   };
 }
 
-
-
 export function sentNotification(payload) {
   console.log("notification_send77777777777777777");
-  return async (dispatch) => {  // Corrected here
+  return async (dispatch) => {
+    // Corrected here
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api.notification_send, payload);
       dispatch(slice.actions.hasSendNotificationSucc(response.data));
-      console.log("Response from sendNotification:", response.data);  // Log response data
+      console.log("Response from sendNotification:", response.data); // Log response data
     } catch (error) {
       dispatch(slice.actions.hasError(error));
-      console.error("Error sending notification:", error);  // Log any errors
+      console.error("Error sending notification:", error); // Log any errors
     }
   };
 }
@@ -319,23 +294,24 @@ export function clearSentNotification() {
   };
 }
 
-
 export function terminateScenario(payload) {
-  console.log("++++++++++++++++++++++++++++++++=======+++++++++++++++++++++", payload)
+  console.log(
+    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
+    payload
+  );
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.termination_send}`, payload);
-      console.log("response", response)
+      console.log("response", response);
       dispatch(slice.actions.hasGetTerminationSucc(response.data));
 
-      console.log("response", response)
+      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-
 
 export function clearTerminateScenario() {
   return async (dispatch) => {
@@ -349,21 +325,23 @@ export function clearTerminateScenario() {
 }
 
 export function terminateScenarioByAdInst(payload) {
-  console.log("++++++++++++++++++++++++++++++++=======+++++++++++++++++++++", payload)
+  console.log(
+    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
+    payload
+  );
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.terminated}`, payload);
-      console.log("response", response)
+      console.log("response", response);
       dispatch(slice.actions.hasGetTerminationByAdInstSucc(response.data));
 
-      console.log("response", response)
+      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-
 
 export function clearTerminateScenarioByAdInst() {
   return async () => {
@@ -376,7 +354,6 @@ export function clearTerminateScenarioByAdInst() {
   };
 }
 
-
 export function clearSingleScenarios() {
   return async () => {
     dispatch(slice.actions.startLoading());
@@ -387,7 +364,6 @@ export function clearSingleScenarios() {
     }
   };
 }
-
 
 // start restart
 export function vmStartScenario(payload) {
@@ -445,7 +421,6 @@ export function clearHasError() {
 }
 
 export function handleManageView(payload) {
-
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
@@ -456,6 +431,27 @@ export function handleManageView(payload) {
   };
 }
 
+export function getSnapshot(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.get_snapshot}`, payload);
+      dispatch(slice.actions.hasGetSnapshot(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
+export function clearGetSnapshot() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSnapshot([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
 //----------------------------------------------------------------------

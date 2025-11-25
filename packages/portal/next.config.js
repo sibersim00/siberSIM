@@ -240,9 +240,17 @@ const nextConfig = withTM({
         source: "/customscenarios",
         destination: "/components/customscenarios",
       },
-        {
+      {
         source: "/customers",
         destination: "/components/customers",
+      },
+      {
+        source: "/companylicense",
+        destination: "/components/checklicense/companylicense",
+      },
+      {
+        source: "/checklicense",
+        destination: "/components/checklicense",
       },
     ];
   },

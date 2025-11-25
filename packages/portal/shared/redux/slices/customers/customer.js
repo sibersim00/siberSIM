@@ -13,7 +13,7 @@ const initialState = {
   editCustomerResp: [],
   customerLicenseResp: [],
   addLicenseResp: [],
-  editLicenseResp: []
+  editLicenseResp: [],
 
 };
 

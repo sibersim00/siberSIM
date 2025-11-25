@@ -32,6 +32,9 @@ router.get(
 );
 
 
+  router.post("/get-snapshots", controller.getSnapshotsByVmid(iocContainer));
+
+
 
 
 

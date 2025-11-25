@@ -137,20 +137,9 @@ const ScenarioTabs = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -158,6 +147,17 @@ const ScenarioTabs = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       // handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -276,7 +276,7 @@ const ScenarioTabs = () => {
                       value={formValidation.values[`fixed_order_${i}`] || ""}
                       onChange={formValidation.handleChange}
                       style={{ width: "90px" }}
-                      disabled={!formValidation.values[`fixed_toggle_${i}`]} // 👈 Disable when toggle is false
+                    // disabled={!formValidation.values[`fixed_toggle_${i}`]} 
                     />
                   </div>
                 </Col>
@@ -318,7 +318,7 @@ const ScenarioTabs = () => {
                         onChange={(e) =>
                           handleDynamicChange(index, "name", e.target.value)
                         }
-                         disabled={!tab.enabled} // 👈 disable input when toggle is false
+                        disabled={!tab.enabled} // 👈 disable input when toggle is false
                       />
                       <label className="custom-switch mb-0">
                         <input
@@ -343,7 +343,7 @@ const ScenarioTabs = () => {
                         onChange={(e) =>
                           handleDynamicChange(index, "order", e.target.value)
                         }
-                        disabled={!tab.enabled}
+                      // disabled={!tab.enabled}
                       />
                     </div>
                   </Col>

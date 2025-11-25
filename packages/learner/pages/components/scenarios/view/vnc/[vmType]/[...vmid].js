@@ -1,14 +1,21 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Modal, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useRouter } from "next/router";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import {
   vmStartScenario,
   vmRestartScenario,
+  saveSnapshot,
+  clearSaveSnapshot,
+  getSnapshot,
+  deleteSnapshot,
+  restoresnapshot
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
+import snapicon from "../../../../../../public/assets/img/pngs/imageimg.png";
 
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
@@ -16,52 +23,71 @@ export default function ProxmoxConsole() {
   const rfbRef = useRef(null);
   const router = useRouter();
   const [backend] = useState(`${process.env.VNC_PROXY_URL}`);
-  const { vmid, vmType  } = router.query;
+  const { vmid, vmType } = router.query;
 
   const [status, setStatus] = useState("Click Connect to start.");
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [powerMenuOpen, setPowerMenuOpen] = useState(false);
-  const [componentName, setComponentName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [skipConnectUI, setSkipConnectUI] = useState(false);
+  const [showRollbackModal, setShowRollbackModal] = useState(false);
+  const [snapshotList, setSnapshotList] = useState([]);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const snapshotApiData = useSelector(
+    (state) => state.scenarios?.getSnapshot?.data?.snapshots || []
+  );
+  const snapshotApiData1 = useSelector(
+    (state) => state.scenarios?.getSnapshot?.data || []
+  );
+  const rollSnapdata = useSelector(
+    (state) => state.scenarios?.getrestoresnapshot || []
+  );
+
+  console.log("rollSnapdata", snapshotApiData)
+  const handleSelectSnapshot = (snapshotId) => {
+    setSelectedSnapshotId(snapshotId);
+  };
+
   const updateStatus = (msg) => setStatus(msg);
   useEffect(() => {
     const token = localStorage.getItem("accessTokenLearner");
     if (!token) router.replace("/404");
   }, [router]);
-let cleanName = "";
-let realVmid = "";
-if (Array.isArray(vmid)) {
-  realVmid = vmid[0];        // "4747"
-  cleanName = vmid[1] || ""; // "windows10"
-} else {
-  realVmid = vmid || "";
-}
+  let cleanName = "";
+  let realVmid = "";
+  if (Array.isArray(vmid)) {
+    realVmid = vmid[0];
+    cleanName = vmid[1] || "";
+  } else {
+    realVmid = vmid || "";
+  }
 
-const fetchVNCTicket = async () => {
-  const res = await fetch(
-    backend.replace(/^ws/, "http") +
+  const fetchVNCTicket = async () => {
+    const res = await fetch(
+      backend.replace(/^ws/, "http") +
       `/ticket?vmid=${encodeURIComponent(realVmid)}&vmType=${encodeURIComponent(
         vmType
       )}&cleanName=${encodeURIComponent(cleanName)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  const data = await res.json();
-  if (!data.ticket) throw new Error("Failed to get VNC ticket");
-  return data.ticket;
-};
-
+    const data = await res.json();
+    if (!data.ticket) throw new Error("Failed to get VNC ticket");
+    return data.ticket;
+  };
 
   const intentionalDisconnect = useRef(false);
+
   const connect = async (reconnecting = false) => {
     try {
       setLoading(true);
@@ -73,7 +99,7 @@ const fetchVNCTicket = async () => {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch {}
+        } catch { }
         rfbRef.current = null;
       }
 
@@ -97,13 +123,13 @@ const fetchVNCTicket = async () => {
       rfb.addEventListener("connect", () => {
         updateStatus("Connected!");
         setLoading(false);
-        setConnected(true); // keep screen visible
+        setConnected(true);
       });
 
       rfb.addEventListener("disconnect", () => {
         if (!intentionalDisconnect.current) {
           updateStatus("Disconnected");
-          setConnected(false); // only on unintentional disconnect
+          setConnected(false);
           setSidebarOpen(false);
         }
         setLoading(false);
@@ -113,7 +139,7 @@ const fetchVNCTicket = async () => {
       rfbRef.current = rfb;
     } catch (err) {
       updateStatus(err.message);
-      if (!reconnecting) setConnected(false); // only hide screen on failure if not reconnecting
+      if (!reconnecting) setConnected(false);
       setLoading(false);
     }
   };
@@ -122,7 +148,7 @@ const fetchVNCTicket = async () => {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch {}
+        } catch { }
       }
     };
   }, []);
@@ -135,7 +161,6 @@ const fetchVNCTicket = async () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // VNC actions
   const sendCtrlAltDel = () => rfbRef.current?.sendCtrlAltDel();
 
   const wrapperRef = useRef(null);
@@ -151,7 +176,7 @@ const fetchVNCTicket = async () => {
         document.exitFullscreen();
       }
     }
-    setSidebarOpen(true); // ensure sidebar opens in fullscreen
+    setSidebarOpen(true);
   };
 
   useEffect(() => {
@@ -162,6 +187,32 @@ const fetchVNCTicket = async () => {
     return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  const handleDeleteSnapshott = async (snapshotName, snapshotId) => {
+    try {
+      setOverlayLoading(true);
+      const deletePayload = {
+        snapname: snapshotName,
+        vmType,
+        vmid: Number(realVmid),
+      };
+      await dispatch(deleteSnapshot(deletePayload));
+      const createPayload =
+        vmType === "qemu"
+          ? { vmid: Number(realVmid), vmType, vmstate: 1 }
+          : { vmid: Number(realVmid), vmType };
+
+      await dispatch(saveSnapshot(createPayload));
+      setSelectedSnapshotId(null);
+      dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
+      setShowErrorModal(false);
+
+    } catch (err) {
+      console.log("ERROR", err);
+    } finally {
+      setOverlayLoading(false);
+    }
+  };
 
   const handleStartClick = () => {
     if (document.fullscreenElement) {
@@ -179,25 +230,22 @@ const fetchVNCTicket = async () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         intentionalDisconnect.current = true;
-        setSkipConnectUI(true); // hide Connect button immediately
-        setOverlayLoading(true); // show loader during API
+        setSkipConnectUI(true);
+        setOverlayLoading(true);
         updateStatus("Starting VM...");
 
         try {
-          await dispatch(vmStartScenario({ vmid, vmType })); // API call
+          await dispatch(vmStartScenario({ vmid, vmType }));
         } catch (err) {
           updateStatus(err.message);
         } finally {
           setOverlayLoading(false);
         }
-
-        // reconnect in background (no loader, no black screen)
         updateStatus("Reconnecting to VNC...");
         connect(true);
       }
     });
   };
-
   const handleRestartClick = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -215,29 +263,462 @@ const fetchVNCTicket = async () => {
       if (result.isConfirmed) {
         intentionalDisconnect.current = true;
 
-        // Show overlay only, keep old VNC screen visible
         setOverlayLoading(true);
         updateStatus("Resetting VM...");
 
         try {
-          await dispatch(vmRestartScenario({ vmid, vmType })); // API call
+          await dispatch(vmRestartScenario({ vmid, vmType }));
         } catch (err) {
           updateStatus(err.message);
         } finally {
-          setOverlayLoading(false); // hide overlay after API finishes
+          setOverlayLoading(false);
         }
 
-        // Reconnect without flicker
         updateStatus("Reconnecting to VNC...");
         await connect(true);
       }
     });
   };
+  useEffect(() => {
+    if (snapshotApiData?.length > 0) {
+      const formatted = snapshotApiData.map((s) => ({
+        snapshotid: s.snapshotid,
+        snapshot_name: s.snapshot_name,
+        createdon: s.createdon,
+      }));
+      setSnapshotList(formatted);
+    }
 
+    if (snapshotApiData?.data) {
+      setLocalSnapshots(snapshotApiData.data);
+    }
+  }, [snapshotApiData]);
+
+  const handleCreateSnapshot = async () => {
+    const payload =
+      vmType === "qemu"
+        ? { vmid: Number(realVmid), vmType, vmstate: 1 }
+        : { vmid: Number(realVmid), vmType };
+
+    try {
+      setOverlayLoading(true);
+      const result = await dispatch(saveSnapshot(payload));
+
+      Swal.fire({
+        icon: "success",
+        title: "Snapshot Created",
+        text: result?.message || "Snapshot created successfully.",
+      });
+      dispatch(clearSaveSnapshot());
+
+    } catch (err) {
+      const errMsg =
+        err?.error?.error?.message ||
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Unable to create snapshot.";
+
+      // Instead of Swal → open modal
+      setErrorMessage(errMsg);
+      setShowErrorModal(true);
+    } finally {
+      dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
+      setOverlayLoading(false);
+
+
+    }
+  };
+  useEffect(() => {
+    if (realVmid && vmType) {
+      dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
+    }
+  }, [realVmid, vmType]);
+
+  // useEffect(() => {
+  //   if (snapshotList.length > 0 && !selectedSnapshotId) {
+  //     setSelectedSnapshotId(snapshotList[0].snapshotid); // Auto-select first card
+  //   }
+  // }, [snapshotList, selectedSnapshotId]);
+
+  const confirmRollback = async (payload) => {
+    const confirm = await Swal.fire({
+      title: "Rollback Snapshot?",
+      text: `Are you sure you want to roll back '${payload.snapname}'?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, rollback",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+    handleRollback(payload);
+  };
+  const handleRollback = async (payload) => {
+    try {
+      setOverlayLoading(true);
+
+      const result = await dispatch(restoresnapshot(payload));
+      if (!result?.success) {
+        throw result?.error;
+      }
+      Swal.fire({
+        icon: "success",
+        title: "Rollback Successful",
+        text: result?.data?.message || "Snapshot rollback completed.",
+      });
+
+      setShowRollbackModal(false);
+      setConnected(false);
+    } catch (err) {
+      console.log("rolllback  error ", err)
+      const errMsg =
+        err?.error?.message ||
+        err?.message ||
+        "Unable to rollback snapshot.";
+
+      Swal.fire({
+        icon: "error",
+        title: "Rollback Failed",
+        text: errMsg,
+      });
+
+    } finally {
+      setOverlayLoading(false);
+    }
+  };
+  const handleDeleteSnapshot = async (snapName) => {
+    const payload = {
+      vmid: Number(realVmid),
+      vmType,
+      snapname: snapName,
+    };
+
+    try {
+      const confirm = await Swal.fire({
+        title: "Delete Snapshot?",
+        text: `Are you sure you want to delete '${snapName}'?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete",
+        cancelButtonText: "Cancel",
+      });
+
+      if (!confirm.isConfirmed) return;
+
+      setOverlayLoading(true);
+
+      const result = await dispatch(deleteSnapshot(payload));
+      console.log("result", result)
+      Swal.fire({
+        icon: "success",
+        title: "Snapshot Deleted",
+        text:
+          result?.data?.message ||
+          result?.message ||
+          "Snapshot deleted successfully.",
+      });
+
+      setSnapshotList((prev) =>
+        prev.filter((s) => s.snapshot_name !== snapName)
+      );
+
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Delete Failed",
+        text:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Unable to delete snapshot.",
+      });
+
+    } finally {
+      dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
+      setOverlayLoading(false);
+      setShowRollbackModal(false);
+    }
+  };
   return (
     <>
       <Seo title={`${cleanName}`} />
+      <Modal
+        show={showRollbackModal}
+        onHide={() => setShowRollbackModal(false)}
+        centered
+        backdrop="static"
+        size="lg"
+      >
+        <Modal.Body className="text-white" style={{ background: "#24243E" }}>
+          <h2 className="text-center mb-2">Rollback Snapshot</h2>
+          <div className="p-3 rounded" style={{ background: "#24243E" }}>
+            <div
+              className=" justify-content-between align-items-center p-3 rounded-5"
+              style={{ background: "#0E0E23", fontSize: "13px", border: "3px dashed #6f6f8a" }}
+            >
+              <h6><span style={{ fontSize: "12px", fontWeight: "400" }}>Component Name :</span> <span className="fs-6 fw-bold" style={{ color: "#dc3545" }}>{snapshotApiData1?.componentname}</span></h6>
+              <h6><span style={{ fontSize: "12px", fontWeight: "400" }}> Scenario Name : </span><span className="fs-6 fw-bold" style={{ color: "#dc3545" }}>{snapshotApiData1?.scenariotitle}</span></h6>
+              {/* <p>Component Type : {snapshotApiData1?.componenttype}</p> */}
+            </div>
+          </div>
+          <div className="p-2 rounded" style={{ background: "#24243E" }}>
+            <div className="p-4 rounded" style={{ background: "#24243E" }}>
+              <div className="d-flex justify-content-center align-items-center gap-4">
 
+                {snapshotList.slice(0, 3).map((snap, index) => (
+                  <React.Fragment key={snap.snapshotid}>
+                    <div
+                      className=" rounded-5 d-flex flex-column justify-content-between"
+                      style={{
+                        background: "#0E0E23",
+                        minWidth: "190px",
+                        height: "245px",
+                        padding: "15px",
+                        color: "#fff",
+                        position: "relative",
+                        boxShadow: "0px 0px 15px rgba(0,0,0,0.25)",
+                      }}
+                    >
+                      {index === 0 && (
+                        <span
+                          className="position-absolute fw-bold"
+                          style={{
+                            top: "-8px",
+                            right: "-8px",
+                            background: "#00D26A",
+                            color: "#000",
+                            padding: "2px 10px",
+                            borderRadius: "6px",
+                            fontSize: "11px",
+                            boxShadow: "0px 2px 6px rgba(0,0,0,0.3)",
+                          }}
+                        >
+                          Parent
+                        </span>
+                      )}
+                      <img
+                        src={snapicon.src}
+                        className="mx-auto"
+                        style={{ width: "55px", height: "55px", opacity: 0.9 }}
+                      />
+                      <h5
+                        className="text-center"
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 400,
+                          lineHeight: "16px",
+                          margin: "4px 0 2px",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        {snap.snapshot_name}
+                      </h5>
+                      <p className="text-center m-0" style={{ fontSize: "11px", opacity: 0.7 }}>
+                        Created: {new Date(snap.createdon).toLocaleString()}
+                      </p>
+                      <div className="d-flex justify-content-center gap-2 mt-2">
+                        <button
+                          className="btn d-flex align-items-center justify-content-center"
+                          style={{
+                            background: "#007bff",
+                            border: "none",
+                            padding: "5px 8px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            color: "#fff",
+                          }}
+                          onClick={() =>
+                            confirmRollback({
+                              vmid: Number(realVmid),
+                              vmType,
+                              snapname: snap.snapshot_name,
+                              startValue: 1,
+                            })
+                          }
+                        >
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={<Tooltip>Rollback</Tooltip>}
+                          >
+                            <i className="fas fa-undo"></i>
+                          </OverlayTrigger>
+                        </button>
+
+                        {/* DELETE BTN */}
+                        <button
+                          className="btn d-flex align-items-center justify-content-center"
+                          style={{
+                            background: "#dc3545",
+                            border: "none",
+                            padding: "5px 8px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            color: "#fff",
+                          }}
+                          onClick={() => handleDeleteSnapshot(snap.snapshot_name)}
+                        >
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={<Tooltip>Delete</Tooltip>}
+                          >
+                            <i className="fe fe-trash"></i>
+                          </OverlayTrigger>
+                        </button>
+
+                      </div>
+                    </div>
+                    {index < snapshotList.slice(0, 3).length - 1 && (
+                      <div
+                        className="align-self-center"
+                        style={{ fontSize: "26px", color: "#fff", opacity: 0.5 }}
+                      >
+                        {/* → */}
+                        <i class="fa fa-arrow-right"></i>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+
+              </div>
+            </div>
+          </div>
+          {/* NOTE */}
+          <div className="text-center p-1 rounded" style={{ fontSize: "12px", color: "#FFA500" }}>
+            Note : Restoring the parent snapshot will automatically delete all of its child snapshots.
+          </div>
+
+          {/* CLOSE BUTTON */}
+          <div className="text-center mt-3">
+            <Button variant="secondary" onClick={() => setShowRollbackModal(false)}>
+              Close
+            </Button>
+          </div>
+
+        </Modal.Body>
+      </Modal>
+      <Modal
+        show={showErrorModal}
+        onHide={() => setShowErrorModal(false)}
+        centered
+        backdrop="static"
+        size="lg"
+      >
+        <Modal.Body className="text-white" style={{ background: "#24243E" }}>
+          {/* HEADER */}
+          <h3
+            className="text-center mb-2"
+            style={{ color: "#ff7272" }}
+          >
+            Snapshot Failed
+          </h3>
+          <p className="text-center mb-4" style={{ opacity: 0.8, fontSize: "15px" }}>
+            {errorMessage}
+          </p>
+          <hr className="border-secondary" />
+          {/* SNAPSHOT CARD CONTAINER */}
+          <div className="p-3 rounded" style={{ background: "#24243E" }}>
+            <div className="p-4 rounded" style={{ background: "#24243E" }}>
+              <div className="d-flex justify-content-center align-items-center gap-3">
+                {snapshotList.slice(0, 3).map((snap) => (
+                  <div
+                    key={snap.snapshotid}
+                    onClick={() => handleSelectSnapshot(snap.snapshotid)}
+                    className="rounded-5 d-flex flex-column justify-content-between"
+                    style={{
+                      background:
+                        selectedSnapshotId === snap.snapshotid
+                          ? "#007bff"
+                          : "#0E0E23",
+                      width: "230px",
+                      height: "200px",
+                      padding: "10px",
+                      cursor: "pointer",
+                      boxShadow: "0px 0px 15px rgba(0,0,0,0.25)",
+                      transition: "0.2s",
+                    }}
+                  >
+                    <img
+                      src={snapicon.src}
+                      className="mx-auto"
+                      style={{ width: "55px", height: "55px", opacity: 0.9 }}
+                    />
+
+                    <h5
+                      className="text-center mt-1"
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 400,
+                        lineHeight: "16px",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {snap.snapshot_name}
+                    </h5>
+
+                    <p
+                      className="text-center"
+                      style={{ fontSize: "11px", opacity: 0.7 }}
+                    >
+                      Created: {new Date(snap.createdon).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+
+              </div>
+            </div>
+          </div>
+
+          {/* BUTTONS: CLOSE & SUBMIT */}
+          <div className="d-flex justify-content-center gap-3 mt-2">
+
+            {/* CLOSE BUTTON */}
+            <button
+              className="btn"
+              style={{
+                background: "#FF4D4D",
+                color: "#fff",
+                padding: "10px 25px",
+                borderRadius: "8px",
+                fontSize: "15px",
+              }}
+              onClick={() => {
+                setSelectedSnapshotId(null);
+                setShowErrorModal(false);
+              }}
+            >
+              Close
+            </button>
+
+            {/* SUBMIT BUTTON */}
+            <button
+              className="btn"
+              style={{
+                background: "#007bff",
+                color: "#fff",
+                padding: "10px 25px",
+                borderRadius: "8px",
+                fontSize: "15px",
+                fontWeight: "600",
+              }}
+              onClick={() => {
+                const selected = snapshotList.find(
+                  (s) => s.snapshotid === selectedSnapshotId
+                );
+                if (!selected) return;
+
+                handleDeleteSnapshott(
+                  selected.snapshot_name,
+                  selected.snapshotid
+                );
+              }}
+            >
+              Submit
+            </button>
+
+          </div>
+
+        </Modal.Body>
+      </Modal>
       <div
         style={{
           width: "100vw",
@@ -280,7 +761,6 @@ const fetchVNCTicket = async () => {
               >
                 {sidebarOpen ? "◀" : "▶"}
               </div>
-
               {/* Menu overlay */}
               {sidebarOpen && (
                 <div
@@ -313,7 +793,6 @@ const fetchVNCTicket = async () => {
                   >
                     ⛶
                   </button>
-
                   <div style={{ position: "relative" }}>
                     <button
                       onClick={() => setPowerMenuOpen(!powerMenuOpen)}
@@ -322,7 +801,6 @@ const fetchVNCTicket = async () => {
                     >
                       ⏻
                     </button>
-
                     {powerMenuOpen && (
                       <div
                         style={{
@@ -353,6 +831,43 @@ const fetchVNCTicket = async () => {
                         >
                           Hard Reset
                         </button>
+                        <button
+                          onClick={handleCreateSnapshot}
+                          style={subButtonStyle}
+                          title="Snapshot VM"
+                        >
+                          Snapshot
+                        </button>
+
+                        {/* <Button
+                          onClick={() => {
+                            dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
+                            setShowRollbackModal(true);
+                          }}
+                          style={subButtonStyle}
+                        >
+                          Rollback
+                        </Button> */}
+                        <Button
+                          disabled={snapshotApiData.length === 0}   // <<✔ disable when no snapshots
+                          onClick={() => {
+                            if (snapshotApiData.length > 0) {       // ✔ only open modal if snapshots exist
+                              dispatch(
+                                getSnapshot({ vmid: Number(realVmid), vmType })
+                              );
+                              setShowRollbackModal(true);
+                            }
+                          }}
+                          style={{
+                            ...subButtonStyle,
+                            opacity: snapshotApiData.length === 0 ? 0.5 : 1,  // UI feedback
+                            cursor: snapshotApiData.length === 0 ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          Rollback
+                        </Button>
+
+
                       </div>
                     )}
                   </div>
@@ -360,7 +875,6 @@ const fetchVNCTicket = async () => {
               )}
             </>
           )}
-
           {/* VNC Container */}
           <div
             id="noVNC_container"
@@ -375,9 +889,7 @@ const fetchVNCTicket = async () => {
             }}
           />
         </div>
-
         {/* Main content when not connected */}
-
         {!connected && !skipConnectUI && (
           <div
             style={{
@@ -389,16 +901,16 @@ const fetchVNCTicket = async () => {
             }}
           >
             <img alt="SIMMaster Panel Logo Preview"
-                                            src={`${defaultFavicon.src}`}
-                                            style={{
-                                              objectFit: "cover",
-                                              width: "15%",
-                                              height: "15%",
-                                            }}/>
-           <h2 style={{ marginBottom: "20px" }}>
-  <span style={{ color: "#0077B6" }}>siber</span>
-  <span style={{ color: "#D21F3C" }}>SIM</span> Console
-</h2>
+              src={`${defaultFavicon.src}`}
+              style={{
+                objectFit: "cover",
+                width: "15%",
+                height: "15%",
+              }} />
+            <h2 style={{ marginBottom: "20px" }}>
+              <span style={{ color: "#0077B6" }}>siber</span>
+              <span style={{ color: "#D21F3C" }}>SIM</span> Console
+            </h2>
             <button
               onClick={connect}
               disabled={loading}
@@ -481,7 +993,7 @@ const fetchVNCTicket = async () => {
             outline: none;
           }
         `}</style>
-      </div>
+      </div >
     </>
   );
 }
@@ -511,3 +1023,5 @@ const subButtonStyle = {
   cursor: "pointer",
   whiteSpace: "nowrap",
 };
+
+

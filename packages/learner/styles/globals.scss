@@ -3229,3 +3229,12 @@ border:1px solid #747272
     background-color: #24243e;
 }
 
+
+/* Force SweetAlert to always be above any custom modal */
+.swal2-container {
+  z-index: 999999 !important;
+}
+
+.swal2-popup {
+  z-index: 999999 !important;
+}

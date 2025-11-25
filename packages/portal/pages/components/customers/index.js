@@ -55,12 +55,14 @@ const Customers = () => {
   const [canvasData, setCanvasData] = useState(null);
   const [licenseFormModal, setLicenseFormModal] = useState(false);
   const [customerID, setCustomerId] = useState();
+  const [licenseSearch, setLicenseSearch] = useState("");
+  const [originalLicenseData, setOriginalLicenseData] = useState([]);
+  const [hideCanvasForModal, setHideCanvasForModal] = useState(false);
 
   const handleOpenCanvas = (data) => {
     setCanvasData(data);
     setCustomerId(data.customer_id);
     setShowCanvas(true);
-    // Fetch license for selected customer
     dispatch(getCustomerLicense(data.customer_id));
   };
 
@@ -191,83 +193,132 @@ const Customers = () => {
       field: "",
       sortable: false,
       cellRenderer: "actionButtonRenderer",
-      maxWidth: 90,
+      maxWidth: 80,
       pinned: "right",
     },
+    {
+    headerName: "View",
+    field: "",
+    sortable: false,
+    cellRenderer: "viewButtonRenderer",
+    maxWidth: 80,
+    pinned: "right",
+  },
+    
   ];
   useEffect(() => {
     if (getCustomerLicenseData?.statusCode === 200) {
       // Set the grid rows here
       setLicenseData(getCustomerLicenseData.data);
+      setOriginalLicenseData(getCustomerLicenseData.data);
     }
   }, [getCustomerLicenseData]);
 
   const y_m_d = (date) => {
     const selectedDate = new Date(date);
-    const formattedDate = selectedDate.getFullYear()+"-"+("0" + (selectedDate.getMonth() + 1)).slice(-2)+"-"+("0" + selectedDate.getDate()).slice(-2);
+    const formattedDate =
+      selectedDate.getFullYear() +
+      "-" +
+      ("0" + (selectedDate.getMonth() + 1)).slice(-2) +
+      "-" +
+      ("0" + selectedDate.getDate()).slice(-2);
     return formattedDate;
-}
+  };
+  const handleLicenseSearch = (val) => {
+    setLicenseSearch(val);
+    val = val.toLowerCase();
+
+    if (!val) {
+      setLicenseData(originalLicenseData);
+      return;
+    }
+
+    const filtered = originalLicenseData.filter((d) => {
+      return (
+        (d.domain_url && d.domain_url.toLowerCase().includes(val)) ||
+        (d.license_key && d.license_key.toLowerCase().includes(val)) ||
+        (d.start_date && y_m_d(d.start_date).includes(val)) ||
+        (d.expiry_date && y_m_d(d.expiry_date).includes(val))
+      );
+    });
+
+    setLicenseData(filtered);
+  };
 
   const licenseColumnDefs = [
     {
       headerName: "Sr No.",
       valueGetter: "node.rowIndex + 1",
       width: 90,
+      maxWidth: 90,
+      minWidth: 90,
       floatingFilter: true,
     },
+
     {
       headerName: "Start Date",
       field: "start_date",
       filter: true,
-      width: 160,
+      width: 150,
       floatingFilter: true,
-      valueFormatter: (params) =>
-        params.value ? y_m_d(params.value): "",
+      valueFormatter: (params) => (params.value ? y_m_d(params.value) : ""),
+      tooltipValueGetter: (params) => (params.value ? y_m_d(params.value) : ""),
     },
+
     {
       headerName: "End Date",
       field: "expiry_date",
       filter: true,
-      width: 160,
+      width: 150,
       floatingFilter: true,
-      valueFormatter: (params) =>
-        params.value ? y_m_d(params.value) : "",
+      valueFormatter: (params) => (params.value ? y_m_d(params.value) : ""),
+      tooltipValueGetter: (params) => (params.value ? y_m_d(params.value) : ""),
     },
 
     {
       headerName: "Domain URL",
       field: "domain_url",
       filter: true,
-      width: 190,
+      width: 200,
       floatingFilter: true,
+      tooltipField: "domain_url",
     },
+
     {
       headerName: "License Key",
       field: "license_key",
       filter: true,
-      width: 190,
+      width: 210,
+      flex: 1,
       floatingFilter: true,
+      tooltipField: "license_key",
     },
+
     {
       headerName: "SIMUser",
       field: "sim_user_count",
       filter: true,
       width: 150,
       floatingFilter: true,
+      tooltipField: "sim_user_count",
     },
+
     {
       headerName: "SIMMaster",
       field: "sim_mst_count",
       filter: true,
-      width: 160,
+      width: 150,
       floatingFilter: true,
+      tooltipField: "sim_mst_count",
     },
+
     {
       headerName: "SIMManager",
       field: "sim_investor_count",
       filter: true,
       width: 150,
       floatingFilter: true,
+      tooltipField: "sim_investor_count",
     },
   ];
 
@@ -352,6 +403,24 @@ const Customers = () => {
         />
       );
     },
+    viewButtonRenderer: function (props) {
+    return (
+      <div className="d-flex justify-content-center align-items-center h-100">
+        <div
+          className="btn btn-sm ripple bg-secondary-transparent text-secondary rounded-circle"
+          onClick={() => handleOpenCanvas(props.data)}
+        >
+          <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip>Customer License</Tooltip>}
+          >
+            <i className="fe fe-eye"></i>
+          </OverlayTrigger>
+        </div>
+      </div>
+    );
+  },
+
   };
 
   useEffect(() => {
@@ -410,7 +479,8 @@ const Customers = () => {
       if (customerID) {
         dispatch(getCustomerLicense(customerID));
       }
-
+      setHideCanvasForModal(false);
+      setShowCanvas(true);
       dispatch(clearAddLicenseData());
     }
   }, [addLisenceData, customerID]);
@@ -456,7 +526,7 @@ const Customers = () => {
       setGridData(filteredData);
     }
   };
-  const [columnsPerRow, setColumnsPerRow] = useState(4); // Default value
+  const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
   const zoomIn = () => {
     const currentIndex = colarray.indexOf(columnsPerRow);
@@ -569,6 +639,40 @@ const Customers = () => {
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
+  const handleLicenseExport = () => {
+    if (!licenseData || licenseData.length === 0) return;
+
+    const exportData = licenseData.map((row) => [
+      y_m_d(row.start_date),
+      y_m_d(row.expiry_date),
+      row.domain_url,
+      row.license_key,
+      row.sim_user_count,
+      row.sim_mst_count,
+      row.sim_investor_count,
+    ]);
+
+    const header = [
+      "Start Date",
+      "End Date",
+      "Domain URL",
+      "License Key",
+      "SIM User",
+      "SIM Master",
+      "SIM Manager",
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...exportData]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Customer-License");
+
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-T:\.]/g, "")
+      .slice(0, 15);
+
+    XLSX.writeFile(wb, `Customer_License_${timestamp}.xlsx`);
+  };
 
   return (
     <>
@@ -665,29 +769,27 @@ const Customers = () => {
             </div>
             {/* List View */}
             {view === "list" && (
-          
-                <Col md={12}>
-                  <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
-                  >
-                    <AgGridReact
-                      id="cat_grid"
-                      className="ag-theme-alpine"
-                      headerHeight={35}
-                      rowHeight={40}
-                      gridOptions={gridOptions}
-                      rowData={rowData}
-                      columnDefs={columnDefs}
-                      pagination={true}
-                      paginationPageSize={10}
-                      onGridReady={onGridReady}
-                      components={frameworkComponents}
-                      defaultColDef={defaultColDef}
-                    />
-                  </div>
-                </Col>
-        
+              <Col md={12}>
+                <div
+                  className="ag-theme-alpine mt-2"
+                  style={{ height: "40em", width: "100%" }}
+                >
+                  <AgGridReact
+                    id="cat_grid"
+                    className="ag-theme-alpine"
+                    headerHeight={35}
+                    rowHeight={40}
+                    gridOptions={gridOptions}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    onGridReady={onGridReady}
+                    components={frameworkComponents}
+                    defaultColDef={defaultColDef}
+                  />
+                </div>
+              </Col>
             )}
           </Card.Body>
         </Card>
@@ -837,11 +939,15 @@ const Customers = () => {
       {licenseFormModal && (
         <LicenseModal
           openFlag={licenseFormModal}
-          handleFormModal={setLicenseFormModal}
+          handleFormModal={(flag) => {
+            setLicenseFormModal(flag);
+            setHideCanvasForModal(false); // show Offcanvas again
+            if (!flag) setShowCanvas(true); // keep offcanvas open after closing modal
+          }}
           rowValues={canvasData}
           oneClick={oneClick}
           handleOneClick={handleOneClick}
-          licenseData = {licenseData}
+          licenseData={licenseData}
         />
       )}
 
@@ -849,7 +955,11 @@ const Customers = () => {
         show={showCanvas}
         onHide={handleCloseCanvas}
         placement="end"
-        className="half-width-canvas"
+        className={`half-width-canvas ${
+          hideCanvasForModal
+            ? "offcanvasLicense-hidden"
+            : "offcanvasLicense-visible"
+        }`}
       >
         <Offcanvas.Header
           closeButton
@@ -860,14 +970,17 @@ const Customers = () => {
           <Col md={12}>
             <Card className="custom-card overflow-hidden">
               <Card.Body className="p-3">
-                <div className="d-flex justify-content-between align-items-center">
+                <div
+                  className="d-flex justify-content-between align-items-center"
+                  style={{ marginTop: "-15px" }}
+                >
                   <h5>Customer License</h5>
                   {/* Buttons */}
                   <div className="d-flex align-items-center">
                     <Button
                       type="button"
                       variant="outline-info"
-                      // onClick={() => handleExport()}
+                      onClick={handleLicenseExport}
                     >
                       <i className="fa fa-file-excel-o"></i> Export
                     </Button>
@@ -875,7 +988,10 @@ const Customers = () => {
                     <Button
                       type="button"
                       variant="outline-primary"
-                      onClick={() => setLicenseFormModal(true)}
+                      onClick={() => {
+                        setHideCanvasForModal(true); // visually hide offcanvas
+                        setLicenseFormModal(true); // open modal
+                      }}
                     >
                       <i className="fa fa-plus"></i> Add
                     </Button>
@@ -884,27 +1000,52 @@ const Customers = () => {
                       //    value={quickFilter}
                       placeholder="Search..."
                       type="text"
-                      // onChange={(e) => onFilterChanged(e.target.value)}
+                      onChange={(e) => handleLicenseSearch(e.target.value)}
                     />
                   </div>
                 </div>
-                  {/* License Grid */}
-          <div
-            className="ag-theme-alpine mt-2"
-            style={{ height: "70vh", width: "100%" }}
-          >
-            <AgGridReact
-              rowData={licenseData}
-              columnDefs={licenseColumnDefs}
-              pagination={true}
-              paginationPageSize={10}
-            />
-          </div>
+                
+                  <Card.Body className="p-2">
+                    <Row className="align-items-center">
+                      <div className="d-flex gap-3">
+                        <span className="fw-bold">
+                          {canvasData?.firstname || "-"} {canvasData?.lastname}
+                        </span>
+
+                        <span className="fw-bold">
+                          {canvasData?.mobile || "-"}
+                        </span>
+
+                        <span className="fw-bold">
+                          {canvasData?.email || "-"}
+                        </span>
+                      </div>
+                    </Row>
+                  </Card.Body>
+               
+
+                {/* License Grid */}
+                <div
+                  className="ag-theme-alpine mt-2"
+                  style={{ height: "80vh", width: "100%" }}
+                >
+                  <AgGridReact
+                    id="cat_grid"
+                    className="ag-theme-alpine"
+                    headerHeight={35}
+                    rowHeight={40}
+                    gridOptions={gridOptions}
+                    rowData={licenseData}
+                    columnDefs={licenseColumnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    defaultColDef={defaultColDef}
+                    onGridReady={onGridReady}
+                  />
+                </div>
               </Card.Body>
             </Card>
           </Col>
-
-        
         </Offcanvas.Body>
       </Offcanvas>
     </>

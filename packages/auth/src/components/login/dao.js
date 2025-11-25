@@ -1,5 +1,6 @@
 const MailTemplate = require('../../utils/mailUtility')
 const bcrypt = require('bcryptjs');
+const {generateDecryptedString } = require('../../middleware/customer_license');
 
 const organizationList = ({ db }) => async (id) => {
   const [result] = await db.sequelize.query(`SELECT getOrganizations(${id}) as data`, { type: db.sequelize.QueryTypes.SELECT });
@@ -10,10 +11,30 @@ const organizationList = ({ db }) => async (id) => {
   return data;
 }
 
-const getCompanyWebSetting = ({ db }) => async () => {
-  const [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE company_id = 1 LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
-  return result || null;
+// const getCompanyWebSetting = ({ db }) => async (body) => {
+//   const [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${body.domain_url}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
+
+//   let generatedString = {};
+//   if(result?.license_key){
+//     generatedString = generateDecryptedString({str : result?.license_key});
+//   }
+
+//   if(result?.license_key && new Date(generatedString.expiry_date) < new Date() ){
+//     // Key Expired generate new key
+//     return {status : true, message : "", data : result, redirect : true}
+//   }else if(result?.license_key && new Date(generatedString.expiry_date) > new Date()){
+//     // Key Valid
+//     return {status : true, message : "", data : result}
+//   }else{
+//     return {status : true, message : "", data : null, redirect : true}
+//   }
+// };
+
+const getCompanyWebSetting = ({ db }) => async (body) => {
+  const [result] = await db.sequelize.query(`SELECT * FROM web_settings LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
+  return {status : true, message : "", data : result}
 };
+
 const checklogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
   try {
     // Trim input values to avoid leading/trailing spaces
@@ -92,6 +113,7 @@ const verifylogin = ({ db }) => async ({ loginid, password, orgid, otp }) => {
   }
 
 }
+
 const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
   loginid = loginid.trim();
   password = password.trim();

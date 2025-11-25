@@ -291,6 +291,7 @@ const api = {
   notification_send: "/usersession/noti-termination",
   termination_send: "/vmconfig/update-complete-terminate",
   terminated: "/usersession/terminate",
+  get_snapshot: "/vmconfig/get-snapshots",
   usersession_getbyId: "/usersession/get",
   get_logs: "/usersession/get-logs",
   termination_Failed_Scenario: "/vmconfig/cleanup-operation-failed",
@@ -393,8 +394,7 @@ const api = {
   customer_license_get: "customers/get-license",
   customer_license_save : "/customers/license-save",
   customer_license_update: "/customers/license-update",
-  
-
+  add_license_key: "customer-license/validate-license",
 
 
 };

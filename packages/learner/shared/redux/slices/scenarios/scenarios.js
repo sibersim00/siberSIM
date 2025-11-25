@@ -24,6 +24,10 @@ const initialState = {
   getvmStartScenario: [],
   getvmRestartScenario: [],
   getVncProxyConsole: [],
+  saveSnapshot: [],
+  getSnapshot: [],
+  deleteSnapshot: [],
+  getrestoresnapshot: [],
 };
 
 
@@ -114,6 +118,23 @@ const slice = createSlice({
     hasGetVncProxyConsole(state, action) {
       state.isLoading = false,
         state.getVncProxyConsole = action.payload;
+    },
+
+    hasGetSaveSnapshot(state, action) {
+      state.isLoading = false,
+        state.saveSnapshot = action.payload;
+    },
+    hasGetSnapshot(state, action) {
+      state.isLoading = false,
+        state.getSnapshot = action.payload;
+    },
+    hasDeleteSnapshot(state, action) {
+      state.isLoading = false,
+        state.deleteSnapshot = action.payload;
+    },
+    hasGetrestoresnapshot(state, action) {
+      state.isLoading = false,
+        state.getrestoresnapshot = action.payload;
     },
     // HAS ERROR
     hasError(state, action) {
@@ -482,6 +503,117 @@ export function vncProxyConsole(payload) {
     }
   };
 }
+
+export function saveSnapshot(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.save_snapshot}`, payload);
+      dispatch(slice.actions.hasGetSaveSnapshot(response.data));
+
+      return response.data; // success response
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
+
+
+export function clearSaveSnapshot() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveSnapshot([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getSnapshot(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.get_snapshot}`, payload);
+      dispatch(slice.actions.hasGetSnapshot(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearGetSnapshot() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSnapshot([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// export function deleteSnapshot(payload) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+//     try {
+//       const response = await axios.delete(`${api.delete_snapshot}`, payload);
+//       dispatch(slice.actions.hasDeleteSnapshot(response.data));
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+
+export function deleteSnapshot(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.delete(api.delete_snapshot, {
+        data: payload,
+      });
+      dispatch(slice.actions.hasDeleteSnapshot(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function cleardeleteSnapshot() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasDeleteSnapshot([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function restoresnapshot(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.restore_snapshot}`, payload);
+      dispatch(slice.actions.hasGetrestoresnapshot(response.data));
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      return {
+        success: false,
+        error: error?.response?.data || error,
+      };
+    }
+  };
+}
+
 
 export function clearHasError() {
   return async (dispatch) => {

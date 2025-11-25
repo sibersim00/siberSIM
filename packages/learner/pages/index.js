@@ -60,6 +60,7 @@ const Home = () => {
 
   const otpSuccessData = useSelector((state) => state?.authData?.otpSuccessData);
   const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
+  const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
   const loginSuccData = useSelector((state) => state?.authData?.loginSuccessData);
   const directLoginData = useSelector((state) => state?.authData?.directLoginData);
 
@@ -67,7 +68,8 @@ const Home = () => {
   const errorData = useSelector((state) => state?.authData?.error);
 
   useEffect(() => {
-    dispatch(getCompanyList());
+      const domain = window.location;
+        dispatch(getCompanyList({domain_url : domain?.origin}));
   }, [dispatch]);
 
   useEffect(() => {
@@ -251,6 +253,11 @@ const Home = () => {
     }
   };
 
+  useEffect(() => {
+    if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+        navigate.replace("/503");
+    }
+  }, [getCompanySettingsData]);
 
   useEffect(() => {
     if (directLoginData?.statusCode === 200) {
@@ -260,10 +267,7 @@ const Home = () => {
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchDirectLogin());
-      setTimeout(() => {
-        navigate.replace("/dashboard", "", { shallow: true });
-  
-      }, 1500);
+      setTimeout(() => { navigate.replace("/dashboard", "", { shallow: true }); }, 1500);
       if (captchaRef.current) {
         captchaRef.current.value = ""; // Reset the value of the input element
         captchaRef.current.reset();

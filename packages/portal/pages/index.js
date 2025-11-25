@@ -63,35 +63,17 @@ const Home = () => {
   let navigate = useRouter();
   const [userInfo, setUserInfo] = useState({});
 
-
-
-  //  const captchaRef = useRef(null);
-
-  const { getCompanyListData, otpSuccessData, directLoginData, loginSuccData, orgData, errorData } = useSelector(
-    (state) => {
-      return {
-        getCompanyListData:
-          state && state.authData && state.authData.getCompanyListData.data,
-        otpSuccessData:
-          state && state.instLoginData && state.instLoginData.otpSuccessData,
-        directLoginData:
-          state && state.instLoginData && state.instLoginData.directLoginData,
-        loginSuccData:
-          state && state.instLoginData && state.instLoginData.loginSuccessData,
-        orgData:
-          state &&
-          state.instLoginData &&
-          state.instLoginData.orgData &&
-          state.instLoginData.orgData.data,
-        errorData: state && state.instLoginData && state.instLoginData.error,
-      };
-    }
-  );
-
+  const otpSuccessData = useSelector((state) => state?.authData?.otpSuccessData);
+  const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
+  const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
+  const loginSuccData = useSelector((state) => state?.authData?.loginSuccessData);
+  const directLoginData = useSelector((state) => state?.authData?.directLoginData);
+  const errorData = useSelector((state) => state?.authData?.error);
 
   useEffect(() => {
     dispatch(clearDispatchFromForget());
-    dispatch(getCompanyList());
+     const domain = window.location;
+        dispatch(getCompanyList({domain_url : domain?.origin}));
 
   }, [dispatch]);
 
@@ -293,6 +275,11 @@ const Home = () => {
     }
   };
   useEffect(() => {
+      if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+          navigate.replace("/503");
+      }
+    }, [getCompanySettingsData]);
+  useEffect(() => {
     if (directLoginData?.statusCode == 200) {
       localStorage.setItem(
         "accessToken",
@@ -303,10 +290,7 @@ const Home = () => {
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchDirectLogin());
-      setTimeout(() => {
-        navigate.replace("/dashboard", "", { shallow: true });
-        //window.location.href = '/dashboard';
-      }, 1500);
+      setTimeout(() => { navigate.replace("/dashboard", "", { shallow: true }); }, 1500);
     }
   }, [directLoginData]);
 

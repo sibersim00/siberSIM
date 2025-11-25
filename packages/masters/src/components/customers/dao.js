@@ -62,72 +62,70 @@ const getById =
       }
     };
 
-const save =
-  ({ db, validation }) =>
-    async (body, session_userid) => {
-      try {
-        const errors = [];
+const save = ({ db, validation }) => async (body, session_userid) => {
+  try {
+    const errors = [];
 
-        // Duplicate check: Mobile
-        if (body.mobile && body.mobile.trim() !== "") {
-          const [existingMobile] = await db.sequelize.query(
-            `SELECT customerid FROM customers WHERE mobile = :_mobile AND deletedon IS NULL`,
-            {
-              replacements: { _mobile: body.mobile.trim() },
-              type: db.sequelize.QueryTypes.SELECT,
-            }
-          );
-
-          if (existingMobile) {
-            errors.push(validation.messages.mobile_duplicate);
-          }
+    // Duplicate check: Mobile
+    if (body.mobile && body.mobile.trim() !== "") {
+      const [existingMobile] = await db.sequelize.query(
+        `SELECT customerid FROM customers WHERE mobile = :_mobile AND deletedon IS NULL`,
+        {
+          replacements: { _mobile: body.mobile.trim() },
+          type: db.sequelize.QueryTypes.SELECT,
         }
+      );
 
-        // Duplicate check: Email
-        if (body.email && body.email.trim() !== "") {
-          const [existingEmail] = await db.sequelize.query(
-            `SELECT customerid FROM customers WHERE email = :_email AND deletedon IS NULL`,
-            {
-              replacements: { _email: body.email.trim() },
-              type: db.sequelize.QueryTypes.SELECT,
-            }
-          );
-
-          if (existingEmail) {
-            errors.push(validation.messages.email_duplicate);
-          }
-        }
-
-        //  If duplicates found → return
-        if (errors.length > 0) {
-          return { statusCode: 400, errors, message: "" };
-        }
-
-        //  Insert Customer
-        const insertQuery = `
-          INSERT INTO customers (
-            customeruuid, firstname, lastname, email, mobile, status, createdby, createdon
-          ) VALUES (
-            UUID(), :firstname, :lastname, :email, :mobile, 'Active', :createdby, CURRENT_TIMESTAMP
-          )
-        `;
-
-        await db.sequelize.query(insertQuery, {
-          replacements: {
-            firstname: body.firstname?.trim() || null,
-            lastname: body.lastname?.trim() || null,
-            email: body.email?.trim() || null,
-            mobile: body.mobile?.trim() || null,
-            createdby: session_userid,
-          },
-        });
-
-        return { statusCode: 200, message: validation.messages.add_success };
-      } catch (error) {
-        console.error("Error saving customer:", error.message);
-        throw error;
+      if (existingMobile) {
+        errors.push(validation.messages.mobile_duplicate);
       }
-    };
+    }
+
+    // Duplicate check: Email
+    if (body.email && body.email.trim() !== "") {
+      const [existingEmail] = await db.sequelize.query(
+        `SELECT customerid FROM customers WHERE email = :_email AND deletedon IS NULL`,
+        {
+          replacements: { _email: body.email.trim() },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (existingEmail) {
+        errors.push(validation.messages.email_duplicate);
+      }
+    }
+
+    //  If duplicates found → return
+    if (errors.length > 0) {
+      return { statusCode: 400, errors, message: "" };
+    }
+
+    //  Insert Customer
+    const insertQuery = `
+      INSERT INTO customers (
+        customeruuid, firstname, lastname, email, mobile, status, createdby, createdon
+      ) VALUES (
+        UUID(), :firstname, :lastname, :email, :mobile, 'Active', :createdby, CURRENT_TIMESTAMP
+      )
+    `;
+
+    await db.sequelize.query(insertQuery, {
+      replacements: {
+        firstname: body.firstname?.trim() || null,
+        lastname: body.lastname?.trim() || null,
+        email: body.email?.trim() || null,
+        mobile: body.mobile?.trim() || null,
+        createdby: session_userid,
+      },
+    });
+
+    return { statusCode: 200, message: validation.messages.add_success };
+  } catch (error) {
+    console.error("Error saving customer:", error.message);
+    throw error;
+  }
+};
 
 const update =
   ({ db, validation }) =>
@@ -371,7 +369,7 @@ const parseEncryptedString1 = ({ db, key }) => async ({ str }) => {
     expiry_date,
     domain_name : fakeDecrypt(encryptedDomain),
   };
-}
+};
 
 const generateString = ({
   user_count,
@@ -418,136 +416,133 @@ const parseEncryptedString = ({ db, key }) => async ({ str }) => {
 };
   
 const saveLicense = ({ db, validation }) =>
-    async (body, session_userid) => {
-      try {
-        const errors = [];
+  async (body, session_userid) => {
+    try {
+      const errors = [];
 
-        // ---- Check if customer exists ----
-        const [existingCustomer] = await db.sequelize.query(
-          `SELECT customerid FROM customers WHERE customerid = ? AND deletedon IS NULL`,
-          {
-            replacements: [body.customer_id],
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
+      // ---- Check if customer exists ----
+      // const [existingCustomer] = await db.sequelize.query(
+      //   `SELECT customerid FROM customers WHERE customerid = ? AND deletedon IS NULL`,
+      //   {
+      //     replacements: [body.customer_id],
+      //     type: db.sequelize.QueryTypes.SELECT,
+      //   }
+      // );
 
-        if (!existingCustomer) {
-          return {
-            statusCode: 404,
-            message: validation.messages.customer_not_found || "Customer not found.",
-          };
-        }
+      // if (!existingCustomer) {
+      //   return {
+      //     statusCode: 404,
+      //     message: validation.messages.customer_not_found || "Customer not found.",
+      //   };
+      // }
 
-        let license_key = generateString({
-          user_count : body.sim_user_count,
+      let license_key = generateString({
+        user_count : body.sim_user_count,
         master_count : body.sim_mst_count,
         investor_count : body.sim_investor_count,
         expiry_date : body.expiry_date,
         domain_name : body.domain_url
       })
 
-      console.log("license_keylicense_keylicense_keylicense_key",license_key)
+      // ---- Insert Query ----
+      const insertQuery = `
+        INSERT INTO customer_license (customer_license_uuid, customer_id, sim_user_count,sim_mst_count,sim_investor_count, start_date, expiry_date, license_key, domain_url, created_by, created_on
+        ) VALUES ( UUID(), :customer_id, :sim_user_count, :sim_mst_count, :sim_investor_count, :start_date,:expiry_date, :license_key, :domain_url,:created_by, CURRENT_TIMESTAMP
+        );
+      `;
 
-        // ---- Insert Query ----
-        const insertQuery = `
-          INSERT INTO customer_license (customer_license_uuid, customer_id, sim_user_count,sim_mst_count,sim_investor_count, start_date, expiry_date, license_key, domain_url, created_by, created_on
-          ) VALUES ( UUID(), :customer_id, :sim_user_count, :sim_mst_count, :sim_investor_count, :start_date,:expiry_date, :license_key, :domain_url,:created_by, CURRENT_TIMESTAMP
-          );
-        `;
+      await db.sequelize.query(insertQuery, {
+        replacements: {
+          customer_id: body.customer_id,
+          sim_user_count: body.sim_user_count || 0,
+          sim_mst_count: body.sim_mst_count || 0,
+          sim_investor_count: body.sim_investor_count || 0,
+          start_date: body.start_date || null,
+          expiry_date: body.expiry_date || null,
+          license_key: license_key || null,
+          domain_url: body.domain_url || null,
+          created_by: session_userid
+        },
+      });
 
-        await db.sequelize.query(insertQuery, {
-          replacements: {
-            customer_id: body.customer_id,
-            sim_user_count: body.sim_user_count || 0,
-            sim_mst_count: body.sim_mst_count || 0,
-            sim_investor_count: body.sim_investor_count || 0,
-            start_date: body.start_date || null,
-            expiry_date: body.expiry_date || null,
-            license_key: license_key || null,
-            domain_url: body.domain_url || null,
-            created_by: session_userid
-          },
-        });
-
-        return {
-          statusCode: 200,
-          message: validation.messages.add_success || "License added successfully.",
-        };
-      } catch (error) {
-        console.error("Error saving customer license:", error.message);
-        throw error;
-      }
-    };
-
+      return {
+        statusCode: 200,
+        message: validation.messages.add_success || "License added successfully.",
+      };
+    } catch (error) {
+      console.error("Error saving customer license:", error.message);
+      throw error;
+    }
+  };
 
 const updateLicense = ({ db, validation }) =>
-    async (body, session_userid) => {
-      try {
-        const errors = [];
+  async (body, session_userid) => {
+    try {
+      const errors = [];
 
-        // ---- Check if license exists ----
-        const [existingLicense] = await db.sequelize.query(
-          `SELECT customer_license_id FROM customer_license WHERE customer_license_id = ?`,
-          {
-            replacements: [body.customer_license_id],
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
-
-        if (!existingLicense) {
-          return {
-            statusCode: 404,
-            message: validation.messages.data_not_found || "License not found.",
-          };
+      // ---- Check if license exists ----
+      const [existingLicense] = await db.sequelize.query(
+        `SELECT customer_license_id FROM customer_license WHERE customer_license_id = ?`,
+        {
+          replacements: [body.customer_license_id],
+          type: db.sequelize.QueryTypes.SELECT,
         }
-        let license_key = generateString({
-          user_count : body.sim_user_count,
-          master_count : body.sim_mst_count,
-          investor_count : body.sim_investor_count,
-          expiry_date : body.expiry_date,
-          domain_name : body.domain_url
-        })
-        // ---- Update Query ----
-        const updateQuery = `
-          UPDATE customer_license
-          SET 
-            sim_user_count = :sim_user_count,
-            sim_mst_count = :sim_mst_count,
-            sim_investor_count = :sim_investor_count,
-            start_date = :start_date,
-            expiry_date = :expiry_date,
-            license_key = :license_key,
-            domain_url = :domain_url,
-            modifiedby = :modifiedby,
-            modifiedon = CURRENT_TIMESTAMP
-          WHERE customer_license_id = :customer_license_id
-        `;
+      );
 
-        await db.sequelize.query(updateQuery, {
-          replacements: {
-            customer_license_id: body.customer_license_id,
-            sim_user_count: body.sim_user_count || 0,
-            sim_mst_count: body.sim_mst_count || 0,
-            sim_investor_count: body.sim_investor_count || 0,
-            start_date: body.start_date || null,
-            expiry_date: body.expiry_date || null,
-            license_key: license_key || null,
-            domain_url: body.domain_url || null,
-            modifiedby: session_userid,
-          },
-        });
-
+      if (!existingLicense) {
         return {
-          statusCode: 200,
-          message:
-            validation.messages.update_success ||
-            "Customer license updated successfully.",
+          statusCode: 404,
+          message: validation.messages.data_not_found || "License not found.",
         };
-      } catch (error) {
-        console.error("Error updating customer license:", error.message);
-        throw error;
       }
-    };
+      let license_key = generateString({
+        user_count : body.sim_user_count,
+        master_count : body.sim_mst_count,
+        investor_count : body.sim_investor_count,
+        expiry_date : body.expiry_date,
+        domain_name : body.domain_url
+      })
+      // ---- Update Query ----
+      const updateQuery = `
+        UPDATE customer_license
+        SET 
+          sim_user_count = :sim_user_count,
+          sim_mst_count = :sim_mst_count,
+          sim_investor_count = :sim_investor_count,
+          start_date = :start_date,
+          expiry_date = :expiry_date,
+          license_key = :license_key,
+          domain_url = :domain_url,
+          modifiedby = :modifiedby,
+          modifiedon = CURRENT_TIMESTAMP
+        WHERE customer_license_id = :customer_license_id
+      `;
+
+      await db.sequelize.query(updateQuery, {
+        replacements: {
+          customer_license_id: body.customer_license_id,
+          sim_user_count: body.sim_user_count || 0,
+          sim_mst_count: body.sim_mst_count || 0,
+          sim_investor_count: body.sim_investor_count || 0,
+          start_date: body.start_date || null,
+          expiry_date: body.expiry_date || null,
+          license_key: license_key || null,
+          domain_url: body.domain_url || null,
+          modifiedby: session_userid,
+        },
+      });
+
+      return {
+        statusCode: 200,
+        message:
+          validation.messages.update_success ||
+          "Customer license updated successfully.",
+      };
+    } catch (error) {
+      console.error("Error updating customer license:", error.message);
+      throw error;
+    }
+  };
 
 module.exports = {
   customerList,

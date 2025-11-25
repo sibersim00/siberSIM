@@ -400,6 +400,7 @@ const updateCompleteTerminatelearner =
         );
       }
     };
+    let components = [];
 
     try {
       if (session.vm_steps !== RUNNING && session.vm_steps !== OP_FAILED) {
@@ -410,7 +411,7 @@ const updateCompleteTerminatelearner =
       }
 
       // Fetch components
-      const components = await db.sequelize.query(
+      components = await db.sequelize.query(
         `SELECT * FROM vm_configuration WHERE scenariolearnersessionid = ?`,
         {
           replacements: [scenariolearnersessionid],
@@ -419,7 +420,7 @@ const updateCompleteTerminatelearner =
       );
 
       // 1. Stop all components first
-      // 1️⃣ Create single tracking object
+      //Create single tracking object
 
       const vmConfig = {};
 
@@ -427,7 +428,7 @@ const updateCompleteTerminatelearner =
         vmConfig[vmid] = { stop: false, destroy: false };
       });
 
-      // 2️⃣ Stop loop
+      //Stop loop
 
       for (const {
         vmid,
@@ -475,7 +476,7 @@ const updateCompleteTerminatelearner =
 
       await sleep(await getTerminationDelay(db));
 
-      // 3️⃣ Destroy loop (only for stop success) & mark Completed
+      // Destroy loop (only for stop success) & mark Completed
 
       for (const {
         vmid,
@@ -541,46 +542,6 @@ const updateCompleteTerminatelearner =
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
-
-        // Update scenario diagram
-        // const [diagramRow] = await db.sequelize.query(
-        //   `SELECT scenariodiagram FROM scenario_learner_session WHERE scenariolearnersessionid = ? LIMIT 1`,
-        //   {
-        //     replacements: [scenariolearnersessionid],
-        //     type: db.sequelize.QueryTypes.SELECT,
-        //   }
-        // );
-
-        // if (diagramRow?.scenariodiagram) {
-        //   const scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
-        //   scenariodiagram.nodes?.forEach((node) => {
-        //     if (node?.data?.isOnline) node.data.isOnline = "No";
-        //   });
-        //   scenariodiagram.edges?.forEach((edge) => {
-        //     if (edge?.isAttacked) edge.isAttacked = "No";
-        //   });
-
-        //   if (status === "Completed" || status === "Terminated") {
-        //     await db.sequelize.query(
-        //       `UPDATE scenario_learner_session
-        //         SET scenariodiagram = ?,
-        //             modifiedon = NOW(),
-        //             status = ?,
-        //             ${
-        //               status === "Terminated" ? "terminatedon" : "completedon"
-        //             } = NOW()
-        //         WHERE scenariolearnersessionid = ?`,
-        //       {
-        //         replacements: [
-        //           JSON.stringify(scenariodiagram),
-        //           status,
-        //           scenariolearnersessionid,
-        //         ],
-        //         type: db.sequelize.QueryTypes.UPDATE,
-        //       }
-        //     );
-        //   }
-        // }
       }
 
       await releaseNetworks(db, session.network_bridges);
@@ -640,6 +601,27 @@ const updateCompleteTerminatelearner =
         }
       } catch (diagramErr) {
         console.error("Error while resetting isAttacked:", diagramErr);
+      }
+      //  ------------  MARK SNAPSHOTS AS DELETED  ------------
+      try {
+        // Extract VMIDs for this session
+        const vmids = components.map((c) => c.vmid).filter((v) => v);
+
+        if (vmids.length > 0) {
+          await db.sequelize.query(
+            `UPDATE snapshot_details
+              SET snapshot_status = 'Delete',
+              deletedon = NOW()
+              WHERE vmid IN (${vmids.map(() => "?").join(",")})
+              AND deletedon IS NULL`,
+            {
+              replacements: vmids,
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+      } catch (snapErr) {
+        console.error("Error marking snapshots deleted:", snapErr);
       }
     }
   };
@@ -853,7 +835,6 @@ const restartscenarioLearner =
     }
   };
 
-
 const createSnapshot =
   ({ db, ipAddress }) =>
   async (vmid, vmType, vmstate) => {
@@ -891,44 +872,33 @@ const createSnapshot =
       if (activeSnapshots.length >= 3) {
         return {
           success: false,
-          message: `Maximum 3 snapshots allowed for VM ${vmid}. Delete an existing snapshot.`,
+          message: `This VM already has 3 snapshots. To create a new one, please remove an older snapshot.`,
         };
       }
-
-      // Fetch ALL snapshots (including deleted ones)
-      const allSnapshots = await db.sequelize.query(
-        `SELECT snapshot_name
-         FROM snapshot_details
-         WHERE vmid = ?`,
+      const [latestSnap] = await db.sequelize.query(
+        `SELECT snapshot_name 
+          FROM snapshot_details
+          WHERE vmid = ?
+          ORDER BY snapshotid DESC
+          LIMIT 1`,
         {
           replacements: [vmid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
 
-      // Extract max number from "_snapshot_X"
-      let maxNumber = 0;
+      let nextNumber = 1;
 
-      allSnapshots.forEach((s) => {
-        const match = s.snapshot_name.match(/_snapshot_(\d+)$/i);
+      if (latestSnap && latestSnap.snapshot_name) {
+        const match = latestSnap.snapshot_name.match(/-snapshot-(\d+)$/i);
         if (match) {
-          const num = parseInt(match[1]);
-          if (num > maxNumber) maxNumber = num;
+          nextNumber = parseInt(match[1]) + 1;
         }
-      });
+      }
 
-      const nextNumber = maxNumber + 1;
-
-      // -------------------------------
-      //  SANITIZE COMPONENT NAME
-      // -------------------------------
       const sanitizeComponentName = (name) => {
         if (!name) return "component";
-
-        // Split by ANY non-alphanumeric character (dot, space, hyphen, etc.)
         const parts = name.split(/[^a-zA-Z0-9]+/).filter(Boolean);
-
-        // Convert to camelCase
         const camelCase = parts
           .map((p, index) =>
             index === 0
@@ -936,18 +906,10 @@ const createSnapshot =
               : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
           )
           .join("");
-
         return camelCase;
       };
-
       const formattedComponentName = sanitizeComponentName(componentname);
-
-      // Final snapshot name
-      const snapname = `${formattedComponentName}_snapshot_${nextNumber}`;
-
-      // --------------------------------
-      // PROXMOX CREATE SNAPSHOT
-      // --------------------------------
+      const snapname = `${formattedComponentName}-snapshot-${nextNumber}`;
       const proxmoxService = ProxMoxService(
         db,
         { vmType: vmType.toLowerCase() },
@@ -977,10 +939,6 @@ const createSnapshot =
       if (snapshotResult?.status !== 200) {
         return { success: false, message: `Snapshot creation failed.` };
       }
-
-      // --------------------------------
-      // INSERT INTO DB
-      // --------------------------------
       await db.sequelize.query(
         `INSERT INTO snapshot_details 
          (master_vmid, vmid, learner_id, scenarioid, component_type,
@@ -1008,8 +966,6 @@ const createSnapshot =
       return { success: false, message: "Unexpected error occurred." };
     }
   };
-
-
 
 const deleteSnapshot =
   ({ db, ipAddress }) =>
@@ -1076,11 +1032,17 @@ const deleteSnapshot =
     }
   };
 
-
 const restoreSnapshot =
   ({ db, ipAddress }) =>
   async (vmid, vmType, snapname, startValue) => {
     try {
+      const proxmoxService = ProxMoxService(
+        db,
+        { vmType: vmType.toLowerCase() },
+        ipAddress
+      );
+
+      // Fetch snapshots in chronological order
       const snapshots = await db.sequelize.query(
         `SELECT snapshot_name
          FROM snapshot_details
@@ -1098,6 +1060,14 @@ const restoreSnapshot =
 
       const snapshotNames = snapshots.map((s) => s.snapshot_name);
       const latestSnapshot = snapshotNames[snapshotNames.length - 1];
+
+      // Generate Proxmox Token
+      const tokenResult = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        return { success: false, message: `Failed to connect to Proxmox.` };
+      }
+
+      // If selected snapshot IS the latest → restore directly
       if (snapname === latestSnapshot) {
         const result = await performRestore(
           vmid,
@@ -1108,7 +1078,6 @@ const restoreSnapshot =
           db
         );
 
-        // If restore succeeded → UPDATE DB STATUS
         if (result.success) {
           await db.sequelize.query(
             `UPDATE snapshot_details
@@ -1124,28 +1093,77 @@ const restoreSnapshot =
         return result;
       }
 
-      // If NOT latest → tell user which snapshots must be deleted
+      // If NOT latest → delete higher snapshots automatically
       const snapIndex = snapshotNames.indexOf(snapname);
-
       if (snapIndex === -1) {
         return { success: false, message: "Snapshot not found." };
       }
 
       const snapshotsToDelete = snapshotNames.slice(snapIndex + 1);
 
-      return {
-        success: false,
-        message: `Cannot restore '${snapname}' because it is not the latest snapshot. Delete these snapshots first: ${snapshotsToDelete.join(
-          ", "
-        )}`,
-        snapshotsToDelete,
-      };
+      // 1️⃣ Delete snapshots AFTER the selected one
+      for (const sname of snapshotsToDelete) {
+        let deleteResult;
+
+        if (vmType.toLowerCase() === "lxc") {
+          deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, sname);
+        } else {
+          deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, sname);
+        }
+
+        if (deleteResult?.status !== 200) {
+          return {
+            success: false,
+            message: `Failed to delete snapshot '${sname}'. Restore cancelled.`,
+          };
+        }
+
+        // Update delete status in DB
+        await db.sequelize.query(
+          `UPDATE snapshot_details
+           SET snapshot_status = 'Delete', deletedon = NOW()
+           WHERE vmid = ? AND snapshot_name = ?
+           LIMIT 1`,
+          {
+            replacements: [vmid, sname],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+      }
+
+      // 2️⃣ After deleting ≥ snapshots → restore the selected snapshot
+      const restoreResult = await performRestore(
+        vmid,
+        vmType,
+        snapname,
+        startValue,
+        ipAddress,
+        db
+      );
+
+      if (restoreResult.success) {
+        await db.sequelize.query(
+          `UPDATE snapshot_details
+           SET snapshot_status = 'Restore'
+           WHERE vmid = ? AND snapshot_name = ? AND deletedon IS NULL`,
+          {
+            replacements: [vmid, snapname],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+
+        return {
+          success: true,
+          message: `'${snapname}' has been restored successfully`,
+        };
+      }
+
+      return restoreResult;
     } catch (err) {
       console.error(err);
       return { success: false, message: "Unexpected error occurred." };
     }
   };
-
 
 async function performRestore(
   vmid,
@@ -1195,6 +1213,301 @@ async function performRestore(
   };
 }
 
+const pauseScenarioLearner =
+  ({ db, ipAddress }) =>
+  async (scenariolearnersessionid) => {
+    try {
+      // ------------------ FETCH COMPONENTS ------------------
+      const components = await db.sequelize.query(
+        `SELECT vmid, componenttype, componentname
+         FROM vm_configuration
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [scenariolearnersessionid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!components.length) {
+        return {
+          success: false,
+          message: "No VM components found for this session.",
+        };
+      }
+
+      // Track status of all components
+      let allSuccess = true;
+      let results = [];
+
+      // ------------------ LOOP THROUGH EACH COMPONENT ------------------
+      for (const { vmid, componenttype, componentname } of components) {
+        const vmType = componenttype.toLowerCase();
+
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+
+        // Generate token
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message: `Proxmox connection failed for VM ${vmid}`,
+          });
+          continue;
+        }
+
+        let pauseResult;
+
+        // QEMU → pause
+        if (vmType === "qemu") {
+          pauseResult = await proxmoxService.pauseVM(vmid, vmType);
+        }
+        // LXC → stop (pause equivalent)
+        else if (vmType === "lxc") {
+          pauseResult = await proxmoxService.stopVM(vmid, vmType);
+        } else {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message: `Invalid VM type ${vmType} for VM ${vmid}`,
+          });
+          continue;
+        }
+
+        if (pauseResult?.status === 200) {
+          results.push({
+            vmid,
+            status: "success",
+            message:
+              vmType === "qemu"
+                ? `VM ${vmid} paused successfully`
+                : `VM ${vmid} stopped successfully (LXC pause equivalent)`,
+          });
+        } else {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message:
+              vmType === "qemu"
+                ? `Failed to pause VM ${vmid}`
+                : `Failed to stop VM ${vmid}`,
+          });
+        }
+      }
+
+      // ------------------ UPDATE DIAGRAM ONLY IF ALL VMs PAUSED ------------------
+      if (allSuccess) {
+        await updateScenarioDiagram(db, scenariolearnersessionid);
+      }
+
+      return {
+        success: allSuccess,
+        message: allSuccess
+          ? "All VMs paused successfully."
+          : "Some VMs failed to pause.",
+        details: results,
+      };
+    } catch (err) {
+      console.error("Error in pauseScenarioLearner:", err);
+      return {
+        success: false,
+        message: "Unexpected error occurred during pause.",
+      };
+    }
+  };
+
+async function updateScenarioDiagram(db, scenariolearnersessionid) {
+  try {
+    const [diagramRow] = await db.sequelize.query(
+      `SELECT scenariodiagram 
+       FROM scenario_learner_session 
+       WHERE scenariolearnersessionid = ? LIMIT 1`,
+      {
+        replacements: [scenariolearnersessionid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (diagramRow?.scenariodiagram) {
+      let scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
+
+      // Set all nodes offline
+      scenariodiagram.nodes?.forEach((node) => {
+        if (node?.data?.isOnline) node.data.isOnline = "No";
+      });
+
+      // Remove all attacks
+      scenariodiagram.edges?.forEach((edge) => {
+        if (edge?.isAttacked) edge.isAttacked = "No";
+      });
+
+      await db.sequelize.query(
+        `UPDATE scenario_learner_session
+         SET scenariodiagram = ?, modifiedon = NOW()
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [
+            JSON.stringify(scenariodiagram),
+            scenariolearnersessionid,
+          ],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+    }
+  } catch (err) {
+    console.error("Error updating scenario diagram:", err);
+  }
+}
+
+const resumeScenarioLearner =
+  ({ db, ipAddress }) =>
+  async (scenariolearnersessionid) => {
+    try {
+      // ------------------ FETCH COMPONENTS ------------------
+      const components = await db.sequelize.query(
+        `SELECT vmid, componenttype, componentname
+         FROM vm_configuration
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [scenariolearnersessionid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!components.length) {
+        return {
+          success: false,
+          message: "No VM components found for this session.",
+        };
+      }
+
+      // Track status for all VMs
+      let allSuccess = true;
+      let results = [];
+
+      // ------------------ LOOP FOR EACH VM ------------------
+      for (const { vmid, componenttype, componentname } of components) {
+        const vmType = componenttype.toLowerCase();
+
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+
+        // Generate token
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message: `Proxmox connection failed for VM ${vmid}`,
+          });
+          continue;
+        }
+
+        let resumeResult;
+
+        // QEMU → Resume (unsuspend)
+        if (vmType === "qemu") {
+          resumeResult = await proxmoxService.resumeVM(vmid, vmType);
+        }
+        // LXC → Start (resume equivalent)
+        else if (vmType === "lxc") {
+          resumeResult = await proxmoxService.startVM(vmid, vmType);
+        } else {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message: `Invalid VM type ${vmType} for VM ${vmid}`,
+          });
+          continue;
+        }
+
+        // ----------- SUCCESS CASE -----------
+        if (resumeResult?.status === 200) {
+          results.push({
+            vmid,
+            status: "success",
+            message:
+              vmType === "qemu"
+                ? `VM ${vmid} resumed successfully`
+                : `VM ${vmid} started successfully (LXC resume equivalent)`,
+          });
+        }
+        // ----------- FAILURE CASE -----------
+        else {
+          allSuccess = false;
+          results.push({
+            vmid,
+            status: "failed",
+            message:
+              vmType === "qemu"
+                ? `Failed to resume VM ${vmid}`
+                : `Failed to start VM ${vmid}`,
+          });
+        }
+      }
+
+      // ------------------ UPDATE DIAGRAM ONLY IF ALL VMs RESUMED ------------------
+      if (allSuccess) {
+        await updateScenarioDiagramOnResume(db, scenariolearnersessionid);
+      }
+
+      return {
+        success: allSuccess,
+        message: allSuccess
+          ? "All VMs resumed successfully."
+          : "Some VMs failed to resume.",
+        details: results,
+      };
+    } catch (err) {
+      console.error("Error in resumeScenarioLearner:", err);
+      return {
+        success: false,
+        message: "Unexpected error occurred during resume.",
+      };
+    }
+  };
+
+async function updateScenarioDiagramOnResume(db, scenariolearnersessionid) {
+  try {
+    const [diagramRow] = await db.sequelize.query(
+      `SELECT scenariodiagram 
+       FROM scenario_learner_session 
+       WHERE scenariolearnersessionid = ? LIMIT 1`,
+      {
+        replacements: [scenariolearnersessionid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (diagramRow?.scenariodiagram) {
+      let scenariodiagram = JSON.parse(diagramRow.scenariodiagram);
+      scenariodiagram.nodes?.forEach((node) => {
+        if (node?.data?.isOnline) node.data.isOnline = "Yes";
+      });
+      scenariodiagram.edges?.forEach((edge) => {
+        if (edge?.isAttacked) edge.isAttacked = "Yes";
+      });
+      await db.sequelize.query(
+        `UPDATE scenario_learner_session
+         SET scenariodiagram = ?, modifiedon = NOW()
+         WHERE scenariolearnersessionid = ?`,
+        {
+          replacements: [
+            JSON.stringify(scenariodiagram),
+            scenariolearnersessionid,
+          ],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+    }
+  } catch (err) {
+    console.error("Error updating scenario diagram on resume:", err);
+  }
+}
 
 module.exports = {
   setScenarioLearnerConfiguration,
@@ -1205,5 +1518,7 @@ module.exports = {
   restartscenarioLearner,
   createSnapshot,
   deleteSnapshot,
-  restoreSnapshot
+  restoreSnapshot,
+  pauseScenarioLearner,
+  resumeScenarioLearner,
 };

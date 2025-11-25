@@ -69,7 +69,7 @@ const customerAdd = (props) => {
       .required("Required")
       .matches(
         emailRegExp,
-        "Invalid - invalid email format - no spaces are allowed"
+        "Invalid"
       )
       .test(
         "no-leading-trailing-spaces",

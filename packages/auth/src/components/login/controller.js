@@ -15,13 +15,15 @@ const getCompanySettingController = ({ dao, db }) => async (req, res, next) => {
 
   try {
    
-    const settings = await dao.getCompanyWebSetting({ db })();
+    const settings = await dao.getCompanyWebSetting({ db })(req.body);
 
-    if (!settings) {
-      return res.status(404).send({ statusCode: 404, message: "Settings not found for the given company." });
+    if (settings.status) {
+      return res.status(200).send({ statusCode: 200, data: settings.data, message: "Company settings fetched successfully", redirect : settings.redirect });
+    }else{
+      return res.status(404).send({ statusCode: 404, data: settings.data, message: "Settings not found for the given company." });
     }
 
-    return res.status(200).send({ statusCode: 200, data: settings, message: "Company settings fetched successfully" });
+    
 
   } catch (err) {
     console.error("getCompanySettingController err==>>", err);
