@@ -63,12 +63,12 @@ const Home = () => {
   let navigate = useRouter();
   const [userInfo, setUserInfo] = useState({});
 
-  const otpSuccessData = useSelector((state) => state?.authData?.otpSuccessData);
+   const otpSuccessData = useSelector((state) => state?.instLoginData?.otpSuccessData);
   const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
   const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
-  const loginSuccData = useSelector((state) => state?.authData?.loginSuccessData);
-  const directLoginData = useSelector((state) => state?.authData?.directLoginData);
-  const errorData = useSelector((state) => state?.authData?.error);
+  const loginSuccData = useSelector((state) => state?.instLoginData?.loginSuccessData);
+  const directLoginData = useSelector((state) => state?.instLoginData?.directLoginData);
+  const errorData = useSelector((state) => state?.instLoginData?.error);
 
   useEffect(() => {
     dispatch(clearDispatchFromForget());
