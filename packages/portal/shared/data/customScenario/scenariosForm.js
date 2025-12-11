@@ -129,7 +129,8 @@ const ScenarioForm = (props) => {
         state && state.localData && state.localData.getLocalData,
     };
   });
-  console.log("hasubCatByIdReshasubCatByIdReshasubCatByIdRes", hasubCatByIdRes);
+  console.log("hasgetCatListSucchasgetCatListSucc", hasgetCatListSucc);
+  console.log("hasubCatByIdReshasubCatByIdRes", hasubCatByIdRes);
   const level = [
     { id: "1", name: "Easy" },
     { id: "2", name: "Medium" },
@@ -371,9 +372,9 @@ const ScenarioForm = (props) => {
           obj.scenariosubcategoryid?.toString() ===
           rowValues.scenariosubcategoryid?.toString()
       );
-      if (selectedSubCat) {
-        formValidation.setFieldValue("scenariosubcategoryid", selectedSubCat);
-      }
+      // if (selectedSubCat) {
+      //   formValidation.setFieldValue("scenariosubcategoryid", selectedSubCat);
+      // }
     }
   }, [hasubCatByIdRes, rowValues?.scenariosubcategoryid]);
 
@@ -400,9 +401,9 @@ const ScenarioForm = (props) => {
   }, [hasgetCatListSucc, rowValues?.scenariocategoryid]);
 
   const handelGetSubCat = (catId, isEdit = false) => {
-    if (isEdit) return; // Skip fetching in edit mode
+    // if (isEdit) return; // Skip fetching in edit mode
 
-    formValidation.setFieldValue("scenariosubcategoryid", null); // Reset subcategory
+    // formValidation.setFieldValue("scenariosubcategoryid", null); // Reset subcategory
     dispatch(getScenarioSubCategorycustombyId({ scenariocategoryid: catId }));
   };
 

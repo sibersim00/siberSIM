@@ -127,7 +127,8 @@ const ScenarioForm = (props) => {
         state && state.localData && state.localData.getLocalData,
     };
   });
-  console.log("hasgetCatListSucchasgetCatListSucc", hasgetCatListSucc);
+  const theme = localStorage.getItem("theme_preference") || "light";
+  const isDark = theme === "dark";
 
   const level = [
     { id: "1", name: "Easy" },
@@ -186,19 +187,34 @@ const ScenarioForm = (props) => {
   }, [rowId]);
 
   useEffect(() => {
-    if (rowValues) {
-      if (rowValues.scenariocategoryid) {
-        handelGetSubCat(rowValues.scenariocategoryid);
+    if (hasgetCatListSucc?.length && rowValues?.scenariocategoryid) {
+      const temp = hasgetCatListSucc.map((cat) => ({
+        scenariocategory: cat?.scenariocategory || "",
+        scenariocategoryid: cat?.scenariocategoryid,
+      }));
+      setCatDropDownData(temp);
+
+      const selectedCategory = temp.find(
+        (obj) =>
+          obj.scenariocategoryid?.toString() ===
+          rowValues.scenariocategoryid?.toString()
+      );
+      if (selectedCategory) {
+        formValidation.setFieldValue("scenariocategoryids", selectedCategory);
+
+        // **Fetch subcategories automatically for this category**
+        handelGetSubCat(selectedCategory.scenariocategoryid);
       }
     }
-  }, [rowValues]);
+  }, [hasgetCatListSucc, rowValues?.scenariocategoryid]);
+
   useEffect(() => {
     dispatch(getScenarioSubCategoriesList());
     dispatch(clearSingleScenarios());
   }, []);
   useEffect(() => {
     if (rowValues) {
-      setScenarioId(rowValues?.custom_scenarioid);
+      setScenarioId(rowValues?.custom_scenariouuid);
       setIsChecked(rowValues?.status);
       setInitialHtml(rowValues?.scenariodescription);
     }
@@ -233,18 +249,14 @@ const ScenarioForm = (props) => {
   }, [hasGetSingleScenariosSucc]);
 
   useEffect(() => {
-    if (hasubCatByIdRes && hasubCatByIdRes.length > 0) {
-      let temp = hasubCatByIdRes.map((cat) => ({
-        scenariocategory: cat?.scenariocategory || "",
-        scenariosubcategoryid: cat?.scenariocategoryid,
+    if (hasubCatByIdRes?.length && rowValues?.scenariosubcategoryid) {
+      const temp = hasubCatByIdRes.map((subcat) => ({
+        scenariocategory: subcat?.scenariocategory || "",
+        scenariosubcategoryid: subcat?.scenariocategoryid,
       }));
       setSubCatDropDownData(temp);
-      const selectedsubcategory = temp.find(
-        (obj) => obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
-      );
-      // formValidation.setFieldValue("scenariosubcategoryid", selectedsubcategory);
     }
-  }, [hasubCatByIdRes]);
+  }, [hasubCatByIdRes, rowValues?.scenariosubcategoryid]);
 
   useEffect(() => {
     if (hasgetCatListSucc && hasgetCatListSucc.length > 0) {
@@ -356,7 +368,7 @@ const ScenarioForm = (props) => {
         }
       );
 
-      setScenarioId(saveScenariosData?.scenarioid);
+      setScenarioId(saveScenariosData?.custom_scenariouuid);
       dispatch(clearSaveScenarios());
       setTabIndex("tab2");
     }
@@ -524,12 +536,34 @@ const ScenarioForm = (props) => {
 
   console.log("formValidationformValidation", formValidation);
 
-  const handelGetSubCat = (catId) => {
-    setSubCatDropDownData([]);
-    const payload = {
-      scenariocategoryid: catId,
-    };
-    dispatch(getScenarioSubCategorybyId(payload));
+  useEffect(() => {
+    if (rowValues?.scenariosubcategoryid) {
+      // Construct a single subcategory object for dropdown
+      const subCatObj = {
+        scenariocategory:
+          rowValues.scenariocategory ||
+          rowValues?.scenariosubcategoryname ||
+          "",
+        scenariosubcategoryid: rowValues.scenariosubcategoryid,
+      };
+      setSubCatDropDownData([subCatObj]); // only show this in dropdown
+      formValidation.setFieldValue("scenariosubcategoryid", subCatObj);
+    }
+  }, [rowValues]);
+
+  // const handelGetSubCat = (catId) => {
+  //   setSubCatDropDownData([]);
+  //   const payload = {
+  //     scenariocategoryid: catId,
+  //   };
+  //   dispatch(getScenarioSubCategorybyId(payload));
+  // };
+
+  const handelGetSubCat = (catId, isEdit = false) => {
+    // if (isEdit) return; // Skip fetching in edit mode
+
+    // formValidation.setFieldValue("scenariosubcategoryid", null); // Reset subcategory
+    dispatch(getScenarioSubCategorybyId({ scenariocategoryid: catId }));
   };
 
   return (
@@ -755,16 +789,22 @@ const ScenarioForm = (props) => {
                                                     styles={{
                                                       control: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "var(--dark-bg-color)", // dark control background
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "var(--dark-bg-color)"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         borderColor: "#ced4da",
                                                       }),
                                                       menu: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "#0e0e23", // dark dropdown
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "#0e0e23"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         zIndex: 9999,
                                                       }),
                                                       option: (
@@ -776,56 +816,39 @@ const ScenarioForm = (props) => {
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C" // hover color
-                                                            : "var(--dark-bg-color)",
-                                                        color: "#fff",
+                                                            ? "#04973C"
+                                                            : isDark
+                                                            ? "var(--dark-bg-color)"
+                                                            : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#555",
                                                       }),
                                                       placeholder: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#aaa",
+                                                        color: isDark
+                                                          ? "#aaa"
+                                                          : "#555",
                                                       }),
                                                       input: (provided) => ({
                                                         ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValue: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        backgroundColor:
-                                                          "var(--primary-bg-color)",
-                                                      }),
-                                                      multiValueLabel: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValueRemove: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                        ":hover": {
-                                                          backgroundColor:
-                                                            "#EB5757",
-                                                          color: "#fff",
-                                                        },
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                       }),
                                                     }}
                                                     name="scenariolevel"
-                                                    // styles={getSelectStyles(
-                                                    //   "scenariolevel"
-                                                    // )}
                                                     value={
                                                       formValidation.values
                                                         .scenariolevel
@@ -885,19 +908,29 @@ const ScenarioForm = (props) => {
                                                           "var(--primary-bg-color)",
                                                       },
                                                     })}
+                                                    name="scenariocategoryids"
+                                                    // styles={getSelectStyles(
+                                                    //   "scenariocategoryids"
+                                                    // )}
                                                     styles={{
                                                       control: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "var(--dark-bg-color)", // dark control background
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "var(--dark-bg-color)"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         borderColor: "#ced4da",
                                                       }),
                                                       menu: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "#0e0e23", // dark dropdown
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "#0e0e23"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         zIndex: 9999,
                                                       }),
                                                       option: (
@@ -909,56 +942,38 @@ const ScenarioForm = (props) => {
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C" // hover color
-                                                            : "var(--dark-bg-color)",
-                                                        color: "#fff",
+                                                            ? "#04973C"
+                                                            : isDark
+                                                            ? "var(--dark-bg-color)"
+                                                            : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#555",
                                                       }),
                                                       placeholder: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#aaa",
+                                                        color: isDark
+                                                          ? "#aaa"
+                                                          : "#555",
                                                       }),
                                                       input: (provided) => ({
                                                         ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValue: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        backgroundColor:
-                                                          "var(--primary-bg-color)",
-                                                      }),
-                                                      multiValueLabel: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValueRemove: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                        ":hover": {
-                                                          backgroundColor:
-                                                            "#EB5757",
-                                                          color: "#fff",
-                                                        },
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                       }),
                                                     }}
-                                                    name="scenariocategoryids"
-                                                    // styles={getSelectStyles(
-                                                    //   "scenariocategoryids"
-                                                    // )}
                                                     value={
                                                       formValidation.values
                                                         .scenariocategoryids
@@ -971,19 +986,6 @@ const ScenarioForm = (props) => {
                                                       x.scenariocategoryid
                                                     } //  FIXED
                                                     placeholder="Select Category"
-                                                    // onChange={(e) => {
-                                                    //   formValidation.setFieldValue(
-                                                    //     "scenariocategoryids",
-                                                    //     e
-                                                    //   );
-                                                    //   formValidation.setFieldValue(
-                                                    //     "scenariosubcategoryid",
-                                                    //     null
-                                                    //   );
-                                                    //   handelGetSubCat(
-                                                    //     e.scenariocategoryid
-                                                    //   );
-                                                    // }}
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariocategoryids",
@@ -1026,43 +1028,7 @@ const ScenarioForm = (props) => {
                                                       *
                                                     </span>
                                                   </Form.Label>
-                                                  {/* <Select
-                                                   theme={(theme) => ({
-                                                      ...theme,
-                                                      colors: {
-                                                        ...theme.colors,
-                                                        primary25:
-                                                          "var(--primary-bg-color)",
-                                                        primary:
-                                                          "var(--primary-bg-color)",
-                                                      },
-                                                    })}
-                                                    name="scenariosubcategoryid"
-                                                    styles={getSelectStyles(
-                                                      "scenariosubcategoryid"
-                                                    )}
-                                                    value={
-                                                      formValidation.values
-                                                        .scenariosubcategoryid ||
-                                                      null
-                                                    }
-                                                    options={
-                                                      subCatDropDownData || []
-                                                    }
-                                                    getOptionLabel={(x) =>
-                                                      x.scenariocategory
-                                                    }
-                                                    getOptionValue={(x) =>
-                                                      x.scenariosubcategoryid
-                                                    }
-                                                    placeholder="Select Sub Category"
-                                                    onChange={(e) => {
-                                                      formValidation.setFieldValue(
-                                                        "scenariosubcategoryid",
-                                                        e
-                                                      );
-                                                    }}
-                                                  /> */}
+
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
@@ -1077,16 +1043,22 @@ const ScenarioForm = (props) => {
                                                     styles={{
                                                       control: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "var(--dark-bg-color)", // dark control background
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "var(--dark-bg-color)"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         borderColor: "#ced4da",
                                                       }),
                                                       menu: (provided) => ({
                                                         ...provided,
-                                                        backgroundColor:
-                                                          "#0e0e23", // dark dropdown
-                                                        color: "#fff",
+                                                        backgroundColor: isDark
+                                                          ? "#0e0e23"
+                                                          : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         zIndex: 9999,
                                                       }),
                                                       option: (
@@ -1098,52 +1070,41 @@ const ScenarioForm = (props) => {
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C" // hover color
-                                                            : "var(--dark-bg-color)",
-                                                        color: "#fff",
+                                                            ? "#04973C"
+                                                            : isDark
+                                                            ? "var(--dark-bg-color)"
+                                                            : "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#fff",
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#474646ff",
                                                       }),
                                                       placeholder: (
                                                         provided
                                                       ) => ({
                                                         ...provided,
-                                                        color: "#aaa",
+                                                        color: isDark
+                                                          ? "#aaa"
+                                                          : "#555",
                                                       }),
                                                       input: (provided) => ({
                                                         ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValue: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        backgroundColor:
-                                                          "var(--primary-bg-color)",
-                                                      }),
-                                                      multiValueLabel: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                      }),
-                                                      multiValueRemove: (
-                                                        provided
-                                                      ) => ({
-                                                        ...provided,
-                                                        color: "#fff",
-                                                        ":hover": {
-                                                          backgroundColor:
-                                                            "#EB5757",
-                                                          color: "#fff",
-                                                        },
+                                                        color: isDark
+                                                          ? "#fff"
+                                                          : "#000",
                                                       }),
                                                     }}
+                                                    //  styles={getSelectStyles(
+                                                    //   "scenariosubcategoryid"
+                                                    // )}
                                                     name="scenariosubcategoryid"
                                                     value={
                                                       formValidation.values
@@ -1197,6 +1158,7 @@ const ScenarioForm = (props) => {
                                                   <Form.Control
                                                     type="number"
                                                     name="duration"
+                                                    className="no-spinner"
                                                     placeholder="Enter Duration"
                                                     autoComplete="off"
                                                     value={
@@ -1213,6 +1175,7 @@ const ScenarioForm = (props) => {
                                                         .duration
                                                     }
                                                   />
+
                                                   <Form.Control.Feedback type="invalid">
                                                     {
                                                       formValidation.errors
