@@ -121,7 +121,7 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
 const scenariocategorylist = ({ db }) => async () => {
   try {
     let [result] = await db.sequelize.query(
-      `select scenariocategoryid,categoryname as scenariocategory from scenario_categories where status = 'Active' and categorytype = 'Private' and (parentscenariocategoryid='0' OR parentscenariocategoryid is NULL) and deletedon is NULL ORDER by categoryname`
+      `select scenariocategoryid, categoryname as scenariocategory from scenario_categories where categorytype = 'Private' and deletedon is NULL ORDER by categoryname`
     );
     return result;
   } catch (error) {
@@ -141,26 +141,38 @@ const scenariocategorylist = ({ db }) => async () => {
 //   }
 // };
 
+// const scenariosubcategorylist = ({ db }) => async () => {
+//   try {
+//     const [result] = await db.sequelize.query(`
+//       SELECT 
+//         sc.scenariocategoryid,
+//         sc.parentscenariocategoryid,
+//         sc.categoryname AS scenariocategory,
+//         scc.categoryname AS parentscenariocategory
+//       FROM scenario_categories sc
+//       LEFT JOIN scenario_categories scc 
+//         ON scc.scenariocategoryid = sc.parentscenariocategoryid
+//       WHERE sc.status = 'Active'
+//         AND sc.deletedon IS NULL
+//       ORDER BY sc.categoryname
+//     `);
+//     return result;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
 const scenariosubcategorylist = ({ db }) => async () => {
   try {
     const [result] = await db.sequelize.query(`
-      SELECT 
-        sc.scenariocategoryid,
-        sc.parentscenariocategoryid,
-        sc.categoryname AS scenariocategory,
-        scc.categoryname AS parentscenariocategory
-      FROM scenario_categories sc
-      LEFT JOIN scenario_categories scc 
-        ON scc.scenariocategoryid = sc.parentscenariocategoryid
-      WHERE sc.status = 'Active'
-        AND sc.deletedon IS NULL
-      ORDER BY sc.categoryname
+      select scenariocategoryid, categoryname as scenariocategory from scenario_categories where categorytype = 'Public' and deletedon is NULL ORDER by categoryname
     `);
+
     return result;
   } catch (error) {
     throw error;
   }
 };
+
 
 
 module.exports = {

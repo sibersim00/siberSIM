@@ -14,7 +14,7 @@ const initialState = {
   companynamedata: [],
   saveflowchartData: [],
   getScnarioComponentByCatData: [],
-  getScenarioSubCategorybyId: [],
+  getScenarioSubCategorybyData: [],
   getScenarioSubCategoriesListData: [],
   getMasterCatListData: [],
   theme: "",
@@ -41,7 +41,7 @@ const slice = createSlice({
     },
     hasGetChildCategoriesListSucc(state, action) {
       (state.isLoading = false),
-        (state.getScenarioSubCategorybyId = action.payload);
+        (state.getScenarioSubCategorybyData = action.payload);
     },
     hasGetSaveFlowchart(state, action) {
       (state.isLoading = false), (state.saveflowchartData = action.payload);
@@ -161,7 +161,7 @@ export function getScenarioSubCategorybyId(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         `${api.scenario_child_category_list}`,
         payload
       );

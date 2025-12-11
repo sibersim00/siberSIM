@@ -19,7 +19,7 @@ module.exports = function (iocContainer) {
     "/scenariocategorylist",
     controller.scenariocategorylist(iocContainer)
   );
-    router.post(
+    router.get(
     "/scenariosubcategorylist",
     controller.scenariosubcategorylist(iocContainer)
   );
