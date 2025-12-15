@@ -3,7 +3,7 @@ import { Dropdown, Nav } from "react-bootstrap";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
-import { getLocalStorageData } from "../../redux/slices/localstorage/LocalStorage";
+import { getLocalStorageData } from "../../redux/slices/localstorage/Localstorage";
 import {
   getNotification,
   markReadNotification,

@@ -12,11 +12,9 @@ const slice = createSlice({
   name: "localData",
   initialState,
   reducers: {
-
     startLoading(state) {
       state.isLoading = true;
     },
-
     hasgetLocalStorageDataSucc(state, action) {
       state.isLoading = false;
       state.getLocalData = action.payload;
@@ -29,7 +27,6 @@ const slice = createSlice({
       state.isLoading = false;
       state.componentData = action.payload;
     },
-
     hasError(state, action) {
       state.isLoading = false;
       state.error = action.payload;
