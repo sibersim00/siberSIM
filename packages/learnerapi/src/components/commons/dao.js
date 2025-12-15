@@ -161,14 +161,16 @@ const scenariocategorylist = ({ db }) => async () => {
 //     throw error;
 //   }
 // };
-const scenariosubcategorylist = ({ db }) => async () => {
-  try {
-    const [result] = await db.sequelize.query(`
-      select scenariocategoryid, categoryname as scenariocategory from scenario_categories where categorytype = 'Public' and deletedon is NULL ORDER by categoryname
-    `);
 
+const scenariosubcategorylist = ({ db }) => async (body) => {
+  let scenariocategoryid = body.scenariocategoryid;
+
+  try {
+    let [result] = await db.sequelize
+      .query(`select sc.scenariocategoryid,sc.parentscenariocategoryid,sc.categoryname as scenariocategory,scc.categoryname as parentscenariocategory from scenario_categories sc left join  scenario_categories scc on scc.scenariocategoryid= sc.parentscenariocategoryid
+where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
     return result;
-  } catch (error) {
+  }  catch (error) {
     throw error;
   }
 };

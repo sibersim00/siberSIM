@@ -40,7 +40,7 @@ const saveJson = ({ dao, db }) => async (req, res, next) => {
 const scenariosubcategorylist = ({ dao, db, validation }) => async (req, res, next) => {
   try {
    const body = req.body;
-    const result = await dao.scenariosubcategorylist({ db,body })();
+    const result = await dao.scenariosubcategorylist({ db })(body);
     return res.status(200).send({ statusCode: 200, data: result });
    
   }
@@ -246,12 +246,31 @@ const theme = ({ dao, db }) => async (req, res, next) => {
 const scenariosubcategorycustomlist = ({ dao, db, validation }) => async (req, res, next) => {
   try {
    const body = req.body;
-    const result = await dao.scenariosubcategorycustomlist({ db,body })();
+    const result = await dao.scenariosubcategorycustomlist({ db })(body);
     return res.status(200).send({ statusCode: 200, data: result });
    
   }
   catch (err) { next(err) }
 }
+
+const getUserTypeWiseList = ({ dao, db }) => async (req, res, next) => {
+  try {
+    const { usertype } = req.query;
+
+    if (!usertype) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: "usertype is required (simMaster or simManager)",
+      });
+    }
+
+    const result = await dao.getUserTypeWiseList({ db })(usertype);
+
+    return res.status(200).send({ statusCode: 200, data: result });
+  } catch (err) {
+    next(err);
+  }
+};
 
 module.exports = {
   instructorlist,
@@ -275,7 +294,8 @@ module.exports = {
   studentlist,
   theme,
   scenariosubcategorycustomlist,
-  scenariocategorycustomlist
+  scenariocategorycustomlist,
+  getUserTypeWiseList
   
   
 

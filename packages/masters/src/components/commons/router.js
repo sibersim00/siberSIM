@@ -57,6 +57,10 @@ module.exports = (iocContainer) => {
     "/scenariosubcategorycustomlist",
     controller.scenariosubcategorycustomlist(iocContainer)
   );
+router.get(
+  "/getusertypewiselist",
+  controller.getUserTypeWiseList(iocContainer)
+);
 
 
   return router;

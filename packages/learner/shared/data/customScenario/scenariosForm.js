@@ -128,31 +128,9 @@ const ScenarioForm = (props) => {
     };
   });
 
-  console.log("hasubCatByIdRes", hasubCatByIdRes);
-
+ 
   const theme = localStorage.getItem("theme_preference") || "light";
   const isDark = theme === "dark";
-
-  useEffect(() => {
-    if (hasgetCatListSucc?.length > 0) {
-      const dropdownData = hasgetCatListSucc.map((item) => ({
-        scenariocategoryid: item.scenariocategoryid,
-        scenariocategory: item.scenariocategory, //  use correct field
-      }));
-
-      setCatDropDownData(dropdownData);
-    }
-  }, [hasgetCatListSucc]);
-  useEffect(() => {
-    if (hasubCatByIdRes?.length > 0) {
-      const dropdownData = hasubCatByIdRes.map((item) => ({
-        scenariocategoryid: item.scenariocategoryid,
-        scenariocategory: item.scenariocategory, //  use correct field
-      }));
-
-      setSubCatDropDownData(dropdownData);
-    }
-  }, [hasubCatByIdRes]);
 
   const level = [
     { id: "1", name: "Easy" },
@@ -210,24 +188,20 @@ const ScenarioForm = (props) => {
     }
   }, [rowId]);
 
-  // useEffect(() => {
-  //   if (rowValues) {
-  //     if (rowValues.scenariocategoryid) {
-  //       handelGetSubCat(rowValues.scenariocategoryid);
-  //     }
-  //   }
-  // }, [rowValues]);
+  useEffect(() => {
+    if (rowValues) {
+      if (rowValues.scenariocategoryid) {
+        handelGetSubCat(rowValues.scenariocategoryid);
+      }
+    }
+  }, [rowValues]);
   useEffect(() => {
     dispatch(getScenarioSubCategoriesList());
     dispatch(clearSingleScenarios());
   }, []);
   useEffect(() => {
-    dispatch(getScenarioSubCategorybyId());
-    dispatch(clearSingleScenarios());
-  }, []);
-  useEffect(() => {
     if (rowValues) {
-      setScenarioId(rowValues?.custom_scenariouuid);
+      setScenarioId(rowValues?.custom_scenarioid);
       setIsChecked(rowValues?.status);
       setInitialHtml(rowValues?.scenariodescription);
     }
@@ -250,16 +224,42 @@ const ScenarioForm = (props) => {
       );
     }
   };
-  console.log(
-    "hasGetSingleScenariosSucchasGetSingleScenariosSucc",
-    hasGetSingleScenariosSucc
-  );
+
 
   useEffect(() => {
     if (hasGetSingleScenariosSucc && hasGetSingleScenariosSucc !== "") {
       setRowValues(hasGetSingleScenariosSucc);
     }
   }, [hasGetSingleScenariosSucc]);
+
+  useEffect(() => {
+    if (hasubCatByIdRes && hasubCatByIdRes.length > 0) {
+      let temp = hasubCatByIdRes.map((cat) => ({
+        scenariocategory: cat?.scenariocategory || "",
+        scenariosubcategoryid: cat?.scenariocategoryid,
+      }));
+      setSubCatDropDownData(temp);
+      const selectedsubcategory = temp.find(
+        (obj) => obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
+      );
+      // formValidation.setFieldValue("scenariosubcategoryid", selectedsubcategory);
+    }
+  }, [hasubCatByIdRes]);
+
+  useEffect(() => {
+    if (hasgetCatListSucc && hasgetCatListSucc.length > 0) {
+      let temp = hasgetCatListSucc.map((cat) => ({
+        scenariocategory: cat?.scenariocategory || "",
+        scenariocategoryid: cat?.scenariocategoryid,
+      }));
+      setCatDropDownData(temp);
+      const selectedcategory = temp.find(
+        (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
+      );
+
+      formValidation.setFieldValue("scenariocategoryid", selectedcategory);
+    }
+  }, [hasgetCatListSucc]);
 
   useEffect(() => {
     if (errorData?.statusCode) {
@@ -292,10 +292,16 @@ const ScenarioForm = (props) => {
     }
   }, [errorData]);
 
+  // useEffect(() => {
+  //   if (typeof window !== "undefined") {
+  //     dispatch(getLocalStorageData("user"));
+  //   }
+  // }, []);
+
   const [userType, setUserType] = useState("");
   const [userId, setUserId] = useState("");
   const [scenarioId, setScenarioId] = useState("");
-  console.log("usertype", getUserDataFromLocal.usertype);
+ 
 
   useEffect(() => {
     if (
@@ -332,10 +338,7 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
-  console.log(
-    "saveScenariosDatasaveScenariosDatasaveScenariosData",
-    saveScenariosData
-  );
+ 
 
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
@@ -350,7 +353,7 @@ const ScenarioForm = (props) => {
         }
       );
 
-      setScenarioId(saveScenariosData?.custom_scenariouuid);
+      setScenarioId(saveScenariosData?.scenarioid);
       dispatch(clearSaveScenarios());
       setTabIndex("tab2");
     }
@@ -378,20 +381,18 @@ const ScenarioForm = (props) => {
       setRowValues({});
     }
   }, [updateScenariosData]);
-  console.log(
-    "rowValuesrowValuesrowValuesrowValuesrowValuesrrrrrrrrrrr",
-    rowValues
-  );
+  
 
   const formValidation = useFormik({
     enableReinitialize: true,
     initialValues: {
       scenarioidentification: rowValues?.scenarioidentification || "",
-      scenariosubcategoryid: rowValues?.scenariosubcategoryid
-  ? subCatDropDownData.filter(
-      (s) => s.scenariocategoryid === rowValues.scenariosubcategoryid
-    )
-  : [],
+
+      scenariosubcategoryid:
+        subCatDropDownData.find(
+          (obj) =>
+            obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
+        ) || null,
       scenariotitle: rowValues?.scenariotitle || "",
       description: rowValues?.scenariodescription || "",
       scenariolevel:
@@ -407,12 +408,10 @@ const ScenarioForm = (props) => {
       status: rowValues?.status || "",
       image_url: rowValues?.instruction_file || "",
       duration: rowValues?.duration || "",
-      scenariocategoryids: rowValues?.scenariocategoryid
-  ? catDropDownData.filter(
-      (c) => c.scenariocategoryid === rowValues.scenariocategoryid
-    )
-  : [],
-
+      scenariocategoryids:
+        catDropDownData.find(
+          (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
+        ) || "",
       scenarioimage: rowValues?.scenarioimage || "",
     },
     validationSchema: Yup.object().shape({
@@ -450,6 +449,16 @@ const ScenarioForm = (props) => {
           "Scenario Level must be selected",
           (value) => value && Object.keys(value).length > 0
         ),
+      // scenariocategoryid: Yup.object().required('required'),
+      scenariocategoryids: Yup.object().required("Required"),
+      scenariosubcategoryid: Yup.object()
+        .nullable()
+        .required("Required")
+        .test(
+          "non-empty-object",
+          "Scenario Subcategory must be selected",
+          (value) => value && Object.keys(value).length > 0
+        ),
       duration: Yup.string()
         .required("Required")
         .matches(/^\d+$/, "Duration must be in minutes")
@@ -472,8 +481,6 @@ const ScenarioForm = (props) => {
     }),
 
     onSubmit: (data, action) => {
-      console.log("datdddddddddddda", data);
-
       const payload = {
         ...(rowValues?.custom_scenarioid && {
           custom_scenarioid: rowValues?.custom_scenarioid,
@@ -481,12 +488,13 @@ const ScenarioForm = (props) => {
         identification: data?.scenarioidentification,
         title: data?.scenariotitle,
         description: initialHtml ? initialHtml : "",
-        scenariocategoryid:
-          data?.scenariocategoryids?.[0]?.scenariocategoryid || null,
+        scenariocategoryid: data?.scenariocategoryids?.scenariocategoryid,
+
         scenariosubcategoryid:
-          data?.scenariosubcategoryid?.[0]?.scenariocategoryid || null,
+          data?.scenariosubcategoryid?.scenariosubcategoryid,
 
         level: data?.scenariolevel?.name,
+
         diagram: data?.diagram || " ",
         status: "true",
         instructor_id: data?.instructor_id?.instructor_id || null,
@@ -511,7 +519,15 @@ const ScenarioForm = (props) => {
     },
   });
 
-  console.log("formValidationformValidation", formValidation);
+ 
+
+  const handelGetSubCat = (catId) => {
+    setSubCatDropDownData([]);
+    const payload = {
+      scenariocategoryid: catId,
+    };
+    dispatch(getScenarioSubCategorybyId(payload));
+  };
 
   return (
     <>
@@ -832,15 +848,14 @@ const ScenarioForm = (props) => {
                                                       </div>
                                                     )}
                                                 </Form.Group>
-                                      
-
                                                 <Form.Group
                                                   as={Col}
                                                   md="4"
-                                                  className="mb-3"
+                                                  controlId="1_2"
+                                                  className="mb-3 h-62 input-container select"
                                                 >
                                                   <Form.Label>
-                                                    Scenario Category
+                                                    {t("Scenario Category")}{" "}
                                                     <span className="text-danger">
                                                       *
                                                     </span>
@@ -924,8 +939,7 @@ const ScenarioForm = (props) => {
                                                     }}
                                                     value={
                                                       formValidation.values
-                                                        .scenariocategoryids[0] ||
-                                                      null
+                                                        .scenariocategoryids
                                                     }
                                                     options={catDropDownData}
                                                     getOptionLabel={(x) =>
@@ -933,52 +947,62 @@ const ScenarioForm = (props) => {
                                                     }
                                                     getOptionValue={(x) =>
                                                       x.scenariocategoryid
-                                                    }
-                                                    placeholder="Select Scenario"
+                                                    } //  FIXED
+                                                    placeholder="Select Category"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariocategoryids",
-                                                        [e]
+                                                        e
                                                       );
+                                                      handelGetSubCat(
+                                                        e.scenariocategoryid
+                                                      ); // auto fetch subcategories
                                                     }}
-                                                    menuPosition="fixed"
-                                                  />
-                                                  <div
-                                                    className="text-danger mt-1"
-                                                    style={{
-                                                      fontSize: "0.875rem",
-                                                    }}
-                                                  >
-                                                    {formValidation.touched
-                                                      .scenarioid &&
+                                                    isInvalid={
+                                                      formValidation.touched
+                                                        .scenariocategoryids &&
                                                       formValidation.errors
-                                                        .scenarioid}
-                                                  </div>
+                                                        .scenariocategoryids
+                                                    }
+                                                  />
+
+                                                  {formValidation.errors
+                                                    .scenariocategoryids &&
+                                                    formValidation.touched
+                                                      .scenariocategoryids && (
+                                                      <div className="invalid-tooltiped">
+                                                        {
+                                                          formValidation.errors
+                                                            .scenariocategoryids
+                                                        }
+                                                      </div>
+                                                    )}
                                                 </Form.Group>
 
                                                 <Form.Group
                                                   as={Col}
                                                   md="4"
-                                                  className="mb-3"
+                                                  controlId="1_2"
+                                                  className="mb-3 h-62 input-container select"
                                                 >
                                                   <Form.Label>
-                                                    Scenario Sub Category
+                                                    {t("Scenario Sub Category")}{" "}
                                                     <span className="text-danger">
                                                       *
                                                     </span>
                                                   </Form.Label>
+
                                                   <Select
                                                     theme={(theme) => ({
                                                       ...theme,
                                                       colors: {
                                                         ...theme.colors,
                                                         primary25:
-                                                          "var(--primary-bg-color)",
+                                                          "var(--primary-bg-color)", // hover
                                                         primary:
-                                                          "var(--primary-bg-color)",
+                                                          "var(--primary-bg-color)", // selected option
                                                       },
                                                     })}
-                                                    name="scenariosubcategoryid"
                                                     styles={{
                                                       control: (provided) => ({
                                                         ...provided,
@@ -1024,7 +1048,7 @@ const ScenarioForm = (props) => {
                                                         ...provided,
                                                         color: isDark
                                                           ? "#fff"
-                                                          : "#555",
+                                                          : "#474646ff",
                                                       }),
                                                       placeholder: (
                                                         provided
@@ -1041,39 +1065,46 @@ const ScenarioForm = (props) => {
                                                           : "#000",
                                                       }),
                                                     }}
+                                                    //  styles={getSelectStyles(
+                                                    //   "scenariosubcategoryid"
+                                                    // )}
+                                                    name="scenariosubcategoryid"
                                                     value={
                                                       formValidation.values
-                                                        .scenariosubcategoryid[0] ||
+                                                        .scenariosubcategoryid ||
                                                       null
                                                     }
-                                                    options={subCatDropDownData}
+                                                    options={
+                                                      subCatDropDownData || []
+                                                    }
                                                     getOptionLabel={(x) =>
                                                       x.scenariocategory
                                                     }
                                                     getOptionValue={(x) =>
-                                                      x.scenariocategoryid
+                                                      x.scenariosubcategoryid
                                                     }
-                                                    placeholder="Select Scenario"
+                                                    placeholder="Select Sub Category"
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariosubcategoryid",
-                                                        [e]
+                                                        e
                                                       );
                                                     }}
-                                                    menuPosition="fixed"
                                                   />
-                                                  <div
-                                                    className="text-danger mt-1"
-                                                    style={{
-                                                      fontSize: "0.875rem",
-                                                    }}
-                                                  >
-                                                    {formValidation.touched
-                                                      .scenarioid &&
-                                                      formValidation.errors
-                                                        .scenarioid}
-                                                  </div>
+
+                                                  {formValidation.errors
+                                                    .scenariosubcategoryid &&
+                                                    formValidation.touched
+                                                      .scenariosubcategoryid && (
+                                                      <div className="invalid-tooltiped">
+                                                        {
+                                                          formValidation.errors
+                                                            .scenariosubcategoryid
+                                                        }
+                                                      </div>
+                                                    )}
                                                 </Form.Group>
+
                                                 <Form.Group
                                                   as={Col}
                                                   md="4"
@@ -1373,7 +1404,7 @@ const ScenarioForm = (props) => {
                           </Row>
                         </Tab.Pane>
                       )}
-                      {console.log(scenarioId, "tabIndex", tabIndex)}
+                   
 
                       {tabIndex === "tab2" &&
                         scenarioId !== undefined &&

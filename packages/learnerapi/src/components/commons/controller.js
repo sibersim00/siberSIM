@@ -74,7 +74,8 @@ const theme =
 
 const scenariosubcategorylist = ({ dao, db, validation }) => async (req, res, next) => {
   try {
-    const result = await dao.scenariosubcategorylist({ db })();
+   const body = req.body;
+    const result = await dao.scenariosubcategorylist({ db })(body);
     return res.status(200).send({ statusCode: 200, data: result });
    
   }
