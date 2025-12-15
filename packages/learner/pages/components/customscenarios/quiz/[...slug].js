@@ -8,7 +8,7 @@ import Swal from "sweetalert2";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import Seo from "../../../../shared/layout-components/seo/seo";
-import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
+import ActionButtonRenderer from "../../../../shared/data/masterbuttons/action-button";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 // import { getScenarioQuizlist, changeQuizStatus, clearchangeQuizStatus, deleteScenarioQuiz, clearDeleteQuiz, clearVerifyScenarioImportQuiz, clearSaveImportQuestion, clearHasError } from "../../../../shared/redux/slices/scenarioquiz/quizManage";

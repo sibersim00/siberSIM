@@ -19,7 +19,7 @@ import {
 import {
   getLocalStorageData,
   setLocalStorageData,
-} from "../../../shared/redux/slices/localstorage/localstorage";
+} from "../../../shared/redux/slices/localstorage/LocalStorage";
 import Seo from "../../../shared/layout-components/seo/seo";
 import {
   emailRegExp,

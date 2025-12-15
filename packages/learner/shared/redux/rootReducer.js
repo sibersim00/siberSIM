@@ -2,7 +2,7 @@ import { combineReducers } from "redux";
 import storage from "redux-persist/lib/storage";
 import products from "./slices/product/products";
 import auth from "./slices/auth/auth";
-import localstorage from "./slices/localstorage/localstorage";
+import localstorage from "./slices/localstorage/LocalStorage";
 import profile from "./slices/profile/profile";
 import commons from "./slices/commons/commons";
 import dashboard from "./slices/dashboard/dashboard";
