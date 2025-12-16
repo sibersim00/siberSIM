@@ -113,6 +113,7 @@ const ScenarioForm = (props) => {
         state.commonsdata &&
         state.commonsdata.getScenarioSubCategoriesListData &&
         state.commonsdata.getScenarioSubCategoriesListData.data,
+       
       hasubCatByIdRes:
         state &&
         state.commonsdata &&
@@ -131,6 +132,7 @@ const ScenarioForm = (props) => {
  
   const theme = localStorage.getItem("theme_preference") || "light";
   const isDark = theme === "dark";
+
 
   const level = [
     { id: "1", name: "Easy" },
@@ -187,6 +189,7 @@ const ScenarioForm = (props) => {
       dispatch(getSinglecustomScenarios(rowId));
     }
   }, [rowId]);
+  
 
   useEffect(() => {
     if (rowValues) {
@@ -195,6 +198,7 @@ const ScenarioForm = (props) => {
       }
     }
   }, [rowValues]);
+  
   useEffect(() => {
     dispatch(getScenarioSubCategoriesList());
     dispatch(clearSingleScenarios());
@@ -459,6 +463,7 @@ const ScenarioForm = (props) => {
           "Scenario Subcategory must be selected",
           (value) => value && Object.keys(value).length > 0
         ),
+      
       duration: Yup.string()
         .required("Required")
         .matches(/^\d+$/, "Duration must be in minutes")
@@ -492,7 +497,7 @@ const ScenarioForm = (props) => {
 
         scenariosubcategoryid:
           data?.scenariosubcategoryid?.scenariosubcategoryid,
-
+       
         level: data?.scenariolevel?.name,
 
         diagram: data?.diagram || " ",
@@ -528,6 +533,7 @@ const ScenarioForm = (props) => {
     };
     dispatch(getScenarioSubCategorybyId(payload));
   };
+ 
 
   return (
     <>
@@ -949,15 +955,28 @@ const ScenarioForm = (props) => {
                                                       x.scenariocategoryid
                                                     } //  FIXED
                                                     placeholder="Select Category"
+                                                    // onChange={(e) => {
+                                                    //   formValidation.setFieldValue(
+                                                    //     "scenariocategoryids",
+                                                    //     e
+                                                    //   );
+                                                    //   handelGetSubCat(
+                                                    //     e.scenariocategoryid
+                                                    //   ); // auto fetch subcategories
+                                                    // }}
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariocategoryids",
                                                         e
                                                       );
-                                                      handelGetSubCat(
-                                                        e.scenariocategoryid
-                                                      ); // auto fetch subcategories
+                                                      formValidation.setFieldValue(
+                                                        "scenariosubcategoryid",
+                                                        null
+                                                      );
+                                                      setSubCatDropDownData([]);
+                                                      handelGetSubCat(e.scenariocategoryid);
                                                     }}
+                                                    
                                                     isInvalid={
                                                       formValidation.touched
                                                         .scenariocategoryids &&
