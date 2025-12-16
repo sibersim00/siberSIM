@@ -35,28 +35,10 @@ module.exports = function (iocContainer) {
     validator(validation.deleteSchema, "body"),
     controller.deleteById(iocContainer)
   );
+  
   router.post(
     "/savecomponentconfiguration",
-    validator(validation.componentconfigSchema, "body"),
     controller.saveComponentconfiguration(iocContainer)
   );
-  // router.post(
-  //   "/export_selected_scenarios",
-  //   controller.exportSelectedScenarios(iocContainer)
-  // );
-
-  // const storage = multer.memoryStorage();
-  // const upload = multer({ storage });
-
-
-  //   router.post(
-  //   "/import_scenario_zip",
-  //   upload.array("files"), // 👈 frontend must send files using field name "files"
-  //   controller.importScenariosZip(iocContainer)
-  // );
-
-
-
-
   return router;
 };

@@ -161,7 +161,7 @@ export function getScenarioSubCategorybyId(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.get(
+      const response = await axios.post(
         `${api.scenario_child_category_list}`,
         payload
       );
