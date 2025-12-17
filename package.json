@@ -4,7 +4,8 @@
   "description": "siberSIM 1.0",
   "scripts": {
     "start": "node ./dev-deploy",
-    "uat-deploy": "node ./uat-deploy"
+    "uat-deploy": "node ./uat-deploy",
+    "uat-deploy-almalinux": "node ./uat-deploy-almalinux"
   },
   "repository": {
     "type": "git",
