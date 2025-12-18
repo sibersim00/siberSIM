@@ -53,7 +53,7 @@ const {
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
-  const theme = localStorage.getItem("theme_preference") || "light";
+  const theme = "dark";
   const isDark = theme === "dark";
   useEffect(() => {
     dispatch(getCategoriesList());

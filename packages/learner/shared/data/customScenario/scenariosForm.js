@@ -129,7 +129,7 @@ const ScenarioForm = (props) => {
     };
   });
 
-  const theme = localStorage.getItem("theme_preference") || "light";
+  const theme = "dark" || "light";
   const isDark = theme === "dark";
 
   const level = [
