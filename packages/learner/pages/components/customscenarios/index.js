@@ -24,7 +24,7 @@ import {
   handleManageView,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
+import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
 import { ToggleButton } from "@mui/material";
 import { styled } from "@mui/system";
 import Seo from "../../../shared/layout-components/seo/seo";
