@@ -24,13 +24,13 @@ const nextConfig = withTM({
 
 
   env: { 
-    API_URL_LOGIN :  `http://sibersim.battlerangers.com/authapi`,
-    API_URL_LEARNER : 'http://sibersim.battlerangers.com/learnerapi',
-    EVENTLEARNER_API_URL : `http://sibersim.battlerangers.com/jobapi`,
-    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
+    API_URL_LOGIN :  `http://sibersim.cloud/authapi`,
+    API_URL_LEARNER : 'http://sibersim.cloud/learnerapi',
+    EVENTLEARNER_API_URL : `http://sibersim.cloud/jobapi`,
+    API_URL_FILEMANAGER:`http://sibersim.cloud/jobapi`,
     CRYPTO_SECURITY_KEY : 'techno5202jarus',
-    BASE_PATH : `http://sibersim.battlerangers.com/`,
-    VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
+    BASE_PATH : `http://sibersim.cloud/`,
+    VNC_PROXY_URL :`ws://sibersim.cloud:4007`,
   },
      async headers() {    
     return [      

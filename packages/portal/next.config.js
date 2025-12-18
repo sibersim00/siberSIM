@@ -21,14 +21,14 @@ const nextConfig = withTM({
     path: "",
   },
   env: {
-   NEXT_PUBLIC_BASE_PATH : `http://sibersim.battlerangers.com/app`,
-   API_URL_LOGIN : `http://sibersim.battlerangers.com/authapi`,
-   API_URL_MASTERS : `http://sibersim.battlerangers.com/masterapi`,
-   API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
-   LEARNER_BASE_PATH: 'http://sibersim.battlerangers.com',
+   NEXT_PUBLIC_BASE_PATH : `http://sibersim.cloud/app`,
+   API_URL_LOGIN : `http://sibersim.cloud/authapi`,
+   API_URL_MASTERS : `http://sibersim.cloud/masterapi`,
+   API_URL_FILEMANAGER:`http://sibersim.cloud/jobapi`,
+   LEARNER_BASE_PATH: 'http://sibersim.cloud',
    BASE_PATH : `/app/`,
    CRYPTO_SECURITY_KEY:'techno5202jarus',
-    VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
+    VNC_PROXY_URL :`ws://sibersim.cloud:4007`,
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.module.rules.push({
