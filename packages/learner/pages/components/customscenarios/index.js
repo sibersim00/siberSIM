@@ -11,6 +11,8 @@ import {
   Tooltip,
   Modal,
   Form,
+  Nav,
+  Tab 
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
@@ -19,21 +21,11 @@ import Select from "react-select";
 
 import {
   getScenarioList,
-  changeStatusScenarios,
-  clearScenariosChangeStatus,
-  deleteScenarios,
-  cleardeleteScenarios,
-  clearHasError,
   handleManageView,
-  exportSelectedScenariosAction,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
-// import * as XLSX from "xlsx";
-// import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
-
+import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import { ToggleButton } from "@mui/material";
-
 import { styled } from "@mui/system";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ScenarioForm from "../../../shared/data/customScenario/scenariosForm";
@@ -41,12 +33,9 @@ import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import { Fab } from "@mui/material";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
-// import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
-
 const ManageScenarios = () => {
   const { t } = useTranslation();
   const router = useRouter();
-
   const dispatch = useDispatch();
   const [scenStatus, setscenStatus] = useState("true");
   const [view, setView] = useState("card");
@@ -65,6 +54,7 @@ const ManageScenarios = () => {
   const [selectedScenarios, setSelectedScenarios] = useState([]);
   const [approvalFilter, setApprovalFilter] = useState("Unapproved"); // "", "Reject", "Pending", "Approved"
   const [approvalStatus, setApprovalStatus] = useState("");
+  const [showTabs, setShowTabs] = useState(true);
 
   const [rowValues, setRowValues] = useState({
     title: "Add",
@@ -82,7 +72,7 @@ const ManageScenarios = () => {
   });
   const CustomToggleButton = styled(ToggleButton)(() => {
     const isDark = document.body.classList.contains("dark-theme");
-    const greenBorder = "#198754";
+    const greenBorder = "#19B159";
     const lightBorder = "#d1d1d1"; // light grey for light mode
 
     return {
@@ -96,14 +86,14 @@ const ManageScenarios = () => {
         borderColor: greenBorder,
         color: "#fff",
         "&:hover": {
-          backgroundColor: "#157347",
+          backgroundColor: "#19B159",
         },
       },
 
       "&:not(.Mui-selected)": {
         backgroundColor: "transparent",
         "&:hover": {
-          borderColor: isDark ? "#157347" : "#bdbdbd", // darker green or medium grey
+          borderColor: isDark ? "#19B159" : "#bdbdbd", // darker green or medium grey
           color: isDark ? "#fff" : "#000",
         },
       },
@@ -241,27 +231,28 @@ const ManageScenarios = () => {
       minWidth: 240,
       cellRendererFramework: assignedBadgeRenderer,
     },
-      {
-    headerName: "Status",
-    field: "approval_status",
-    filter: true,
-    floatingFilter: true,
-    minWidth: 160,
-    cellRendererFramework: (params) => {
-      const status = params.value?.toLowerCase();
-      let badgeClass = "badge bg-secondary"; // default style
+    {
+      headerName: "Status",
+      field: "approval_status",
+      filter: true,
+      floatingFilter: true,
+      minWidth: 160,
+      cellRendererFramework: (params) => {
+        const status = params.value?.toLowerCase();
+        let badgeClass = "badge bg-secondary"; // default style
 
-      if (status === "approve") badgeClass = "badge bg-success";
-      else if (status === "pending") badgeClass = "badge bg-warning text-dark";
-      else if (status === "reject") badgeClass = "badge bg-danger";
+        if (status === "approve") badgeClass = "badge bg-success";
+        else if (status === "pending")
+          badgeClass = "badge bg-warning text-dark";
+        else if (status === "reject") badgeClass = "badge bg-danger";
 
-      return (
-        <span className={badgeClass} style={{ fontSize: "0.85rem" }}>
-          {params.value || "—"}
-        </span>
-      );
+        return (
+          <span className={badgeClass} style={{ fontSize: "0.85rem" }}>
+            {params.value || "—"}
+          </span>
+        );
+      },
     },
-  },
     {
       headerName: "Level",
       field: "scenariolevel",
@@ -283,21 +274,6 @@ const ManageScenarios = () => {
       floatingFilter: true,
       minWidth: 180,
     },
-    // {
-    //   headerName: "SIMManager",
-    //   field: "instructor_name",
-    //   filter: true,
-    //   floatingFilter: true,
-    //   minWidth: 180,
-    // },
-    // {
-    //   headerName: "Instruction File",
-    //   field: "instruction_file",
-    //   filter: true,
-    //   flex: 1,
-    //   floatingFilter: true,
-    //   minWidth: 180,
-    // },
     {
       headerName: "Duration",
       field: "duration",
@@ -412,91 +388,6 @@ const ManageScenarios = () => {
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
 
-  //main
-  // const handleExport = () => {
-  //   // Filter data based on scenStatus ("" = all, "true" = active, "false" = inactive)
-  //   const filteredData = hasGetScenarioListSucc.filter((row) => {
-  //     if (scenStatus === "") return true; // All
-  //     return row.status === scenStatus;
-  //   });
-
-  //   const exportData = filteredData.map((row) => {
-  //     const createdDate = row.createdon ? new Date(row.createdon) : null;
-  //     const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
-
-  //     const createdDateOnly =
-  //       createdDate && !isNaN(createdDate)
-  //         ? createdDate.toLocaleDateString()
-  //         : "N/A";
-  //     const createdTime =
-  //       createdDate && !isNaN(createdDate)
-  //         ? createdDate.toLocaleTimeString()
-  //         : "N/A";
-
-  //     const modifiedDateOnly =
-  //       modifiedDate && !isNaN(modifiedDate)
-  //         ? modifiedDate.toLocaleDateString()
-  //         : " ";
-  //     const modifiedTime =
-  //       modifiedDate && !isNaN(modifiedDate)
-  //         ? modifiedDate.toLocaleTimeString()
-  //         : " ";
-
-  //     return [
-  //       row.scenarioid,
-  //       row.scenarioidentification,
-  //       row.scenariotitle,
-  //       row.scenariodescription,
-  //       row.scenariocategory,
-  //       row.scenariosubcategory,
-  //       row.scenariolevel,
-  //       row.instructor_name,
-  //       row.instruction_file,
-  //       row.duration,
-  //       row.status === "true" ? "Active" : "Inactive",
-  //       createdDateOnly,
-  //       createdTime,
-  //       modifiedDateOnly,
-  //       modifiedTime,
-  //     ];
-  //   });
-
-  //   const header = [
-  //     "Scenario Id",
-  //     "Identification no",
-  //     "Title",
-  //     "Desciption",
-  //     "Scenario Category",
-  //     "Scenario Sub Category",
-  //     "Level",
-  //     "Instructor Name",
-  //     "Instruction File",
-  //     "Duration",
-  //     "Status",
-  //     "Created Date",
-  //     "Created Time",
-  //     "Modified Date",
-  //     "Modified Time",
-  //   ];
-
-  //   const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
-  //   const workbook = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Scenarios");
-
-  //   const timestamp = new Date()
-  //     .toISOString()
-  //     .replace(/[-T:\.]/g, "")
-  //     .slice(0, 15);
-  //   const filePrefix =
-  //     scenStatus === ""
-  //       ? "Scenarios_All"
-  //       : scenStatus === "true"
-  //       ? "Scenarios_Active"
-  //       : "Scenarios_Inactive";
-
-  //   XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
-  // };
-
   const gridOptions = {
     pagination: true,
     paginationPageSize: 10, // use state variable for page size
@@ -513,11 +404,14 @@ const ManageScenarios = () => {
       const temp =
         hasGetScenarioListSucc &&
         hasGetScenarioListSucc.filter((d) => {
+          console.log("dddddddddddddddddddddd", d);
+
           return (
             d.scenarioidentification?.toLowerCase().includes(val) ||
             // d.instructor_name?.toLowerCase().includes(val) ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
             d.scenariotitle?.toLowerCase().includes(val) ||
+            d.approval_status?.toLowerCase().includes(val) ||
             d.scenariolevel?.toLowerCase().includes(val) ||
             (typeof d.duration === "number" &&
               d.duration.toString().toLowerCase().includes(val)) ||
@@ -543,6 +437,7 @@ const ManageScenarios = () => {
           return (
             d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
             d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+            d.approval_status.toLowerCase().indexOf(val) !== -1 ||
             // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
             d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
@@ -575,6 +470,7 @@ const ManageScenarios = () => {
           return (
             d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
             d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+            d.approval_status.toLowerCase().indexOf(val) !== -1 ||
             // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
             d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
@@ -618,32 +514,39 @@ const ManageScenarios = () => {
     }
   }, [hasGetScenarioListSucc, scenStatus]);
 
+  // const handleChangeView = (thisView) => {
+  //   setQuickFilter("");
+  //   dispatch(handleManageView(thisView));
+  //   setBackView(thisView);
+  //   if (scenStatus == "") {
+  //     setRowData(hasGetScenarioListSucc);
+  //     setGridData(hasGetScenarioListSucc);
+  //   } else if (scenStatus == "true") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "true"
+  //       );
+  //     console.log("culprit", filteredData.length);
+  //     setRowData(filteredData && filteredData.length > 0 ? filteredData : []);
+  //     setGridData(filteredData);
+  //   } else if (scenStatus == "false") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "false"
+  //       );
+  //     setRowData(filteredData && filteredData.length > 0 ? filteredData : []);
+  //     setGridData(filteredData);
+  //   }
+  // };
+
   const handleChangeView = (thisView) => {
     setQuickFilter("");
     dispatch(handleManageView(thisView));
     setBackView(thisView);
-    if (scenStatus == "") {
-      setRowData(hasGetScenarioListSucc);
-      setGridData(hasGetScenarioListSucc);
-    } else if (scenStatus == "true") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "true"
-        );
-      console.log("culprit", filteredData.length);
-      setRowData(filteredData && filteredData.length > 0 ? filteredData : []);
-      setGridData(filteredData);
-    } else if (scenStatus == "false") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "false"
-        );
-      setRowData(filteredData && filteredData.length > 0 ? filteredData : []);
-      setGridData(filteredData);
-    }
   };
+
 
   useEffect(() => {
     if (viewNameResp) {
@@ -664,7 +567,6 @@ const ManageScenarios = () => {
     }
   }, [gridApi]);
 
-
   const [userType, setUserType] = useState("");
 
   useEffect(() => {
@@ -681,6 +583,7 @@ const ManageScenarios = () => {
 
   const [rowId, setRowId] = useState("");
   const handleEdit = (props) => {
+    setShowTabs(false);
     handleOneClick(false);
     setPreviousView(view);
     setBackView(view);
@@ -692,59 +595,6 @@ const ManageScenarios = () => {
       console.log("first", props.custom_scenariouuid);
     }
   };
-
-  // const handleDeletecard = (item) => {
-  //   console.log("itemitemitemitemitemitemitem", item);
-
-  //   Swal.fire({
-  //     title: t("common.swal.title"),
-  //     text: t("common.swal.text_delete"),
-  //     icon: "warning",
-  //     showCancelButton: true,
-  //     confirmButtonColor: " var(--primary-bg-color)",
-  //     cancelButtonColor: "var(--secondary)",
-  //     confirmButtonText: t("common.swal.yes"),
-  //     allowOutsideClick: false,
-  //   }).then((result) => {
-  //     if (result.isConfirmed) {
-  //       const payload = {
-  //         scenarioid: item?.scenarioid,
-  //       };
-  //       dispatch(deleteScenarios(payload));
-  //     }
-  //   });
-  // };
-
-  // const handleDelete = (props, flag) => {
-  //   if (flag == true) {
-  //     const payload = {
-  //       scenarioid: props?.scenarioid,
-  //     };
-  //     dispatch(deleteScenarios(payload));
-  //   }
-  // };
-
-  // const handleStatusSwitch = (data) => {
-  //   Swal.fire({
-  //     title: "Are you sure?",
-  //     text: "Do you really want to change the status?",
-  //     icon: "warning",
-  //     showCancelButton: true,
-  //     confirmButtonColor: " var(--primary-bg-color)",
-  //     cancelButtonColor: "var(--secondary)",
-  //     confirmButtonText: "Yes, change it!",
-  //     allowOutsideClick: false,
-  //   }).then((result) => {
-  //     if (result.isConfirmed) {
-  //       const Id = data?.scenarioid;
-  //       const payload = {
-  //         status: data.status == "true" ? "false" : "true",
-  //         scenarioid: Id,
-  //       };
-  //       dispatch(changeStatusScenarios(payload, Id));
-  //     }
-  //   });
-  // };
   useEffect(() => {
     if (hasGetScenarioListSucc && hasGetScenarioListSucc.length > 0) {
       handleApprovalFilter(approvalFilter);
@@ -757,6 +607,8 @@ const ManageScenarios = () => {
     }
   }, [router.query.filter]);
   console.log("approvalFilterapprovalFilter", approvalFilter);
+
+  
   const handleReturnView = (props) => {
     push({
       pathname: `/custom_scenarios_view/${props?.custom_scenariouuid}`,
@@ -775,7 +627,9 @@ const ManageScenarios = () => {
         filtered = hasGetScenarioListSucc.filter(
           (item) =>
             item.approval_status &&
-            ["pending", "reject", "draft"].includes(item.approval_status.toLowerCase())
+            ["pending", "reject", "draft"].includes(
+              item.approval_status.toLowerCase()
+            )
         );
       } else if (status === "Approve") {
         // Show only Approved
@@ -795,10 +649,11 @@ const ManageScenarios = () => {
   };
 
   const handleReturnFromEdit = () => {
+    setShowTabs(true);
     setView(previousView);
     dispatch(handleManageView(previousView));
   };
-
+  
   const handleFiles = (props, action = "view") => {
     if (props?.instruction_file) {
       const fileUrl = `${process.env.API_URL_FILEMANAGER}${props.instruction_file}`;
@@ -821,49 +676,30 @@ const ManageScenarios = () => {
     }
   };
 
-  // const frameworkComponents = {
-  //   srNoRender: function (props) {
-  //     return props.node.rowIndex + 1;
-  //   },
-  //   actionButtonRenderer: function (props) {
-  //     return (
-  //       <ActionButtonRenderer
-  //         handleEditView={handleReturnView}
-  //         handleShowEditView={true}
-  //         handleEdit={handleEdit}
-  //         // handleFiles={handleFiles}
-  //         propsVal={props}
-  //         handleShowEdit={true}
-  //         // handleDelete={handleDelete}
-  //       />
-  //     );
-  //   },
-  // };
-const frameworkComponents = {
-  srNoRender: (props) => props.node.rowIndex + 1,
+  const frameworkComponents = {
+    srNoRender: (props) => props.node.rowIndex + 1,
 
-  actionButtonRenderer: (props) => {
-    const item = props.data;
+    actionButtonRenderer: (props) => {
+      const item = props.data;
 
-    return (
-      <ActionButtonRenderer
-        handleEditView={handleReturnView}
-        handleShowEditView={item.approval_status === "Approve"}
+      return (
+        <ActionButtonRenderer
+          handleEditView={handleReturnView}
+          handleShowEditView={item.approval_status === "Approve"}
+          handleEdit={handleEdit}
+          handleShowEdit={
+            item.approval_status === "Pending" ||
+            item.approval_status === "Reject" ||
+            item.approval_status === "Draft"
 
-        handleEdit={handleEdit}
-        handleShowEdit={
-          item.approval_status === "Pending" || item.approval_status === "Reject"
-        }
-        // Show view only for Approve
-        handleShowView={item.approval_status === "Approve"}
-        propsVal={props}
-      />
-    );
-  },
-};
-
-
-
+          }
+          // Show view only for Approve
+          handleShowView={item.approval_status === "Approve"}
+          propsVal={props}
+        />
+      );
+    },
+  };
 
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
@@ -888,6 +724,81 @@ const frameworkComponents = {
     <>
       <Seo title="Custom Scenarios" />
       <ToastContainer />
+      {showTabs && (
+      <Row className="mg-b-10 text-wrap">
+        <Col md={12}>
+          <div className="panel panel-primary tabs-style-2">
+            <div className="tab-menu-heading">
+              <div className="tabs-menu ">
+                <Tab.Container
+                  id="scenario-tabs"
+                  activeKey={approvalFilter}
+                  onSelect={(key) => {
+                    console.log("key---------------", key);
+                    setApprovalFilter(key);
+                    handleApprovalFilter(key);
+                  }}
+                >
+                  <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
+                    <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
+                      <Nav.Item
+                        className="mastermenu"
+                        onClick={() => {
+                          handleApprovalFilter("Unapproved");
+                        }}
+                      >
+                        <Nav.Link
+                          eventKey="Unapproved"
+                          className="masterlist"
+                          value={approvalFilter}
+                          exclusive
+                          style={{
+                            color:
+                              approvalFilter === "Unapproved"
+                                ? "#007bff"
+                                : "gray",
+                            fontWeight:
+                              approvalFilter === "Unapproved"
+                                ? "bold"
+                                : "normal",
+                          }}
+                        >
+                          Unapproved
+                        </Nav.Link>
+                      </Nav.Item>
+
+                      <Nav.Item
+                        className="mastermenu"
+                        onClick={() => {
+                          handleApprovalFilter("Approve");
+                        }}
+                      >
+                        <Nav.Link
+                          eventKey="Approve"
+                          className="masterlist"
+                          value={approvalFilter}
+                          exclusive
+                          style={{
+                            color:
+                              approvalFilter === "Approve" ? "#007bff" : "gray",
+                            fontWeight:
+                              approvalFilter === "Approve" ? "bold" : "normal",
+                          }}
+                        >
+                          {" "}
+                          Approved
+                        </Nav.Link>
+                      </Nav.Item>
+                    </Nav>
+                  </Row>
+                </Tab.Container>
+              </div>
+            </div>
+          </div>
+        </Col>
+      </Row>
+      )}
+
       <Row className="row-sm">
         {view != "Form" && (
           <Col md={12}>
@@ -899,20 +810,24 @@ const frameworkComponents = {
                     <div className="d-flex align-items-center">
                       {view === "card" && (
                         <>
-                          <button
+                          <Button
+                            type="button"
+                            variant="outline-primary"
                             onClick={zoomOut}
-                            className="btn bd bd-success text-success mx-1"
+                            className=" text-success mx-1"
                             title="Zoom In"
                           >
                             <i className="fas fa-search-plus"></i>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline-primary"
                             onClick={zoomIn}
-                            className="btn bd bd-success text-success"
+                            className="text-success"
                             title="Zoom Out"
                           >
                             <i className="fas fa-search-minus"></i>
-                          </button>
+                          </Button>
                           &nbsp;
                         </>
                       )}
@@ -921,6 +836,8 @@ const frameworkComponents = {
                         title="Card View"
                         variant="outline-success"
                         onClick={() => {
+                          handleApprovalFilter(approvalFilter);
+
                           handleChangeView("card");
                           dispatch(handleManageView("card"));
                         }}
@@ -935,6 +852,8 @@ const frameworkComponents = {
                         title="List View"
                         variant="outline-success"
                         onClick={() => {
+                          handleApprovalFilter(approvalFilter);
+
                           handleChangeView("list");
                           dispatch(handleManageView("list"));
                         }}
@@ -943,8 +862,8 @@ const frameworkComponents = {
                         <i className="fe fe-list"></i>
                       </Button>
                       &nbsp;&nbsp;
-                 
-                      <ToggleButtonGroup
+                      {/* ====================== */}
+                      {/* <ToggleButtonGroup
                         color="success"
                         value={approvalFilter}
                         size="small"
@@ -953,6 +872,7 @@ const frameworkComponents = {
                           const selected = e.target.value;
                           if (selected) handleApprovalFilter(selected);
                         }}
+                       
                       >
                         <CustomToggleButton value="Unapproved">
                           Unapproved
@@ -961,8 +881,8 @@ const frameworkComponents = {
                           Approved
                         </CustomToggleButton>
                       </ToggleButtonGroup>
-                      &nbsp; &nbsp;
-                    
+                      &nbsp; &nbsp; */}
+                      {/* ========================== */}
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -1059,23 +979,13 @@ const frameworkComponents = {
                         }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column  text-center">
-                          {/* Published Badge */}
-                          {/* {item.scenariostatus === "Publish" && (
-                            <div className="position-absolute top-0 end-0 m-2 z-1 text-align-center">
-                              <Badge bg="primary" pill>
-                                <i className="fas fa-check-circle"></i>
-                              </Badge>
-                            </div>
-                          )} */}
-
-                          {/* Card Content */}
-                          {/* Show badge only in Unapproved tab (top-right corner) */}
+                         
                           {approvalFilter === "Unapproved" && (
                             <div
                               className="position-absolute top-0 end-0 m-2 z-1"
                               style={{ pointerEvents: "none" }}
                             >
-                              {/* {item.approval_status === "Pending" ? (
+                              {item.approval_status === "Pending" ? (
                                 <span
                                   className="badge rounded-pill bg-secondary text-dark px-2 py-1 shadow-sm"
                                   style={{
@@ -1095,39 +1005,17 @@ const frameworkComponents = {
                                 >
                                   Rejected
                                 </span>
-                              ) : null} */}
-                              {item.approval_status === "Pending" ? (
-  <span
-    className="badge rounded-pill bg-secondary text-dark px-2 py-1 shadow-sm"
-    style={{
-      fontSize: "0.8rem",
-      fontWeight: 600,
-    }}
-  >
-    Pending
-  </span>
-) : item.approval_status === "Reject" ? (
-  <span
-    className="badge rounded-pill bg-danger text-white px-2 py-1 shadow-sm"
-    style={{
-      fontSize: "0.8rem",
-      fontWeight: 600,
-    }}
-  >
-    Rejected
-  </span>
-) : item.approval_status === "Draft" ? (
-  <span
-    className="badge rounded-pill bg-warning text-dark px-2 py-1 shadow-sm"
-    style={{
-      fontSize: "0.8rem",
-      fontWeight: 600,
-    }}
-  >
-    Draft
-  </span>
-) : null}
-
+                              ) : item.approval_status === "Draft" ? (
+                                <span
+                                  className="badge rounded-pill bg-warning text-dark px-2 py-1 shadow-sm"
+                                  style={{
+                                    fontSize: "0.8rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  Draft
+                                </span>
+                              ) : null}
                             </div>
                           )}
 
@@ -1183,8 +1071,8 @@ const frameworkComponents = {
                           {/* Second row for actions */}
                           <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
                             {(item.approval_status === "Pending" ||
-                              item.approval_status === "Reject"||
-                              item.approval_status === "Draft")  && (
+                              item.approval_status === "Reject" ||
+                              item.approval_status === "Draft") && (
                               <div
                                 className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
                                 onClick={() => handleEdit(item)}
@@ -1217,43 +1105,6 @@ const frameworkComponents = {
                                 </OverlayTrigger>
                               </div>
                             )}
-
-                            {/* <div
-                              className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
-                              onClick={() => {
-                                handleDeletecard(item);
-                              }}
-                            >
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={<Tooltip>Delete</Tooltip>}
-                              >
-                                <i className="fe fe-trash"></i>
-                              </OverlayTrigger>
-                            </div>
-
-                            {/* Status Switch 
-                            {!(
-                              userType === "Instructor" &&
-                              item.scenariostatus === "Publish"
-                            ) && (
-                              <div className="btn btn-sm ripple me-1">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>Change Status</Tooltip>}
-                                >
-                                  <label className="custom-switch mb-0">
-                                    <input
-                                      type="checkbox"
-                                      className="custom-switch-input"
-                                      checked={item?.status === "true"}
-                                      onChange={() => handleStatusSwitch(item)}
-                                    />
-                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                  </label>
-                                </OverlayTrigger>
-                              </div>
-                            )} */}
                           </div>
                         </Card.Body>
                       </Card>

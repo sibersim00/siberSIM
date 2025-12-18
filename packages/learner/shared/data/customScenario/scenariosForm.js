@@ -113,7 +113,7 @@ const ScenarioForm = (props) => {
         state.commonsdata &&
         state.commonsdata.getScenarioSubCategoriesListData &&
         state.commonsdata.getScenarioSubCategoriesListData.data,
-       
+
       hasubCatByIdRes:
         state &&
         state.commonsdata &&
@@ -129,10 +129,8 @@ const ScenarioForm = (props) => {
     };
   });
 
- 
   const theme = localStorage.getItem("theme_preference") || "light";
   const isDark = theme === "dark";
-
 
   const level = [
     { id: "1", name: "Easy" },
@@ -189,7 +187,6 @@ const ScenarioForm = (props) => {
       dispatch(getSinglecustomScenarios(rowId));
     }
   }, [rowId]);
-  
 
   useEffect(() => {
     if (rowValues) {
@@ -198,14 +195,14 @@ const ScenarioForm = (props) => {
       }
     }
   }, [rowValues]);
-  
+
   useEffect(() => {
     dispatch(getScenarioSubCategoriesList());
     dispatch(clearSingleScenarios());
   }, []);
   useEffect(() => {
     if (rowValues) {
-      setScenarioId(rowValues?.custom_scenarioid);
+      setScenarioId(rowValues?.custom_scenariouuid);
       setIsChecked(rowValues?.status);
       setInitialHtml(rowValues?.scenariodescription);
     }
@@ -228,7 +225,6 @@ const ScenarioForm = (props) => {
       );
     }
   };
-
 
   useEffect(() => {
     if (hasGetSingleScenariosSucc && hasGetSingleScenariosSucc !== "") {
@@ -305,7 +301,6 @@ const ScenarioForm = (props) => {
   const [userType, setUserType] = useState("");
   const [userId, setUserId] = useState("");
   const [scenarioId, setScenarioId] = useState("");
- 
 
   useEffect(() => {
     if (
@@ -342,7 +337,7 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
- 
+console.log("jjjjjjjjjjj",saveScenariosData);
 
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
@@ -385,7 +380,6 @@ const ScenarioForm = (props) => {
       setRowValues({});
     }
   }, [updateScenariosData]);
-  
 
   const formValidation = useFormik({
     enableReinitialize: true,
@@ -463,7 +457,7 @@ const ScenarioForm = (props) => {
           "Scenario Subcategory must be selected",
           (value) => value && Object.keys(value).length > 0
         ),
-      
+
       duration: Yup.string()
         .required("Required")
         .matches(/^\d+$/, "Duration must be in minutes")
@@ -490,6 +484,9 @@ const ScenarioForm = (props) => {
         ...(rowValues?.custom_scenarioid && {
           custom_scenarioid: rowValues?.custom_scenarioid,
         }),
+        ...(rowValues?.custom_scenariouuid && {
+          custom_scenariouuid: rowValues.custom_scenariouuid,
+        }),
         identification: data?.scenarioidentification,
         title: data?.scenariotitle,
         description: initialHtml ? initialHtml : "",
@@ -497,7 +494,7 @@ const ScenarioForm = (props) => {
 
         scenariosubcategoryid:
           data?.scenariosubcategoryid?.scenariosubcategoryid,
-       
+
         level: data?.scenariolevel?.name,
 
         diagram: data?.diagram || " ",
@@ -523,8 +520,7 @@ const ScenarioForm = (props) => {
       action.setSubmitting(false);
     },
   });
-
- 
+  console.log("rowValuesrowValues", rowValues);
 
   const handelGetSubCat = (catId) => {
     setSubCatDropDownData([]);
@@ -533,7 +529,6 @@ const ScenarioForm = (props) => {
     };
     dispatch(getScenarioSubCategorybyId(payload));
   };
- 
 
   return (
     <>
@@ -974,9 +969,10 @@ const ScenarioForm = (props) => {
                                                         null
                                                       );
                                                       setSubCatDropDownData([]);
-                                                      handelGetSubCat(e.scenariocategoryid);
+                                                      handelGetSubCat(
+                                                        e.scenariocategoryid
+                                                      );
                                                     }}
-                                                    
                                                     isInvalid={
                                                       formValidation.touched
                                                         .scenariocategoryids &&
@@ -1423,7 +1419,6 @@ const ScenarioForm = (props) => {
                           </Row>
                         </Tab.Pane>
                       )}
-                   
 
                       {tabIndex === "tab2" &&
                         scenarioId !== undefined &&

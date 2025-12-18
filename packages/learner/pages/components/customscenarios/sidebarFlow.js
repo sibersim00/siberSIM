@@ -6,13 +6,12 @@ import {
   getCategoriesList,
   getScenarioComponentListbyCategory,
 } from "../../../shared/redux/slices/commons/commons";
+
 import {
   getSenarioDigramList,
   getSinglecustomScenarios,
   clearSingleScenarios,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
-// import CopyScenarioModal from "../../../shared/data/scenarios/copyScenarioModal";
-
 const SidebarFlow = ({
   setDraggedNode,
   scenarioId,
@@ -24,7 +23,7 @@ const SidebarFlow = ({
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
-  const {
+const {
     getMasterCatListData,
     getComponentByCatData,
     getScenarioDigListData,
@@ -54,6 +53,8 @@ const SidebarFlow = ({
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
+  const theme = localStorage.getItem("theme_preference") || "light";
+  const isDark = theme === "dark";
   useEffect(() => {
     dispatch(getCategoriesList());
     dispatch(getSenarioDigramList());
@@ -65,28 +66,42 @@ const SidebarFlow = ({
       dispatch(getSinglecustomScenarios(scenarioId));
     }
   }, [scenarioId]);
-
-    const handleDragStart = (e, node) => {
+  const handleDragStart = (e, node) => {
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
+      vmid:
+        node.vmid ||
+        (() => {
+          try {
+            return (node.label || "").split(" - ")[0].trim();
+          } catch (err) {
+            return "";
+          }
+        })(),
     };
     setDraggedNode(normalizedNode);
   };
+
   const [oneClick, setOneClick] = useState(false);
   const [copyModal, setcopyModal] = useState(false);
   const [catDropDownData, setCatDropDown] = useState([]);
   const [scenarioDropDownData, setScenarioDropDownData] = useState([]);
   const [componentDropDownData, setComponentDropDown] = useState([]);
   const [componentCache, setComponentCache] = useState({});
-  const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
-  const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
-  //  const [drggerdComponent,setDraggedComponent] = useState([]);
+  const [imageNodeData, setImageNodeData] = useState([]);
+  const [droppedImages, setDroppedImages] = useState([]); 
   const [toBeDragComponent, setToBeDragComponent] = useState([]);
-  // States to track selected values
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
+  const [rowValues, setRowValues] = useState(null);
+  useEffect(() => {
+    if (getScenarioFlowchart) {
+      setRowValues(getScenarioFlowchart);
+    }
+  }, [getScenarioFlowchart])
+  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -110,15 +125,11 @@ const SidebarFlow = ({
   const handleCategoryChange = (selectedOption) => {
     setSelectedCategory(selectedOption);
     setComponentDropDown([]);
-
-    // Fetch components for the selected category
     dispatch(
       getScenarioComponentListbyCategory({
         componentcategoryid: selectedOption.value,
       })
     );
-
-    // Restore previously selected components (if any)
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
   };
@@ -135,28 +146,7 @@ const SidebarFlow = ({
       setComponentDropDown(filteredData);
     }
   }, [getComponentByCatData]);
-  useEffect(() => {
-    if (
-      selectedScenario &&
-      selectedScenario.scenariodiagram &&
-      selectedScenario.scenariodiagram != ""
-    ) {
-      const data = selectedScenario.scenariodiagram;
-      const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-      if (parsedData?.nodes && parsedData?.edges) {
-        setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
-      }
-    }
 
-    if (selectedScenario && selectedScenario.digramcomponent) {
-      const componentsdata = selectedScenario.digramcomponent;
-      const parsedcomponentData = JSON.parse(componentsdata);
-      setImageNodeData(parsedcomponentData);
-      setDroppedImages(parsedcomponentData.map((comp) => comp.id));
-      setDraggedComponent(parsedcomponentData);
-    }
-  }, [selectedScenario]);
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
       setToBeDragComponent((prev) => {
@@ -208,16 +198,20 @@ const SidebarFlow = ({
         setEdges(parsedData.edges);
       }
     }
-
     if (getScenarioFlowchart && getScenarioFlowchart.components) {
       const componentsdata = getScenarioFlowchart.components;
       const parsedcomponentData = JSON.parse(componentsdata);
-      setImageNodeData(parsedcomponentData);
-      setDroppedImages(parsedcomponentData.map((comp) => comp.id));
-      setDraggedComponent(parsedcomponentData);
+      const normalizedData = parsedcomponentData.map((node) => ({
+        ...node,
+        componentid: node.componentid || node.componentId || node.id,
+        imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl || node.subcategoryimage || ""}`, // 👈 ensure full URL
+      }));
+
+      setImageNodeData(normalizedData); // 👈 update sidebar immediately
+      setDroppedImages(normalizedData.map((comp) => comp.id));
+      setDraggedComponent(normalizedData);
     }
   }, [getScenarioFlowchart]);
-
   useEffect(() => {
     if (getScenarioDigListData && getScenarioDigListData.length > 0) {
       let temp = getScenarioDigListData.map((scenario) => ({
@@ -236,7 +230,49 @@ const SidebarFlow = ({
       setcopyModal(true);
     }
   };
+console.log("imageNodeDataimageNodeData",imageNodeData);
 
+  useEffect(() => {
+  if (imageNodeData && imageNodeData.length > 0) {
+    const updated = imageNodeData.map((node) => {
+      if (node.imageUrl && !node.imageUrl.startsWith("http")) {
+        return {
+          ...node,
+          imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl}`,
+        };
+      }
+      return node;
+    });
+    const changed = JSON.stringify(updated) !== JSON.stringify(imageNodeData);
+    if (changed) {
+      console.log("Fixed missing image URLs after render");
+      setImageNodeData(updated);
+    }
+  }
+}, [imageNodeData]);
+useEffect(() => {
+  if (!imageNodeData || imageNodeData.length === 0) return;
+  setNodes((prevNodes) => {
+    const updated = prevNodes.map((node) => {
+      const match = imageNodeData.find(
+        (imgNode) =>
+          imgNode.componentid === node.data?.componentId ||
+          imgNode.label === node.data?.label
+      );
+      if (match && match.imageUrl && node.data?.image !== match.imageUrl) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            image: match.imageUrl,
+          },
+        };
+      }
+      return node;
+    });
+    return updated;
+  });
+}, [imageNodeData]);
   return (
     <div
       style={{
@@ -247,7 +283,6 @@ const SidebarFlow = ({
         overflowY: "auto",
       }}
     >
-      {/* Row 1: Copy Button + First Select (single horizontal line) */}
       <div
         className="mb-2"
         style={{
@@ -267,17 +302,17 @@ const SidebarFlow = ({
                 primary: "var(--primary-bg-color)",
               },
             })}
-            styles={{
+               styles={{
               control: (provided) => ({
                 ...provided,
-                backgroundColor: "var(--dark-bg-color)", // dark control background
-                color: "#fff",
+                backgroundColor: isDark ? "var(--dark-bg-color)" : "#fff",
+                color: isDark ? "#fff" : "#000",
                 borderColor: "#ced4da",
               }),
               menu: (provided) => ({
                 ...provided,
-                backgroundColor: "#0e0e23", // dark dropdown
-                color: "#fff",
+                backgroundColor: isDark ? "#0e0e23" : "#fff",
+                color: isDark ? "#fff" : "#000",
                 zIndex: 9999,
               }),
               option: (provided, state) => ({
@@ -285,38 +320,24 @@ const SidebarFlow = ({
                 backgroundColor: state.isSelected
                   ? "var(--primary-bg-color)"
                   : state.isFocused
-                  ? "#04973C" // hover color
-                  : "var(--dark-bg-color)",
-                color: "#fff",
+                  ? "#04973C"
+                  : isDark
+                  ? "var(--dark-bg-color)"
+                  : "#fff",
+                color: isDark ? "#fff" : "#000",
                 cursor: "pointer",
               }),
               singleValue: (provided) => ({
                 ...provided,
-                color: "#fff",
+                color: isDark ? "#fff" : "#000",
               }),
               placeholder: (provided) => ({
                 ...provided,
-                color: "#aaa",
+                color: isDark ? "#aaa" : "#555",
               }),
               input: (provided) => ({
                 ...provided,
-                color: "#fff",
-              }),
-              multiValue: (provided) => ({
-                ...provided,
-                backgroundColor: "var(--primary-bg-color)",
-              }),
-              multiValueLabel: (provided) => ({
-                ...provided,
-                color: "#fff",
-              }),
-              multiValueRemove: (provided) => ({
-                ...provided,
-                color: "#fff",
-                ":hover": {
-                  backgroundColor: "#EB5757",
-                  color: "#fff",
-                },
+                color: isDark ? "#fff" : "#000",
               }),
             }}
             name="component_category"
@@ -324,11 +345,9 @@ const SidebarFlow = ({
             options={catDropDownData}
             placeholder="Component Category"
             onChange={handleCategoryChange}
-            // styles={customStyles}
           />
         </div>
       </div>
-      {/* Row 2: Second Select (full width) */}
       <div className="mb-3">
         <Select
           name="component"
@@ -340,17 +359,17 @@ const SidebarFlow = ({
               primary: "var(--primary-bg-color)",
             },
           })}
-          styles={{
+           styles={{
             control: (provided) => ({
               ...provided,
-              backgroundColor: "var(--dark-bg-color)", // dark control background
-              color: "#fff",
+              backgroundColor: isDark ? "var(--dark-bg-color)" : "#fff",
+              color: isDark ? "#fff" : "#000",
               borderColor: "#ced4da",
             }),
             menu: (provided) => ({
               ...provided,
-              backgroundColor: "#0e0e23", // dark dropdown
-              color: "#fff",
+              backgroundColor: isDark ? "#0e0e23" : "#fff",
+              color: isDark ? "#fff" : "#000",
               zIndex: 9999,
             }),
             option: (provided, state) => ({
@@ -358,37 +377,39 @@ const SidebarFlow = ({
               backgroundColor: state.isSelected
                 ? "var(--primary-bg-color)"
                 : state.isFocused
-                ? "#04973C" // hover color
-                : "var(--dark-bg-color)",
-              color: "#fff",
+                ? "#04973C"
+                : isDark
+                ? "var(--dark-bg-color)"
+                : "#fff",
+              color: isDark ? "#fff" : "#000",
               cursor: "pointer",
             }),
             singleValue: (provided) => ({
               ...provided,
-              color: "#fff",
+              color: isDark ? "#fff" : "#000",
             }),
             placeholder: (provided) => ({
               ...provided,
-              color: "#aaa",
+              color: isDark ? "#aaa" : "#555",
             }),
             input: (provided) => ({
               ...provided,
-              color: "#fff",
+              color: isDark ? "#fff" : "#000",
             }),
-            multiValue: (provided) => ({
-              ...provided,
+            multiValue: (styles) => ({
+              ...styles,
               backgroundColor: "var(--primary-bg-color)",
             }),
-            multiValueLabel: (provided) => ({
-              ...provided,
+            multiValueLabel: (styles) => ({
+              ...styles,
               color: "#fff",
             }),
-            multiValueRemove: (provided) => ({
-              ...provided,
+            multiValueRemove: (styles) => ({
+              ...styles,
               color: "#fff",
               ":hover": {
                 backgroundColor: "#EB5757",
-                color: "#fff",
+                color: "white",
               },
             }),
           }}
@@ -405,20 +426,6 @@ const SidebarFlow = ({
             }
           }}
           isMulti
-          // styles={customStyles()}
-          // styles={{
-          //   ...customStyles,
-          //   multiValue: (base) => ({
-          //     ...base,
-          //     overflow: "hidden",
-          //     textOverflow: "ellipsis",
-          //     whiteSpace: "nowrap",
-          //     borderRadius: "2px",
-          //     fontSize: "85%",
-          //     padding: "3px 3px 3px 6px",
-          //     boxSizing: "border-box",
-          //   }),
-          // }}
         />
       </div>
 
@@ -438,7 +445,6 @@ const SidebarFlow = ({
             style={{
               width: "120px",
               height: "120px",
-              //  backgroundColor: droppedImages.includes(node.id) ? '#e0e0e0' : '#e9e9e9',
               borderRadius: "8px",
               display: "flex",
               flexDirection: "column",
@@ -469,53 +475,8 @@ const SidebarFlow = ({
           </div>
         ))}
       </div>
-      {/* <CopyScenarioModal
-        openFlag={copyModal}
-        setcopyModal={setcopyModal}
-        scenarioId={scenarioId}
-        oneClick={oneClick} selectedScenario={selectedScenario} scenarioDropDownData= {scenarioDropDownData}
-        handleOneClick={handleOneClick} setSelectedScenario={setSelectedScenario}
-      /> */}
     </div>
   );
 };
 export default SidebarFlow;
 
-const customStyles = () => {
-  return {
-    control: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--dark-bg-color)",
-      borderColor: "#ced4da",
-      minHeight: "38px",
-    }),
-    multiValue: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--primary-bg-color)",
-    }),
-    multiValueLabel: (styles) => ({
-      ...styles,
-      color: "#fff",
-    }),
-    multiValueRemove: (styles) => ({
-      ...styles,
-      color: "#fff",
-      ":hover": {
-        backgroundColor: "#EB5757",
-        color: "white",
-      },
-    }),
-    input: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    singleValue: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    placeholder: (styles) => ({
-      ...styles,
-      color: "#aaa",
-    }),
-  };
-};
