@@ -117,8 +117,7 @@ LEFT JOIN ad_users user
     ON user.userid = s.instructor_id
 LEFT JOIN learners l  
     ON l.learner_id = s.learner_id
-WHERE s.deletedon IS NULL
-  AND (s.custom_scenarioid = :_uuid OR s.custom_scenariouuid = :_uuid);
+WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
 `,
         {
           replacements: { _uuid: uuid },
@@ -323,7 +322,6 @@ const update =
   ({ db }) =>
   async (body, learner_id) => {
     try {
-     
       const updateQuery = `
       UPDATE custom_scenarios 
       SET 
@@ -424,7 +422,9 @@ const deleteById =
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
-    const updateQuery = `UPDATE custom_scenarios SET scenariodiagram = ?, components = ?, component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ? WHERE custom_scenarioid = ?`;
+    console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbb",body);
+    
+    const updateQuery = `UPDATE custom_scenarios SET scenariodiagram = ?, components = ?, component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ? WHERE custom_scenariouuid = ?`;
     const updateParams = [
       JSON.stringify(body.scenariodiagram),
       JSON.stringify(body.components),
@@ -460,11 +460,11 @@ const scenariodigramlist =
       WHERE s.deletedon IS NULL
     `;
       if (scenarioid) {
-        query += ` AND s.scenarioid = :_custom_scenarioid`;
+        query += ` AND s.scenarioid = :_custom_scenariouuid`;
       }
 
       const scenarios = await db.sequelize.query(query, {
-        replacements: { _custom_scenarioid: scenarioid },
+        replacements: { _custom_scenariouuid: scenarioid },
         type: db.sequelize.QueryTypes.SELECT,
       });
 
@@ -530,11 +530,11 @@ const scenariodigramlist =
     }
   };
 
-
-
 const saveComponentconfiguration =
   ({ db, validation }) =>
   async (body, session_userid) => {
+    console.log("ddddddddddddddddddddddd",body);
+    
     try {
       // ✅ Validate required fields
       if (
@@ -560,14 +560,14 @@ const saveComponentconfiguration =
           reject_reason = ?, 
           modifiedon = CURRENT_TIMESTAMP,
           modifiedby = ?
-      WHERE custom_scenarioid = ?
+      WHERE custom_scenariouuid = ?
     `;
 
       const updateParams = [
         JSON.stringify(body.component_config),
         JSON.stringify(body.network_config),
         body.approval_status,
-         body.reject_reason || null,
+        body.reject_reason || null,
         session_userid,
         body.scenarioid,
       ];
@@ -577,14 +577,14 @@ const saveComponentconfiguration =
         type: db.sequelize.QueryTypes.UPDATE,
       });
 
-       const [scenarioDetails] = await db.sequelize.query(
+      const [scenarioDetails] = await db.sequelize.query(
         `SELECT 
             cs.scenariotitle,
             CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
             l.learner_id
          FROM custom_scenarios cs
          JOIN learners l ON l.learner_id = cs.learner_id
-         WHERE cs.custom_scenarioid = ?`,
+         WHERE cs.custom_scenariouuid = ?`,
         {
           replacements: [body.scenarioid],
           type: db.sequelize.QueryTypes.SELECT,
@@ -594,7 +594,7 @@ const saveComponentconfiguration =
       // ✅ Only if approved, copy data to main scenarios table
       if (body.approval_status === "Approve") {
         const [customScenario] = await db.sequelize.query(
-          `SELECT * FROM custom_scenarios WHERE custom_scenarioid = ?`,
+          `SELECT * FROM custom_scenarios WHERE custom_scenariouuid = ?`,
           {
             replacements: [body.scenarioid],
             type: db.sequelize.QueryTypes.SELECT,
@@ -667,7 +667,10 @@ const saveComponentconfiguration =
           });
         }
       }
-         if (scenarioDetails && ["Approve", "Reject"].includes(body.approval_status)) {
+      if (
+        scenarioDetails &&
+        ["Approve", "Reject"].includes(body.approval_status)
+      ) {
         const statusText =
           body.approval_status === "Approve" ? "Approved" : "Rejected";
 
@@ -683,7 +686,7 @@ const saveComponentconfiguration =
             status: statusText,
           },
           "Admin",
-          "0",
+          "0"
         );
       }
 
