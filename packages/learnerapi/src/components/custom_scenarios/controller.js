@@ -58,7 +58,7 @@ const create =
       return res.status(result.statusCode).send({
         statusCode: result.statusCode,
         message: result.message,
-        scenarioid: result.custom_scenarioid || null,
+        scenarioid: result.custom_scenariouuid || null,
       });
     } catch (error) {
       console.error("Error on save data:", error.message);

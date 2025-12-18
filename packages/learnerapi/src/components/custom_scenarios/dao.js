@@ -90,8 +90,7 @@ const getById =
        INNER JOIN scenario_categories sc  ON sc.scenariocategoryid  = s.scenariocategoryid
        INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid
        LEFT  JOIN ad_users user ON user.userid = s.instructor_id
-       WHERE s.deletedon IS NULL
-         AND (s.custom_scenarioid = :_uuid OR s.custom_scenariouuid = :_uuid)`,
+       WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid`,
         {
           replacements: { _uuid: uuid },
           type: db.sequelize.QueryTypes.SELECT,
@@ -216,30 +215,53 @@ const getById =
 const create =
   ({ db }) =>
   async (body, learner_id) => {
+    console.log("vvvvvvvvvvvvvvvvvvvvvvvvvv", body);
+
     try {
+      const [existing] = await db.sequelize.query(
+        `
+        SELECT custom_scenarioid 
+        FROM custom_scenarios 
+        WHERE scenarioidentification = ? 
+          AND status = 'Active'
+        LIMIT 1;
+        `,
+        {
+          replacements: [body.identification],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (existing) {
+        return {
+          statusCode: 400,
+          message: "Identification number already exists.",
+        };
+      }
+
       const insertQuery = `
-  INSERT INTO custom_scenarios (
-    custom_scenariouuid,
-    scenarioidentification,
-    scenariotitle,
-    scenariodescription,
-    scenariolevel,
-    scenariocategoryid,
-    scenariosubcategoryid,
-    instruction_file,
-    scenariostatus,
-    duration,
-    scenarioimage,
-    approval_status,
-    learner_id,
-    createdby,
-    createdon,
-    publishedon
-  )
-  VALUES (
-    UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, CURRENT_TIMESTAMP, NOW()
-  )
-`;
+        INSERT INTO custom_scenarios (
+          custom_scenariouuid,
+          scenarioidentification,
+          scenariotitle,
+          scenariodescription,
+          scenariolevel,
+          scenariocategoryid,
+          scenariosubcategoryid,
+          instruction_file,
+          scenariostatus,
+          duration,
+          scenarioimage,
+          approval_status,
+          learner_id,
+          createdby,
+          createdon,
+          publishedon
+        )
+        VALUES (
+          UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NOW()
+        )
+      `;
 
       const queryParams = [
         body.identification,
@@ -261,19 +283,34 @@ const create =
         replacements: queryParams,
         type: db.sequelize.QueryTypes.INSERT,
       });
-      const [idResult] = await db.sequelize.query(
-        `SELECT LAST_INSERT_ID() AS custom_scenarioid;`,
+
+      // const [idResult] = await db.sequelize.query(
+      //   `SELECT LAST_INSERT_ID() AS custom_scenarioid;`,
+      //   {
+      //     type: db.sequelize.QueryTypes.SELECT,
+      //   }
+      // );
+
+      // return {
+      //   statusCode: 200,
+      //   message: "Scenario created successfully.",
+      //   custom_scenarioid: idResult?.custom_scenarioid,
+      // };
+      const [uuidResult] = await db.sequelize.query(
+        `
+  SELECT custom_scenariouuid
+  FROM custom_scenarios
+  WHERE custom_scenarioid = LAST_INSERT_ID();
+  `,
         {
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-      const custom_scenarioid = idResult?.custom_scenarioid;
-      console.log("custom_scenarioidcustom_scenarioid", custom_scenarioid);
 
       return {
         statusCode: 200,
         message: "Scenario created successfully.",
-        custom_scenarioid,
+        custom_scenariouuid: uuidResult?.custom_scenariouuid,
       };
     } catch (error) {
       console.error("Error Save Scenario Submit:", error);
@@ -281,89 +318,54 @@ const create =
     }
   };
 
-// const update = ({ db }) => async (body, session_userid) => {
-//       try {
-//         let [check_scenario] = await db.sequelize.query(`SELECT * FROM scenarios WHERE scenariotitle = :_title AND scenarioid !=:_scenarioid AND deletedon IS NULL`,
-//           {
-//             replacements: {
-//               _title: body.title,
-//               _scenarioid: body.scenarioid,
-//             },
-//             type: db.sequelize.QueryTypes.SELECT,
-//           }
-//         );
-//         if (check_scenario) {
-//           return {statusCode: 400,message:"The provided title is already registered. Please use a different one.",
-//           };
-//         }
-//         const updateQuery = `UPDATE scenarios SET scenarioidentification = ?, scenariotitle = ?, scenariodescription = ?, scenariolevel = ?, scenariocategoryid = ?, scenariosubcategoryid = ?, instruction_file = ?, duration = ?, scenarioimage = ?,instructor_id = ?, modifiedby = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenarioid = ?`;
-//         const queryParams = [
-//           body.identification,
-//           body.title,
-//           body.description,
-//           body.level,
-//           body.scenariocategoryid,
-//           body.scenariosubcategoryid,
-//           body.instruction_file,
-//           body.duration,
-//           body.scenarioimage,
-//           body.instructor_id,
-//           session_userid,
-//           body.scenarioid,
-//         ];
-//         await db.sequelize.query(updateQuery, {
-//           replacements: queryParams,
-//           type: db.sequelize.QueryTypes.UPDATE,
-//         });
-//         return {statusCode: 200, message: "Scenario updated successfully.", scenarioid: body.scenarioid,
-//         };
-//       } catch (error) {
-//         console.error("Error Update Scenario:", error);
-//         throw error;
-//       }
-//     };
-
-// const deleteById = ({ db }) => async (body, session_userid) => {
-//       try {
-//         let [res] = await db.sequelize.query(
-//           `UPDATE scenarios SET deletedon = NOW(), modifiedby = :modifiedBy WHERE scenarioid = :_id`,
-//           {
-//             replacements: {
-//               _id: body.scenarioid,
-//               modifiedBy: session_userid,
-//             },
-//           }
-//         );
-//         return res;
-//       } catch (error) {
-//         console.error("Error in deleteById:", error);
-//         throw new Error("Failed to delete scenario");
-//       }
-//     };
 const update =
   ({ db }) =>
   async (body, learner_id) => {
-    try {
-      // Check for duplicate title (excluding the current custom scenario)
+    console.log("vvvvvvvvvvvvvvvvvvvvfffffffffvvvvvv", body);
 
+    try {
+      // CHECK DUPLICATE IDENTIFICATION (EXCEPT CURRENT SCENARIO)
+      const [existing] = await db.sequelize.query(
+        `
+        SELECT custom_scenarioid 
+        FROM custom_scenarios 
+        WHERE scenarioidentification = ?
+          AND custom_scenarioid != ?
+          AND status = 'Active'
+        LIMIT 1;
+        `,
+        {
+          replacements: [body.identification, body.custom_scenarioid],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (existing) {
+        return {
+          statusCode: 400,
+          message: "Identification number already exists.",
+        };
+      }
+
+      // UPDATE QUERY
       const updateQuery = `
-      UPDATE custom_scenarios 
-      SET 
-        scenarioidentification = ?, 
-        scenariotitle = ?, 
-        scenariodescription = ?, 
-        scenariolevel = ?, 
-        scenariocategoryid = ?, 
-        scenariosubcategoryid = ?, 
-        instruction_file = ?, 
-        scenariostatus = ?, 
-        duration = ?, 
-        scenarioimage = ?, 
-        approval_status = ?, 
-        modifiedby = ?, 
-        modifiedon = CURRENT_TIMESTAMP 
-      WHERE custom_scenarioid = ?
-    `;
+        UPDATE custom_scenarios 
+        SET 
+          scenarioidentification = ?, 
+          scenariotitle = ?, 
+          scenariodescription = ?, 
+          scenariolevel = ?, 
+          scenariocategoryid = ?, 
+          scenariosubcategoryid = ?, 
+          instruction_file = ?, 
+          scenariostatus = ?, 
+          duration = ?, 
+          scenarioimage = ?, 
+          approval_status = ?, 
+          modifiedby = ?, 
+          modifiedon = CURRENT_TIMESTAMP 
+        WHERE custom_scenarioid = ?
+      `;
 
       const queryParams = [
         body.identification,
@@ -376,7 +378,7 @@ const update =
         body.scenariostatus,
         body.duration,
         body.scenarioimage,
-        body.approval_status || "Pending", // default to Pending if not provided
+        body.approval_status || "Pending",
         learner_id,
         body.custom_scenarioid,
       ];
@@ -389,7 +391,7 @@ const update =
       return {
         statusCode: 200,
         message: "Scenario updated successfully.",
-        custom_scenarioid: body.custom_scenarioid,
+        custom_scenarioid: body.custom_scenariouuid,
       };
     } catch (error) {
       console.error("Error Update Custom Scenario:", error);
@@ -403,7 +405,7 @@ const deleteById =
     try {
       const scenarioId = body.scenarioid;
 
-      // 1️⃣ Check if the scenario is currently running
+      // Check if the scenario is currently running
       const [running] = await db.sequelize.query(
         `SELECT sl.scenariolearnerid
        FROM scenario_learner sl
@@ -421,7 +423,7 @@ const deleteById =
         };
       }
 
-      // 2️⃣ Soft delete scenario if not running
+      // Soft delete scenario if not running
       await db.sequelize.query(
         `UPDATE scenarios 
        SET deletedon = NOW(), modifiedby = :modifiedBy 
@@ -444,12 +446,10 @@ const deleteById =
     }
   };
 
-
-
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
-    console.log("bodfyyyyyyyyyyyyyyyyyyyy", body);
+    console.log("scenarioIdscenarioIdscenarioIdscenarioIdscenarioId", body);
 
     const updateQuery = `
   UPDATE custom_scenarios 
@@ -461,29 +461,18 @@ const saveDiagram =
       approval_status = ?,    
       modifiedon = CURRENT_TIMESTAMP, 
       modifiedby = ? 
-  WHERE custom_scenarioid = ?`;
+  WHERE custom_scenariouuid = ?`;
 
-
-    // const updateParams = [
-    //   JSON.stringify(body.scenariodiagram),
-    //   JSON.stringify(body.components),
-    //   JSON.stringify(body.component_config),
-    //   JSON.stringify(body.network_config || {}),
-    //   body.scenariostatus,
-    //   session_userid,
-    //   body.scenarioid,
-    // ];
     const updateParams = [
-  JSON.stringify(body.scenariodiagram),
-  JSON.stringify(body.components),
-  JSON.stringify(body.component_config),
-  JSON.stringify(body.network_config || {}),
-  body.scenariostatus,
-  body.approval_status || "Pending", // ✅ default to Pending
-  session_userid,
-  body.scenarioid,
-];
-
+      JSON.stringify(body.scenariodiagram),
+      JSON.stringify(body.components),
+      JSON.stringify(body.component_config),
+      JSON.stringify(body.network_config || {}),
+      body.scenariostatus,
+      body.approval_status || "Pending", // ✅ default to Pending
+      session_userid,
+      body.scenarioid,
+    ];
 
     try {
       // ✅ Step 1: Update the scenario
@@ -498,7 +487,7 @@ const saveDiagram =
       l.learner_id
    FROM custom_scenarios cs
    JOIN learners l ON l.learner_id = cs.learner_id
-   WHERE cs.custom_scenarioid = ?`,
+   WHERE cs.custom_scenariouuid = ?`,
         {
           replacements: [body.scenarioid],
           type: db.sequelize.QueryTypes.SELECT,
@@ -529,77 +518,6 @@ const saveDiagram =
     }
   };
 
-  //main
-// const saveDiagram =
-//   ({ db, validation }) =>
-//   async (body, session_userid) => {
-//     console.log("bodfyyyyyyyyyyyyyyyyyyyy", body);
-
-//     const updateQuery = `
-//       UPDATE custom_scenarios 
-//       SET scenariodiagram = ?, 
-//           components = ?, 
-//           component_config = ?, 
-//           network_config = ?, 
-//           scenariostatus = ?, 
-//           modifiedon = CURRENT_TIMESTAMP, 
-//           modifiedby = ? 
-//       WHERE custom_scenarioid = ?`;
-
-//     const updateParams = [
-//       JSON.stringify(body.scenariodiagram),
-//       JSON.stringify(body.components),
-//       JSON.stringify(body.component_config),
-//       JSON.stringify(body.network_config || {}),
-//       body.scenariostatus,
-//       session_userid,
-//       body.scenarioid,
-//     ];
-
-//     try {
-//       // ✅ Step 1: Update the scenario
-//       await db.sequelize.query(updateQuery, {
-//         replacements: updateParams,
-//         type: db.sequelize.QueryTypes.UPDATE,
-//       });
-//       const [scenarioDetails] = await db.sequelize.query(
-//         `SELECT 
-//       cs.scenariotitle,
-//       CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-//       l.learner_id
-//    FROM custom_scenarios cs
-//    JOIN learners l ON l.learner_id = cs.learner_id
-//    WHERE cs.custom_scenarioid = ?`,
-//         {
-//           replacements: [body.scenarioid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       if (scenarioDetails) {
-//         // ✅ Step 3: Fire notification after successful update
-//         new NotiTemplate(
-//           db,
-//           "scenario_approval",
-//           {
-//             scenariotitle: scenarioDetails.scenariotitle,
-//             learner_name: scenarioDetails.learner_name,
-//             learner_id: scenarioDetails.learner_id,
-//             scenarioid: body.scenarioid,
-//             userid: 0,
-//           },
-//           "Admin",
-//           "0"
-//         );
-//       }
-
-//       return { statusCode: 200, message: validation.messages.save_diagram };
-//     } catch (error) {
-//       console.error("Error Scenario Update:", error);
-//       throw error;
-//     }
-//   };
-
 const scenariodigramlist =
   ({ db }) =>
   async (scenarioid) => {
@@ -624,7 +542,6 @@ const scenariodigramlist =
       });
 
       for (let scenario of scenarios) {
-        // Step 1: Parse diagram
         let parsedDiagram = {};
         try {
           parsedDiagram = JSON.parse(scenario.scenariodiagram || "{}");
@@ -634,8 +551,6 @@ const scenariodigramlist =
             scenario.scenarioid
           );
         }
-
-        // Step 2: Get componentIds from diagram
         const componentIds = new Set();
         if (parsedDiagram?.nodes?.length) {
           parsedDiagram.nodes.forEach((node) => {
@@ -644,8 +559,6 @@ const scenariodigramlist =
             }
           });
         }
-
-        // Step 3: Fetch components from table
         let components = [];
         if (componentIds.size > 0) {
           const componentList = await db.sequelize.query(
@@ -657,8 +570,6 @@ const scenariodigramlist =
               type: db.sequelize.QueryTypes.SELECT,
             }
           );
-
-          // Optional: Parse networkport if stored as stringified JSON
           components = componentList.map((comp) => {
             try {
               comp.networkport = JSON.parse(comp.networkport || "[]");
@@ -668,8 +579,6 @@ const scenariodigramlist =
             return comp;
           });
         }
-
-        // Step 4: Attach final fields to scenario object
         scenario.scenariodiagram = parsedDiagram;
         scenario.components = components;
       }
@@ -716,8 +625,6 @@ const saveComponentconfiguration =
         type: db.sequelize.QueryTypes.UPDATE,
       });
       if (body.scenariostatus === "Publish") {
-        // const noti = new NotiTemplate(
-        // db, 'publish_scenario', {learner_id: 0,scenarioid: body.scenarioid }, 'System', '0');
         new NotiTemplate(
           db,
           "publish_scenario",
@@ -725,7 +632,6 @@ const saveComponentconfiguration =
           "System",
           "0"
         );
-        // await noti.send();
       }
       return {
         statusCode: 200,
@@ -736,17 +642,11 @@ const saveComponentconfiguration =
       throw error;
     }
   };
-
-// export functionality
-// scenariosDao.js
 const getScenarioInstructionFiles =
   ({ db }) =>
   async (scenarioIds) => {
     if (!Array.isArray(scenarioIds) || scenarioIds.length === 0) return [];
-
-    // Build a dynamic placeholders string for each ID
     const placeholders = scenarioIds.map(() => "?").join(",");
-
     const query = `
     SELECT scenarioid, scenariotitle, instruction_file 
     FROM scenarios 
@@ -757,9 +657,6 @@ const getScenarioInstructionFiles =
       replacements: scenarioIds,
       type: db.sequelize.QueryTypes.SELECT,
     });
-
-    console.log("rrrrrrrrrrrrrrrrr", rows);
-
     return rows;
   };
 
