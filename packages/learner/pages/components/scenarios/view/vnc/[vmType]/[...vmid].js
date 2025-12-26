@@ -87,6 +87,7 @@ export default function ProxmoxConsole() {
 
   const customcomponentid = saveCustomComponent1?.customcomponentid;
   const vmStatus = getVMdetail?.data?.vm_status;
+  const customRequestStatus = getVMdetail?.data?.custom_request_status;
   console.log("saveCustomComponent1", saveCustomComponent1)
   console.log("customcomponentid", customcomponentid)
   console.log("getVMdetail", getVMdetail)
@@ -119,7 +120,7 @@ export default function ProxmoxConsole() {
 
   const handleConnectClick = async () => {
     // If VM is stopped → show warning
-    if (vmStatus === "Stopped") {
+    if (vmStatus === "Stopped" && customRequestStatus) {
       const result = await Swal.fire({
         title: "Virtual Machine is Stopped",
         text:
@@ -170,12 +171,38 @@ export default function ProxmoxConsole() {
 
       return;
     }
+    if (vmStatus === "Stopped" && !customRequestStatus) {
+      try {
+        setOverlayLoading(true);
+        updateStatus("Starting virtual machine...");
+
+        await dispatch(
+          vmStartScenario({
+            vmid: realVmid,
+            vmType,
+          })
+        );
+
+        setTimeout(() => {
+          setOverlayLoading(false);
+          connect();
+        }, 3000);
+
+      } catch (err) {
+        setOverlayLoading(false);
+        Swal.fire(
+          "Failed",
+          "Unable to start the virtual machine. Please try again later.",
+          "error"
+        );
+      }
+
+      return;
+    }
 
     //  VM is not stopped → connect directly
     connect();
   };
-
-
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +

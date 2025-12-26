@@ -73,9 +73,9 @@ const handleClick = (dataobj) => {
 
     console.log("qemuconfig response", res);
 
-    if (res?.mustStopVM === true) {
-      dispatch(vmStartScenario({ vmid, vmType }));
-    }
+    // if (res?.mustStopVM === true) {
+    //   dispatch(vmStartScenario({ vmid, vmType }));
+    // }
 
     const rawLabel = dataobj?.label || "";
     const namePart = rawLabel.split("-")[1]?.trim() || "";

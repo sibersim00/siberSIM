@@ -1128,14 +1128,25 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
       c.vmid_name,
       v.scenarioid,
       v.learner_id,
-      v.status AS vm_status 
+      v.status AS vm_status,
+
+      -- 🔹 Custom component pending status (only status)
+      cc.status AS custom_request_status
+
     FROM components c
+
     INNER JOIN vm_configuration v
       ON c.vmid = v.master_vmid
+
+    LEFT JOIN custom_component cc
+      ON cc.clone_vmid = v.vmid
+     AND cc.status = 'pending'
+
     WHERE v.vmid = :vmid
       AND c.status = 'Active'
       AND v.status != 'Destroyed'
       AND c.deletedon IS NULL
+
     LIMIT 1
     `,
     {
@@ -1148,7 +1159,6 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
   if (res?.network_ports) {
     try {
       const portsObj = JSON.parse(res.network_ports);
-
       res.network_ports = Object.entries(portsObj)
         .map(([key, val]) => `${key} - ${val}`)
         .join("\n");
@@ -1159,6 +1169,7 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
 
   return res;
 };
+
 
 const getNextVmid = ({ db }) => async (transaction) => {
   // 1️⃣ Base VMID from web_settings (read-only)
@@ -1444,7 +1455,7 @@ module.exports = {
   getNextVmid,
   saveCustomComponent,
   rejectPendingCustomComponentIfVmStopped,
-  
+
 
 
 
