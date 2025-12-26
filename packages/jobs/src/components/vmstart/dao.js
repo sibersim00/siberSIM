@@ -1,4 +1,6 @@
-const { handleComponentFailure } = require("../../jobs/componentSetupJob");
+const {
+  handleVMRequestFailure,
+} = require("../../vmstartjob/componentSetupJob");
 const { sendProxmoxDownAlerts } = require("../../jobs/componentSetupJob");
 const ProxMoxService = require("../../proxmox/services/proxmox/ProxMoxService");
 const ERROR_MESSAGES = require("../../jobs/jobsConstants");
@@ -7,47 +9,44 @@ const NotiTemplate = require("../../utils/notiUtility");
 
 const setVMRequestConfiguration =
   ({ db }) =>
-  async (scenarioid, vmrequestid,requestedby_id,
-            requestedby_role,) => {
+  async (scenarioid, vmrequestid, requestedby_id, requestedby_role) => {
     try {
       const statusVal = "Initializing";
-
-      /* -------------------------------------------------------
-         1. Base Clone VMID
-      --------------------------------------------------------*/
       const [webSettings] = await db.sequelize.query(
         `SELECT base_clone_vmid FROM web_settings WHERE company_id = 1 LIMIT 1`,
         { type: db.sequelize.QueryTypes.SELECT }
       );
-
       const baseCloneVmid = parseInt(webSettings?.base_clone_vmid || 1000);
-
-      /* -------------------------------------------------------
-         2. Fetch VM Request
-      --------------------------------------------------------*/
       const [vmRequest] = await db.sequelize.query(
-        // `SELECT vmrequestid,requestedby_id, requestedby_role, status
-        //  FROM vm_request
-        //  WHERE vmrequestid = ? AND status = 'Pending'
-        //  LIMIT 1`,
-
-          `SELECT vmrequestid, requestedby_id, requestedby_role FROM vm_request WHERE vmrequestid = ? AND status = ? ORDER BY vmrequestid DESC LIMIT 1`,
+        `SELECT vmrequestid, requestedby_id, requestedby_role
+         FROM vm_request
+         WHERE vmrequestid = ?
+           AND status = ?
+         ORDER BY vmrequestid DESC
+         LIMIT 1`,
         {
-          replacements: [vmrequestid,statusVal],
+          replacements: [vmrequestid, statusVal],
           type: db.sequelize.QueryTypes.SELECT,
         }
-
       );
 
-      if (!vmRequest) {
+      if (!vmRequest || !vmRequest.vmrequestid) {
+        await handleVMRequestFailure(
+          db,
+          scenarioid,
+          requestedby_id,
+          vmrequestid,
+          statusVal,
+          ERROR_MESSAGES.LEARNER_NOT_FOUND
+        );
         return {
           success: false,
-          message: "VM request not found or already processed.",
+          message: ERROR_MESSAGES.LEARNER_NOT_FOUND,
         };
       }
 
       /* -------------------------------------------------------
-         3. Fetch Scenario Config
+         3. Scenario Config
       --------------------------------------------------------*/
       const [scenario] = await db.sequelize.query(
         `SELECT component_config, network_config
@@ -62,10 +61,18 @@ const setVMRequestConfiguration =
         }
       );
 
-      if (!scenario?.component_config) {
+      if (!scenario || !scenario.component_config) {
+        await handleVMRequestFailure(
+          db,
+          scenarioid,
+          requestedby_id,
+          vmrequestid,
+          statusVal,
+          ERROR_MESSAGES.CONFIG_NOT_FOUND_SCENARIO
+        );
         return {
           success: false,
-          message: "Scenario configuration not found.",
+          message: ERROR_MESSAGES.CONFIG_NOT_FOUND_SCENARIO,
         };
       }
 
@@ -73,14 +80,22 @@ const setVMRequestConfiguration =
       const networkConfig = JSON.parse(scenario.network_config || "[]");
 
       /* -------------------------------------------------------
-         4. Network Allocation
+         4. Network Allocation (EXACT SAME FLOW)
       --------------------------------------------------------*/
       const requiredNetworks = networkConfig.length;
 
-      if (!requiredNetworks) {
+      if (requiredNetworks === 0) {
+        await handleVMRequestFailure(
+          db,
+          scenarioid,
+          requestedby_id,
+          vmrequestid,
+          statusVal,
+          ERROR_MESSAGES.NETWORK_BRIDGES
+        );
         return {
           success: false,
-          message: "No network bridges configured for this scenario.",
+          message: ERROR_MESSAGES.NETWORK_BRIDGES,
         };
       }
 
@@ -98,37 +113,54 @@ const setVMRequestConfiguration =
       );
 
       if (availableNetworks.length < requiredNetworks) {
+        await handleVMRequestFailure(
+          db,
+          scenarioid,
+          requestedby_id,
+          vmrequestid,
+          statusVal,
+          ERROR_MESSAGES.NETWORK_BRIDGES
+        );
         return {
           success: false,
-          message: "Not enough available network bridges.",
+          message: ERROR_MESSAGES.NETWORK_BRIDGES,
         };
+      } else {
+        const networkIds = availableNetworks.map((n) => n.networkid);
+        await db.sequelize.query(
+          `UPDATE networks
+           SET status = 'Occupied', modifiedon = NOW()
+           WHERE networkid IN (:networkIds)`,
+          {
+            replacements: { networkIds },
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
       }
 
-      await db.sequelize.query(
-        `UPDATE networks
-         SET status = 'Occupied', modifiedon = NOW()
-         WHERE networkid IN (:ids)`,
-        {
-          replacements: {
-            ids: availableNetworks.map((n) => n.networkid),
-          },
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-
-      const networkMap = networkConfig.reduce((acc, key, idx) => {
-        acc[key] = availableNetworks[idx];
+      const networkMap = networkConfig.reduce((acc, key, index) => {
+        availableNetworks[index].networkkey = key;
+        acc[key] = availableNetworks[index];
         return acc;
       }, {});
 
       /* -------------------------------------------------------
-         5. Prepare VM Config Rows
+         5. Prepare Components (CLONED STRUCTURE)
       --------------------------------------------------------*/
-      for (const item of componentConfig) {
-        const { vmid, order, componentid, nodeid, duration, network_ids } =
-          item;
+      let allFound = true;
+      const preparedComponents = [];
 
-        const [component] = await db.sequelize.query(
+      for (const item of componentConfig) {
+        const {
+          vmid,
+          order,
+          componentid,
+          nodeid,
+          duration,
+          network_ids,
+        } = item;
+
+        const [componentInfo] = await db.sequelize.query(
           `SELECT componenttype, network_bridge_name, vmid_name
            FROM components
            WHERE componentid = ?`,
@@ -138,84 +170,147 @@ const setVMRequestConfiguration =
           }
         );
 
-        if (!component) {
-          throw new Error("Component not found");
+        if (!componentInfo || !componentInfo.network_bridge_name) {
+          allFound = false;
+          break;
         }
 
-        const prefixMap = JSON.parse(component.network_bridge_name || "{}");
-        const bridgeJson = {};
+        const prefixMap = JSON.parse(componentInfo.network_bridge_name);
+        const network_bridge_json = {};
 
-        for (const [netKey, netVal] of Object.entries(network_ids || {})) {
+        for (const [netKey, netId] of Object.entries(network_ids || {})) {
           const prefix = prefixMap[netKey];
-          const bridge = networkMap[netVal]?.networkname;
-          if (prefix && bridge) {
-            bridgeJson[netKey] = `${prefix},bridge=${bridge}`;
+          const bridgeName = networkMap[netId]?.networkname;
+          if (prefix && bridgeName) {
+            network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
           }
         }
 
-        const [insertId] = await db.sequelize.query(
-          `INSERT INTO vm_config
-           (scenarioid, vmrequestid, componentid, nodeid, componenttype,
-            \`order\`, master_vmid, vmid, componentname, duration,
-            network_bridge_json, status, createdon)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, NOW())`,
+        preparedComponents.push({
+          scenarioid,
+          vmrequestid,
+          componentid,
+          nodeid,
+          componenttype: componentInfo.componenttype,
+          order,
+          master_vmid: vmid,
+          vmid: null,
+          componentname: componentInfo.vmid_name,
+          duration,
+          network_bridge_json: JSON.stringify(network_bridge_json),
+          status: statusVal,
+        });
+      }
+
+      /* -------------------------------------------------------
+         6. Insert + VMID Update
+      --------------------------------------------------------*/
+      if (allFound) {
+        for (const comp of preparedComponents) {
+          const [insertId] = await db.sequelize.query(
+            `INSERT INTO vm_config
+             (scenarioid, vmrequestid, componentid, nodeid, componenttype,
+              \`order\`, master_vmid, vmid, componentname, duration,
+              network_bridge_json, status, createdon)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            {
+              replacements: [
+                comp.scenarioid,
+                comp.vmrequestid,
+                comp.componentid,
+                comp.nodeid,
+                comp.componenttype,
+                comp.order,
+                comp.master_vmid,
+                comp.vmid,
+                comp.componentname,
+                comp.duration,
+                comp.network_bridge_json,
+                comp.status,
+              ],
+              type: db.sequelize.QueryTypes.INSERT,
+            }
+          );
+
+          const realVmid = insertId + baseCloneVmid;
+          await db.sequelize.query(
+            `UPDATE vm_config SET vmid = ? WHERE vmconfigurationid = ?`,
+            {
+              replacements: [realVmid, insertId],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+
+        /* -------------------------------------------------------
+           7. Update VM Request
+        --------------------------------------------------------*/
+        await db.sequelize.query(
+          `UPDATE vm_request
+           SET status = ?,
+               vm_steps = ?,
+               network_bridges = ?,
+               modifiedon = NOW()
+           WHERE vmrequestid = ?`,
           {
             replacements: [
-              scenarioid,
-              vmrequestid,
-              componentid,
-              nodeid,
-              component.componenttype,
-              order,
-              vmid,
-              component.vmid_name,
-              duration,
-              JSON.stringify(bridgeJson),
               statusVal,
+              statusVal,
+              JSON.stringify(availableNetworks),
+              vmrequestid,
             ],
-            type: db.sequelize.QueryTypes.INSERT,
+            type: db.sequelize.QueryTypes.UPDATE,
           }
         );
 
-        const realVmid = insertId + baseCloneVmid;
+        return {
+          success: true,
+          message: "VM request configuration successful.",
+        };
+      }
 
+      /* -------------------------------------------------------
+         8. Rollback Networks on Failure
+      --------------------------------------------------------*/
+      const bridgesToFree = new Set();
+      for (const net of availableNetworks) {
+        if (net.networkname) bridgesToFree.add(net.networkname);
+      }
+
+      for (const bridge of bridgesToFree) {
         await db.sequelize.query(
-          `UPDATE vm_config SET vmid = ? WHERE vmconfigurationid = ?`,
+          `UPDATE networks
+           SET status = 'Available', modifiedon = NOW()
+           WHERE networkjson LIKE ?`,
           {
-            replacements: [realVmid, insertId],
+            replacements: [`%${bridge}%`],
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
       }
 
-      /* -------------------------------------------------------
-         6. Update VM Request
-      --------------------------------------------------------*/
-      await db.sequelize.query(
-        `UPDATE vm_request
-         SET status = 'Initializing',
-             vm_steps = 'Initializing',
-             network_bridges = ?,
-             modifiedon = NOW()
-         WHERE vmrequestid = ?`,
-        {
-          replacements: [JSON.stringify(availableNetworks), vmrequestid],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
+      await handleComponentFailure(
+        db,
+        scenarioid,
+        requestedby_id,
+        vmrequestid,
+        statusVal,
+        ERROR_MESSAGES.COMPONENT_NOT_FOUND
       );
 
       return {
-        success: true,
-        message: "VM request configuration successful.",
+        success: false,
+        message: ERROR_MESSAGES.COMPONENT_NOT_FOUND,
       };
     } catch (err) {
-      console.error("Error in DAO setVMRequestConfiguration:", err);
+      console.error("Error in setVMRequestConfiguration:", err);
       return {
         success: false,
         message: "Unexpected error during VM request configuration.",
       };
     }
   };
+
 
 const releaseNetworks = async (db, networksArray) => {
   const bridgesToFree = new Set();
@@ -244,7 +339,7 @@ const releaseNetworks = async (db, networksArray) => {
 
 async function markOperationFailedAndNotify(
   db,
-  scenariolearnersessionid,
+  vmrequestid,
   err,
   scenarioid,
   learner_id
@@ -262,36 +357,35 @@ async function markOperationFailedAndNotify(
     0
   );
 
-  // await db.sequelize.query(
-  //   `UPDATE scenario_learner_session
-  //    SET vm_steps = ?, modifiedon = NOW()
-  //    WHERE scenariolearnersessionid = ?`,
-  //   {
-  //     replacements: [OP_FAILED, scenariolearnersessionid],
-  //     type: db.sequelize.QueryTypes.UPDATE,
-  //   }
-  // );
+  await db.sequelize.query(
+    `UPDATE vm_request
+     SET vm_steps = ?, modifiedon = NOW()
+     WHERE vmrequestid = ?`,
+    {
+      replacements: [OP_FAILED, vmrequestid],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
 
   // 4. Insert log entry
-  // await db.sequelize.query(
-  //   `INSERT INTO scenario_learner_logs
-  //     (scenariolearnersessionid, scenarioid, learner_id, scenariolearnerid, type, remark, status, createdon)
-  //     SELECT
-  //       sls.scenariolearnersessionid,
-  //       sls.scenarioid,
-  //       sls.learner_id,
-  //       sls.scenariolearnerid,
-  //       'System',
-  //       'Failed to Stop and destroy the component',        
-  //       'Operation Failed',
-  //       NOW()
-  //     FROM scenario_learner_session sls
-  //     WHERE sls.scenariolearnersessionid = ?`,
-  //   {
-  //     replacements: [scenariolearnersessionid],
-  //     type: db.sequelize.QueryTypes.INSERT,
-  //   }
-  // );
+  await db.sequelize.query(
+    `INSERT INTO vm_request_logs
+      (vmrequestid, scenarioid, requestedby_id, requestedby_role, status,remark, createdon)
+      SELECT
+        sls.vmrequestid,
+        sls.scenarioid,
+        sls.requestedby_id,
+        'System',
+        'Operation Failed',
+        'Failed to Stop and destroy the component',        
+        NOW()
+      FROM vm_request sls
+      WHERE sls.vmrequestid = ?`,
+    {
+      replacements: [vmrequestid],
+      type: db.sequelize.QueryTypes.INSERT,
+    }
+  );
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -312,9 +406,6 @@ const getTerminationDelay = async (db) => {
     return 10000; // fallback to 10 sec
   }
 };
-
-
-
 
 const updateCompleteTerminateVMRequest =
   ({ db, ipAddress }) =>
@@ -354,10 +445,7 @@ const updateCompleteTerminateVMRequest =
        SET scenariodiagram = ?, modifiedon = NOW()
        WHERE vmrequestid = ?`,
           {
-            replacements: [
-              JSON.stringify(scenariodiagram),
-              vmrequestid,
-            ],
+            replacements: [JSON.stringify(scenariodiagram), vmrequestid],
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
@@ -570,10 +658,7 @@ const updateCompleteTerminateVMRequest =
           SET scenariodiagram = ?, modifiedon = NOW()
           WHERE vmrequestid = ?`,
             {
-              replacements: [
-                JSON.stringify(scenariodiagram),
-                vmrequestid,
-              ],
+              replacements: [JSON.stringify(scenariodiagram), vmrequestid],
               type: db.sequelize.QueryTypes.UPDATE,
             }
           );
@@ -605,21 +690,19 @@ const updateCompleteTerminateVMRequest =
     }
   };
 
-
 const deleteScenarioLearner =
   ({ db, ipAddress }) =>
-  async (scenariolearnersessionid) => {
-    const TERMINATED = "Terminated";
+  async (vmrequestid) => {
     const DESTROYED = "Destroyed";
     let hasFailed = false;
 
     // Fetch session info
     const [session] = await db.sequelize.query(
-      `SELECT scenarioid, learner_id, vm_steps, network_bridges, scenariodiagram
-       FROM scenario_learner_session
-       WHERE scenariolearnersessionid = ? LIMIT 1`,
+      `SELECT scenarioid, requestedby_id, vm_steps, network_bridges, scenariodiagram
+       FROM  vm_request
+       WHERE vmrequestid = ? LIMIT 1`,
       {
-        replacements: [scenariolearnersessionid],
+        replacements: [vmrequestid],
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
@@ -642,14 +725,11 @@ const deleteScenarioLearner =
         });
 
         await db.sequelize.query(
-          `UPDATE scenario_learner_session
+          `UPDATE vm_request
            SET scenariodiagram = ?, modifiedon = NOW()
-           WHERE scenariolearnersessionid = ?`,
+           WHERE vmrequestid = ?`,
           {
-            replacements: [
-              JSON.stringify(scenariodiagram),
-              scenariolearnersessionid,
-            ],
+            replacements: [JSON.stringify(scenariodiagram), vmrequestid],
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
@@ -657,14 +737,12 @@ const deleteScenarioLearner =
     } catch (e) {
       console.error("Diagram update failed:", e);
     }
-
-    // Helper to ensure failure logs/updates run only once
     const handleFailureOnce = async (err) => {
       if (!hasFailed) {
         hasFailed = true;
         await markOperationFailedAndNotify(
           db,
-          scenariolearnersessionid,
+          vmrequestid,
           err,
           session.scenarioid,
           session.learner_id
@@ -675,14 +753,12 @@ const deleteScenarioLearner =
     try {
       // Fetch all VM components
       const components = await db.sequelize.query(
-        `SELECT * FROM vm_configuration WHERE scenariolearnersessionid = ?`,
+        `SELECT * FROM vm_config WHERE vmrequestid = ?`,
         {
-          replacements: [scenariolearnersessionid],
+          replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
-      // Loop over components and delete based on type
       for (const {
         vmid,
         componenttype,
@@ -709,7 +785,7 @@ const deleteScenarioLearner =
 
           if (destroyRes?.status === 200) {
             await db.sequelize.query(
-              `UPDATE vm_configuration SET status='Completed', modifiedon=NOW()
+              `UPDATE vm_config SET status='Completed', modifiedon=NOW()
                WHERE vmconfigurationid=?`,
               {
                 replacements: [vmconfigurationid],
@@ -738,7 +814,7 @@ const deleteScenarioLearner =
 
           if (destroyRes?.status === 200) {
             await db.sequelize.query(
-              `UPDATE vm_configuration SET status='Completed', modifiedon=NOW()
+              `UPDATE vm_config SET status='Completed', modifiedon=NOW()
                WHERE vmconfigurationid=?`,
               {
                 replacements: [vmconfigurationid],
@@ -758,11 +834,11 @@ const deleteScenarioLearner =
       // ----------------------------
       if (!hasFailed) {
         await db.sequelize.query(
-          `UPDATE scenario_learner_session
+          `UPDATE vm_request
            SET vm_steps=?, modifiedon=NOW()
-           WHERE scenariolearnersessionid=?`,
+           WHERE vmrequestid=?`,
           {
-            replacements: [DESTROYED, scenariolearnersessionid],
+            replacements: [DESTROYED, vmrequestid],
             type: db.sequelize.QueryTypes.UPDATE,
           }
         );
@@ -784,9 +860,9 @@ const deleteScenarioLearner =
       // Mark snapshots as deleted
       try {
         const comps = await db.sequelize.query(
-          `SELECT vmid FROM vm_configuration WHERE scenariolearnersessionid=?`,
+          `SELECT vmid FROM vm_config WHERE vmrequestid=?`,
           {
-            replacements: [scenariolearnersessionid],
+            replacements: [vmrequestid],
             type: db.sequelize.QueryTypes.SELECT,
           }
         );
@@ -847,8 +923,8 @@ const autoTerminateFailedScenarios =
 
       // 1. Get all sessions where vm_steps is 'Operation Failed'
       const sessions = await db.sequelize.query(
-        `SELECT scenariolearnersessionid 
-         FROM scenario_learner_session 
+        `SELECT vmrequestid 
+         FROM vm_request 
          WHERE vm_steps = ?`,
         {
           replacements: [OPERATION_FAILED],
@@ -865,13 +941,13 @@ const autoTerminateFailedScenarios =
 
       let terminatedCount = 0;
 
-      for (const { scenariolearnersessionid } of sessions) {
+      for (const { vmrequestid } of sessions) {
         // 2. Get all VM components for this session
         const components = await db.sequelize.query(
-          `SELECT status FROM vm_configuration 
-           WHERE scenariolearnersessionid = ?`,
+          `SELECT status FROM vm_config 
+           WHERE vmrequestid = ?`,
           {
-            replacements: [scenariolearnersessionid],
+            replacements: [vmrequestid],
             type: db.sequelize.QueryTypes.SELECT,
           }
         );
@@ -883,14 +959,14 @@ const autoTerminateFailedScenarios =
 
         if (!allFailed) {
           console.log(
-            `Skipping session ${scenariolearnersessionid}: not all VMs are 'Operation Failed'.`
+            `Skipping session ${vmrequestid}: not all VMs are 'Operation Failed'.`
           );
           continue;
         }
 
         // 4. Attempt to cleanly stop + destroy
         const result = await updateCompleteTerminatelearner({ db, ipAddress })(
-          scenariolearnersessionid,
+          vmrequestid,
           COMPLETED,
           "AutoTerminate"
         );
@@ -899,7 +975,7 @@ const autoTerminateFailedScenarios =
           terminatedCount++;
         } else {
           console.error(
-            `Auto-terminate failed for session ${scenariolearnersessionid}: ${result.message}`
+            `Auto-terminate failed for session ${vmrequestid}: ${result.message}`
           );
         }
       }
@@ -1400,15 +1476,15 @@ async function performRestore(
 
 const pauseScenarioLearner =
   ({ db, ipAddress }) =>
-  async (scenariolearnersessionid) => {
+  async (vmrequestid) => {
     try {
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
         `SELECT vmid, componenttype, componentname
-         FROM vm_configuration
-         WHERE scenariolearnersessionid = ?`,
+         FROM vm_config
+         WHERE vmrequestid = ?`,
         {
-          replacements: [scenariolearnersessionid],
+          replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
@@ -1506,15 +1582,15 @@ const pauseScenarioLearner =
 
 const resumeScenarioLearner =
   ({ db, ipAddress }) =>
-  async (scenariolearnersessionid) => {
+  async (vmrequestid) => {
     try {
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
         `SELECT vmid, componenttype, componentname
-         FROM vm_configuration
-         WHERE scenariolearnersessionid = ?`,
+         FROM vm_config
+         WHERE vmrequestid = ?`,
         {
-          replacements: [scenariolearnersessionid],
+          replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
@@ -1599,344 +1675,6 @@ const resumeScenarioLearner =
     }
   };
 
-const fetchScenarioWithComponents = async (db, scenarioId) => {
-  const rows = await db.sequelize.query(
-    `SELECT * FROM scenarios WHERE scenarioid = :scenarioId`,
-    {
-      replacements: { scenarioId },
-      type: db.sequelize.QueryTypes.SELECT,
-    }
-  );
-  if (!rows.length) return null;
-  const scenario = rows[0];
-  // Parse components JSON
-  let componentIds = [];
-  try {
-    const parsed = JSON.parse(scenario.component_config);
-    componentIds = parsed.map((c) => c.componentid);
-  } catch (err) {
-    console.error("Error parsing components JSON:", err);
-  }
-
-  if (componentIds.length > 0) {
-    const componentDetails = await db.sequelize.query(
-      `SELECT * FROM components WHERE componentid IN (:componentIds)`,
-      {
-        replacements: { componentIds },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    );
-
-    scenario.componentDetails = componentDetails;
-  } else {
-    scenario.componentDetails = [];
-  }
-
-  return scenario;
-};
-
-const getScenarioById =
-  ({ db, ipAddress }) =>
-  async (scenarioId) => {
-    try {
-      const scenario = await fetchScenarioWithComponents(db, scenarioId);
-      if (!scenario) {
-        return { success: false, message: "Scenario not found." };
-      }
-
-      const components = scenario.componentDetails || [];
-      const vmComponents = components.filter((c) => c.vmid);
-
-      if (!vmComponents.length) {
-        return {
-          success: false,
-          message: "No VMID found in scenario component details.",
-        };
-      }
-
-      let backupResults = [];
-
-      for (const comp of vmComponents) {
-        const { vmid, componentname } = comp;
-
-        try {
-          const proxmoxService = ProxMoxService(db, {}, ipAddress);
-          const tokenResult = await proxmoxService.generateAccessTicket();
-          if (!tokenResult || tokenResult.status !== "200") {
-            return { success: false, message: "Failed to connect to Proxmox." };
-          }
-
-          const backup = await proxmoxService.takeBackup(vmid);
-
-          if (backup?.data) {
-            const upid = backup.data.data;
-
-            await db.sequelize.query(
-              `INSERT INTO component_export (componentid, vmid,scenarioid, upid, status, createdon)
-               VALUES (:componentid, :vmid,:scenarioid, :upid, 'Pending', NOW())`,
-              {
-                replacements: {
-                  componentid: comp.componentid,
-                  vmid: vmid,
-                  scenarioid: scenarioId,
-                  upid,
-                },
-                type: db.sequelize.QueryTypes.INSERT,
-              }
-            );
-          }
-
-          if (backup?.status === 200) {
-            backupResults.push({
-              vmid,
-              componentname,
-              status: "success",
-              message: "Backup started successfully",
-            });
-          } else {
-            backupResults.push({
-              vmid,
-              componentname,
-              status: "failed",
-              message: "Backup failed",
-            });
-          }
-        } catch (err) {
-          backupResults.push({
-            vmid,
-            componentname,
-            status: "failed",
-            message: "Unexpected error during backup",
-          });
-        }
-      }
-      const allGood = backupResults.every((x) => x.status === "success");
-      // Fetch filenames from component_export (updated by cron)
-      const exports = await db.sequelize.query(
-        `SELECT vmid, file_name
-   FROM component_export 
-   WHERE scenarioid = :scenarioid`,
-        {
-          replacements: { scenarioid: scenarioId },
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-
-      // Merge filename into backupResults
-      backupResults = backupResults.map((b) => {
-        const match = exports.find((e) => e.vmid === b.vmid);
-        return {
-          ...b,
-          filename: match?.file_name || null,
-        };
-      });
-
-      return {
-        success: allGood,
-        message: allGood
-          ? "All VM backups triggered successfully."
-          : "Some VM backups failed.",
-        scenario,
-        componentDetails: components,
-        backupResults,
-      };
-    } catch (err) {
-      console.error("Error in getScenarioById:", err);
-      return { success: false, message: "Unexpected server error." };
-    }
-  };
-
-const checkBackupStatus =
-  ({ db, ipAddress }) =>
-  async () => {
-    try {
-      const pendingItems = await db.sequelize.query(
-        `SELECT * FROM component_export WHERE status IN ('Pending','Running')`,
-        { type: db.sequelize.QueryTypes.SELECT }
-      );
-
-      const proxmoxService = ProxMoxService(db, {}, ipAddress);
-
-      for (const item of pendingItems) {
-        const { upid, componentexportid } = item;
-
-        try {
-          const tokenResult = await proxmoxService.generateAccessTicket();
-          if (!tokenResult || tokenResult.status !== "200") {
-            console.log("Failed to authenticate with Proxmox");
-            continue;
-          }
-
-          // -------------------------------------------------
-          // GET BACKUP STATUS (getTaskLog)
-          // -------------------------------------------------
-          const logResponse = await proxmoxService.getTaskLog(upid);
-          if (!logResponse?.data?.data) continue;
-
-          const result = logResponse.data.data;
-          const exitstatus = result.exitstatus;
-          const taskStatus = result.status;
-
-          let newStatus = "Running";
-          let rejectReason = null;
-
-          if (exitstatus === "OK" && taskStatus === "stopped") {
-            newStatus = "Completed";
-            rejectReason = "Backup completed successfully.";
-          } else if (
-            exitstatus?.toLowerCase().includes("error") ||
-            exitstatus === "unknown error" ||
-            exitstatus === "job errors"
-          ) {
-            newStatus = "Failed";
-            rejectReason =
-              "Something went wrong in Proxmox, please try again later.";
-          }
-
-          // -------------------------------------------------
-          // FETCH FILENAME using fetchFileName()
-          // -------------------------------------------------
-
-          let extractedFileName = null;
-          try {
-            const fileResponse = await proxmoxService.fetchFileName(upid);
-            const lines = fileResponse?.data || [];
-
-            if (Array.isArray(lines)) {
-              for (const line of lines) {
-                if (line.t && line.t.includes("creating vzdump archive")) {
-                  const match = line.t.match(/dump\/([^ ]+\.zst)/);
-                  if (match) {
-                    extractedFileName = match[1];
-                    console.log(
-                      "Extracted Backup Filename:",
-                      extractedFileName
-                    );
-                    break;
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.error("Error fetching or parsing filename:", err);
-          }
-
-          // -------------------------------------------------
-          // UPDATE component_export TABLE
-          // -------------------------------------------------
-          let updateQuery = `
-            UPDATE component_export
-            SET status = :newStatus,
-                reject_reason = :rejectReason,
-                modifiedon = NOW()
-            WHERE componentexportid = :exportId
-          `;
-
-          let replacements = {
-            newStatus,
-            rejectReason,
-            exportId: componentexportid,
-          };
-
-          // Completed + filename → add file_name
-          if (newStatus === "Completed" && extractedFileName) {
-            updateQuery = `
-              UPDATE component_export
-              SET status = :newStatus,
-                  file_name = :fileName,
-                  reject_reason = :rejectReason,
-                  modifiedon = NOW()
-              WHERE componentexportid = :exportId
-            `;
-            replacements.fileName = extractedFileName;
-          }
-
-          await db.sequelize.query(updateQuery, {
-            replacements,
-            type: db.sequelize.QueryTypes.UPDATE,
-          });
-
-          console.log(
-            `UPID ${upid} => Status Updated: ${newStatus}` +
-              (extractedFileName ? ` | File: ${extractedFileName}` : "") +
-              (rejectReason ? ` | Reason: ${rejectReason}` : "")
-          );
-
-          // -------------------------------------------------
-          // CHECK SCENARIO EXPORT STATUS BASED ON COMPONENTS
-          // -------------------------------------------------
-
-          try {
-            const scenarioRow = await db.sequelize.query(
-              `SELECT scenarioid 
-                FROM component_export 
-                WHERE componentexportid = :exportId`,
-              {
-                replacements: { exportId: componentexportid },
-                type: db.sequelize.QueryTypes.SELECT,
-              }
-            );
-
-            if (scenarioRow.length) {
-              const scenarioId = scenarioRow[0].scenarioid;
-
-              // Get all component statuses for this scenario
-              const statusCounts = await db.sequelize.query(
-                `SELECT 
-                  SUM(status = 'Completed') AS completedCount,
-                  SUM(status = 'Running') AS runningCount,
-                  SUM(status = 'Failed') AS failedCount,
-                  COUNT(*) AS totalCount
-                  FROM component_export
-                  WHERE scenarioid = :scenarioId`,
-                {
-                  replacements: { scenarioId },
-                  type: db.sequelize.QueryTypes.SELECT,
-                }
-              );
-
-              const { completedCount, runningCount, failedCount, totalCount } =
-                statusCounts[0];
-
-              let scenarioStatus = "Running"; // default
-
-              if (failedCount > 0) {
-                scenarioStatus = "Failed";
-              } else if (completedCount == totalCount) {
-                scenarioStatus = "Complete";
-              } else {
-                scenarioStatus = "Running"; // because some components still running
-              }
-
-              // Update scenario_export
-              await db.sequelize.query(
-                `UPDATE scenario_export
-                  SET status = :scenarioStatus,
-                  modifiedon = NOW()
-                  WHERE scenarioid = :scenarioId`,
-                {
-                  replacements: { scenarioStatus, scenarioId },
-                  type: db.sequelize.QueryTypes.UPDATE,
-                }
-              );
-
-              console.log(
-                `Scenario ${scenarioId} status updated → ${scenarioStatus} 
-                (Completed: ${completedCount}, Running: ${runningCount}, Failed: ${failedCount})`
-              );
-            }
-          } catch (err) {
-            console.error("Failed to update scenario_export status:", err);
-          }
-        } catch (err) {
-          console.error("Cron Status Update Error (loop):", err);
-        }
-      }
-    } catch (err) {
-      console.error("Cron Status Update Error:", err);
-    }
-  };
-
 module.exports = {
   setVMRequestConfiguration,
   updateCompleteTerminateVMRequest,
@@ -1950,6 +1688,4 @@ module.exports = {
   restoreSnapshot,
   pauseScenarioLearner,
   resumeScenarioLearner,
-  getScenarioById,
-  checkBackupStatus,
 };

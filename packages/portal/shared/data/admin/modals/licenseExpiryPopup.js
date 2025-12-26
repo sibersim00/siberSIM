@@ -175,15 +175,13 @@ const LicenseExpiryPopup = ({ show, onClose, licenseInfo }) => {
         <Button variant="outline-secondary" onClick={handleClose}>
           Okay
         </Button>
-        <Button 
-          variant="success" 
-          onClick={handleUpgrade} 
-          disabled={localLicenseInfo.daysLeft > 5}
-        >
-          <i className="fas fa-sync-alt me-2"></i>
-          Renew License Now
-        </Button>
-      </Modal.Footer>
+        {localLicenseInfo.daysLeft <= 5 && (
+  <Button variant="success" onClick={handleUpgrade}>
+    <i className="fas fa-sync-alt me-2"></i>
+    Renew License Now
+  </Button>
+  )}
+  </Modal.Footer>
     </Modal>
   );
 };

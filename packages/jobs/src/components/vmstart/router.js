@@ -43,8 +43,6 @@ module.exports = function (iocContainer) {
     "/generate-access-token",
     controller.generateProxmoxAccessToken(iocContainer)
   );
-  router.post("/exports", controller.exportScenario(iocContainer));
-
   router.post(
     "/delete-scenario-learner",
     controller.deleteScenarioLearner(iocContainer)

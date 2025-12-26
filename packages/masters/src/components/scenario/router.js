@@ -16,6 +16,9 @@ module.exports = function (iocContainer) {
       controller.saveComponentconfiguration(iocContainer));
   router.get('/exportlist', controller.exportList(iocContainer));
   router.post("/create-export", controller.createExport(iocContainer));
-
+  router.get(
+    "/tablist",
+    controller.getTabList(iocContainer)
+  );
   return router;
 }

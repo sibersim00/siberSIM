@@ -22,7 +22,9 @@ const checklogin =
           };
         }
         // If learner not verified found, return error
+
         if (learner.isverified == "No") {
+
           return {
             statusCode: 404,
             message: validation.messages.account_verification_pending,
@@ -104,13 +106,14 @@ const verifylogin =
 
 
 const verifyDirectLogin =
-  ({ db }) =>
+  ({ db, validation }) =>
     async ({ loginid, password }) => {
       loginid = loginid.trim();
+
       password = password.trim();
 
       const [learner] = await db.sequelize.query(
-        `SELECT learner_id, learner_uuid, firstname, lastname, email, mobile, password, profile, instructor_id, 'Learner' as type
+        `SELECT learner_id, learner_uuid, firstname, lastname, email, mobile, password, profile, isverified , instructor_id, 'Learner' as type
        FROM learners
        WHERE status = 'Active' AND BINARY username = ?`,
         {
@@ -118,15 +121,24 @@ const verifyDirectLogin =
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
+      console.log("learnersssssssssssssss", learner)
       if (!learner) {
         return { statusCode: 401, message: "Invalid credentials" };
       }
-
       const isMatch = await bcrypt.compare(password, learner.password);
+      console.log("isMatch",isMatch)
       if (!isMatch) {
         return { statusCode: 401, message: "Invalid credentials" };
       }
+      if (learner.isverified == "No") {
+
+        return {
+          statusCode: 404,
+          message: validation.messages.account_verification_pending,
+        };
+      }
+
+
 
       delete learner.password;
       return { statusCode: 200, learner };
@@ -198,6 +210,7 @@ const learnermenu =
           active: false,
           selected: false,
           title: "Dashboard",
+          sub_path: null
         },
         {
           source: "/scenarios",
@@ -207,25 +220,9 @@ const learnermenu =
           active: false,
           selected: false,
           title: "Scenarios",
+          sub_path: "/components/scenarios/view/[...slug], /components/scenarios/quiz/[...slug], /components/scenarios/view/vnc/[...slug]"
         },
-        // {
-        //   source: "/pausescenarios",
-        //   path: "/components/pausescenarios",
-        //   icon: "ti ti-map",
-        //   type: "link",
-        //   active: false,
-        //   selected: false,
-        //   title: "Pause Scenarios",
-        // },
-        {
-          source: "/faqs",
-          path: "/components/faqs",
-          icon: "ti ti-help-alt",
-          type: "link",
-          active: false,
-          selected: false,
-          title: "FAQs",
-        },
+
         {
           source: "/customscenarios",
           path: "/components/customscenarios",
@@ -234,6 +231,7 @@ const learnermenu =
           active: false,
           selected: false,
           title: "Custom Scenarios",
+          sub_path: "/components/customscenarios/view/[...slug]"
         },
         {
           source: "/customcomponent",
@@ -243,10 +241,11 @@ const learnermenu =
           active: false,
           selected: false,
           title: "Custom Components",
+          sub_path: "/components/customcomponent/view/[...slug]"
         },
-
       ];
     };
+
 
 
 const register =

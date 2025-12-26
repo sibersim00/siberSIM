@@ -21,14 +21,13 @@ const nextConfig = withTM({
     path: "",
   },
   env: {
-    NEXT_PUBLIC_BASE_PATH : `/app`,
-    API_URL_LOGIN : `/authapi`,
-    API_URL_MASTERS : `/masterapi`,
-    API_URL_FILEMANAGER:`/jobapi`,
-    LEARNER_BASE_PATH: 'http://sibersim.battlerangers.com',
-    BASE_PATH : `/app/`,
-    CRYPTO_SECURITY_KEY:'techno5202jarus',
-    VNC_PROXY_URL :`ws://sibersim.battlerangers.com:4007`,
+    CRYPTO_SECURITY_KEY: "techno5202jarus",
+    BASE_PATH: `/app/`,
+    VNC_PROXY_URL: `ws://sibersim.battlerangers.com:4007`,
+    API_URL_LOGIN : `http://sibersim.battlerangers.com/authapi`,
+    API_URL_MASTERS : `http://sibersim.battlerangers.com/masterapi`,
+    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
+    LEARNER_BASE_PATH: "http://sibersim.battlerangers.com",
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.module.rules.push({
@@ -144,10 +143,6 @@ const nextConfig = withTM({
         destination: "/components/scenarios/startview/:slug*",
       },
       {
-        source: "/custom_scenarios_view/:slug*",
-        destination: "/components/customscenarios/view/:slug*",
-      },
-      {
         source: "/scenarios/flowchart",
         destination: "/components/scenarios/flowchart",
       },
@@ -177,6 +172,8 @@ const nextConfig = withTM({
       },
       { source: "/network", destination: "/components/network" },
       { source: "/events", destination: "/components/events" },
+      { source: "/event-dashboard", destination: "/components/events/eventdashboard" },
+      { source: "/manage-events", destination: "/components/events/manageevents" },
       {
         source: "/scenario_quiz/:slug*",
         destination: "/components/scenarios/quiz/:slug*",
@@ -192,7 +189,6 @@ const nextConfig = withTM({
         source: "/instructors_view/:slug*",
         destination: "/components/instructors/view/:slug*",
       },
-      { source: "/event-dashboard", destination: "/components/eventdashboard" },
       {
         source: "/scenariotermination",
         destination: "/components/scenariotermination",
@@ -241,10 +237,6 @@ const nextConfig = withTM({
         destination: "/components/usersessions/view/vnc/:slug*",
       },
       {
-        source: "/customscenarios",
-        destination: "/components/customscenarios",
-      },
-      {
         source: "/customers",
         destination: "/components/customers",
       },
@@ -277,16 +269,22 @@ const nextConfig = withTM({
         destination: "/components/licensemanagedashboard",
       },
       {
-        source: "/customcomponent",
-        destination: "/components/customcomponent",
-      },
-      {
-        source: "/custom_component_view/:slug*",
-        destination: "/components/customcomponent/view/:slug*",
-      },
-      {
         source: "/scenarioexport",
         destination: "/components/scenarioexport",
+      },
+      {
+        source: "/custom-request",
+        destination: "/components/customrequest",
+      },
+      { source: "/customcomponent", destination: "/components/customrequest/customcomponent" },
+      { source: "/customscenarios", destination: "/components/customrequest/customscenarios" },
+      {
+        source: "/custom_scenarios_view/:slug*",
+        destination: "/components/customrequest/customscenarios/view/:slug*",
+      },
+     {
+        source: "/custom_component_view/:slug*",
+        destination: "/components/customrequest/customcomponent/view/:slug*",
       },
     ];
   },

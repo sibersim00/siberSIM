@@ -343,7 +343,7 @@ const ImportScenarioCategoryList = ({ openImportModal, handleImportModal, showLi
                     )}
                 </Row>
                 <Row className="p-3">
-                    <a href={`${process.env.NEXT_PUBLIC_BASE_PATH}/assets/docs/sample-scenario-category-Import.xlsx`} className="ms-2 link-color-tbs pointer">
+                    <a href={`${process.env.BASE_PATH}assets/docs/sample-scenario-category-Import.xlsx`} className="ms-2 link-color-tbs pointer">
                         <i className="fe fe-download"></i> Download XLSX Sample
                     </a>
                 </Row>

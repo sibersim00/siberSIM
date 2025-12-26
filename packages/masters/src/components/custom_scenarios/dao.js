@@ -54,26 +54,7 @@ ORDER BY s.scenariotitle;
       throw new Error("Failed to fetch scenario list");
     }
   };
-const changeStatus =
-  ({ db, validation }) =>
-  async (body, session_userid) => {
-    try {
-      const updateQuery = `UPDATE scenarios SET status =?, modifiedon=CURRENT_TIMESTAMP, modifiedby=? WHERE scenarioid=?`;
-      const queryParams = [
-        body.status == "true" ? "Active" : "Inactive",
-        session_userid,
-        body.scenarioid,
-      ];
-      await db.sequelize.query(updateQuery, {
-        replacements: queryParams,
-        type: db.sequelize.QueryTypes.UPDATE,
-      });
-      return { statusCode: 200, message: validation.messages.status_change };
-    } catch (error) {
-      console.error("Error Scenario Status:", error);
-      throw error;
-    }
-  };
+
 const getById =
   ({ db }) =>
   async (uuid) => {
@@ -372,58 +353,11 @@ const update =
       throw error;
     }
   };
-const deleteById =
-  ({ db }) =>
-  async (body, session_userid) => {
-    try {
-      const scenarioId = body.scenarioid;
 
-      // 1️⃣ Check if the scenario is currently running
-      const [running] = await db.sequelize.query(
-        `SELECT sl.scenariolearnerid
-       FROM scenario_learner sl
-       WHERE sl.scenarioid = :scenarioId
-       AND sl.status = 'Running'`,
-        {
-          replacements: { scenarioId },
-        }
-      );
-
-      if (running.length > 0) {
-        return {
-          status: false,
-          message: "Scenario is currently running and cannot be deleted.",
-        };
-      }
-
-      // 2️⃣ Soft delete scenario if not running
-      await db.sequelize.query(
-        `UPDATE scenarios 
-       SET deletedon = NOW(), modifiedby = :modifiedBy 
-       WHERE scenarioid = :scenarioId`,
-        {
-          replacements: {
-            scenarioId,
-            modifiedBy: session_userid,
-          },
-        }
-      );
-
-      return {
-        status: true,
-        message: "Scenario has been deleted successfully.",
-      };
-    } catch (error) {
-      console.error("Error in deleteById:", error);
-      throw new Error("Failed to delete scenario due to database error.");
-    }
-  };
 
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
-    console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbb",body);
-    
     const updateQuery = `UPDATE custom_scenarios SET scenariodiagram = ?, components = ?, component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ? WHERE custom_scenariouuid = ?`;
     const updateParams = [
       JSON.stringify(body.scenariodiagram),
@@ -445,6 +379,7 @@ const saveDiagram =
       throw error;
     }
   };
+
 const scenariodigramlist =
   ({ db }) =>
   async (scenarioid) => {
@@ -533,10 +468,7 @@ const scenariodigramlist =
 const saveComponentconfiguration =
   ({ db, validation }) =>
   async (body, session_userid) => {
-    console.log("ddddddddddddddddddddddd",body);
-    
     try {
-      // ✅ Validate required fields
       if (
         !body.scenarioid ||
         !body.component_config ||
@@ -550,8 +482,6 @@ const saveComponentconfiguration =
           message: "Missing or invalid required fields",
         };
       }
-
-      // ✅ Update the custom_scenarios record
       const updateQuery = `
       UPDATE custom_scenarios
       SET component_config = ?,
@@ -562,7 +492,6 @@ const saveComponentconfiguration =
           modifiedby = ?
       WHERE custom_scenariouuid = ?
     `;
-
       const updateParams = [
         JSON.stringify(body.component_config),
         JSON.stringify(body.network_config),
@@ -571,12 +500,10 @@ const saveComponentconfiguration =
         session_userid,
         body.scenarioid,
       ];
-
       await db.sequelize.query(updateQuery, {
         replacements: updateParams,
         type: db.sequelize.QueryTypes.UPDATE,
       });
-
       const [scenarioDetails] = await db.sequelize.query(
         `SELECT 
             cs.scenariotitle,
@@ -591,7 +518,7 @@ const saveComponentconfiguration =
         }
       );
 
-      // ✅ Only if approved, copy data to main scenarios table
+      //Only if approved, copy data to main scenarios table
       if (body.approval_status === "Approve") {
         const [customScenario] = await db.sequelize.query(
           `SELECT * FROM custom_scenarios WHERE custom_scenariouuid = ?`,
@@ -600,7 +527,6 @@ const saveComponentconfiguration =
             type: db.sequelize.QueryTypes.SELECT,
           }
         );
-
         if (customScenario) {
           const insertQuery = `
           INSERT INTO scenarios (
@@ -685,14 +611,13 @@ const saveComponentconfiguration =
             userid: 0,
             status: statusText,
           },
-          "Admin",
+          "Learner",
           "0"
         );
       }
 
-      // ✅ Return response
+      //Return response
       let message = "";
-
       switch (body.approval_status) {
         case "Approve":
           message = "Scenario approved and published successfully";
@@ -740,9 +665,7 @@ const getScenarioInstructionFiles =
 module.exports = {
   list,
   update,
-  deleteById,
   getById,
-  changeStatus,
   create,
   saveDiagram,
   scenariodigramlist,

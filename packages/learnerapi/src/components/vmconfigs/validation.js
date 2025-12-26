@@ -52,6 +52,9 @@ const ERROR_MESSAGES = {
   CONFIG_SUCCESS: "Set Configurations Successfully.",
   get_component_details: "Get component details successfully",
   server_error: "Internal server error",
+  vm_stopped: "VM is currently stopped.",
+  vm_not_stopped: "VM is not in stopped state.",
+  
 };
 
 module.exports = {

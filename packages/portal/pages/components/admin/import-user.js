@@ -483,7 +483,7 @@ if (errorData?.statusCode === 400) {
             size="sm"
           >
             <a
-              href={`${process.env.NEXT_PUBLIC_BASE_PATH}/assets/docs/aduser-import.xlsx`}
+              href={`${process.env.BASE_PATH}assets/docs/aduser-import.xlsx`}
               download
               target="_blank"
               style={{ textDecoration: "none", color: "inherit" }}

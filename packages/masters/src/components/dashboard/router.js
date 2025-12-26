@@ -1,4 +1,3 @@
-const { authenticateToken } = require("../../middleware/authJwt");
 module.exports = function (iocContainer) {
     const {
         express,
@@ -7,7 +6,7 @@ module.exports = function (iocContainer) {
 
     const router = express.Router();
 
-    router.get('/dashboardstats',authenticateToken,controller.getDashboardStats(iocContainer));
+    router.get('/dashboardstats', controller.getDashboardStats(iocContainer));
   
     
     return router;

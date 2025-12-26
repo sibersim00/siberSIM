@@ -36,8 +36,8 @@ import Select from "react-select";
 import dynamic from "next/dynamic";
 import "../../utils/i18n";
 import { useTranslation } from "react-i18next";
-import CreateScenario from "../../../pages/components/customscenarios/createscenario";
-import DiagramComponents from "../../../pages/components/customscenarios/view/diagramcomponents";
+import CreateScenario from "../../../pages/components/customrequest/customscenarios/createscenario"
+import DiagramComponents from "../../../pages/components/customrequest/customscenarios/view/diagramcomponents";
 
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 

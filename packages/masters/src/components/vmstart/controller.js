@@ -51,12 +51,15 @@ const setVMRequestConfiguration =
         }
 
         // fallback (generic, not learner-based)
-        // const result = await dao.setVMRequestConfigurationOnFailure({
-        //   db,
-        //   ipAddress,
-        //   scenarioid,
-        //   vmrequestid,
-        // });
+        const result = await dao.setScenarioLearnerConfigurationOnFailure({
+        db,
+        ipAddress,
+        scenarioid,
+        vmrequestid,
+        requestedby_id,
+       requestedby_role,
+       });
+
 
         return res.status(500).send({
           statusCode: 500,
@@ -86,11 +89,6 @@ const updateCompleteTerminate =
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmstart/update-complete-terminate`,
           { vmrequestid, status, type }
-          // {
-          //   headers: {
-          //     Authorization: req.headers.authorization,
-          //   },
-          // }
         );
 
         return res.status(200).send({
@@ -99,21 +97,17 @@ const updateCompleteTerminate =
           data: response.data,
         });
       } catch (err) {
-        const ipAddress =
-          req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+        console.error("Axios request failed");
 
-        // const fallback = await dao.updateVMRequestStatus({ db, ipAddress })(
-        //   vmrequestid,
-        //   scenarioid,
-        //   status,
-        //   type
-        // );
-
-        // return res.status(500).send({
-        //   statusCode: 500,
-        //   message: "Job service failed, fallback applied",
-        //   fallback,
-        // });
+        if (err.response) {
+          return res.status(err.response.status).send({
+            statusCode: err.response.status,
+            message:
+              err.response.data?.message ||
+              "Unexpected error in job service.",
+            errorData: err.response.data,
+          });
+        }
       }
     } catch (err) {
       next(err);
@@ -206,7 +200,7 @@ const vncProxyConsole =
   };
 
 const startScenarioLearner =
-  ({ dao, db, validation }) =>
+  ({  }) =>
   async (req, res, next) => {
     try {
       const { vmid, vmType } = req.body;
@@ -244,7 +238,7 @@ const startScenarioLearner =
   };
 
 const restartscenarioLearner =
-  ({ dao, db, validation }) =>
+  ({ }) =>
   async (req, res, next) => {
     try {
       const { vmid, vmType } = req.body;
@@ -282,7 +276,7 @@ const restartscenarioLearner =
     }
   };
 const createsnapshot =
-  ({ dao, db, validation }) =>
+  ({ }) =>
   async (req, res, next) => {
     try {
       const { vmid, vmType, vmstate } = req.body;
@@ -416,11 +410,11 @@ const pauseScenarioLearner =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { scenariolearnersessionid } = req.body;
+      const { vmrequestid } = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmstart/pause-scenario-learner`,
-          { scenariolearnersessionid }
+          { vmrequestid }
         );
         return res.status(200).send({
           statusCode: 200,
@@ -450,11 +444,11 @@ const resumeScenarioLearner =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { scenariolearnersessionid } = req.body;
+      const { vmrequestid } = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmstart/resume-scenario-learner`,
-          { scenariolearnersessionid }
+          { vmrequestid }
         );
         return res.status(200).send({
           statusCode: 200,
@@ -484,11 +478,11 @@ const deleteScenarioLearner =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { scenariolearnersessionid, status, type } = req.body;
+      const { vmrequestid, status, type } = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmstart/delete-scenario-learner`,
-          { scenariolearnersessionid, status, type }
+          { vmrequestid, status, type }
         );
         return res.status(200).send({
           statusCode: 200,

@@ -102,33 +102,36 @@ const verifylogin = ({ db }) => async ({ loginid, password, orgid, otp }) => {
   }
 };
 
-const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
+const verifyDirectLogin = ({ db, validation }) => async ({ loginid, password, orgid }) => {
   loginid = loginid.trim();
   password = password.trim();
 
   const [user] = await db.sequelize.query(
-    `SELECT userid, useruuid, orgid, loginid, firstname, lastname, email, mobile, profile, password, usertype 
+    `SELECT userid, useruuid, orgid, loginid, firstname, lastname, email, mobile, profile, password, isverified, usertype 
      FROM ad_users 
-     WHERE status ='Active' AND isverified='Yes' AND usertype='Instructor' 
+     WHERE status ='Active' AND usertype='Instructor' 
      AND BINARY loginid = ? AND orgid = ?`,
     { replacements: [loginid, orgid], type: db.sequelize.QueryTypes.SELECT }
   );
-
   if (!user) {
     return { statusCode: 401, message: "Invalid credentials" };
   }
-
+  if (user.isverified == 'No') {
+    return { statusCode: 404, message: validation.messages.account_verification_pending };
+  }
   const isMatch = await bcrypt.compare(password, user.password);
   if (isMatch) {
     delete user.password;
     return { statusCode: 200, user }; // accessToken removed
-  } else {
+  }
+
+  else {
     return { statusCode: 401, message: "Invalid credentials" };
   }
 };
 
 const userrolemenu = ({ db }) => async ({ userid }) => {
-  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype from ad_menus m where m.status = 'Active' order by m.orderno asc `);
+  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.submenupath as sub_path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype from ad_menus m where m.status = 'Active' order by m.orderno asc `);
   const [rolemenu] = await db.sequelize.query(`select ar.menuid from ad_userrolemap au inner join ad_rolemenumap ar on ar.roleid =au.roleid where au.userid=${userid} group by ar.menuid`);
   const menuHierarchy = buildMenuHierarchy(menus, rolemenu);
   return menuHierarchy;
@@ -188,7 +191,7 @@ const checkforgot = ({ db, keys }) => async ({ loginid, orgid }) => {
 
 const verifyforgot = ({ db }) => async ({ loginid, password, orgid, otp }) => {
   loginid = loginid.trim();
- 
+
 
   const [user] = await db.sequelize.query(`select userid,orgid,loginid,firstname,lastname,email,mobile,profile from ad_users au where status ='Active' and isverified='Yes' and usertype='Instructor' and BINARY loginid = ? and orgid = ? and otp= '${otp}' and otptimeout >= now() `,
     { replacements: [loginid, orgid, otp], type: db.sequelize.QueryTypes.SELECT });

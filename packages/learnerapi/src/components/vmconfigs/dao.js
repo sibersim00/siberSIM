@@ -964,7 +964,7 @@ const restartscenarioLearner =
             componenttype.toLowerCase()
           );
 
-          // ✅ Always mark as Stopped whether stop succeeds or fails
+          //  Always mark as Stopped whether stop succeeds or fails
           await db.sequelize.query(
             `UPDATE vm_configuration 
            SET status = 'Stopped', modifiedon = NOW() 
@@ -1043,29 +1043,6 @@ const restartscenarioLearner =
       }
     };
 
-
-
-
-// const getSnapshotsByVmid =
-//   ({ db }) =>
-//   async (vmid) => {
-//     try {
-//       const snapshots = await db.sequelize.query(
-//         `SELECT snapshotid, vmid, snapshot_name, snapshot_status, createdon 
-//          FROM vm_snapshots
-//          WHERE vmid = ? AND deletedon IS NULL`,
-//         {
-//           replacements: [vmid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       return snapshots;
-//     } catch (error) {
-//       console.error("DAO Error fetching snapshots:", error);
-//       return [];
-//     }
-//   };
 const getSnapshotsByVmid =
   ({ db }) =>
     async (vmid) => {
@@ -1150,7 +1127,8 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
       c.storage,
       c.vmid_name,
       v.scenarioid,
-      v.learner_id
+      v.learner_id,
+      v.status AS vm_status 
     FROM components c
     INNER JOIN vm_configuration v
       ON c.vmid = v.master_vmid
@@ -1161,7 +1139,7 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
     LIMIT 1
     `,
     {
-      replacements: { vmid }, // 👈 Sequelize replaces :vmid here
+      replacements: { vmid },
       type: db.sequelize.QueryTypes.SELECT,
     }
   );
@@ -1181,22 +1159,6 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
 
   return res;
 };
-
-// const getOriginalVmid = ({ db }) => async (clone_vmid) => {
-//   const [result] = await db.sequelize.query(
-//     `
-//         SELECT master_vmid,scenarioid,learner_id,componenttype
-//         FROM vm_configuration
-//         WHERE vmid = ?
-//         LIMIT 1
-//       `,
-//     {
-//       replacements: [clone_vmid],
-//       type: db.sequelize.QueryTypes.SELECT,
-//     }
-//   );
-//   return result || null;
-// };
 
 const getNextVmid = ({ db }) => async (transaction) => {
   // 1️⃣ Base VMID from web_settings (read-only)
@@ -1233,9 +1195,14 @@ const getNextVmid = ({ db }) => async (transaction) => {
   );
 
   // 3️⃣ Decide next vmid
+  // const nextVmid = lastComponent?.lastVmid
+  //   ? Number(lastComponent.lastVmid) + 1
+  //   : baseVmid;
+  // 3 Decide next vmid
   const nextVmid = lastComponent?.lastVmid
     ? Number(lastComponent.lastVmid) + 1
-    : baseVmid;
+    : baseVmid + 1;   //  IMPORTANT CHANGE
+
 
   return nextVmid;
 };
@@ -1248,15 +1215,16 @@ const saveCustomComponent = ({ db }) => async (data) => {
       componentname,
       componentcategoryid,
       duration,
-      clone_vmid,        // ✅ from frontend (11494)
+      clone_vmid,        // from frontend (11494)
       componentimage,
       scenarioid,
       learner_id,
       componenttype,
       createdby
     } = data;
+    console.log("dataaaaaaaaaaaaaaa", data)
 
-    // 🔥 Generate ONLY vmid
+    //  Generate ONLY vmid
     const vmid = await getNextVmid({ db })(transaction);
 
     // 1️⃣ Fetch approval flag
@@ -1299,7 +1267,51 @@ const saveCustomComponent = ({ db }) => async (data) => {
 
     const master_vmid = vmConfig.master_vmid;
 
-    // 2️⃣ Insert (IMPORTANT PART)
+    // DUPLICATE CHECK (ONLY componentname)
+    //   const [existingComponent] = await db.sequelize.query(
+    //     `
+    //       SELECT customcomponentid
+    //       FROM custom_component
+    //       WHERE componentname = ?
+    //         AND scenarioid = ?
+    //         AND learner_id = ?
+    //         AND status != 'deleted'
+    //       LIMIT 1
+    //     `,
+    //     {
+    //       replacements: [componentname, scenarioid, learner_id],
+    //       type: db.sequelize.QueryTypes.SELECT,
+    //       transaction,
+    //     }
+    //   );
+
+    //   if (existingComponent) {
+    //     throw new Error("Component name already exists. Please use a different name.");
+    //   }
+
+    //   //  DUPLICATE CHECK IN MASTER COMPONENTS (Active only)
+    //   const [existingMasterComponent] = await db.sequelize.query(
+    //     `
+    //   SELECT componentid
+    //   FROM components
+    //   WHERE componentname = ?
+    //     AND status = 'Active'
+    //   LIMIT 1
+    // `,
+    //     {
+    //       replacements: [componentname],
+    //       type: db.sequelize.QueryTypes.SELECT,
+    //       transaction,
+    //     }
+    //   );
+
+    //   if (existingMasterComponent) {
+    //     throw new Error(
+    //       "Component name already exists in the system. Please choose a different name."
+    //     );
+    //   }
+
+    // Insert (IMPORTANT PART)
     const [insertResult] = await db.sequelize.query(
       `
     INSERT INTO custom_component 
@@ -1322,7 +1334,7 @@ const saveCustomComponent = ({ db }) => async (data) => {
     )
     VALUES
     (
-      UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'Pending', ?, NOW()
+      UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW()
     )
   `,
       {
@@ -1362,78 +1374,60 @@ const saveCustomComponent = ({ db }) => async (data) => {
   }
 };
 
+const rejectPendingCustomComponentIfVmStopped =
+  ({ db }) =>
+    async ({ vmid }) => {
+      try {
+        // 1️⃣ Check VM status
+        const [vm] = await db.sequelize.query(
+          `
+          SELECT status
+          FROM vm_configuration
+          WHERE vmid = :vmid
+          LIMIT 1
+          `,
+          {
+            replacements: { vmid },
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-// const saveCustomComponent = ({ db }) => async (data) => {
-//   const {
-//     componentname,
-//     componentcategoryid,
-//     duration,
-//     componentimage,
-//     clone_vmid,
-//     master_vmid,
-//     scenarioid,
-//     learner_id,
-//     componenttype,
-//     createdby
-//   } = data;
+        if (!vm) {
+          return { updated: false, reason: "VM_NOT_FOUND" };
+        }
 
-//   // 1. Fetch component_approval flag from web_settings
-//   const [settings] = await db.sequelize.query(
-//     `
-//       SELECT component_approval 
-//       FROM web_settings 
-//       WHERE status = 1 
-//       LIMIT 1
-//     `,
-//     { type: db.sequelize.QueryTypes.SELECT }
-//   );
+        if (vm.status !== "Stopped") {
+          return { updated: false, reason: "VM_NOT_STOPPED" };
+        }
 
-//   let approvalMessage = "";
-//   let approvalFlag = settings?.component_approval === "true";   // <-- boolean flag
+        // 2️⃣ Reject pending custom components
+        const [result] = await db.sequelize.query(
+          `
+          UPDATE custom_component
+          SET
+            status = 'reject',
+            reject_reason = 'VM was stopped. Request automatically rejected.',
+            modifiedon = NOW()
+          WHERE clone_vmid = :vmid
+            AND status = 'pending'
+          `,
+          {
+            replacements: { vmid },
+          }
+        );
 
-//   if (approvalFlag) {
-//     approvalMessage = "Auto approval process";
-//   } else {
-//     approvalMessage = "Admin approval process";
-//   }
-
-//   // 2. Insert component
-//   await db.sequelize.query(
-//     `
-//       INSERT INTO custom_component 
-//         (customcomponentuuid, componentname, componentcategoryid, duration, componentimage, clone_vmid, vmid, scenarioid, learner_id, componenttype, status, componentStatus, createdby, createdon)
-//       VALUES 
-//         (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending','Pending', ?, NOW())
-//     `,
-//     {
-//       replacements: [
-//         componentname,
-//         componentcategoryid,
-//         duration,
-//         componentimage,
-//         clone_vmid,
-//         master_vmid,
-//         scenarioid,
-//         learner_id,
-//         componenttype,
-//         createdby,
-//       ],
-//       type: db.sequelize.QueryTypes.INSERT,
-//     }
-//   );
-
-//   // 3. Return message + flag
-//   return {
-//     success: true,
-//     approvalFlag,     // <-- returns true / false
-//     message: approvalMessage
-//   };
-// };
-
-
-
-
-
+        return {
+          updated: true,
+          affectedRows: result?.affectedRows || 0,
+        };
+      } catch (error) {
+        console.error(
+          "Error rejecting pending custom components:",
+          error
+        );
+        throw error;
+      }
+    };
 
 module.exports = {
   setScenarioLearnerConfiguration,
@@ -1448,5 +1442,10 @@ module.exports = {
   getSnapshotsByVmid,
   getComponentByVmid,
   getNextVmid,
-  saveCustomComponent
+  saveCustomComponent,
+  rejectPendingCustomComponentIfVmStopped,
+  
+
+
+
 };

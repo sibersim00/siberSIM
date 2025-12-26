@@ -5,10 +5,13 @@ const startScenarioSchema = joi.object({
     "any.required": "Scenario ID is required.",
     "number.base": "Scenario ID must be a number.",
   }),
-
 });
 
 const updateSessionStatusSchema = joi.object({
+   vmrequestid: joi.number().required().messages({
+      "number.base": `vm request ID must be a number.`,
+      "any.required": `vmrequestid is required.`,
+    }),
 });
 
 const getMessagesSchema = joi.object({

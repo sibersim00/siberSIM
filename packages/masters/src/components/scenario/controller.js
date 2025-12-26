@@ -1,3 +1,8 @@
+const fs = require("fs");
+const path = require("path");
+const archiver = require("archiver");
+
+
 const list = ({ dao, db }) => async (req, res) => {
     try {
         let usertype = req.user.usertype;         // e.g., "Admin" or "Instructor"
@@ -152,94 +157,6 @@ const exportList = ({ dao, db }) => async (req, res) => {
     }
 };
 
-const fs = require("fs");
-const path = require("path");
-const archiver = require("archiver");
-
-const exportScenario = ({ dao, db }) => async (req, res) => {
-    try {
-        const { scenarioid } = req.params;
-        const scenario = await dao.getScenarioById({ db })(scenarioid);
-
-        if (!scenario) {
-            return res
-                .status(404)
-                .json({ statusCode: 404, message: "Scenario not found" });
-        }
-
-        const exportDir = path.join(__dirname, `../exports/scenario_${scenarioid}`);
-        console.log("__dirname", __dirname)
-        const assetsDir = path.join(exportDir, "assets");
-        fs.mkdirSync(assetsDir, { recursive: true });
-
-        // Save scenario JSON file
-        const jsonPath = path.join(exportDir, "scenario_data.json");
-        fs.writeFileSync(jsonPath, JSON.stringify(scenario, null, 2));
-
-        // Set base uploads directory (your real storage)
-        const baseDir = path.join(__dirname, "../uploads");
-
-        // Helper function to safely copy files
-        const copyFileSafe = (srcRelPath) => {
-            if (!srcRelPath) return;
-
-            // Remove leading '/uploads/' if present
-            const cleanPath = srcRelPath.replace(/^\/?uploads[\\/]/, "");
-            const srcPath = path.join(baseDir, cleanPath);
-
-            console.log("Copying from:", srcPath);
-
-            if (fs.existsSync(srcPath)) {
-                const destPath = path.join(assetsDir, path.basename(srcRelPath));
-                console.log("destPath", destPath)
-                fs.copyFileSync(srcPath, destPath);
-                console.log("Copied:", destPath);
-            } else {
-                console.warn("Missing file:", srcPath);
-            }
-        };
-
-        // Copy scenario main image & instruction file
-        copyFileSafe(scenario.scenarioimage);
-        copyFileSafe(scenario.instruction_file);
-
-        // Copy component images (if any)
-        const componentImages = JSON.parse(scenario.component_images || "[]");
-        componentImages.forEach((imgPath) => copyFileSafe(imgPath));
-
-        // Create ZIP archive
-        const zipPath = path.join(__dirname, `../exports/scenario_${scenarioid}.zip`);
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver("zip", { zlib: { level: 9 } });
-
-        output.on("close", () => {
-            console.log(` ZIP created: ${zipPath} (${archive.pointer()} bytes)`);
-
-            // Send the ZIP for download
-            res.download(zipPath, `scenario_${scenarioid}.zip`, (err) => {
-                if (err) console.error("Download error:", err);
-
-                // Cleanup temporary files after sending
-                fs.rmSync(exportDir, { recursive: true, force: true });
-                fs.unlinkSync(zipPath);
-            });
-        });
-
-        archive.on("error", (err) => {
-            throw err;
-        });
-
-        archive.pipe(output);
-        archive.directory(exportDir, false);
-        archive.finalize();
-    } catch (err) {
-        console.error("Export Scenario Error:", err);
-        res
-            .status(500)
-            .json({ statusCode: 500, message: "Server Error", error: err.message });
-    }
-};
-
 const createExport = ({ dao, db, validation }) => async (req, res) => {
     try {
         const body = req.body;
@@ -270,6 +187,102 @@ const createExport = ({ dao, db, validation }) => async (req, res) => {
 };
 
 
+
+const exportScenario = ({ dao, db }) => async (req, res) => {
+  try {
+    const { scenarioid, exportid } = req.body;
+
+    const scenarioData = await dao.getScenarioById({ db })(scenarioid);
+    if (!scenarioData) {
+      return res.status(404).json({ message: "Scenario not found" });
+    }
+
+    const baseRoot = path.join(__dirname, "../../..");
+    const tempZipDir = path.join(baseRoot, "temp_zip");
+
+    fs.mkdirSync(tempZipDir, { recursive: true });
+
+    const exportDir = path.join(tempZipDir, `scenario_${scenarioid}_${Date.now()}`);
+    const assetsDir = path.join(exportDir, "assets");
+
+    fs.mkdirSync(exportDir, { recursive: true });
+    fs.mkdirSync(assetsDir, { recursive: true });
+
+    // Copy JSON
+    const jsonPath = path.join(exportDir, "scenario.json");
+    fs.writeFileSync(jsonPath, JSON.stringify(scenarioData, null, 2));
+
+    // (optional) safe copying logic for related files similar to earlier ...
+
+    const zipName = `scenario_${scenarioid}_${Date.now()}.zip`;
+    const zipPath = path.join(tempZipDir, zipName);
+
+    
+
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    output.on("close", async () => {
+      await db.sequelize.query(
+        `UPDATE scenario_export
+         SET file_name = :file_name, status = 'Completed'
+         WHERE exportid = :exportid`,
+        {
+          replacements: { file_name: zipName, exportid },
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: "Export completed",
+        file_name: zipName,
+        // downloadUrl: `/download/${fileName}`  
+      });
+    });
+
+    archive.on("error", (err) => {
+      console.error(err);
+      res.status(500).json({ message: "Archive error", error: err.message });
+    });
+
+    archive.pipe(output);
+    archive.directory(exportDir, false);
+    archive.finalize();
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+const getTabList = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const result = await dao.getTabList({ db })(null);
+
+    if (result && result.length > 0) {
+      return res.status(200).send({
+        statusCode: 200,
+        message: "Scenario Tab List fetched successfully",
+        data: result,
+      });
+    }
+
+    return res.status(200).send({
+      statusCode: 200,
+      message: "No records found",
+      data: [],
+    });
+  } catch (error) {
+    console.error("Error fetching scenario tab list:", error);
+    return res.status(500).json({
+      statusCode: 500,
+      error: validation.messages.server_error,
+    });
+  }
+};
+
+
 module.exports = {
     list,
     getById,
@@ -282,5 +295,6 @@ module.exports = {
     saveComponentconfiguration,
     exportList,
     exportScenario,
-    createExport
+    createExport,
+    getTabList,
 }

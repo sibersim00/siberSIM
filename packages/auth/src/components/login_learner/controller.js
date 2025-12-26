@@ -41,9 +41,6 @@ const verifylogin =
       if (user.statusCode === 200) {
         const learner = user.learner;
         const hostname = req?.hostname;
-        console.log("req=========>",hostname);
-        const accessToken = await generateAccessToken(hostname,learner);
-
         const menus = [
           {
             menutitle: "DASHBOARD",
@@ -52,6 +49,10 @@ const verifylogin =
             }),
           },
         ];
+        const extractSources = (items) => items.flatMap(i => [i.source,...(i.children ? extractSources(i.children) : [])]);
+        let userObj = user.learner;
+        userObj.menus = extractSources(menus[0]?.Items);
+        const accessToken = await generateAccessToken(hostname,userObj);
 
         return res.send({
           statusCode: 200,
@@ -70,12 +71,12 @@ const verifylogin =
   };
 
 const verifyDirectLogin =
-  ({ dao, db, keys, crypto }) =>
+  ({ dao, db, keys, crypto ,validation }) =>
   async (req, res, next) => {
     try {
       const { loginid, password } = req.body;
 
-      const user = await dao.verifyDirectLogin({ db, keys })({
+      const user = await dao.verifyDirectLogin({ db, keys,validation })({
         loginid,
         password,
       });
@@ -83,9 +84,7 @@ const verifyDirectLogin =
       if (user.statusCode === 200) {
         const learner = user.learner;
         const hostname = req?.hostname;
-        console.log("req=========>",hostname);
-        const accessToken = await generateAccessToken(hostname,learner);
-
+        
         const menus = [
           {
             menutitle: "DASHBOARD",
@@ -94,6 +93,10 @@ const verifyDirectLogin =
             }),
           },
         ];
+        const extractSources = (items) => items.flatMap(i => [i.source,...(i.children ? extractSources(i.children) : [])]);
+        let userObj = user.learner;
+        userObj.menus = extractSources(menus[0]?.Items);
+        const accessToken = await generateAccessToken(hostname,userObj);
 
         return res.send({
           statusCode: 200,
@@ -103,7 +106,7 @@ const verifyDirectLogin =
       } else {
         return res
           .status(400)
-          .send({ statusCode: 400, message: "Invalid Credentials" });
+          .send({ statusCode: 400, message: user.message || "Invalid Credentials" });
       }
     } catch (err) {
       console.error("verifyDirectLogin err ==>>", err);

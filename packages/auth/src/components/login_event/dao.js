@@ -255,34 +255,16 @@ const verifyDirectLogin = ({ db, validation }) => async ({ loginid, password, ev
 
 
 const learnermenu = ({ db }) => async ({ tutor_id }) => {
-
   return [
     {
-      source: "/dashboard",
-      path: "/components/dashboard/dashboard",
+      source: "/event-dashboard",
+      path: "/components/events/dashboard",
       icon: "ti-home",
       type: "link",
       active: false,
       selected: false,
       title: "Dashboard",
-    },
-    {
-      source: "/scenarios",
-      path: "/components/scenarios",
-      icon: "ti ti-map",
-      type: "link",
-      active: false,
-      selected: false,
-      title: "Scenarios",
-    },
-    {
-      source: "/faqs",
-      path: "/components/faqs",
-      icon: "ti ti-help-alt",
-      type: "link",
-      active: false,
-      selected: false,
-      title: "FAQs",
+      sub_path : null
     }
   ];
 }

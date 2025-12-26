@@ -49,96 +49,6 @@ const PauseScenarios = () => {
         state && state.customScenario && state.customScenario.viewNameResp,
     };
   });
-  console.log("hasGetScenariospauseListData",hasGetScenariospauseListData);
-  
-  // const onFilterChanged = (data) => {
-  //   setQuickFilter(data);
-  //   let val = data.toLowerCase();
-  //   if (scenStatus == "") {
-  //     const temp =
-  //       hasGetScenariospauseListData &&
-  //       hasGetScenariospauseListData.filter((d) => {
-  //         return (
-  //           d.scenarioidentification?.toLowerCase().includes(val) ||
-  //           // d.instructor_name?.toLowerCase().includes(val) ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariotitle?.toLowerCase().includes(val) ||
-  //           !val
-  //         );
-  //       });
-
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   } else if (scenStatus == "true") {
-  //     const filteredData =
-  //       hasGetScenariospauseListData.length > 0 &&
-  //       hasGetScenariospauseListData.filter(
-  //         (data) => data?.status?.toString() == "true"
-  //       );
-
-  //     const temp =
-  //       filteredData &&
-  //       filteredData.filter((d) => {
-  //         return (
-  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-  //           (typeof d.duration === "number" &&
-  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-  //           (d.name &&
-  //             d.name != null &&
-  //             d.name.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariocategory &&
-  //             d.scenariocategory != null &&
-  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariosubcategory &&
-  //             d.scenariosubcategory != null &&
-  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-  //           !val
-  //         );
-  //       });
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   } else if (scenStatus == "false") {
-  //     const filteredData =
-  //       hasGetScenariospauseListData.length > 0 &&
-  //       hasGetScenariospauseListData.filter(
-  //         (data) => data?.status?.toString() == "false"
-  //       );
-
-  //     const temp =
-  //       filteredData &&
-  //       filteredData.filter((d) => {
-  //         return (
-  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-  //           (typeof d.duration === "number" &&
-  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-  //           (d.name &&
-  //             d.name != null &&
-  //             d.name.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariocategory &&
-  //             d.scenariocategory != null &&
-  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariosubcategory &&
-  //             d.scenariosubcategory != null &&
-  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-  //           !val
-  //         );
-  //       });
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   }
-  // };
-  
-  
-  
-  
   useEffect(() => {
   if (hasGetScenariospauseListData) {
 
@@ -153,35 +63,10 @@ const PauseScenarios = () => {
       scenariosubcategory: "",
       scenarioimage: "",
     }));
-console.log("normalizednormalized",normalized);
-
     setRowData(normalized);
     setGridData(normalized);
   }
 }, [hasGetScenariospauseListData]);
-
-
-  // useEffect(() => {
-  //   if (hasGetScenariospauseListData) {
-  //     if (scenStatus === "") {
-  //       setRowData(hasGetScenariospauseListData);
-  //       setGridData(hasGetScenariospauseListData);
-  //     } else if (scenStatus === "true") {
-  //       const filteredData = hasGetScenariospauseListData.filter(
-  //         (data) => data.status.toString() === "true"
-  //       );
-  //       setRowData(filteredData);
-  //       setGridData(filteredData);
-  //     } else if (scenStatus === "false") {
-  //       const filteredData = hasGetScenariospauseListData.filter(
-  //         (data) => data.status.toString() === "false"
-  //       );
-  //       setRowData(filteredData);
-  //       setGridData(filteredData);
-  //     }
-  //   }
-  // }, [hasGetScenariospauseListData, scenStatus]);
-
 
 useEffect(()=>{
   dispatch(getScenariosPauseList());
@@ -192,9 +77,6 @@ useEffect(()=>{
       setView(viewNameResp);
     }
   }, [viewNameResp]);
-
-
-
   useEffect(() => {
     if (gridApi) {
       gridApi.sizeColumnsToFit();
@@ -280,13 +162,6 @@ useEffect(()=>{
                         <i className="fe fe-grid"></i>
                       </Button>
                       &nbsp;
-                      {/* <input
-                        className="form-control bd bd-2 ms-2 w-auto"
-                        value={quickFilter}
-                        placeholder="Search..."
-                        type="text"
-                        onChange={(e) => onFilterChanged(e.target.value)}
-                      /> */}
                     </div>
                   </div>
                 </Col>

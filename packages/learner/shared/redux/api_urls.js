@@ -41,6 +41,7 @@ const api = {
   scenarios_single: "/scenarios/get",
   scenarios_save: "/scenarios/start-scenario",
   scenario_custom_update: "/custom_scenarios/update",
+  scenario_custom_getapproved: "/custom_scenarios/getapproved",
   scenario_status_update: "/scenarios/update-session-status",
   get_session_status: "/scenarios/get-session-status",
   get_configurations: "/vmconfigs/set-scenario-learner-config",
@@ -117,11 +118,18 @@ const api = {
   save_vmDetails: "vmconfigs/save",
   vm_config: "vmconfigs/vm-config",
   stop_vm: "vmconfigs/stop-vm",
-
   custom_component_save_learner: "/vmconfigs/savecomponent",
+  reject_stopped_vm:"vmconfigs/reject-stopped-vm",
 
 
   custom_component_get: "/custom_component/get",
   custom_componentby_id: "/custom_component/getbyid",
+
+
+
+can_resume: "/scenarios/can-resume",
+
+
+
 };
 export default api;

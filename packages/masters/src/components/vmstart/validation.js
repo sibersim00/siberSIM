@@ -1,33 +1,18 @@
 const Joi = require("joi");
 
-const setScenarioLearnerConfigSchema = Joi.object({
-  scenarioid: Joi.number().required().messages({
-    "number.base": `Scenario ID must be a number.`,
-    "any.required": `scenarioid is required.`,
-  }),
-  learnerid: Joi.number().required().messages({
-    "number.base": `SIMUser ID must be a number.`,
-    "any.required": `learnerid is required.`,
-  }),
-  scenariolearnersessionid: Joi.number().required().messages({
-    "number.base": `Session ID must be a number.`,
-    "any.required": `scenariolearnersessionid is required.`,
+const setVMRequestConfiguration = Joi.object({
+  vmrequestid: Joi.number().required().messages({
+    "number.base": `vm request ID must be a number.`,
+    "any.required": `vmrequestid is required.`,
   }),
 });
-
 
 const updateCompleteTerminate = Joi.object({
-  status: Joi.string().valid("Completed", "Terminated").required().messages({
-    "any.only": `Status must be either 'Completed' or 'Terminated'.`,
-    "any.required": `Status is required.`,
-    "string.empty": `Status cannot be empty.`,
-  }),
-  type: Joi.string().required().messages({
-    "any.required": `Type is required.`,
-    "string.empty": `Type cannot be empty.`,
+  vmrequestid: Joi.number().required().messages({
+    "number.base": `vm request ID must be a number.`,
+    "any.required": `vmrequestid is required.`,
   }),
 });
-
 
 const ERROR_MESSAGES = {
    CONFIG_NOT_FOUND: "Component configuration not found.",
@@ -52,7 +37,7 @@ const ERROR_MESSAGES = {
 
 
 module.exports = {
-  setScenarioLearnerConfigSchema,
+  setVMRequestConfiguration,
   updateCompleteTerminate,
   ERROR_MESSAGES
 };

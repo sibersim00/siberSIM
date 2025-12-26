@@ -110,11 +110,11 @@ const verifylogin =
     }
   };
 const verifyDirectLogin =
-  ({ dao, db, keys, crypto }) =>
+  ({ dao, db, keys, crypto ,validation }) =>
   async (req, res, next) => {
     try {
       const { loginid, password, orgid } = req.body;
-      let user = await dao.verifyDirectLogin({ db, keys })({
+      let user = await dao.verifyDirectLogin({ db, keys,validation })({
         loginid,
         password,
         orgid,
@@ -138,7 +138,7 @@ const verifyDirectLogin =
       } else {
         return res
           .status(400)
-          .send({ statusCode: 400, message: "Invalid Credentials" });
+          .send({ statusCode: 400, message: user.message || "Invalid Credentials" });
       }
     } catch (err) {
       console.log("verifyDirectLogin err==>>", err);

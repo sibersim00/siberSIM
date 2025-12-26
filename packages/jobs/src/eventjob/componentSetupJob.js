@@ -491,6 +491,12 @@ async function startComponentVM(
         return edge;
       });
     }
+        if (Array.isArray(diagram.edges)) {
+  diagram.edges = diagram.edges.map((edge) => ({
+    ...edge,
+    isAttacked: "Yes",
+  }));
+}
 
     // Update event_learners with modified diagram
     await db.sequelize.query(

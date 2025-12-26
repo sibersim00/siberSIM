@@ -19,7 +19,7 @@ import {
   clearCustomComponent,
   qemuconfig,
   stopVm,
-  clearqemuconfig,
+  rejectStoppedVm,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
@@ -86,9 +86,11 @@ export default function ProxmoxConsole() {
   )
 
   const customcomponentid = saveCustomComponent1?.customcomponentid;
+  const vmStatus = getVMdetail?.data?.vm_status;
   console.log("saveCustomComponent1", saveCustomComponent1)
   console.log("customcomponentid", customcomponentid)
   console.log("getVMdetail", getVMdetail)
+  console.log("vmStatus", vmStatus)
   const qemuConfigRef = useRef({});
   useEffect(() => {
     if (hasgetqemuconfig && Object.keys(hasgetqemuconfig).length > 0) {
@@ -115,6 +117,65 @@ export default function ProxmoxConsole() {
     }
   }, [dispatch, realVmid]);
 
+  const handleConnectClick = async () => {
+    // If VM is stopped → show warning
+    if (vmStatus === "Stopped") {
+      const result = await Swal.fire({
+        title: "Virtual Machine is Stopped",
+        text:
+          "This VM is currently stopped. If you force start it, your request against this VM may be automatically rejected. Do you want to continue?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Start VM",
+        cancelButtonText: "No, Cancel",
+     
+      });
+
+      if (!result.isConfirmed) {
+        // ❌ User clicked NO
+        return;
+      }
+
+      try {
+        // User clicked YES → Start VM
+        setOverlayLoading(true);
+        updateStatus("Processing request...");
+        await dispatch(
+          rejectStoppedVm({
+            vmid: realVmid,
+          })
+        );
+        updateStatus("Starting virtual machine...");
+
+        await dispatch(
+          vmStartScenario({
+            vmid: realVmid,
+            vmType,
+          })
+        );
+
+        // Optional small delay to allow VM to boot
+        setTimeout(() => {
+          setOverlayLoading(false);
+          connect(); // 🚀 Continue normal VNC flow
+        }, 3000);
+      } catch (err) {
+        setOverlayLoading(false);
+        Swal.fire(
+          "Failed",
+          "Unable to start the virtual machine. Please try again later.",
+          "error"
+        );
+      }
+
+      return;
+    }
+
+    //  VM is not stopped → connect directly
+    connect();
+  };
+
+
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
@@ -136,7 +197,6 @@ export default function ProxmoxConsole() {
     if (!data.ticket) throw new Error("Failed to get VNC ticket");
     return data.ticket;
   };
-
   const intentionalDisconnect = useRef(false);
   const connect = async (reconnecting = false) => {
     try {
@@ -213,6 +273,22 @@ export default function ProxmoxConsole() {
 
   const sendCtrlAltDel = () => rfbRef.current?.sendCtrlAltDel();
 
+  const closeVNC = () => {
+    intentionalDisconnect.current = true;
+
+    if (rfbRef.current) {
+      try {
+        rfbRef.current.disconnect();
+      } catch (e) {
+        console.error("VNC disconnect error:", e);
+      }
+      rfbRef.current = null;
+    }
+
+    setConnected(false);
+    setSidebarOpen(false);
+    setStatus("The VM is currently stopped Please click on the component again to start the VM and connect to the console.");
+  };
   const wrapperRef = useRef(null);
   const toggleFullscreen = () => {
     if (wrapperRef.current) {
@@ -282,7 +358,7 @@ export default function ProxmoxConsole() {
         updateStatus("Starting VM...");
 
         try {
-          await dispatch(vmStartScenario({ vmid, vmType }));
+          await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
         } catch (err) {
           updateStatus(err.message);
         } finally {
@@ -381,8 +457,6 @@ export default function ProxmoxConsole() {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
     }
   }, [realVmid, vmType]);
-
-
 
   const confirmRollback = async (payload) => {
     const confirm = await Swal.fire({
@@ -561,7 +635,12 @@ export default function ProxmoxConsole() {
       // componentName: Yup.string().required("Component name is required"),
       componentName: Yup.string()
         .required("Component name is required")
-        .matches(/\.NEW$/, "Component name must end with .NEW"),
+        .test(
+          "no-leading-trailing-spaces",
+          "Component name must not have spaces at the beginning or end",
+          (value) => value === value?.trim()
+        ),
+      // .matches(/\.NEW$/, "Component name must end with .NEW"),
       componentcategoryid: Yup.string().required("Component category is required"),
       duration: Yup.number().nullable(),     // optional field
       componentimage: Yup.string().nullable()
@@ -582,19 +661,21 @@ export default function ProxmoxConsole() {
               vmType: getVMdetail?.data?.componenttype,
             })
           );
-
+          console.log("stopRes", stopRes)
           if (stopRes?.statusCode === 200) {
+            closeVNC();
             Swal.fire(
               "Success",
               stopRes?.message || "Successfully stopped VM",
               "success"
             );
           } else {
-            Swal.fire(
+            await Swal.fire(
               "Error",
               stopRes?.message || "Failed to stop VM",
               "error"
             );
+            setShowConvertDrawer(false);
             return;
           }
         }
@@ -617,14 +698,16 @@ export default function ProxmoxConsole() {
           const saveRes = await dispatch(saveCustomComponent(payload1));
           console.log("saveRes", saveRes?.data?.customcomponentid);
           if (!saveRes?.success) {
-            Swal.fire(
+            await Swal.fire(
               "Error",
               saveRes?.error?.error ||
               saveRes?.error?.message ||
               "Failed to save component",
               "error"
             );
+            setShowConvertDrawer(false);
             return;
+
           }
 
           // 2️⃣ THEN CREATE ACTUAL COMPONENT
@@ -644,13 +727,14 @@ export default function ProxmoxConsole() {
           const res = await dispatch(saveComponent(payload));
 
           if (!res?.success) {
-            Swal.fire(
+            await Swal.fire(
               "Error",
               res?.error?.error ||
               res?.error?.message ||
-              "Failed to create component",
+              "Failed to Save component",
               "error"
             );
+            setShowConvertDrawer(false);
             return;
           }
 
@@ -680,20 +764,21 @@ export default function ProxmoxConsole() {
           componenttype: getVMdetail?.data?.componenttype,
           learner_id: getVMdetail?.data?.learner_id,
           clone_vmid: realVmid,
-          duration: values.duration || null,
+          duration: values.duration || 0,
           componentimage: values.componentimage || "",
         };
 
         const saveRes = await dispatch(saveCustomComponent(payload1));
 
         if (!saveRes?.success) {
-          Swal.fire(
+          await Swal.fire(
             "Error",
             saveRes?.error?.error ||
             saveRes?.error?.message ||
             "Failed to save component",
             "error"
           );
+          setShowConvertDrawer(false);
           return;
         }
 
@@ -710,9 +795,10 @@ export default function ProxmoxConsole() {
       } catch (err) {
         console.error("Unexpected error:", err);
         Swal.fire("Error", "Something went wrong", "error");
+        // setShowConvertDrawer(false);  
       }
       finally {
-        await dispatch(vmStartScenario({ vmid, vmType }));
+        // await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
         setIsSaving(false); // stop loading
       }
     },
@@ -1202,9 +1288,9 @@ export default function ProxmoxConsole() {
                         >
                           Rollback
                         </Button>
-                        {/* <button onClick={handleOpenDrawer} style={subButtonStyle}>
+                        <button onClick={handleOpenDrawer} style={subButtonStyle}>
                           Convert Component
-                        </button> */}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1251,7 +1337,8 @@ export default function ProxmoxConsole() {
               <span style={{ color: "#D21F3C" }}>SIM</span> Console
             </h2>
             <button
-              onClick={connect}
+              // onClick={connect}
+              onClick={handleConnectClick}
               disabled={loading}
               style={{
                 padding: "12px 28px",
@@ -1543,16 +1630,11 @@ export default function ProxmoxConsole() {
                   variant="outline-light"
                   onClick={handleCloseDrawer}
                   className="px-4 rounded-4"
+                  disabled={isSaving}
                 >
                   Close
                 </Button>
-                {/* <Button
-                  type="submit"
-                  className="px-4 rounded-4"
-                  style={{ background: "#19B159", borderColor: "#19B159" }}
-                >
-                  Submit
-                </Button> */}
+
                 <Button type="submit" disabled={isSaving} className="px-4 rounded-4" style={{ background: "#19B159", borderColor: "#19B159" }}>
                   {isSaving ? (
                     <>

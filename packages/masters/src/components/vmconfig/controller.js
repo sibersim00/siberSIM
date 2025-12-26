@@ -239,48 +239,13 @@ const getSnapshotsByVmid =
     };
 
 
-// const exportScenario =
-// ({ }) =>
-//   async (req, res, next) => {
-//     try {
-//       const { scenarioid} = req.body;
-//       try {
-//         const response = await axios.post(
-//           `${EVENTLEARNER_API_URL}/vmconfigs/exports`,
-//           {scenarioid}
-//         );
-//         return res.status(200).send({
-//           statusCode: 200,
-//           message: response.data.message || "Job started successfully.",
-//         });
-//       } catch (error) {
-//         console.error("Axios request failed:");
-//         if (error.response) {
-//           console.error("Response Error:");
-//         } else if (error.request) {
-//           console.error("No Response:");
-//           console.error(error.request);
-//         } else {
-//           console.error("Request Setup Error:", error.message);
-//         }
-//         return res.status(500).send({
-//           statusCode: 500,
-//           message: "Something went wrong. Please try again.",
-//           error: error.response?.data || error.message,
-//         });
-//       }
-//     } catch (err) {
-//       console.error("Error in export :", err);
-//       next(err);
-//     }
-//   };
-
 const exportScenario = () => async (req, res) => {
   try {
     const { scenarioid, exportid } = req.body;
+    const file_name = `scenario_${scenarioid}.zip`; 
     const response = await axios.post(
-      `${EVENTLEARNER_API_URL}/vmconfigs/export`,
-      { scenarioid, exportid },
+      `${EVENTLEARNER_API_URL}/vmconfigs/exports`,
+      { scenarioid, exportid,file_name },
       { responseType: "stream" } // <--- important
     );
 
@@ -293,41 +258,6 @@ const exportScenario = () => async (req, res) => {
     res.status(500).json({ message: "Failed to export scenario", error: err.message });
   }
 };
-
-// const save =
-//   ({ }) =>  
-//     async (req, res, next) => {
-//       try {
-//         const body = req.body;
-//         const session_userid = req.user.userid;
-//         try {
-//           const response = await axios.post(
-//             `${EVENTLEARNER_API_URL}/vmconfigs/save`,
-//             { body, session_userid }
-//           );
-//           return res.status(200).send({
-//             statusCode: 200,
-//             message: response.data.message || "Job started successfully.",
-//             data: response.data,
-//           });
-//         } catch (error) {
-//           console.error("Axios request failed:");
-//           if (error.response) {
-//             console.error("Response Error:");
-//           } else {
-//             console.error("Request Setup Error:", error.message);
-//           }
-//           return res.status(500).send({
-//             statusCode: 500,
-//             message: "Failed to call Jobs service.",
-//             error: error.response?.data || error.message,
-//           });
-//         }
-//       } catch (err) {
-//         console.error("Error in starting event learner:", err);
-//         next(err);
-//       }
-//     };
 
 const save =
   ({}) =>
@@ -374,5 +304,5 @@ module.exports = {
   getEventOperationFailedLogs,
   getSnapshotsByVmid,
   exportScenario,
-  save
+  save,
 };

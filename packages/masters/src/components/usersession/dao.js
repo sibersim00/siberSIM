@@ -11,7 +11,7 @@ const listScenarios =
       sl.scenariolearnerid,
       sl.scenariolearneruuid,
       s.scenariotitle,
-      S.scenario_type,
+      s.scenario_type,
       sl.learner_id,
       sl.instructor_id,
       sl.scenarioid,

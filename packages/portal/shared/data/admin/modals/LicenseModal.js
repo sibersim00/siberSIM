@@ -121,6 +121,9 @@ const y_m_d = (date) => {
                       dateFormat="dd-MM-yyyy"
                       placeholderText="Select start date"
                       onKeyDown={(e) => e.preventDefault()}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
                     />
 
                     {touched.start_date && errors.start_date && (
@@ -149,6 +152,9 @@ const y_m_d = (date) => {
                         setFieldValue("expiry_date", date);
                       }}
                       onKeyDown={(e) => e.preventDefault()}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
                       className={`form-control ${
                         touched.expiry_date && errors.expiry_date
                           ? "is-invalid"

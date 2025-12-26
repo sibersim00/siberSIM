@@ -211,7 +211,7 @@ const Home = () => {
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearVerifyLogin());
       setTimeout(() => {
-        navigate.replace("events/dashboard", "", { shallow: true });
+        navigate.replace("/event-dashboard", "", { shallow: true });
       }, 1500);
       if (captchaRef.current) {
         captchaRef.current.value = ""; // Reset the value of the input element
@@ -344,7 +344,7 @@ const Home = () => {
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchDirectLogin());
       setTimeout(() => {
-        navigate.replace("events/dashboard", "", { shallow: true });
+        navigate.replace("/event-dashboard", "", { shallow: true });
         //window.location.href = '/dashboard';
       }, 1500);
       if (captchaRef.current) {

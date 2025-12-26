@@ -401,20 +401,98 @@ const ManageScenarios = () => {
         }
     }, [getUserDataFromLocal]);
 
+    // const handleDownloadZip = (row) => {
+    //     console.log("rohgggggggggggggw",row)
+    //     const fileUrl = `${process.env.API_URL_FILEMANAGER}/temp_zip/${row.file_name}`;
+    //      console.log("fileUrlfileUrl",fileUrl)
+    //     const link = document.createElement("a");
+    //     link.href = fileUrl;
+    //     link.setAttribute("download", row.file_name);
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     link.remove();
+    // };
 
     const handleDownloadZip = (row) => {
-        console.log("rohgggggggggggggw",row)
-        const fileUrl = `${process.env.API_URL_FILEMANAGER}/temp_zip/${row.file_name}`;
-         console.log("fileUrlfileUrl",fileUrl)
+        console.log("row-----------", row);
+      
+        // changed URL path
+        const fileUrl = `${process.env.EVENTLEARNER_API_URL}/temp_zip/${row.file_name}`;
+        // const fileUrl = `${process.env.REACT_APP_API_URL_FILEMANAGER}/temp_zip/${row.file_name}`;
+        
+        console.log("fileUrl------------------", fileUrl);
+      
         const link = document.createElement("a");
         link.href = fileUrl;
         link.setAttribute("download", row.file_name);
         document.body.appendChild(link);
         link.click();
         link.remove();
-    };
-
-
+      };
+    //   ===============================================
+    // const handleDownloadZip = async (row) => {
+    //     try {
+    //       console.log("Starting export for:", row);
+      
+    //       // 1) Trigger export API
+    //       const exportResponse = await fetch(
+    //         `${process.env.EVENTLEARNER_API_URL}/exportScenario`,
+    //         {
+    //           method: "POST",
+    //           headers: {
+    //             "Content-Type": "application/json",
+    //           },
+    //           body: JSON.stringify({
+    //             scenarioid: row.scenarioid,
+    //             exportid: row.exportid,
+    //           }),
+    //         }
+    //       );
+      
+    //       const exportData = await exportResponse.json();
+      
+    //       if (!exportResponse.ok) {
+    //         console.error("Export failed:", exportData);
+    //         alert("Export failed: " + exportData.message);
+    //         return;
+    //       }
+      
+    //       console.log("Export succeeded:", exportData);
+      
+    //       // 2) Now GET the generated ZIP file from backend endpoint
+    //       // We need a backend route to serve it — call /downloadZip
+    //       const zipFileName = exportData.file_name;
+      
+    //       const downloadResponse = await fetch(
+    //         `${process.env.EVENTLEARNER_API_URL}/downloadZip?filename=${zipFileName}`
+    //       );
+      
+    //       if (!downloadResponse.ok) {
+    //         const errorData = await downloadResponse.json();
+    //         console.error("Download failed:", errorData);
+    //         alert("Download failed");
+    //         return;
+    //       }
+      
+    //       // 3) Convert to blob and trigger browser download
+    //       const blob = await downloadResponse.blob();
+      
+    //       const url = window.URL.createObjectURL(blob);
+    //       const a = document.createElement("a");
+    //       a.href = url;
+    //       a.download = zipFileName;
+    //       document.body.appendChild(a);
+    //       a.click();
+    //       a.remove();
+      
+    //       window.URL.revokeObjectURL(url);
+      
+    //     } catch (error) {
+    //       console.error("Error in handleDownloadZip:", error);
+    //       alert("Download process error");
+    //     }
+    //   };
+      
 
     const frameworkComponents = {
         srNoRender: function (props) {

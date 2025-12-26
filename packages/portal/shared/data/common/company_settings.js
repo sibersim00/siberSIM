@@ -340,11 +340,17 @@ const CompanySettingsCommon = ({ isSL }) => {
       license_key: "",
       domail_url: "",
     },
-
     validationSchema: yup.object().shape({
       name: yup.string().required(error?.required),
       system_name: yup.string().required(error?.required),
       system_footer: yup.string().required(error?.required),
+
+      pause_limit: yup
+        .number()
+        .typeError("Pause limit must be a number")
+        .integer("Pause limit must be an integer")
+        .min(2, "Pause limit must be greater than or equal to 2")
+        .required(error?.required),
     }),
 
     onSubmit: (data, action) => {

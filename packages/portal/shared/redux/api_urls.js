@@ -423,6 +423,15 @@ const api = {
   admin_complete_scenario:"/vmstart/update-complete-terminate",
   scenarios_save_start: "/vm_scenario_start/start-scenario",
   get_session_status: "/vm_scenario_start/get-session-status",
+  scenarios_single: "/vm_scenario_start/get",
+  pause_scenario: "/vmstart/pause-vm-scenario",
+  resume_scenario: "/vmstart/resume-vm-scenario",
+  delete_scenario: "/vmstart/delete-scenario-learner",
+  scenario_status_update: "/vm_scenario_start/update-session-status",
+
+// tab list
+  tab_status: "/scenario/tablist",
+
 
 
 };

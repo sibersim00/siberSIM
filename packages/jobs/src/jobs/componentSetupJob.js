@@ -493,6 +493,13 @@ async function startComponentVM(
       });
     }
 
+    if (Array.isArray(diagram.edges)) {
+  diagram.edges = diagram.edges.map((edge) => ({
+    ...edge,
+    isAttacked: "Yes",
+  }));
+}
+
     // Update scenario_learner_session with modified diagram
     await db.sequelize.query(
       `UPDATE scenario_learner_session SET scenariodiagram = ?, modifiedon = NOW() WHERE scenariolearnersessionid = ?`,
@@ -634,22 +641,18 @@ async function stopAndDestroyComponentVM(
     for (const component of components) {
       if (component.status !== "Initializing") {
         const { vmid, componenttype, name, vmconfigurationid } = component;
-        const vmType = componenttype.toLowerCase();
-        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+        if (component.status == "Starting" || component.status == "Running") {
+          const vmType = componenttype.toLowerCase();
+          const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
-        const tokenResult = await proxmoxService.generateAccessTicket();
-        if (!tokenResult || tokenResult.status !== "200") {
-          await handleFailureOnce(
-            new Error("siberSIM connection failed before stop/destroy")
-          );
-          continue;
-        }
-
-        console.log(
-          `${vmid}-${name} Components to stop process started. Current Status : ${component.status}`
-        );
-
-        if (component.status === "Starting" || component.status === "Running") {
+          const tokenResult = await proxmoxService.generateAccessTicket();
+          if (!tokenResult || tokenResult.status !== "200") {
+            await handleFailureOnce(
+              new Error("siberSIM connection failed before stop/destroy")
+            );
+            continue;
+          }
+          console.log(`${vmid}-${name} Components to stop process started. Current Status : ${component.status}`);
           const stopResult = await proxmoxService.stopVM(vmid, vmType);
           if (stopResult?.status === 200 && stopResult?.data) {
             console.log(`Stopped '${name}' (VMID: ${vmid})`);
@@ -679,47 +682,58 @@ async function stopAndDestroyComponentVM(
     // 2️⃣ DESTROY phase
     for (const component of components) {
       const { vmid, componenttype, name, vmconfigurationid } = component;
+      if (component.status == "Cloning" || component.status=="Bridge Configuration" || component.status == "Stopped") {
+        if (!vmConfig[vmid].stop) continue; // skip destroy if stop failed
 
-      if (!vmConfig[vmid].stop) continue; // skip destroy if stop failed
+        const vmType = componenttype.toLowerCase();
+        const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
-      const vmType = componenttype.toLowerCase();
-      const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          await handleFailureOnce(
+            new Error("siberSIM connection failed before destroy")
+          );
+          continue;
+        }
 
-      const tokenResult = await proxmoxService.generateAccessTicket();
-      if (!tokenResult || tokenResult.status !== "200") {
-        await handleFailureOnce(
-          new Error("siberSIM connection failed before destroy")
-        );
-        continue;
-      }
+        const destroyResult = await proxmoxService.destroyVM(vmid, vmType);
+        if (destroyResult?.status === 200 && destroyResult?.data) {
+          console.log(`Destroyed '${name}' (VMID: ${vmid})`);
+          vmConfig[vmid].destroy = true;
 
-      const destroyResult = await proxmoxService.destroyVM(vmid, vmType);
-      if (destroyResult?.status === 200 && destroyResult?.data) {
-        console.log(`Destroyed '${name}' (VMID: ${vmid})`);
-        vmConfig[vmid].destroy = true;
-
-        // ✅ Both stop & destroy succeeded → Completed
+          // ✅ Both stop & destroy succeeded → Completed
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+            SET status = ?, modifiedon = NOW() 
+            WHERE vmconfigurationid = ?`,
+            {
+              replacements: ["Completed", vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        } else {
+          console.log(`Failed: Destroy '${name}' (VMID: ${vmid})`);
+          await db.sequelize.query(
+            `UPDATE vm_configuration 
+            SET status = ?, modifiedon = NOW() 
+            WHERE vmconfigurationid = ?`,
+            {
+              replacements: ["Destroyed", vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+          await handleFailureOnce(new Error(`Destroy failed for ${name}`));
+        }
+      }else if(component.status == "Initializing"){
         await db.sequelize.query(
-          `UPDATE vm_configuration 
-           SET status = ?, modifiedon = NOW() 
-           WHERE vmconfigurationid = ?`,
-          {
-            replacements: ["Completed", vmconfigurationid],
-            type: db.sequelize.QueryTypes.UPDATE,
-          }
-        );
-      } else {
-        console.log(`Failed: Destroy '${name}' (VMID: ${vmid})`);
-        await db.sequelize.query(
-          `UPDATE vm_configuration 
-           SET status = ?, modifiedon = NOW() 
-           WHERE vmconfigurationid = ?`,
-          {
-            replacements: ["Destroyed", vmconfigurationid],
-            type: db.sequelize.QueryTypes.UPDATE,
-          }
-        );
-        await handleFailureOnce(new Error(`Destroy failed for ${name}`));
+            `UPDATE vm_configuration 
+            SET status = ?, modifiedon = NOW() 
+            WHERE vmconfigurationid = ?`,
+            {
+              replacements: ["Failed", vmconfigurationid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
       }
     }
 

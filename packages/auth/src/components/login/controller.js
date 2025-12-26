@@ -48,9 +48,17 @@ const verifylogin = ({ dao, db, keys, crypto }) => async (req, res, next) => {
 
     if (user.statusCode === 200) {
       const hostname = req?.hostname;
-      console.log("req=========>",hostname);
-      const access_token = await generateAccessToken(hostname,user.user);
-      const menus = [{ menutitle: "DASHBOARD", Items: await dao.userrolemenu({ db })({ userid: user.user.userid }) }];
+      let menuItem =  await dao.userrolemenu({ db })({ userid: user.user.userid })
+      const menus = [{ menutitle: "DASHBOARD", Items: menuItem }];
+      let userObj = user.user;
+      const extractSources = (items) =>
+        items.flatMap(i => [
+          i.source,
+          ...(i.children ? extractSources(i.children) : [])
+        ]);
+      userObj.menus = extractSources(menuItem);
+      const access_token = await generateAccessToken(hostname,userObj);
+ 
 
       return res.send({
         statusCode: 200,
@@ -77,9 +85,18 @@ const verifyDirectLogin = ({ dao, db, keys, crypto }) => async (req, res, next) 
 
     if (user.statusCode === 200) {
       const hostname = req?.hostname;
-      console.log("req=========>",hostname);
-      const access_token = await generateAccessToken(hostname,user.user); // << updated
-      const menus = [{ menutitle: "DASHBOARD", Items: await dao.userrolemenu({ db })({ userid: user.user.userid }) }];
+      let menuItem =  await dao.userrolemenu({ db })({ userid: user.user.userid })
+      const menus = [{ menutitle: "DASHBOARD", Items: menuItem }];
+      let userObj = user.user;
+      // userObj.menus = menuItem.map((obj)=> obj.source);
+      const extractSources = (items) =>
+        items.flatMap(i => [
+          i.source,
+          ...(i.children ? extractSources(i.children) : [])
+        ]);
+      userObj.menus = extractSources(menuItem);
+      const access_token = await generateAccessToken(hostname,userObj); // << updated
+      
 
       return res.send({
         statusCode: 200,

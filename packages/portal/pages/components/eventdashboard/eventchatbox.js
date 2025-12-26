@@ -15,6 +15,7 @@ const EventChatBox = ({ showChat, setShowChat, eventTitle,scenarioTitle , rowDat
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   console.log("scenarioTitlescenarioTitle",scenarioTitle)
+  const MAX_HEIGHT = 120; // px
 
   const chatBodyRef = useRef(null);
 
@@ -144,6 +145,17 @@ useEffect(() => {
     });
   }
 }, [chatMessages]);
+  const resizeTextarea = (textarea) => {
+    textarea.style.height = "auto";
+
+    if (textarea.scrollHeight <= 120) {
+      textarea.style.height = textarea.scrollHeight + "px";
+      textarea.style.overflowY = "hidden";
+    } else {
+      textarea.style.height = "120px";
+      textarea.style.overflowY = "auto";
+    }
+  };
 return (
   <>
     {showChat && (
@@ -399,15 +411,44 @@ return (
               placeholder="Type a message..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              style={{
-                border: "none",
-                backgroundColor: "transparent",
-                fontSize: "14px",
-                padding: "8px 12px",
-                borderRadius: "30px",
-                color: isDarkMode ? "#fff" : "#000",
-              }}
+              // onKeyDown={(e) => e.key === "Enter" && handleSend()}
+               onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (e.shiftKey) {
+                      const textarea = e.target;
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const value = textarea.value;
+
+                      const newValue =
+                        value.substring(0, start) + "\n" + value.substring(end);
+                      setChatInput(newValue);
+                      setTimeout(() => {
+                        textarea.selectionStart = textarea.selectionEnd =
+                          start + 1;
+                        resizeTextarea(textarea);
+                      }, 0);
+                      e.preventDefault();
+                      return;
+                    }
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                onInput={(e) => resizeTextarea(e.target)}
+               style={{
+                  border: "none",
+                  backgroundColor: "transparent",
+                  resize: "none",
+                  overflowY: "auto",
+                  fontSize: "14px",
+                  padding: "10px 12px",
+                  borderRadius: "30px",
+                  color: isDarkMode ? "#e0e0e0" : "#000",
+                  lineHeight: "1.4",
+                  minHeight: "40px",
+                  maxHeight: `${MAX_HEIGHT}px`,
+                }}
             />
             {selectedFile && (
               <div

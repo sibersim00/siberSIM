@@ -4174,5 +4174,15 @@ body.dark-theme .ag-row-drag {
   
 }
 
+/* Dark theme for Month & Year dropdown only */
+.dark-theme .react-datepicker__month-select,
+.dark-theme .react-datepicker__year-select {
+  background-color: #1e1e2f;
+  border: 1px solid #3a3a4f;
+}
+
  
 
+.ag-header-cell-resize{
+  z-index: 0;
+}

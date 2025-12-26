@@ -281,8 +281,30 @@ const getPauselimit = async (db) => {
 
 const startScenario =
   ({ db, validation }) =>
-    async (body) => {
+    async (body, user_count_limit) => {
       try {
+        console.log("Received user_count_limit inside DAO:", user_count_limit);
+        const [activeUsersResult] = await db.sequelize.query(
+          `SELECT COUNT(*) AS activeUsers
+   FROM scenario_learner_session
+   WHERE (status = 'Start' or status = 'Resume')
+     AND vm_steps = 'Running'`
+        );
+        console.log("activeUsersResult", activeUsersResult)
+        // Extract number safely
+        const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+        const limit = Number(user_count_limit || 0);
+
+        console.log("activeUsers:", activeUsers);
+        console.log("limit:", limit);
+
+        if (limit > 0 && activeUsers >= limit) {
+          return {
+            statusCode: 500,
+            message: `The maximum number of concurrent scenario users (${limit}) has been reached. Please wait for an active session to end or stop one to continue.`,
+          };
+        }
+
         const pauseLimit = await getPauselimit(db);
         const [activeScenario] = await db.sequelize.query(
           `SELECT scenarioid, status 
@@ -452,7 +474,7 @@ async function insertLog(db, logData) {
 //   ({ db, validation }) =>
 //     async (body) => {
 //       console.log("bodybodybodybodybodybodybodygggggggggbodybody",body);
-      
+
 //       try {
 //         await db.sequelize.query(
 //           `UPDATE scenario_learner_session SET status = ?, modifiedon = CURRENT_TIMESTAMP, terminatedon = CASE WHEN ? = 'Terminated' THEN CURRENT_TIMESTAMP ELSE terminatedon END, completedon = CASE WHEN ? = 'Completed' THEN CURRENT_TIMESTAMP ELSE completedon END, startedon = CASE WHEN ? = 'Start' AND startedon IS NULL THEN CURRENT_TIMESTAMP ELSE startedon END, resumeon = CASE WHEN ? = 'Resume' THEN CURRENT_TIMESTAMP ELSE resumeon END, timer = CASE WHEN ? IN ('Pause', 'Completed', 'Terminated') THEN ? ELSE timer END, isnotitermination = CASE WHEN ? IN ('Completed', 'Terminated') THEN 'No' ELSE isnotitermination END WHERE scenariolearnersessionid = ?`,
@@ -592,10 +614,10 @@ const updateSessionStatus =
             }
           );
         }
-         if (body.status === "Pause") {
+        if (body.status === "Pause") {
           await updateScenarioDiagram(db, body.scenariolearnersessionid);
         }
-         if (body.status === "Resume") {
+        if (body.status === "Resume") {
           await updateScenarioDiagramOnResume(db, body.scenariolearnersessionid);
         }
 
@@ -610,7 +632,7 @@ const updateSessionStatus =
         throw error;
       }
     };
-    async function updateScenarioDiagram(db, scenariolearnersessionid) {
+async function updateScenarioDiagram(db, scenariolearnersessionid) {
   try {
     const [diagramRow] = await db.sequelize.query(
       `SELECT scenariodiagram 
@@ -850,10 +872,10 @@ const getTabList = ({ db }) => async () => {
 
 const getPaused =
   ({ db }) =>
-  async (learner_id) => {
-    try {
-      const result = await db.sequelize.query(
-        `SELECT 
+    async (learner_id) => {
+      try {
+        const result = await db.sequelize.query(
+          `SELECT 
            sl.scenariolearnerid,
            sl.scenarioid,
            sl.learner_id,
@@ -873,19 +895,55 @@ const getPaused =
              WHEN sl.modifiedon IS NOT NULL THEN sl.modifiedon 
              ELSE sl.createdon 
            END DESC`,
-        {
-          replacements: [learner_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [learner_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      return result || [];
-    } catch (error) {
-      console.error("Error in dao.getPaused:", error);
-      throw error;
+        return result || [];
+      } catch (error) {
+        console.error("Error in dao.getPaused:", error);
+        throw error;
+      }
+    };
+
+const canResumeScenario = ({ db, validation }) => async (body) => {
+  try {
+    const { learner_id, scenariolearnerid } = body;
+
+    const [activeScenario] = await db.sequelize.query(
+      `SELECT scenarioid
+       FROM scenario_learner
+       WHERE learner_id = :learner_id
+         AND status IN ('Initializing', 'Running')
+         AND scenariolearnerid != :scenariolearnerid
+       LIMIT 1`,
+      {
+        replacements: { learner_id, scenariolearnerid },
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (activeScenario) {
+      return {
+        statusCode: 400,
+        message: "Another scenario is already running. Please pause it before resuming this one.",
+      };
     }
-  };
 
+    return {
+      statusCode: 200,
+      message: "Resume allowed",
+    };
+  } catch (error) {
+    console.error("Error in canResumeScenario DAO:", error.message);
+    return {
+      statusCode: 500,
+      message: "Internal server error while checking scenario resume status",
+    };
+  }
+};
 
 
 module.exports = {
@@ -900,4 +958,5 @@ module.exports = {
   getLogs,
   getTabList,
   getPaused,
+  canResumeScenario
 };

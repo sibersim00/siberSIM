@@ -416,7 +416,7 @@ vmStatusRenderer: (props) => {
 
   return (
     <>
-      <Seo title="User Session" />
+      <Seo title="SiberSIM Session" />
       <ToastContainer />
       <Row className="row-sm">
         {view != "Form" && (
@@ -425,7 +425,7 @@ vmStatusRenderer: (props) => {
               <Card.Body className="p-3">
                 <Col md={12}>
                   <div className="d-flex justify-content-between align-items-center">
-                    <h5>User Session</h5>
+                    <h5>SiberSIM Session</h5>
                     <div className="d-flex align-items-center">
                       {view === "card" && (
                         <>

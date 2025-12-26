@@ -16,6 +16,7 @@ const initialState = {
   saveTermination: [],
   saveTerminationlogs: [],
   saveTerminationevents: [],
+  getScenarioListapprovedData: [],
   viewNameResp: "card",
   getScenarioDigListData: [],
   saveComponentConfigData: [],
@@ -35,6 +36,9 @@ const slice = createSlice({
     },
     hasGetScenarioListSucc(state, action) {
       (state.isLoading = false), (state.getScenarioListData = action.payload);
+    },
+    hasGetScenarioListapprovedSucc(state, action) {
+      (state.isLoading = false), (state.getScenarioListapprovedData = action.payload);
     },
     // hasGetSaveScenariosSucc(state,action){
     //     state.isLoading = false,
@@ -117,6 +121,17 @@ export function getScenarioList() {
     try {
       const response = await axios.get(`${api.scenario_get}`);
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function getScenarioListapproved() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.scenario_custom_getapproved}`);
+      dispatch(slice.actions.hasGetScenarioListapprovedSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

@@ -33,6 +33,7 @@ import {
   getTabList,
   pausescenario,
   resumescenario,
+  canresumescenario,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
@@ -137,8 +138,7 @@ const ScenariosView = () => {
     hasGetLogsListData: state?.scenarios?.getLogsData?.data,
     hasUpdateCompletedTerminatedSucc:
       state?.scenarios?.updateCompletedTerminatedData?.data,
-    hasdeletescenarioSucc:
-      state?.scenarios?.hasdeletescenarioSuccData?.data,
+    hasdeletescenarioSucc: state?.scenarios?.hasdeletescenarioSuccData?.data,
     tabListSucc: state?.scenarios?.getTabListData?.data,
     haspausescenarioSucc: state?.scenarios?.pausescenarioData,
     hasresumescenarioSucc: state?.scenarios?.resumescenarioData,
@@ -186,7 +186,12 @@ const ScenariosView = () => {
   //   if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
   //     const scenario = getSingleScenariosSucc[0];
   //     setRowValues(scenario);
-  //     setScenarioStatus(scenario.status);
+
+  //     // 🔥 FIX: ONLY set from backend on first load, NOT after button click
+  //     setScenarioStatus((prev) => {
+  //       if (prev === "Pause" || prev === "Resume") return prev;
+  //       return scenario.status;
+  //     });
 
   //     if (scenario.calculated_timer) {
   //       const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
@@ -200,29 +205,33 @@ const ScenariosView = () => {
   //     }
   //   }
   // }, [getSingleScenariosSucc]);
+
+  const activeScenarioIdRef = useRef(null);
   useEffect(() => {
-    if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
-      const scenario = getSingleScenariosSucc[0];
-      setRowValues(scenario);
+    if (!getSingleScenariosSucc?.length || !query.slug?.[0]) return;
 
-      // 🔥 FIX: ONLY set from backend on first load, NOT after button click
-      setScenarioStatus((prev) => {
-        if (prev === "Pause" || prev === "Resume") return prev;
-        return scenario.status;
-      });
+    const scenario = getSingleScenariosSucc[0];
 
-      if (scenario.calculated_timer) {
-        const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
-        const totalSeconds = h * 3600 + m * 60 + s;
-        setElapsedSeconds(totalSeconds);
+    if (String(scenario.scenariouuid) !== String(query.slug[0])) {
+      return;
+    }
 
-        if (scenario.status === "Start" || scenario.status === "Resume") {
-          setTimerActive(true);
-          setTimerPaused(false);
-        }
+    activeScenarioIdRef.current = scenario.scenariouuid;
+
+    setRowValues(scenario);
+    setScenarioStatus(scenario.status);
+
+    if (scenario.calculated_timer) {
+      const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
+      const totalSeconds = h * 3600 + m * 60 + s;
+      setElapsedSeconds(totalSeconds);
+
+      if (scenario.status === "Start" || scenario.status === "Resume") {
+        setTimerActive(true);
+        setTimerPaused(false);
       }
     }
-  }, [getSingleScenariosSucc]);
+  }, [getSingleScenariosSucc, query.slug?.[0]]);
 
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
@@ -267,13 +276,8 @@ const ScenariosView = () => {
       dispatch(getSingleScenarios(query.slug[0]));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
-  console.log("hasdeletescenarioSuccDatahasdeletescenarioSuccData",hasdeletescenarioSucc);
-  
   useEffect(() => {
-    if (
-      hasdeletescenarioSucc?.statusCode ||
-      errorData?.statusCode === 400
-    ) {
+    if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
       if (hasdeletescenarioSucc?.statusCode === 200) {
         toast.success(
           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
@@ -369,67 +373,70 @@ const ScenariosView = () => {
     setTimerActive(false);
   };
   const handleDelete = () => {
-    setIsTerminatingOrCompleting(true); 
-  setConfirmAction("delete");
-  setShowConfirm(true);
-  setTimerPaused(true);
-  setTimerActive(false);
-};
+    setIsTerminatingOrCompleting(true);
+    setConfirmAction("delete");
+    setShowConfirm(true);
+    setTimerPaused(true);
+    setTimerActive(false);
+  };
 
   const handleConfirmAction = async () => {
-  try {
-    setActionLoading(true);
+    try {
+      setActionLoading(true);
 
-    const scenarioData = getSingleScenariosSucc?.[0];
-    const mappedStatus = {
-      start: "Start",
-      terminate: "Terminated",
-      complete: "Completed",
-      delete: "Terminated",
-      initializing: "Initializing",
-    };
+      const scenarioData = getSingleScenariosSucc?.[0];
+      const mappedStatus = {
+        start: "Start",
+        terminate: "Terminated",
+        complete: "Completed",
+        delete: "Terminated",
+        initializing: "Initializing",
+      };
 
-    if (
-      confirmAction === "terminate" ||
-      confirmAction === "complete" ||
-      confirmAction === "delete"
-    ) {
-      setTimerPaused(true);
-      setTimerActive(false);
+      if (
+        confirmAction === "terminate" ||
+        confirmAction === "complete" ||
+        confirmAction === "delete"
+      ) {
+        setTimerPaused(true);
+        setTimerActive(false);
+      }
+
+      const payload = {
+        scenarioid: scenarioData?.scenarioid,
+        learner_id: getUserDataFromLocal?.learner_id,
+        instructor_id: scenarioData?.instructor_id,
+        status: mappedStatus[confirmAction],
+        timer:
+          confirmAction === "initializing"
+            ? "00:00:00"
+            : formatTime(elapsedSeconds),
+        scenariolearnerid: scenarioData?.scenariolearnerid,
+        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+        type: "learner",
+      };
+
+      if (confirmAction === "initializing") {
+        dispatch(saveScenarios(payload));
+      } else if (
+        confirmAction === "terminate" ||
+        confirmAction === "complete"
+      ) {
+        dispatch(updateSessionStatus(payload));
+        dispatch(updateCompletedTerminated(payload));
+      }
+      // 🔥 THE NEW DELETE API
+      else if (confirmAction === "delete") {
+        dispatch(updateSessionStatus(payload));
+        dispatch(deletescenario(payload));
+      }
+
+      setShowConfirm(false);
+    } catch (err) {
+      alert("Failed to update scenario status. Please try again.");
+      setActionLoading(false);
     }
-
-    const payload = {
-      scenarioid: scenarioData?.scenarioid,
-      learner_id: getUserDataFromLocal?.learner_id,
-      instructor_id: scenarioData?.instructor_id,
-      status: mappedStatus[confirmAction],
-      timer:
-        confirmAction === "initializing"
-          ? "00:00:00"
-          : formatTime(elapsedSeconds),
-      scenariolearnerid: scenarioData?.scenariolearnerid,
-      scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
-      type: "learner",
-    };
-
-    if (confirmAction === "initializing") {
-      dispatch(saveScenarios(payload));
-    } else if (confirmAction === "terminate" || confirmAction === "complete") {
-      dispatch(updateSessionStatus(payload));
-      dispatch(updateCompletedTerminated(payload));
-    } 
-    // 🔥 THE NEW DELETE API
-    else if (confirmAction === "delete") {
-      dispatch(updateSessionStatus(payload));
-      dispatch(deletescenario(payload));
-    }
-
-    setShowConfirm(false);
-  } catch (err) {
-    alert("Failed to update scenario status. Please try again.");
-    setActionLoading(false);
-  }
-};
+  };
 
   const handleCancelAction = () => {
     setShowConfirm(false);
@@ -456,7 +463,6 @@ const ScenariosView = () => {
     }
   };
 
-
   const handlePause = async () => {
     try {
       setConfirmAction("pause");
@@ -480,7 +486,7 @@ const ScenariosView = () => {
 
       if (!pauseOk) {
         console.error("Failed to pause scenario.");
-        return; 
+        return;
       }
 
       // 🔹 Step 2: pause success → update session status
@@ -507,6 +513,55 @@ const ScenariosView = () => {
     }
   };
 
+  // const handleResume = async () => {
+  //   try {
+  //     setConfirmAction("resume");
+  //     setActionLoading(true);
+
+  //     const scenarioData = getSingleScenariosSucc?.[0];
+  //     const payload = {
+  //       scenarioid: scenarioData?.scenarioid,
+  //       learner_id: getUserDataFromLocal?.learner_id,
+  //       instructor_id: scenarioData?.instructor_id,
+  //       status: "Resume",
+  //       timer: formatTime(elapsedSeconds),
+  //       scenariolearnerid: scenarioData?.scenariolearnerid,
+  //       scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+  //     };
+
+  //     //   Step 1: resume first
+  //     const resResume = await dispatch(resumescenario(payload));
+  //     const resumeOk =
+  //       resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
+
+  //     if (!resumeOk) {
+  //       console.error("Unable to resume scenario.");
+  //       return;
+  //     }
+
+  //     // Step 2: only update status if resume succeeded
+  //     const resUpdate = await dispatch(updateSessionStatus(payload));
+
+  //     toast.success(
+  //       <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+  //         Scenario Resumed Successfully.
+  //       </p>,
+  //       {
+  //         position: toast.POSITION.TOP_RIGHT,
+  //         hideProgressBar: false,
+  //         theme: "colored",
+  //       }
+  //     );
+
+  //     setScenarioStatus("Resume");
+  //     dispatch(getSingleScenarios(query.slug[0]));
+  //   } catch (err) {
+  //     console.error("Resume failed:", err);
+  //   } finally {
+  //     setActionLoading(false);
+  //     setConfirmAction(null);
+  //   }
+  // };
 
   const handleResume = async () => {
     try {
@@ -514,6 +569,7 @@ const ScenariosView = () => {
       setActionLoading(true);
 
       const scenarioData = getSingleScenariosSucc?.[0];
+
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
@@ -524,18 +580,26 @@ const ScenariosView = () => {
         scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
       };
 
-      //   Step 1: resume first
+      // 🔹 Step 1: Validate with backend
+      const canResumeRes = await dispatch(canresumescenario(payload));
+
+      const canResumeOk = canResumeRes?.statusCode === 200;
+
+      if (!canResumeOk) {
+        return;
+      }
+
+      // Step 2: Call Proxmox resume API
       const resResume = await dispatch(resumescenario(payload));
       const resumeOk =
         resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
 
       if (!resumeOk) {
-        console.error("Unable to resume scenario.");
         return;
       }
 
-      // Step 2: only update status if resume succeeded
-      const resUpdate = await dispatch(updateSessionStatus(payload));
+      // 🔹 Step 3: Update session status in DB
+      await dispatch(updateSessionStatus(payload));
 
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
@@ -552,6 +616,7 @@ const ScenariosView = () => {
       dispatch(getSingleScenarios(query.slug[0]));
     } catch (err) {
       console.error("Resume failed:", err);
+      toast.error("An error occurred while resuming the scenario.");
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
@@ -764,9 +829,8 @@ const ScenariosView = () => {
                         variant="outline-secondary"
                         onClick={() => {
                           const from = router.query.from;
-
                           if (from === "pause") {
-                            router.push("/pausescenarios");
+                            router.push("/scenarios");
                           } else {
                             // Default → Go back to Main Scenarios Page
                             if (categoryId && subcategoryName) {
@@ -793,6 +857,78 @@ const ScenariosView = () => {
                       >
                         <i className="fe fe-arrow-left"></i>
                       </Button>
+
+                      <Button
+                        variant="outline-secondary"
+                        onClick={() => {
+                          const { from, tab, status } = router.query;
+                          const backView = backView || "list";
+
+                          // 1️⃣ Pause flow
+                          if (from === "pause") {
+                            router.push("/scenarios");
+                          }
+                          // 2️⃣ Came from Approve tab
+                          else if (tab === "Approve" || status === "Approve") {
+                            router.push(
+                              `/scenarios?view=${backView}&filter=Approve`
+                            );
+                          }
+                          // 3️⃣ Category + Subcategory
+                          else if (categoryId && subcategoryName) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView}`
+                            );
+                          }
+                          // 4️⃣ Only category
+                          else if (categoryId) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&view=${backView}`
+                            );
+                          }
+                          // 5️⃣ Default scenarios page
+                          else {
+                            router.push(`/scenarios?view=${backView}`);
+                          }
+
+                          dispatch(clearSingleScenarios());
+                        }}
+                      >
+                        <i className="fe fe-arrow-left"></i>
+                      </Button>
+
+                      {/* <Button
+                        variant="outline-secondary"
+                        onClick={() => {
+                          const from = router.query.from;
+                          const approvalTab = router.query.tab;
+
+                          if (from === "pause") {
+                            router.push("/scenarios");
+                          } else {
+                            // Default → Go back to Main Scenarios Page
+                            if (categoryId && subcategoryName) {
+                              router.push(
+                                `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
+                                  backView || "list"
+                                }${approvalTab ? `&filter=${approvalTab}` : ""}`
+                              );
+                            } else if (categoryId) {
+                              router.push(
+                                `/scenarios?categoryId=${categoryId}&view=${
+                                  backView || "list"
+                                }${approvalTab ? `&filter=${approvalTab}` : ""}`
+                              );
+                            } else {
+                              router.push(`/customscenarios`);
+                            }
+                          }
+
+                          dispatch(clearSingleScenarios());
+                        }}
+                      >
+                        <i className="fe fe-arrow-left"></i>
+                      </Button> */}
                     </div>
                   </div>
                 </Col>
@@ -863,9 +999,7 @@ const ScenariosView = () => {
                                 variant="primary"
                                 size="sm"
                                 onClick={handleResume}
-                                disabled={
-                                  actionLoading && confirmAction === "resume"
-                                }
+                                disabled={actionLoading}
                               >
                                 {actionLoading && confirmAction === "resume" ? (
                                   <>
@@ -901,9 +1035,7 @@ const ScenariosView = () => {
                                 variant="warning"
                                 size="sm"
                                 onClick={handlePause}
-                                disabled={
-                                  actionLoading && confirmAction === "pause"
-                                }
+                                disabled={actionLoading}
                               >
                                 {actionLoading && confirmAction === "pause" ? (
                                   <>
@@ -920,9 +1052,7 @@ const ScenariosView = () => {
                                 variant="danger"
                                 size="sm"
                                 onClick={handleTerminate}
-                                disabled={
-                                  actionLoading && confirmAction === "terminate"
-                                }
+                                disabled={actionLoading}
                               >
                                 {actionLoading &&
                                 confirmAction === "terminate" ? (
@@ -940,9 +1070,7 @@ const ScenariosView = () => {
                                 variant="success"
                                 size="sm"
                                 onClick={handleComplete}
-                                disabled={
-                                  actionLoading && confirmAction === "complete"
-                                }
+                                disabled={actionLoading}
                               >
                                 {actionLoading &&
                                 confirmAction === "complete" ? (
@@ -1577,34 +1705,33 @@ const ScenariosView = () => {
             </Modal.Footer>
           </Modal>
 
-       <Modal show={showConfirm} onHide={handleCancelAction} centered>
-  <Modal.Header closeButton>
-    <Modal.Title>Confirm action</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-    {confirmAction === "initializing" && (
-      <p>Are you sure you want to start the scenario?</p>
-    )}
-    {confirmAction === "terminate" && (
-      <p>Are you sure you want to terminate the scenario?</p>
-    )}
-    {confirmAction === "complete" && (
-      <p>Are you sure you want to complete the scenario?</p>
-    )}
-    {confirmAction === "delete" && (
-      <p>Are you sure you want to delete this scenario?</p>
-    )}
-  </Modal.Body>
-  <Modal.Footer>
-    <Button variant="danger" onClick={handleCancelAction}>
-      Cancel
-    </Button>
-    <Button variant="success" onClick={handleConfirm}>
-      Confirm
-    </Button>
-  </Modal.Footer>
-</Modal>
-
+          <Modal show={showConfirm} onHide={handleCancelAction} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm action</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {confirmAction === "initializing" && (
+                <p>Are you sure you want to start the scenario?</p>
+              )}
+              {confirmAction === "terminate" && (
+                <p>Are you sure you want to terminate the scenario?</p>
+              )}
+              {confirmAction === "complete" && (
+                <p>Are you sure you want to complete the scenario?</p>
+              )}
+              {confirmAction === "delete" && (
+                <p>Are you sure you want to delete this scenario?</p>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="danger" onClick={handleCancelAction}>
+                Cancel
+              </Button>
+              <Button variant="success" onClick={handleConfirm}>
+                Confirm
+              </Button>
+            </Modal.Footer>
+          </Modal>
 
           <Modal
             show={showFailureModal}

@@ -53,32 +53,15 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
-
-// const updateSessionStatus = ({ dao, db, validation }) => async (req, res) => {
-//   try {
-//     const body = req.body;
-//     body.learner_id = req.learneruser.learner_id;
-//     body.instructor_id = req.learneruser.instructor_id;
-//     const result = await dao.updateSessionStatus({ db, validation })(body);
-//     return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, scenariolearnerid: result.scenariolearnerid || null, scenariolearnersessionid: result.scenariolearnersessionid || null });
-//   } catch (error) {
-//     console.error("Error saving scenario learner status:", error.message);
-//     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
-//   }
-// };
-
 const updateSessionStatus =
   ({ dao, db, validation }) =>
   async (req, res) => {
     try {
       const body = req.body;
-
-      // Learner panel
       if (req.learneruser?.learner_id) {
         body.requestedby_id = req.learneruser.learner_id;
         body.requestedby_role = 'Learner';
       }
-      // Admin / Instructor panel
       else if (req.user?.userid && req.user?.usertype) {
         body.requestedby_id = req.user.userid;
         body.requestedby_role = req.user.usertype; // Admin / Instructor
@@ -89,9 +72,7 @@ const updateSessionStatus =
           message: "Invalid user context",
         });
       }
-
       const result = await dao.updateSessionStatus({ db, validation })(body);
-
       return res.status(result.statusCode).json(result);
     } catch (error) {
       console.error("Error updating scenario:", error);
@@ -105,8 +86,6 @@ const updateSessionStatus =
 const getSessionStatus = ({ dao, db, validation }) => async (req, res, next) => {
   try {
     const session_uuid = req.params.session_id;
-    console.log("session_uuidsession_uuidsession_uuid",session_uuid);
-    
     const result = await dao.getSessionStatus({ db, validation })(session_uuid);
     if (!result) {
       return res.status(404).json({ statusCode: 404, message: validation.messages.SESSION_NOT_FOUND });

@@ -136,7 +136,7 @@ const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
 }
 
 const userrolemenu = ({ db }) => async ({ userid }) => {
-  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype,m.orderno from ad_menus m where m.status = 'Active' order by m.orderno asc `);
+  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.submenupath as sub_path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype,m.orderno from ad_menus m where m.status = 'Active' order by m.orderno asc `);
   const [rolemenu] = await db.sequelize.query(`select ar.menuid from ad_userrolemap au inner join ad_rolemenumap ar on ar.roleid =au.roleid where au.userid=${userid} group by ar.menuid`);
   const menuHierarchy = buildMenuHierarchy(menus, rolemenu);
   return menuHierarchy;

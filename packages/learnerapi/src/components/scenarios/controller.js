@@ -28,8 +28,10 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     body.learner_id = req.learneruser.learner_id;
+    console.log("req.learneruser", req.learneruser)
     body.instructor_id = req.learneruser.instructor_id;
-    const result = await dao.startScenario({ db, validation })(body);
+    const user_count_limit = req.learneruser.user_count_limit;
+    const result = await dao.startScenario({ db, validation })(body, user_count_limit);
     return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, scenariolearnerid: result.scenariolearnerid || null, scenariolearnersessionid: result.scenariolearnersessionid || null, scenariolearnersessionuuid: result.scenariolearnersessionuuid || null });
   } catch (error) {
     console.error("Error saving scenario learner:", error.message);
@@ -162,6 +164,25 @@ const getPaused = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
+const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const body = req.body;
+    const result = await dao.canResumeScenario({ db, validation })(body);
+
+    return res.status(result.statusCode).send({
+      statusCode: result.statusCode,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error("Error in canResumeScenario:", error.message);
+    return res.status(500).json({
+      statusCode: 500,
+      error: "An error occurred while checking scenario resume status.",
+    });
+  }
+};
+
+
 
 module.exports = {
   getAll,
@@ -174,5 +195,6 @@ module.exports = {
   getSessionStatus,
   getLogs,
   getTabList,
-  getPaused
+  getPaused,
+  canResumeScenario
 };

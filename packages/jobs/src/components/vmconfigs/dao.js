@@ -322,13 +322,34 @@ async function markOperationFailedAndNotify(
 
   await db.sequelize.query(
     `UPDATE scenario_learner_session
-     SET vm_steps = ?, modifiedon = NOW()
+     SET status = ?, modifiedon = NOW()
      WHERE scenariolearnersessionid = ?`,
     {
       replacements: [OP_FAILED, scenariolearnersessionid],
       type: db.sequelize.QueryTypes.UPDATE,
     }
   );
+
+
+  await db.sequelize.query(
+    `
+    UPDATE scenario_learner
+    SET
+      status = 'Terminated',
+      modifiedon = NOW()
+    WHERE scenariolearnerid = (
+      SELECT scenariolearnerid
+      FROM scenario_learner_session
+      WHERE scenariolearnersessionid = ?
+    )
+    `,
+    {
+      replacements: [scenariolearnersessionid],
+      type: db.sequelize.QueryTypes.UPDATE,
+    }
+  );
+
+
 
   // 4. Insert log entry
   await db.sequelize.query(
@@ -655,6 +676,38 @@ const updateCompleteTerminatelearner =
         } catch (snapErr) {
           console.error("Error marking snapshots deleted:", snapErr);
         }
+        try {
+          // Extract VMIDs used in this session
+          const vmids = components
+            .map((c) => c.vmid)
+            .filter((v) => v);
+          console.log("vmidvmidsvmidsvmidss", vmids)
+          if (vmids.length > 0) {
+            await db.sequelize.query(
+              `
+            UPDATE custom_component
+            SET
+              status = 'reject',
+              reject_reason = 'Scenario completed or terminated',
+              modifiedby = ?,
+              modifiedon = NOW()
+            WHERE clone_vmid IN (${vmids.map(() => "?").join(",")})
+              AND status = 'pending'
+            `,
+              {
+                replacements: [
+                  session.learner_id, // modifiedby
+                  ...vmids,
+                ],
+                type: db.sequelize.QueryTypes.UPDATE,
+              }
+            );
+
+          }
+        } catch (ccErr) {
+          console.error("Error rejecting pending custom components:", ccErr);
+        }
+
       }
     };
 
@@ -975,6 +1028,51 @@ const autoTerminateFailedScenarios =
       }
     };
 
+// const startScenarioLearner =
+//   ({ db, ipAddress }) =>
+//     async (vmid, vmType) => {
+//       try {
+//         const proxmoxService = ProxMoxService(
+//           db,
+//           { vmType: vmType.toLowerCase() },
+//           ipAddress
+//         );
+
+//         const tokenResult = await proxmoxService.generateAccessTicket();
+//         if (!tokenResult || tokenResult.status !== "200") {
+//           return {
+//             success: false,
+//             message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+//           };
+//         }
+
+//         const startResult = await proxmoxService.startVM(
+//           vmid,
+//           vmType.toLowerCase()
+//         );
+
+//         if (startResult?.status === 200) {
+//           return {
+//             success: true,
+//             message: `VM ${vmid} (${vmType}) started successfully.`,
+//           };
+//         } else {
+
+//           return {
+//             success: false,
+//             message: `Failed to start VM ${vmid} (${vmType}).`,
+//           };
+//         }
+//       } catch (err) {
+//         console.error(`Error starting VM ${vmid}:`, err);
+//         return {
+//           success: false,
+//           message: "Unexpected error occurred during start.",
+//         };
+//       }
+//     };
+
+
 const startScenarioLearner =
   ({ db, ipAddress }) =>
     async (vmid, vmType) => {
@@ -998,25 +1096,63 @@ const startScenarioLearner =
           vmType.toLowerCase()
         );
 
+        // ✅ SUCCESS CASE
         if (startResult?.status === 200) {
+          await db.sequelize.query(
+            `
+          UPDATE vm_configuration
+          SET
+            status = 'Running',
+            modifiedon = NOW()
+          WHERE vmid = ?
+            AND componenttype = ?
+            AND status = 'Stopped'
+          `,
+            {
+              replacements: [
+                vmid,
+                vmType.toUpperCase(), // LXC / QEMU
+              ],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+
           return {
             success: true,
             message: `VM ${vmid} (${vmType}) started successfully.`,
           };
-        } else {
-          return {
-            success: false,
-            message: `Failed to start VM ${vmid} (${vmType}).`,
-          };
         }
+
+        // ❌ FAILURE CASE
+        return {
+          success: false,
+          message: `Failed to start VM ${vmid} (${vmType}).`,
+        };
       } catch (err) {
         console.error(`Error starting VM ${vmid}:`, err);
+
+        // Optional: mark as Failed
+        await db.sequelize.query(
+          `
+        UPDATE vm_configuration
+        SET
+          status = 'Failed',
+          modifiedon = NOW()
+        WHERE vmid = ?
+        `,
+          {
+            replacements: [vmid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+
         return {
           success: false,
           message: "Unexpected error occurred during start.",
         };
       }
     };
+
 
 const restartscenarioLearner =
   ({ db, ipAddress }) =>
@@ -1993,42 +2129,20 @@ const checkBackupStatus =
         console.error("Cron Status Update Error:", err);
       }
     };
-// const markComponentRejected = async (reason = null) => {
-//   await db.sequelize.query(
-//     `
-//     UPDATE custom_component
-//     SET
-//       status = 'reject',
-//       modifiedon = NOW(),
-//       modifiedby = ?
-//     WHERE customcomponentid = ?
-//     `,
-//     {
-//       replacements: [
-//         payload.createdby || null,
-//         customComponentId,
-//       ],
-//       type: db.sequelize.QueryTypes.UPDATE,
-//     }
-//   );
 
-//   return {
-//     success: false,
-//     statusCode: 400,
-//     message: reason || "Component rejected due to Proxmox failure.",
-//   };
-// };
 const markComponentRejected = async ({
   db,
   customComponentId,
   modifiedBy = null,
   reason = null,
 }) => {
+
+  // 🔹 Update status
   await db.sequelize.query(
     `
     UPDATE custom_component
     SET
-      status = 'reject',
+      status = 'Reject',
       modifiedon = NOW(),
       modifiedby = ?
     WHERE customcomponentid = ?
@@ -2039,9 +2153,45 @@ const markComponentRejected = async ({
     }
   );
 
+  // 🔔 FETCH learner + component for notification
+  const [componentDetails] = await db.sequelize.query(
+    `
+    SELECT
+      cc.componentname,
+      cc.learner_id,
+      CONCAT(l.firstname, ' ', l.lastname) AS learner_name
+    FROM custom_component cc
+    JOIN learners l ON l.learner_id = cc.learner_id
+    WHERE cc.customcomponentid = ?
+    LIMIT 1
+    `,
+    {
+      replacements: [customComponentId],
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  // 🔔 SEND notification to Learner
+  if (componentDetails) {
+    new NotiTemplate(
+      db,
+      "component_approval",
+      {
+        componentname: componentDetails.componentname,
+        learner_name: componentDetails.learner_name,
+        learner_id: componentDetails.learner_id,
+        status: "Rejected",
+        reject_reason: reason,
+        userid: 0, // Admin
+      },
+      "Learner",
+      componentDetails.learner_id
+    );
+  }
+
   return {
     success: false,
-    statusCode: 400,
+    statusCode: 500,
     message: reason || "Component rejected due to Proxmox failure.",
   };
 };
@@ -2056,7 +2206,7 @@ const save =
         const customComponentId = payload.customcomponentid;
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        //  Fetch VMIDs from custom_component
+        // Fetch VMIDs from custom_component
         const [component] = await db.sequelize.query(
           `
           SELECT clone_vmid, vmid, componenttype
@@ -2074,8 +2224,8 @@ const save =
           return { success: false, message: "Custom component not found." };
         }
 
-        const sourceVmid = component.clone_vmid; //  existing VM
-        const newVmid = component.vmid;           // new VM to be created
+        const sourceVmid = component.clone_vmid; // existing VM
+        const newVmid = component.vmid;          // new VM to be created
 
         if (!sourceVmid || !newVmid) {
           return {
@@ -2084,7 +2234,7 @@ const save =
           };
         }
 
-        //  Proxmox connection
+        // Proxmox connection
         const proxmoxService = ProxMoxService(
           db,
           { vmType },
@@ -2097,121 +2247,241 @@ const save =
         }
 
         let snapshotName, cloneResult, templateResult;
+        const cleanupLXCOnCloneFail = async () => {
+          try {
+            if (snapshotName) {
+              await proxmoxService.deleteLXCSnapshot(sourceVmid, snapshotName);
+            }
+          } catch (e) {
+            console.error("Cleanup LXC clone fail error:", e);
+          }
+        };
+
+        const cleanupLXCOnTemplateFail = async () => {
+          try {
+            if (snapshotName) {
+              console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+              await sleep(await getTerminationDelay(db));
+              await proxmoxService.deleteLXCSnapshot(sourceVmid, snapshotName);
+            }
+            if (newVmid) {
+              console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",);
+              await sleep(await getTerminationDelay(db));
+              await proxmoxService.destroyVM(newVmid, "lxc");
+            }
+          } catch (e) {
+            console.error("Cleanup LXC template fail error:", e);
+          }
+        };
+
+        const cleanupQEMUOnTemplateFail = async () => {
+          try {
+            if (newVmid) {
+              await sleep(await getTerminationDelay(db));
+              await proxmoxService.destroyVM(newVmid, "qemu");
+            }
+          } catch (e) {
+            console.error("Cleanup QEMU template fail error:", e);
+          }
+        };
 
         /** ---------- LXC ---------- **/
         if (vmType === "lxc") {
           snapshotName = `snapshot-${newVmid}`;
 
-          //  Snapshot on SOURCE VM
+          // Snapshot on SOURCE VM
           const snapResult = await proxmoxService.createLXCSnapshot(
             sourceVmid,
             snapshotName
           );
-          // if (snapResult?.status !== 200)
-          //   return { success: false, message: "LXC Snapshot failed." };
+
           if (snapResult?.status !== 200) {
             return await markComponentRejected({
-              db, //  PASS IT
+              db,
               customComponentId,
               modifiedBy: payload.createdby,
-              reason: "LXC snapshot failed.",
+              // reason: "LXC snapshot failed.",
+              reason: "This request is automatically rejected due to a Proxmox service issue.",
+
             });
           }
-          console.log("newVmidnewVmidnewVmid", newVmid);
+
           await sleep(20000);
 
           cloneResult = await proxmoxService.cloneLXC(sourceVmid, {
             newid: newVmid,
-            hostname: `lanswitch.NEW`,
+            hostname: payload.componentname,
             full: 1,
             snapname: snapshotName,
           });
-          // if (cloneResult?.status !== 200)
-          //   return { success: false, message: "LXC clone failed." };
+          console.log("cloneResultlcxs", cloneResult)
+          /******** LXC CLONE FAILED → DELETE SNAPSHOT ONLY ********/
+          if (cloneResult?.status !== 200) {
+            await cleanupLXCOnCloneFail();
+
+            return await markComponentRejected({
+              db,
+              customComponentId,
+              modifiedBy: payload.createdby,
+              // reason: "LXC clone failed.",
+              reason: "This request is automatically rejected due to a Proxmox service issue.",
+
+            });
+          }
+
+          await sleep(20000);
+
+          // Convert NEW VM to template
+          console.log("newVmidnewVmidnewVmidnewVmid", newVmid)
+          templateResult = await proxmoxService.templateLXC(newVmid);
+          console.log("templateResult", templateResult)
+
+
+          /******** LXC TEMPLATE FAILED → DELETE SNAPSHOT + DESTROY VM ********/
+
+          if (templateResult?.status !== 200) {
+            await cleanupLXCOnTemplateFail();
+
+            return await markComponentRejected({
+              db,
+              customComponentId,
+              modifiedBy: payload.createdby,
+              // reason: "LXC template convert failed.",
+              reason: "This request is automatically rejected due to a Proxmox service issue.",
+            });
+          }
+
+        }
+
+        /** ---------- QEMU ---------- **/
+        if (vmType === "qemu") {
+          cloneResult = await proxmoxService.cloneQEMU(sourceVmid, newVmid);
+          console.log("cloneResult", cloneResult)
           if (cloneResult?.status !== 200) {
             return await markComponentRejected({
               db,
               customComponentId,
               modifiedBy: payload.createdby,
-              reason: "LXC clone failed.",
+              // reason: "QEMU clone failed",
+              reason: "This request is automatically rejected due to a Proxmox service issue.",
+
             });
           }
+
           await sleep(20000);
-          //  Convert NEW VM to template
-          templateResult = await proxmoxService.templateLXC(newVmid);
-          if (
-            templateResult?.status !== 200 ||
-            templateResult?.data === null
-          ) {
-            // return { success: false, message: "LXC template convert failed." };
+
+          templateResult = await proxmoxService.templateQEMU(newVmid);
+
+          /******** QEMU TEMPLATE FAILED → DESTROY VM ONLY ********/
+          if (templateResult?.status !== 200) {
+            await cleanupQEMUOnTemplateFail();
+
             return await markComponentRejected({
-              db, //  PASS IT
+              db,
               customComponentId,
               modifiedBy: payload.createdby,
-              reason: "LXC template convert failed.",
+              // reason: "QEMU template convert failed.",
+              reason: "This request is automatically rejected due to a Proxmox service issue.",
+
             });
           }
         }
 
-        /** ---------- QEMU ---------- **/
-        if (vmType === "qemu") {
-          //  Clone SOURCE → NEW
-          cloneResult = await proxmoxService.cloneQEMU(sourceVmid, newVmid);
-          // if (cloneResult?.status !== 200)
-          //   return { success: false, message: "QEMU clone failed." };
-          if (cloneResult?.status !== 200) {
-            return await markComponentRejected("QEMU clone failed.");
-          }
-          await sleep(20000);
-          //  Convert NEW VM to template
-          console.log("newVmidjjjjjjjjjjjjjjjjjjjjjjjjj", newVmid)
-          templateResult = await proxmoxService.templateQEMU(newVmid);
-          if (templateResult?.status !== 200) {
-            return await markComponentRejected("QEMU template conversion failed.");
-            // return { success: false, message: "QEMU template convert failed." };
-          }
+        /************* EXISTING CODE CONTINUES BELOW (UNCHANGED) *************/
 
+        let vmDetailResponse;
+        if (vmType === "lxc") {
+          vmDetailResponse = await proxmoxService.LXC_Container_detail(newVmid);
+        } else {
+          vmDetailResponse = await proxmoxService.QEMU_VM_detail(newVmid);
         }
+
+        const proxmoxData = vmDetailResponse?.data?.data || {};
+
+        const safeJson = (obj) =>
+          obj && Object.keys(obj).length ? JSON.stringify(obj) : "{}";
+
+        const extractStorage = () => {
+          const keys = ["sata0", "scsi0", "ide0", "virtio0", "nvme0", "usb0", "rootfs"];
+          const found = keys.find(k =>
+            Object.keys(proxmoxData).some(p => p.toLowerCase() === k)
+          );
+          if (!found) return null;
+
+          const realKey = Object.keys(proxmoxData).find(
+            k => k.toLowerCase() === found
+          );
+
+          const val = proxmoxData[realKey];
+          const match = val?.match(/size=(\d+)([MG])/i);
+          return match ? `${match[1]}${match[2]}` : null;
+        };
+
+        const extractNetworkPorts = () => {
+          const ports = {};
+          Object.entries(proxmoxData).forEach(([k, v]) => {
+            if (k.startsWith("net")) ports[k] = v;
+          });
+          return ports;
+        };
+
+        const extractBridgeNames = () => {
+          const bridges = {};
+          Object.entries(proxmoxData).forEach(([k, v]) => {
+            if (!k.startsWith("net")) return;
+
+            if (vmType === "qemu") {
+              const m = v.match(/bridge=(\w+)/);
+              if (m) bridges[k] = m[1];
+            } else {
+              const m = v.match(/name=(eth\d+)/);
+              if (m) bridges[k] = m[1];
+            }
+          });
+          return bridges;
+        };
+
         await db.sequelize.query(
           `
-  INSERT INTO components (
-    componentuuid,
-    componentcategoryid,
-    componenttype,
-    vmid,
-    componentname,
-    vmid_name,
-    component_status,
-    componentimage,
-    duration,
-    status,
-    createdby,
-    createdon
-  )
-  VALUES (
-    UUID(),
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    'Private',
-    ?,
-    ?,
-    'Active',
-    ?,
-    NOW()
-  )
-`,
+          INSERT INTO components (
+            componentuuid,
+            componentcategoryid,
+            componenttype,
+            vmid,
+            componentname,
+            vmid_name,
+            component_status,
+            componentimage,
+            duration,
+            proxmox_json,
+            network_ports,
+            network_bridge_name,
+            cores,
+            memory,
+            storage,
+            status,
+            createdby,
+            createdon
+          )
+          VALUES (
+            UUID(), ?, ?, ?, ?, ?, 'Private', ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW()
+          )
+        `,
           {
             replacements: [
-              payload.componentcategoryid,   // from frontend
-              vmType.toUpperCase(),           // LXC / QEMU
-              newVmid,                        // final VMID
+              payload.componentcategoryid,
+              vmType.toUpperCase(),
+              newVmid,
               payload.componentname,
               payload.vmid_name,
               payload.componentimage || null,
               payload.duration || 0,
+              safeJson(proxmoxData),
+              safeJson(extractNetworkPorts()),
+              safeJson(extractBridgeNames()),
+              parseInt(proxmoxData?.cores) || null,
+              parseInt(proxmoxData?.memory) || null,
+              extractStorage(),
               payload.createdby || null
             ],
             type: db.sequelize.QueryTypes.INSERT
@@ -2220,13 +2490,12 @@ const save =
 
         await db.sequelize.query(
           `
-  UPDATE custom_component
-  SET
-    status = 'approved',
-  modifiedon = NOW(),
-    modifiedby = ?
-  WHERE customcomponentid = ?
-  `,
+          UPDATE custom_component
+          SET status = 'Approved',
+              modifiedon = NOW(),
+              modifiedby = ?
+          WHERE customcomponentid = ?
+        `,
           {
             replacements: [
               payload.createdby || null,
@@ -2253,6 +2522,8 @@ const save =
         };
       }
     };
+
+
 const vmDetails =
   ({ db, validation }) =>
     async (body, ipAddress) => {
@@ -2324,10 +2595,6 @@ const getVmConfig =
             message: "Invalid VM type. Allowed values: qemu, lxc",
           };
         }
-
-        // ================================
-        // 1. Fetch APPROVAL FLAG
-        // ================================
         const [settings] = await db.sequelize.query(
           `
           SELECT component_approval
@@ -2453,8 +2720,8 @@ const stopScenarioVM =
           /** ---------- 3️⃣ Update Component Status ---------- **/
           const [updateResult] = await db.sequelize.query(
             `
-            UPDATE custom_component
-            SET componentStatus = 'Stop',
+            UPDATE vm_configuration
+            SET status = 'Stopped',
                 modifiedon = NOW()
             WHERE vmid = ?
           `,

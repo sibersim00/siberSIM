@@ -35,9 +35,31 @@ import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import CustomerModal from "../../../shared/data/admin/modals/CustomerModal";
 import LicenseModal from "../../../shared/data/admin/modals/LicenseModal";
-const copyToClipboard = (text) => {
-  navigator.clipboard.writeText(text);
+// const copyToClipboard = (text) => {
+//   navigator.clipboard.writeText(text);
+// };
+
+const copyToClipboard = async (text) => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for HTTP / older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+  } catch (err) {
+    console.error("Copy failed", err);
+  }
 };
+
 
 const Customers = () => {
   const dispatch = useDispatch();

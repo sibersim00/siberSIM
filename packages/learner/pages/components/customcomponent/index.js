@@ -17,9 +17,6 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import {
   getComponentList,
-  changeStatusComponent,
-  clearComponentChangeStatus,
-  deleteComponent,
   cleardeleteComponent,
   clearHasError,
 } from "../../../shared/redux/slices/customcomponent/customcomponentManage";
@@ -90,11 +87,7 @@ const ManageCustomComponent = () => {
         state.customComponent &&
         state.customComponent.getComponentListData &&
         state.customComponent.getComponentListData.data,
-      deleteComponentRes:
-        state &&
-        state.customComponent &&
-        state.customComponent.deleteComponent &&
-        state.customComponent.deleteComponent,
+    
       statusChangeComponentRes:
         state &&
         state.customComponent &&
@@ -327,20 +320,9 @@ const ManageCustomComponent = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -348,45 +330,21 @@ const ManageCustomComponent = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
   }, [errorData]);
-
-  useEffect(() => {
-    if (statusChangeComponentRes?.statusCode) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {statusChangeComponentRes?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-
-      dispatch(getComponentList());
-      dispatch(clearComponentChangeStatus());
-    }
-  }, [statusChangeComponentRes]);
-
-  useEffect(() => {
-    if (deleteComponentRes?.statusCode === 200) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {deleteComponentRes?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-      dispatch(getComponentList());
-      dispatch(cleardeleteComponent());
-    }
-  }, [deleteComponentRes]);
 
   useEffect(() => {
     dispatch(getComponentList());
@@ -397,21 +355,6 @@ const ManageCustomComponent = () => {
     );
   };
 
-  // useEffect(() => {
-  //   if (hasGetComponentListSucc) {
-  //     if (!compStatus) {
-  //       setGridData(hasGetComponentListSucc);
-  //       setRowData(hasGetComponentListSucc);
-  //     } else {
-  //       const filteredData = hasGetComponentListSucc.filter(
-  //         (data) => data?.status?.toLowerCase() === compStatus.toLowerCase()
-  //       );
-  //       setGridData(filteredData);
-  //       setRowData(filteredData);
-  //     }
-  //   }
-  // }, [hasGetComponentListSucc, compStatus]);
-  // After fetch / on compStatus change
   useEffect(() => {
     if (!hasGetComponentListSucc) return;
 
@@ -453,27 +396,6 @@ const ManageCustomComponent = () => {
   let viewCatClose = (modal) => {
     setviewCatModal(false);
   };
-  const handleStatusSwitch = (data) => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "Do you really want to change the status?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: " var(--primary-bg-color)",
-      cancelButtonColor: "var(--secondary)",
-      confirmButtonText: "Yes, change it!",
-      allowOutsideClick: false,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const Id = data?.componentid;
-        const payload = {
-          status: data.status == "true" ? "false" : "true",
-          id: Id,
-        };
-        dispatch(changeStatusComponent(payload, Id));
-      }
-    });
-  };
 
   const frameworkComponents = {
     srNoRender: function (props) {
@@ -487,7 +409,7 @@ const ManageCustomComponent = () => {
           handleShowEditView={true}
           handleEdit={handleEdit}
           propsVal={props}
-          // handleShowEdit={status === "pending"}
+        // handleShowEdit={status === "pending"}
         />
       );
     },
@@ -766,15 +688,32 @@ const ManageCustomComponent = () => {
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
                         <Card className="card custom-card our-team component-status-card">
-                          <Card.Body className="p-3">
+                          <Card.Body className="p-3 position-relative">
                             <div className="text-center mb-2">
-                              {/* <div
-                                className="rounded-circle mx-auto d-flex justify-content-center align-items-center "
-                                style={{
-                                  width: "100px",
-                                  height: "100px",
-                                }}
-                              > */}
+                              {item?.status && (
+                                <span
+                                  className="badge position-absolute"
+                                  style={{
+                                    top: "10px",
+                                    right: "12px",
+                                    fontSize: "11px",
+                                    padding: "4px 10px",
+                                    borderRadius: "12px",
+                                    backgroundColor:
+                                      item.status.toLowerCase() === "approved"
+                                        ? "#28a745"
+                                        : item.status.toLowerCase() === "reject"
+                                          ? "#ec43548e"
+                                          : "#ffc107",
+                                    color: "#fff",
+                                    zIndex: 10,
+                                    textTransform: "capitalize",
+                                    pointerEvents: "none",
+                                  }}
+                                >
+                                  {item.status}
+                                </span>
+                              )}
                               <div
                                 className="rounded-circle mx-auto d-flex justify-content-center align-items-center position-relative"
                                 style={{
@@ -783,27 +722,9 @@ const ManageCustomComponent = () => {
                                 }}
                               >
                                 {/* STATUS BADGE */}
-                                {item?.status && (
-                                  <span
-                                    className={`badge position-absolute px-2 py-1`}
-                                    style={{
-                                      top: "-8px",
-                                      left: "100px",
-                                      fontSize: "10px",
-                                      borderRadius: "8px",
-                                      backgroundColor:
-                                        item.status.toLowerCase() === "approved"
-                                          ? "#28a745"
-                                          : item.status.toLowerCase() ===
-                                            "reject"
-                                          ? "#dc3545"
-                                          : "#ffc107",
-                                      color: "white",
-                                    }}
-                                  >
-                                    {item.status}
-                                  </span>
-                                )}
+
+
+
 
                                 <img
                                   alt="avatar"
@@ -873,16 +794,7 @@ const ManageCustomComponent = () => {
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
-                              {/* {item?.status?.toLowerCase() === "pending" && (
-                                <div
-                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                  onClick={() => handleEdit(item)}
-                                >
-                                  <OverlayTrigger placement="bottom" overlay={<Tooltip>Update</Tooltip>}>
-                                    <i className="fe fe-edit"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              )} */}
+
                               &nbsp;
                               <div
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
@@ -903,6 +815,7 @@ const ManageCustomComponent = () => {
                             </div>
                           </Card.Body>
                         </Card>
+
                       </Col>
                     );
                   })}

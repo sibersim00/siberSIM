@@ -169,19 +169,7 @@ const CustomComponentForm = (props) => {
         state.customComponent.singleComponent.data,
     };
   });
-  const { isLoading, error } = useSelector((state) => state.customComponent);
-  const { isSaving } = useSelector((state) => state.customComponent);
-
-  console.log("errorData", errorData)
-
-
-  //   useEffect(() => {
-  //   if (errorData) {
-  //     setOneClick(false); // stop button loader
-  //     Swal.fire("Error", errorData.error || errorData.message, "error");
-  //   }
-  // }, [errorData]);
-
+ const { isSaving } = useSelector((state) => state.customComponent);
   useEffect(() => {
     if (getSingleComponentSucc && getSingleComponentSucc !== "") {
       setRowValues(getSingleComponentSucc);
@@ -454,7 +442,7 @@ const CustomComponentForm = (props) => {
 
     const payload = {
       customcomponentuuid: getSingleComponentSucc.customcomponentuuid,
-      status: "reject",
+      status: "Reject",
     };
 
     dispatch(updateCustomComponent(payload));

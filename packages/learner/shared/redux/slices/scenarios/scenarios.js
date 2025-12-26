@@ -32,11 +32,13 @@ const initialState = {
   pausescenarioData: [],
   saveComponent: [],
   resumescenarioData: [],
+  getresume: [],
   hasgetqemuconfig: [],
   stopVmResponse: [],
   getrestoresnapshot: [],
   getVMdetail: [],
   saveCustomComponent: [],
+    rejectStopVm: [],
 };
 
 
@@ -156,6 +158,10 @@ const slice = createSlice({
       state.isLoading = false,
         state.getSnapshot = action.payload;
     },
+    hasGetresume(state, action) {
+      state.isLoading = false,
+        state.getresume = action.payload;
+    },
     hasDeleteSnapshot(state, action) {
       state.isLoading = false,
         state.deleteSnapshot = action.payload;
@@ -181,6 +187,11 @@ const slice = createSlice({
         state.saveCustomComponent = action.payload;
 
     },
+ hasGetRejectStopVm(state, action) {
+      state.isLoading = false,
+        state.rejectStopVm = action.payload;
+    },
+
     // HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -350,6 +361,16 @@ export function pausescenario(payload) {
     }
   };
 }
+export function clearpausescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.haspausescenarioSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 export function resumescenario(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -357,6 +378,17 @@ export function resumescenario(payload) {
       const response = await axios.post(`${api.resume_scenario}`, payload);
       dispatch(slice.actions.hasresumescenarioSucc(response.data));
       return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearresumescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletescenarioSucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -655,6 +687,28 @@ export function getSnapshot(payload) {
     }
   };
 }
+export function canresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.can_resume}`, payload);
+      dispatch(slice.actions.hasGetresume(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearcanresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetresume([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
 export function clearGetSnapshot() {
   return async (dispatch) => {
@@ -697,9 +751,12 @@ export function qemuconfig(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.vm_config}`, payload);
+      console.log("responseresponse", response)
       dispatch(slice.actions.hasqemuconfig(response.data));
+      return response.data;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
+      return null;
     }
   };
 }
@@ -846,24 +903,6 @@ export function saveCustomComponent(payload) {
   };
 }
 
-
-// export function saveComponent(payload) {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.post(`${api.custom_component_save_learner}`, payload);
-//       console.log("API Success Response:", response);
-
-//       dispatch(slice.actions.hasGetSaveComponentSucc(response));
-//     } catch (error) {
-//       console.log("Error Response:", error);
-
-//       dispatch(slice.actions.hasError(
-//         error?.error || error?.message || error
-//       ));
-//     }
-//   };
-// }
 export function saveComponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -875,7 +914,7 @@ export function saveComponent(payload) {
 
       dispatch(slice.actions.hasGetSaveComponentSucc(response.data));
 
-    
+
       return {
         success: true,
         data: response.data,
@@ -888,7 +927,7 @@ export function saveComponent(payload) {
 
       dispatch(slice.actions.hasError(errData));
 
-   
+
       return {
         success: false,
         error: errData,
@@ -897,6 +936,7 @@ export function saveComponent(payload) {
   };
 }
 
+
 export function clearCustomComponent() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -904,6 +944,19 @@ export function clearCustomComponent() {
       dispatch(slice.actions.hasGetSaveCustomComponentSucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function rejectStoppedVm(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.reject_stopped_vm, payload);
+      dispatch(slice.actions.hasGetRejectStopVm(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
     }
   };
 }

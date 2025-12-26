@@ -171,7 +171,10 @@ const Home = () => {
         if (getCompanySettingsData?.redirect == true) {
           navigate.replace("/activate-account");
         } else {
-          const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === 1);
+          console.log("wwwwwwwwwwwwwwwwwwwwItems",loginSuccData?.data?.menus[0]?.Items);
+          
+          const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+          
           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
           navigate.replace(source, "", { shallow: true });
         }
@@ -286,7 +289,9 @@ const Home = () => {
         if (getCompanySettingsData?.redirect == true) {
           navigate.replace("/activate-account");
         } else {
-          const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === 1);
+          console.log("wwwwwwwwwwwwwwwwwwwwItems",directLoginData?.data?.menus[0]?.Items);
+
+          const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
           navigate.replace(source, "", { shallow: true });
         }

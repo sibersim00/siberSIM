@@ -297,7 +297,7 @@ export function updateCompletedTerminated(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.update_completed_terminated}`, payload);
+      const response = await axios.post(`${api.admin_complete_scenario}`, payload);
       dispatch(slice.actions.hasUpdateCompletedTerminatedSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -398,12 +398,15 @@ export function clearSingleScenarios() {
 //   };
 // }
 export function updateSessionStatus(payload) {
+  console.log("payloadpayloadpayloadpayload",payload);
+  
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.scenario_status_update}`, payload);
-      dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response.data));
-      return response.data;
+      console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaa",response);
+      dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response));
+      return response;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
       throw error;

@@ -55,11 +55,10 @@ module.exports = function (iocContainer) {
   router.get("/get/:vmid", controller.getComponentByVmid(iocContainer));
   router.post("/save", controller.saveCustomComponent(iocContainer));
   router.post("/stop-vm", controller.stopVM(iocContainer));
-    router.post(
-    "/vm-config",
-    controller.getQemuConfig(iocContainer)
-
-    
+  router.post("/vm-config", controller.getQemuConfig(iocContainer));
+  router.post(
+    "/reject-stopped-vm",
+    controller.rejectPendingCustomComponent(iocContainer)
   );
   return router;
 };

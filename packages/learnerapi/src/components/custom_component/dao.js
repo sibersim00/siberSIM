@@ -7,38 +7,39 @@ const getAll =
     async (learnerId) => {
       try {
         const query = `
-          SELECT 
-              cc.customcomponentid,
-              cc.customcomponentuuid,
-              cc.componentname,
-              cc.componentcategoryid,
-              cc.clone_vmid,
-              cc.vmid,
-              cc.componenttype,
-              cc.duration,
-              cc.componentimage,
-              cc.status,
-              mcc.categoryname,
-              DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-              DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
+        SELECT 
+    cc.customcomponentid,
+    cc.customcomponentuuid,
+    cc.componentname,
+    cc.componentcategoryid,
+    cc.master_vmid,
+    cc.clone_vmid,
+    cc.vmid,
+    cc.componenttype,
+    cc.duration,
+    cc.componentimage,
+    cc.status,
+    mcc.categoryname,
+    DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
+    DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
 
-              -- Components Table Join (main component)
-              comp.componentid AS main_componentid,
-              comp.componentname AS main_componentname,
-              comp.network_ports AS main_network_ports,
-              comp.cores AS main_cores,
-              comp.memory AS main_memory,
-              comp.storage AS main_storage
+    comp.componentid AS main_componentid,
+    comp.componentname AS main_componentname,
+    comp.network_ports AS main_network_ports,
+    comp.cores AS main_cores,
+    comp.memory AS main_memory,
+    comp.storage AS main_storage
 
-          FROM custom_component cc
-          LEFT JOIN component_categories mcc 
-              ON mcc.componentcategoryid = cc.componentcategoryid
-          LEFT JOIN components comp 
-              ON comp.vmid = cc.vmid
-          WHERE cc.learner_id = :learnerId
-            AND comp.deletedon IS NULL
-          ORDER BY cc.customcomponentid DESC;
-        `;
+FROM custom_component cc
+LEFT JOIN component_categories mcc 
+    ON mcc.componentcategoryid = cc.componentcategoryid
+LEFT JOIN components comp 
+    ON comp.vmid = cc.master_vmid
+   AND comp.deletedon IS NULL
+WHERE cc.learner_id = :learnerId
+ORDER BY cc.customcomponentid DESC
+`;
+
 
         const rows = await db.sequelize.query(query, {
           replacements: { learnerId },
@@ -47,7 +48,7 @@ const getAll =
 
         return rows;
       } catch (error) {
-        console.error("❌ Error fetching learner-wise custom components:", error);
+        console.error(" Error fetching learner-wise custom components:", error);
         throw new Error("Failed to fetch custom component list");
       }
     };
@@ -64,6 +65,7 @@ const getById =
             cc.componentcategoryid,
             cc.clone_vmid,
             cc.vmid,
+            cc.master_vmid,
             cc.componenttype,
             cc.duration,
             cc.componentimage,
@@ -85,7 +87,7 @@ const getById =
         FROM custom_component cc
             LEFT JOIN component_categories mcc 
         ON mcc.componentcategoryid = cc.componentcategoryid
-        LEFT JOIN components comp ON comp.vmid = cc.vmid
+        LEFT JOIN components comp ON comp.vmid = cc.master_vmid
         WHERE cc.customcomponentuuid = :uuid
         LIMIT 1`,
           {
@@ -116,7 +118,7 @@ const getById =
         throw error;
       }
     };
-    
+
 const updateStatus =
   ({ db }) =>
     async ({ customcomponentuuid, status }) => {

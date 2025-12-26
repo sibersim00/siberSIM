@@ -1,15 +1,99 @@
 const NotiTemplate = require("../../utils/notiUtility");
+// const list = ({ db }) => async (usertype, session_userid) => {
+//   try {
+//     let whereClause = `WHERE s.deletedon IS NULL`;
+//     if (usertype === 'Instructor') {
+//       whereClause += ` AND s.instructor_id = :_session_userid`;
+//     }
+//     let query = `SELECT s.scenarioid, s.scenariouuid, s.scenarioidentification,s.scenario_type, s.scenariotitle, s.scenariodescription, s.scenariolevel,s.network_config, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.components, s.component_config, s.instruction_file, s.duration, s.scenariostatus, s.scenarioimage, CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, CONCAT(user.firstname, ' ', user.lastname) AS instructor_name, DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,  DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN ad_users user ON user.userid = s.instructor_id ${whereClause} GROUP BY s.scenarioid ORDER BY s.scenariotitle`;
+//     const res = await db.sequelize.query(query, {
+//       replacements: { _session_userid: session_userid },
+//       type: db.sequelize.QueryTypes.SELECT,
+//     });
+//     return res;
+//   } catch (error) {
+//     console.error("Error in list:", error);
+//     throw new Error("Failed to fetch scenario list");
+//   }
+// };
+
 const list = ({ db }) => async (usertype, session_userid) => {
   try {
     let whereClause = `WHERE s.deletedon IS NULL`;
-    if (usertype === 'Instructor') {
+
+    if (usertype === "Instructor") {
       whereClause += ` AND s.instructor_id = :_session_userid`;
     }
-    let query = `SELECT s.scenarioid, s.scenariouuid, s.scenarioidentification,s.scenario_type, s.scenariotitle, s.scenariodescription, s.scenariolevel,s.network_config, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.components, s.component_config, s.instruction_file, s.duration, s.scenariostatus, s.scenarioimage, CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, CONCAT(user.firstname, ' ', user.lastname) AS instructor_name, DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,  DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN ad_users user ON user.userid = s.instructor_id ${whereClause} GROUP BY s.scenarioid ORDER BY s.scenariotitle`;
+
+    const query = `
+      SELECT
+        s.scenarioid,
+        s.scenariouuid,
+        s.scenarioidentification,
+        s.scenario_type,
+        s.scenariotitle,
+        s.scenariodescription,
+        s.scenariolevel,
+        s.network_config,
+        s.scenariocategoryid,
+        s.scenariosubcategoryid,
+        s.scenariodiagram,
+        s.components,
+        s.component_config,
+        s.instruction_file,
+        s.duration,
+        s.scenariostatus,
+        s.scenarioimage,
+
+        -- scenario active/inactive
+        CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status,
+
+        -- vm_request info
+        vr.status AS vm_status,
+        vr.vm_steps,
+
+        sc.categoryname AS scenariocategory,
+        scc.categoryname AS scenariosubcategory,
+        CONCAT(user.firstname, ' ', user.lastname) AS instructor_name,
+
+        DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
+        DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
+
+      FROM scenarios s
+
+      INNER JOIN scenario_categories sc
+        ON sc.scenariocategoryid = s.scenariocategoryid
+
+      INNER JOIN scenario_categories scc
+        ON scc.scenariocategoryid = s.scenariosubcategoryid
+
+      LEFT JOIN ad_users user
+        ON user.userid = s.instructor_id
+
+      -- latest vm_request per scenario
+      LEFT JOIN (
+        SELECT vr1.*
+        FROM vm_request vr1
+        INNER JOIN (
+          SELECT scenarioid, MAX(createdon) AS max_createdon
+          FROM vm_request
+          GROUP BY scenarioid
+        ) vr2
+          ON vr1.scenarioid = vr2.scenarioid
+         AND vr1.createdon = vr2.max_createdon
+      ) vr
+        ON vr.scenarioid = s.scenarioid
+
+      ${whereClause}
+      GROUP BY s.scenarioid
+      ORDER BY s.scenariotitle
+    `;
+
     const res = await db.sequelize.query(query, {
       replacements: { _session_userid: session_userid },
       type: db.sequelize.QueryTypes.SELECT,
     });
+
     return res;
   } catch (error) {
     console.error("Error in list:", error);
@@ -445,32 +529,6 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
   }
 };
 
-// export functionality
-// scenariosDao.js
-// const getScenarioInstructionFiles = ({ db }) => async (scenarioIds) => {
-//   if (!Array.isArray(scenarioIds) || scenarioIds.length === 0) return [];
-
-//   // Build a dynamic placeholders string for each ID
-//   const placeholders = scenarioIds.map(() => '?').join(',');
-
-//   const query = `
-//     SELECT scenarioid, scenariotitle, instruction_file 
-//     FROM scenarios 
-//     WHERE scenarioid IN (${placeholders})
-//   `;
-
-// const rows = await db.sequelize.query(query, {
-//   replacements: scenarioIds,
-//   type: db.sequelize.QueryTypes.SELECT,
-// });
-
-// console.log("rrrrrrrrrrrrrrrrr",rows);
-
-//   return rows;
-// };
-
-
-
 const exportList = ({ db }) => async (session_userid) => {
   try {
     let query = `
@@ -513,36 +571,55 @@ const exportList = ({ db }) => async (session_userid) => {
   }
 };
 
-
 const createExport = ({ db, validation }) => async (body, userid) => {
   if (!userid) {
     throw new Error("User ID is required.");
   }
+  const generatedFileName = `scenario_${body.scenarioid}.zip`;
 
   const result = await db.sequelize.query(
     `INSERT INTO scenario_export
-      (scenarioid, userid, learner_id, status, createdon)
-     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      (scenarioid, userid, learner_id, status, file_name, createdon)
+     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     {
       replacements: [
         body.scenarioid,
         userid,
         body.learner_id ?? null,
         body.status ?? "Inprogress",
+        generatedFileName,  
       ],
       type: db.sequelize.QueryTypes.INSERT,
     }
   );
-
-  // result[0] contains the insertId (exportid)
   const exportid = result[0];
-
   return {
     statusCode: 200,
     message: "Scenario Export created successfully",
-    exportid,   // return the inserted primary key
+    exportid,   
     scenarioid: body.scenarioid,
+    file_name: generatedFileName,
   };
+};
+
+const getTabList = ({ db }) => async () => {
+  try {
+    const [res] = await db.sequelize.query(`SELECT 
+        scenariotabid,
+        tab_name,
+        tab_status,
+        event_status,
+        tab_type,
+        widget_url,
+        tab_ordering,
+        createdon,
+        modifiedon
+      FROM scenario_tabs`);
+    return res;
+  } catch (error) {
+    console.error("Error fetching scenario tab list:", error);
+    throw error;
+  }
 };
 
 
@@ -556,7 +633,7 @@ module.exports = {
   saveDiagram,
   scenariodigramlist,
   saveComponentconfiguration,
-  // getScenarioInstructionFiles,
   exportList,
-  createExport
+  createExport,
+  getTabList
 };

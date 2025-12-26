@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Footer from "../footer/footer";
-// import { Helmet } from 'react-helmet';
-// import { Provider } from "react-redux";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/lib/integration/react";
-// import store from "../../redux/store";
-import { store, persistor } from "../../redux/store";
-import { wrapper } from "../../redux/store";
+import { store } from "../../redux/store";
 import dynamic from "next/dynamic";
 import Rightside from "../right-sidebar/right-sidebar";
 import TabToTop from "../tab-to-top/tab-to-top";
@@ -17,21 +13,9 @@ const Sidebar = dynamic(() => import("../sidebar/sidebar"), { ssr: false });
 import Script from "next/script";
 
 const Contentlayout = ({ children }) => {
-  let Router = useRouter();
-  // const Add = () => {
-  //   document.querySelector("body").classList.remove("error-1");
-  //   document
-  //     .querySelector("body")
-  //     .classList.remove(
-  //       "app",
-  //       "sidebar-mini",
-  //       "ltr",
-  //       "landing-page",
-  //       "horizontalmenu"
-  //     );
-  //   document.querySelector("body").classList.add("main-body", "leftmenu");
-  //   document.body.classList.add("ltr", "main-body", "leftmenu","main-sidebar-hide");
-  // };
+  let navigate = useRouter();
+  const currentPath = navigate.pathname;
+  const [isUserValid, setIsUserValid] = useState(false);
   const Add = () => {
     const body = document.body;
 
@@ -157,22 +141,59 @@ const Contentlayout = ({ children }) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const accessToken = JSON.parse(localStorage.getItem("accessToken"));
+      const menus =  localStorage.getItem("menus") != "undefined" ? JSON.parse(localStorage.getItem("menus")) : []
+      if(accessToken){
+        if(menus?.[0].Items?.length > 0){
+          if (!isTabAllowed(currentPath, menus[0].Items)) {
+            navigate.replace("/404", "", { shallow: true });
+          }else{
+            setIsUserValid(true);
+          }
+        }
+      }else{
+        navigate.replace("/", "", { shallow: true });
+        localStorage.removeItem("user");
+        localStorage.removeItem("menus");
+        localStorage.clear();
+        dispatch({ type: "LOGOUT" });
+      }
+    }
+  }, [currentPath]);
+
+  const checkPath = (path, tabs) => {
+    return tabs.some(tab => {
+      if (tab.path === path || path == "/components/profile") {
+        return true;
+      }else if(tab.sub_path && tab.sub_path.includes(path)){
+        return true;
+      }
+      // Recursively check the children if they exist
+      if (tab.children && tab.children.length > 0) {
+        return checkPath(path, tab.children);
+      }
+      return false;
+    });
+  }
+
+  const isTabAllowed = (currentPath, allowedTabs) => {
+    return checkPath(currentPath,allowedTabs)
+  }
+
+
+
   return (
     <>
-      {/* <Head>
-        <body className="ltr main-body leftmenu"></body>
-        </Head> */}
+    {isUserValid &&
       <ReduxProvider store={store}>
-        {/* <PersistGate loading={null} persistor={persistor}> */}
         <div className="horizontalMenucontainer">
           <div className="page">
             <Header />
             <Sidebar />
             <div className="main-content side-content pt-0">
-              {/* <div
-                className="main-container container-fluid"
-                onClick={() => remove()}
-              > */}
               <div
                 className="main-container container-fluid"
                 onClick={(e) => {
@@ -194,8 +215,7 @@ const Contentlayout = ({ children }) => {
           <TabToTop />
           <Footer />
         </div>
-        {/* </PersistGate> */}
-      </ReduxProvider>
+      </ReduxProvider>}
     </>
   );
 };

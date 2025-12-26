@@ -138,7 +138,7 @@ const NotificationList = () => {
       dispatch(markReadNotification(payload))
     }
     setTimeout(() => {
-      push("/components/noticonfigs/notificationList")
+      push("/notifications")
     }, 1000)
   }
 

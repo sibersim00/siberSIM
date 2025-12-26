@@ -8,7 +8,7 @@ const generateLicense = ({ start_date, user_count, expiry_date, domain_name }) =
   const formattedExp = parsedExp.toISOString().slice(0, 10).replace(/-/g, "");
   const parsedStr = new Date(start_date);
   if (isNaN(parsedStr.getTime())) { throw new Error("Invalid start date"); }
-   const formattedStr = parsedStr.toISOString().slice(0, 10).replace(/-/g, "");
+  const formattedStr = parsedStr.toISOString().slice(0, 10).replace(/-/g, "");
   const domainRaw = `${domain_name}|${formattedExp}`;
   const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
   const raw = `${formattedStr}|${user_count}|${formattedExp}|${encryptedDomain}|${SECRET}`;
@@ -17,7 +17,7 @@ const generateLicense = ({ start_date, user_count, expiry_date, domain_name }) =
   return licenseKey;
 }
 
-function validateLicense(hostname,licenseKey) {
+function validateLicense(hostname, licenseKey) {
   try {
     const parts = licenseKey.split("-");
     if (parts.length !== 5) { throw new Error("Invalid License"); }
@@ -37,11 +37,11 @@ function validateLicense(hostname,licenseKey) {
     const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
     if (encryptedDomain !== hostnameStr) { throw new Error("Invalid License"); }
     // Expiry Date check
-    const expDate = new Date(expiryStr.substring(0, 4),expiryStr.substring(4, 6) - 1,expiryStr.substring(6, 8));
+    const expDate = new Date(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8));
     if (isNaN(expDate.getTime())) { throw new Error("Invalid License"); }
     if (expDate < new Date()) { throw new Error("Invalid License"); }
     // Start Date check
-    const strDate = new Date(startStr.substring(0, 4),startStr.substring(4, 6) - 1,startStr.substring(6, 8));
+    const strDate = new Date(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8));
     if (isNaN(strDate.getTime())) { throw new Error("Invalid License"); }
 
     return true;
@@ -50,7 +50,7 @@ function validateLicense(hostname,licenseKey) {
   }
 }
 
-function validateJWTLicense(hostname,licenseKey) {
+function validateJWTLicense(hostname, licenseKey) {
   try {
     const parts = licenseKey.split("-");
     if (parts.length !== 5) { throw new Error("Invalid License"); }
@@ -70,32 +70,40 @@ function validateJWTLicense(hostname,licenseKey) {
     const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
     if (encryptedDomain !== hostnameStr) { throw new Error("Invalid License"); }
     // Expiry Date check
-    const expDate = new Date(expiryStr.substring(0, 4),expiryStr.substring(4, 6) - 1,expiryStr.substring(6, 8));
+    const expDate = new Date(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8));
     if (isNaN(expDate.getTime())) { throw new Error("Invalid License"); }
     if (expDate < new Date()) { throw new Error("Invalid License"); }
 
     // Start Date check
-    const strDate = new Date(startStr.substring(0, 4),startStr.substring(4, 6) - 1,startStr.substring(6, 8));
+    const strDate = new Date(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8));
     if (isNaN(strDate.getTime())) { throw new Error("Invalid License"); }
     if (strDate > new Date()) { throw new Error("Invalid License"); }
 
-    return true;
+    // return true;
+    return {
+      success: true,
+      user_count: user_count,
+    };
   } catch (e) {
-    return false;
+    return {
+      success: false,
+      message: e.message || "Invalid License",
+    };
+    // return false;
   }
 }
 
-function checkValidate(hostname,licenseKey) {
+function checkValidate(hostname, licenseKey) {
   try {
     let isKeyValid = true;
     let isHost = true;
     let isStart = true;
     let isExp = false;
-    
+
     const parts = licenseKey.split("-");
     if (parts.length !== 5) { isKeyValid = false; }
     const startStr = parts[0].replace("S", ""); // e.g., 20250101
-    const user_count = parts[1].replace("USL", ""); ;                 // e.g., U10M5I2
+    const user_count = parts[1].replace("USL", "");;                 // e.g., U10M5I2
     const expiryStr = parts[2].replace("E", ""); // e.g., 20251230
     const hostnameStr = parts[3];          // e.g., A1B2C3
     const sentHash = parts[4];                 // e.g., 9F3A2D
@@ -109,17 +117,17 @@ function checkValidate(hostname,licenseKey) {
     const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
     if (encryptedDomain !== hostnameStr) { isHost = false; }
     // Start Date Check
-    const strDate = new Date(startStr.substring(0, 4),startStr.substring(4, 6) - 1,startStr.substring(6, 8));
+    const strDate = new Date(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8));
     if (isNaN(strDate.getTime())) { isKeyValid = false; }
     if (strDate > new Date()) { isStart = false; }
     // Expiry Date check
-    const expDate = new Date(expiryStr.substring(0, 4),expiryStr.substring(4, 6) - 1,expiryStr.substring(6, 8));
+    const expDate = new Date(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8));
     if (isNaN(expDate.getTime())) { isKeyValid = false; }
     if (expDate < new Date()) { isExp = true; }
-    console.log("data====>",{ start_date: strDate, user_count: user_count, expiry_date: expDate, domain_name: hostnameStr });
-    return {isKeyValid:isKeyValid,isHost:isHost,isStart:isStart,isExp:isExp,start_date: strDate,expiry_date: expDate};
+    console.log("data====>", { start_date: strDate, user_count: user_count, expiry_date: expDate, domain_name: hostnameStr });
+    return { isKeyValid: isKeyValid, isHost: isHost, isStart: isStart, isExp: isExp, start_date: strDate, expiry_date: expDate };
   } catch (e) {
-    console.log("error========>",e);
+    console.log("error========>", e);
     return false;
   }
 }

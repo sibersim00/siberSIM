@@ -31,11 +31,29 @@ const verifylogin = ({ dao, db, keys, crypto }) => async (req, res, next) => {
     const { loginid, password, otp, eventid } = req.body;
     let user = await dao.verifylogin({ db, keys })({ loginid: loginid, password: password, otp: otp, eventid });
     if (user.statusCode == 200) {
-      let jwtObj = user.learner; jwtObj.type = 'Learner';
+      let jwtObj = user.learner; 
+      jwtObj.type = 'Learner';
       const hostname = req?.hostname;
-      console.log("req=========>",hostname);
-      const accessToken = await generateAccessToken(hostname,jwtObj);
-      let menus = [{ menutitle: "DASHBOARD", Items: await dao.learnermenu({ db })({ learner_id: user.learner.learner_id }) }];
+
+      const menus = [
+        {
+          menutitle: "DASHBOARD",
+          Items: await dao.learnermenu({ db })({
+            learner_id: user.learner.learner_id,
+          }),
+        },
+      ];
+      const extractSources = (items) => items.flatMap(i => [i.source,...(i.children ? extractSources(i.children) : [])]);
+      jwtObj.menus = extractSources(menus[0]?.Items);
+      const accessToken = await generateAccessToken(hostname,userObj);
+
+
+
+
+
+
+      // const accessToken = await generateAccessToken(hostname,jwtObj);
+      // let menus = [{ menutitle: "DASHBOARD", Items: await dao.learnermenu({ db })({ learner_id: user.learner.learner_id }) }];
       return res.send({ statusCode: 200, message: 'Login successfully', data: crypto.cryptoEncrypt({ accessToken: accessToken, user: user.learner, menus: menus }) });
     }
     else {
@@ -56,16 +74,28 @@ const verifyDirectLogin = ({ dao, db, keys, crypto}) => async (req, res, next) =
 
     if (user.statusCode === 200) {
       // Generate JWT token
-      const jwtPayload = { ...user.learner, type: 'Learner' };
+      let jwtPayload = { ...user.learner, type: 'Learner' };
       const hostname = req?.hostname;
-      console.log("req=========>",hostname);
+
+      const menus = [
+        {
+          menutitle: "DASHBOARD",
+          Items: await dao.learnermenu({ db })({
+            learner_id: user.learner.learner_id,
+          }),
+        },
+      ];
+      const extractSources = (items) => items.flatMap(i => [i.source,...(i.children ? extractSources(i.children) : [])]);
+      jwtPayload.menus = extractSources(menus[0]?.Items);
+
+
       const accessToken = await generateAccessToken(hostname,jwtPayload);
 
       // Fetch learner menu
-      const menus = [{
-        menutitle: "DASHBOARD",
-        Items: await dao.learnermenu({ db })({ learner_id: user.learner.learner_id })
-      }];
+      // const menus = [{
+      //   menutitle: "DASHBOARD",
+      //   Items: await dao.learnermenu({ db })({ learner_id: user.learner.learner_id })
+      // }];
 
       // Prepare final encrypted payload
       const payload = crypto.cryptoEncrypt({

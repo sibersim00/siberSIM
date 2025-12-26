@@ -99,7 +99,7 @@ console.log("themetheme",theme)
       dispatch(markReadNotification(payload))
     }
     setTimeout(() => {
-      navigate.push("/components/noticonfigs/notificationList");
+      navigate.push("/notifications");
     }, 1000)
   }
 

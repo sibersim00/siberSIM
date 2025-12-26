@@ -1349,6 +1349,8 @@ function ProxMoxService(db, payload, ip_address) {
 
     const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot`;
 
+
+
     const config = {
       method: "post",
       url,
@@ -1373,7 +1375,7 @@ function ProxMoxService(db, payload, ip_address) {
         null,
         constants.VM_PROCESSES.SNAPSHOT_LXC
       );
-
+      console.log("responseresponse",)
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1463,7 +1465,9 @@ function ProxMoxService(db, payload, ip_address) {
     const request_datetime = new Date();
 
     const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/template`;
+    // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
 
+    console.log("urlurlurl", url)
     const config = {
       method: "post",
       url,
@@ -1474,6 +1478,7 @@ function ProxMoxService(db, payload, ip_address) {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
+    console.log("configconfigconfigconfig", config)
 
     try {
       const response = await axios.request(config);
@@ -1484,9 +1489,11 @@ function ProxMoxService(db, payload, ip_address) {
         response.data, null,
         constants.VM_PROCESSES.TEMPLATE_LXC
       );
-
+      console.log("responserespon222222222222222", response)
       return response;
-    } catch (error) {
+
+    }
+    catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
 
@@ -1499,7 +1506,93 @@ function ProxMoxService(db, payload, ip_address) {
       console.error("Error in templateLXC:", errorMessage);
       return null;
     }
+    // catch (error) {
+    //   console.error("AXIOS ERROR RAW:", {
+    //     message: error.message,
+    //     code: error.code,
+    //     errno: error.errno,
+    //     syscall: error.syscall,
+    //     address: error.address,
+    //     port: error.port,
+    //     config: error.config,
+    //     stack: error.stack
+    //   });
+
+    //   if (error.response) {
+    //     console.error("RESPONSE STATUS:", error.response.status);
+    //     console.error("RESPONSE DATA:", error.response.data);
+    //   } else if (error.request) {
+    //     console.error("REQUEST SENT BUT NO RESPONSE");
+    //   } else {
+    //     console.error("REQUEST NOT SENT");
+    //   }
+
+    //   return null;
+    // }
   }
+  //   async function templateLXC(vmid) {
+  //   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+  //     throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  //   }
+
+  //   const start = Date.now();
+  //   const request_datetime = new Date();
+
+  //   const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/template`;
+
+  //   const config = {
+  //     method: "post",
+  //     url,
+  //     headers: {
+  //       // IMPORTANT: Cookie must be key=value
+  //       Cookie: `PVEAuthCookie=${accessInfo.cookie}`,
+  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+  //       "Content-Type": "application/x-www-form-urlencoded",
+  //     },
+
+  //     // IMPORTANT: Proxmox expects a body, even if empty
+  //     data: "",
+
+  //     timeout: 15000, // ⬅️ very important for Proxmox
+  //     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  //     validateStatus: () => true, // prevent axios from throwing on 4xx/5xx
+  //   };
+
+  //   try {
+  //     const response = await axios(config);
+
+  //     await logApiRequestData(
+  //       start,
+  //       request_datetime,
+  //       config,
+  //       response.status.toString(),
+  //       response.data,
+  //       null,
+  //       constants.VM_PROCESSES.TEMPLATE_LXC
+  //     );
+
+  //     console.log("Template LXC response:", response.data);
+  //     return response.data;
+
+  //   } catch (error) {
+  //     const errorCode = error?.response?.status?.toString() || "ERR";
+  //     const errorMessage = error?.response?.data || error.message;
+
+  //     await logApiRequestData(
+  //       start,
+  //       request_datetime,
+  //       config,
+  //       errorCode,
+  //       errorMessage,
+  //       error,
+  //       constants.VM_PROCESSES.TEMPLATE_LXC
+  //     );
+
+  //     console.error("Error in templateLXC:", errorMessage);
+  //     return null;
+  //   }
+  // }
+
 
   async function cloneQEMU(vmid, newid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
@@ -1581,7 +1674,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.data, null,
         constants.VM_PROCESSES.TEMPLATE_QEMU
       );
-
+      console.log("response1111111111111", response)
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1760,7 +1853,7 @@ function ProxMoxService(db, payload, ip_address) {
     templateQEMU,
     getQemuConfig,
     getLxcConfig,
-    
+
   };
 }
 

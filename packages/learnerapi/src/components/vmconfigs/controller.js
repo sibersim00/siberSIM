@@ -568,12 +568,13 @@ const saveCustomComponent = ({ dao, db, validation }) => async (req, res) => {
       componentcategoryid,
       duration,
       clone_vmid,
+      learner_id,
       componentimage,
       scenarioid,
       componenttype
     } = req.body;
 
-    const learner_id = req?.learneruser?.learner_id || 3;
+    // const learner_id = req.learneruser.learner_id;
 
     if (!learner_id) {
       return res.status(401).json({
@@ -630,9 +631,9 @@ const getQemuConfig =
   ({ }) =>
     async (req, res, next) => {
       try {
-        const { vmid , vmType  } = req.body;
+        const { vmid, vmType } = req.body;
 
-        if (!vmid || !vmType ) {
+        if (!vmid || !vmType) {
           return res.status(400).send({
             statusCode: 400,
             message: "vmid and vmType is required.",
@@ -642,7 +643,7 @@ const getQemuConfig =
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/vm-config`,
-            { vmid,vmType}
+            { vmid, vmType }
           );
 
           return res.status(200).send({
@@ -738,6 +739,61 @@ const stopVM =
       }
     };
 
+const rejectPendingCustomComponent =
+  ({ dao, db, validation }) =>
+    async (req, res) => {
+      try {
+        const { vmid } = req.body;
+
+        if (!vmid) {
+          return res.status(400).send({
+            statusCode: 400,
+            message: "VMID is required.",
+          });
+        }
+
+        const result =
+          await dao.rejectPendingCustomComponentIfVmStopped({ db })({
+            vmid,
+          });
+
+        if (!result.updated) {
+          let message = validation?.vm_not_stopped || "VM is not stopped.";
+
+          if (result.reason === "VM_NOT_FOUND") {
+            message = "VM not found.";
+          }
+
+          return res.status(400).send({
+            statusCode: 400,
+            message,
+          });
+        }
+
+        res.status(200).send({
+          statusCode: 200,
+          message:
+            "Pending component requests were automatically rejected because the VM is stopped.",
+          data: {
+            affectedRows: result.affectedRows,
+          },
+        });
+      } catch (error) {
+        console.error(
+          "Error rejecting custom component:",
+          error.message
+        );
+
+        res.status(500).send({
+          statusCode: 500,
+          message:
+            validation?.server_error ||
+            "Internal server error.",
+        });
+      }
+    };
+
+    
 module.exports = {
   setScenarioLearnerConfiguration,
   updateCompleteTerminate,
@@ -759,4 +815,5 @@ module.exports = {
   getQemuConfig,
   save,
   stopVM,
+  rejectPendingCustomComponent,
 };

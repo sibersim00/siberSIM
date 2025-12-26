@@ -643,36 +643,7 @@ const deleteScenarioLearner =
         next(err);
       }
     };
-// const save =
-//   ({ dao, db }) =>
-//     async (req, res, next) => {
-//       try {
-//         const payload = req.body;
-//         console.log("PAYLOAD ===>", payload);
-//         const ipAddress =
-//           req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-//         const result = await dao.save({
-//           db,
-//           ipAddress,
-//         })(payload);
-//         console.log("reskkkkkkkkkkkkkkkkult",result);
 
-//         if (!result.success) {
-//           return res.status(500).send({
-//             statusCode: 500,
-//             message: result.message,
-//           });
-//         }
-
-//         return res.status(200).send({
-//           statusCode: 200,
-//           message: result.message,
-//         });
-//       } catch (err) {
-//         console.error("Error in updating session status:", err);
-//         next(err);
-//       }
-//     };
 const save =
   ({ dao, db }) =>
     async (req, res) => {

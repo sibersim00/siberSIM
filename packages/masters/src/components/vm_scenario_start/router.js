@@ -15,6 +15,5 @@ module.exports = function (iocContainer) {
     controller.getTabList(iocContainer)
   );
   router.get("/get-paused", controller.getPaused(iocContainer));
-
   return router;
 };

@@ -3,12 +3,12 @@ module.exports = function (iocContainer) {
   const router = express.Router();
   router.post(
     "/set-scenario-start-config",
-    // validator(validation.setVMRequestConfiguration, "body"),
+    validator(validation.setVMRequestConfiguration, "body"),
     controller.setVMRequestConfiguration(iocContainer)
   );
   router.post(
     "/update-complete-terminate",
-    // validator(validation.updateCompleteTerminate, "body"),
+    validator(validation.updateCompleteTerminate, "body"),
     controller.updateCompleteTerminate(iocContainer)
   );
   router.post(
@@ -38,18 +38,17 @@ module.exports = function (iocContainer) {
   router.post("/restore-snapshot", controller.restoresnapshot(iocContainer));
   router.post("/get-snapshots", controller.getSnapshotsByVmid(iocContainer));
   router.post(
-    "/pause-scenario-learner",
+    "/pause-vm-scenario",
     controller.pauseScenarioLearner(iocContainer)
   );
   router.post(
-    "/resume-scenario-learner",
+    "/resume-vm-scenario",
     controller.resumeScenarioLearner(iocContainer)
   );
   router.post(
     "/delete-scenario-learner",
     controller.deleteScenarioLearner(iocContainer)
   );
-  router.post("/vnc-proxy-console", controller.vncProxyConsole(iocContainer));
   router.get("/get/:vmid", controller.getComponentByVmid(iocContainer));
   router.post("/save", controller.saveCustomComponent(iocContainer));
   return router;

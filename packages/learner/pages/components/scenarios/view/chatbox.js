@@ -21,16 +21,19 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
       getRefreshMsg: state?.chatboxManage?.getRefreshMessageData?.data,
     }));
 
-const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   useEffect(() => {
     const checkDarkMode = () => {
       setIsDarkMode(document.body.classList.contains("dark-theme"));
     };
     checkDarkMode();
-  
+
     const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
-  
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     return () => observer.disconnect();
   }, []);
 
@@ -66,13 +69,16 @@ const [isDarkMode, setIsDarkMode] = useState(false);
   }, [getRefreshMsg]);
 
   const handleSend = () => {
-    if (!chatInput.trim()) return;
+    // if (!chatInput.trim()) return;
+    if (!chatInput.replace(/\s/g, "")) return;
 
     const payload = {
       scenariolearnerid: rowValues?.scenariolearnerid,
       scenarioid: rowValues?.scenarioid,
       learner_id: rowValues?.learner_id,
-      message: chatInput.trim(),
+      // message: chatInput.trim(),
+      message: chatInput,
+
       attachment: selectedFile
         ? { name: selectedFile.name, size: selectedFile.size }
         : null,
@@ -96,6 +102,8 @@ const [isDarkMode, setIsDarkMode] = useState(false);
     }
     e.target.value = null;
   };
+
+  const MAX_HEIGHT = 120; // px
 
   const handleRefresh = () => {
     if (chatMessages?.length) {
@@ -146,8 +154,19 @@ const [isDarkMode, setIsDarkMode] = useState(false);
       });
     }
   }, [chatMessages]);
+  const resizeTextarea = (textarea) => {
+    textarea.style.height = "auto";
 
- return (
+    if (textarea.scrollHeight <= 120) {
+      textarea.style.height = textarea.scrollHeight + "px";
+      textarea.style.overflowY = "hidden";
+    } else {
+      textarea.style.height = "120px";
+      textarea.style.overflowY = "auto";
+    }
+  };
+
+  return (
     <>
       {showChat && (
         <div
@@ -267,17 +286,17 @@ const [isDarkMode, setIsDarkMode] = useState(false);
                     <div
                       style={{
                         backgroundColor: isSender
-                        ? isDarkMode
-                          ? "#37474f"
-                          : "#e0f7fa"
-                        : isDarkMode
-                        ? "#1565c0"
-                        : "#007bff",
-                      color: isSender
-                        ? isDarkMode
-                          ? "#fff"
-                          : "black"
-                        : "#fff",
+                          ? isDarkMode
+                            ? "#37474f"
+                            : "#e0f7fa"
+                          : isDarkMode
+                          ? "#1565c0"
+                          : "#007bff",
+                        color: isSender
+                          ? isDarkMode
+                            ? "#fff"
+                            : "black"
+                          : "#fff",
                         padding: "10px 15px",
                         borderRadius: "12px",
                         maxWidth: "75%",
@@ -323,7 +342,7 @@ const [isDarkMode, setIsDarkMode] = useState(false);
               gap: "10px",
             }}
           >
-            <InputGroup
+            <div
               style={{
                 borderRadius: "30px",
                 border: "1px solid #ddd",
@@ -352,20 +371,49 @@ const [isDarkMode, setIsDarkMode] = useState(false);
                 ></i>
               </div>
               <Form.Control
-                type="text"
+                as="textarea"
                 placeholder="Type a message..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (e.shiftKey) {
+                      const textarea = e.target;
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const value = textarea.value;
+
+                      const newValue =
+                        value.substring(0, start) + "\n" + value.substring(end);
+                      setChatInput(newValue);
+                      setTimeout(() => {
+                        textarea.selectionStart = textarea.selectionEnd =
+                          start + 1;
+                        resizeTextarea(textarea);
+                      }, 0);
+                      e.preventDefault();
+                      return;
+                    }
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                onInput={(e) => resizeTextarea(e.target)}
                 style={{
                   border: "none",
                   backgroundColor: "transparent",
+                  resize: "none",
+                  overflowY: "auto",
                   fontSize: "14px",
-                  padding: "8px 12px",
+                  padding: "10px 12px",
                   borderRadius: "30px",
                   color: isDarkMode ? "#e0e0e0" : "#000",
+                  lineHeight: "1.4",
+                  minHeight: "40px",
+                  maxHeight: `${MAX_HEIGHT}px`,
                 }}
               />
+
               {selectedFile && (
                 <div
                   style={{
@@ -416,12 +464,12 @@ const [isDarkMode, setIsDarkMode] = useState(false);
                   style={{ color: "#fff", fontSize: "18px" }}
                 ></i>
               </Button>
-            </InputGroup>
+              {/* </InputGroup> */}
+            </div>
           </div>
         </div>
       )}
     </>
   );
-
 };
 export default ChatBox;

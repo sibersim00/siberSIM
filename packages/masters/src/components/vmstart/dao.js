@@ -510,38 +510,47 @@ async function setScenarioLearnerConfigurationOnFailure({
   db,
   ipAddress,
   scenarioid,
-  learnerid,
-  scenariolearnersessionid,
+  vmrequestid,
+  requestedby_id,
+  requestedby_role,
 }) {
   try {
     await db.sequelize.query(
-      `UPDATE scenario_learner_session SET vm_steps = 'Failed', modifiedon = NOW(),failedon  = NOW() WHERE scenariolearnersessionid = ?`,
+      `
+      UPDATE vm_request
+      SET 
+        vm_steps = 'Failed',
+        status = 'Failed',
+        modifiedon = NOW(),
+        failedon = NOW()
+      WHERE vmrequestid = :vmrequestid
+        AND scenarioid = :scenarioid
+      `,
       {
-        replacements: [scenariolearnersessionid],
+        replacements: { vmrequestid, scenarioid },
         type: db.sequelize.QueryTypes.UPDATE,
       }
     );
+
     await db.sequelize.query(
-      `UPDATE scenario_learner_session SET status = 'Failed', modifiedon = NOW() WHERE scenariolearnersessionid = ?`,
+      `
+      INSERT INTO vm_request_logs
+        (vmrequestid, scenarioid, requestedby_id, requestedby_role, status, remark, createdon)
+      VALUES
+        (:vmrequestid, :scenarioid, :requestedby_id, :requestedby_role,
+         'Failed', 'Failed to call Jobs', NOW())
+      `,
       {
-        replacements: [scenariolearnersessionid],
-        type: db.sequelize.QueryTypes.UPDATE,
-      }
-    );
-    await db.sequelize.query(
-      `UPDATE scenario_learner SET status = 'Terminated', modifiedon = NOW() WHERE scenariolearnerid = ( SELECT scenariolearnerid FROM scenario_learner_session WHERE scenariolearnersessionid = ?)`,
-      {
-        replacements: [scenariolearnersessionid],
-        type: db.sequelize.QueryTypes.UPDATE,
-      }
-    );
-    await db.sequelize.query(
-      `INSERT INTO scenario_learner_logs (scenariolearnersessionid, scenarioid, learner_id,scenariolearnerid, type, remark, status, createdon) SELECT sls.scenariolearnersessionid, sls.scenarioid, sls.learner_id, sls.scenariolearnerid, 'System', 'Failed to call Jobs', 'Failed', NOW() FROM scenario_learner_session sls WHERE sls.scenariolearnersessionid = ?`,
-      {
-        replacements: [scenariolearnersessionid],
+        replacements: {
+          vmrequestid,
+          scenarioid,
+          requestedby_id: requestedby_id ?? null,
+          requestedby_role: requestedby_role ?? 'System',
+        },
         type: db.sequelize.QueryTypes.INSERT,
       }
     );
+
     return {
       success: true,
       message: "Something went wrong while starting your scenario.",
@@ -561,7 +570,7 @@ const stopAndDestroyFailedScenarios =
       const AVAILABLE = "Available";
       try {
         const sessions = await db.sequelize.query(
-          `SELECT scenariolearnersessionid FROM scenario_learner_session WHERE vm_steps = ?`,
+          `SELECT vmrequestid FROM vm_request WHERE vm_steps = ?`,
           {
             replacements: [OP_FAILED],
             type: db.sequelize.QueryTypes.SELECT,
@@ -570,11 +579,11 @@ const stopAndDestroyFailedScenarios =
         if (!sessions.length) {
           return { success: true, message: "No Failed Scenarios to process." };
         }
-        for (const { scenariolearnersessionid } of sessions) {
+        for (const { vmrequestid } of sessions) {
           const components = await db.sequelize.query(
-            `SELECT * FROM vm_configuration WHERE scenariolearnersessionid = ?`,
+            `SELECT * FROM vm_config WHERE vmrequestid = ?`,
             {
-              replacements: [scenariolearnersessionid],
+              replacements: [vmrequestid],
               type: db.sequelize.QueryTypes.SELECT,
             }
           );
@@ -608,7 +617,7 @@ const stopAndDestroyFailedScenarios =
               }
               await proxmoxService.stopVM(vmid, vmType);
               await db.sequelize.query(
-                `UPDATE vm_configuration SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
+                `UPDATE vm_config SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
                 {
                   replacements: [STOPPED, vmconfigurationid],
                   type: db.sequelize.QueryTypes.UPDATE,
@@ -666,7 +675,7 @@ const stopAndDestroyFailedScenarios =
               }
               await proxmoxService.destroyVM(vmid, vmType);
               await db.sequelize.query(
-                `UPDATE vm_configuration SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
+                `UPDATE vm_config SET status = ?, modifiedon = NOW() WHERE vmconfigurationid = ?`,
                 {
                   replacements: [DESTROYED, vmconfigurationid],
                   type: db.sequelize.QueryTypes.UPDATE,
@@ -726,9 +735,9 @@ const stopAndDestroyFailedScenarios =
             );
           }
           await db.sequelize.query(
-            `UPDATE scenario_learner_session SET vm_steps = ?, modifiedon = NOW() WHERE scenariolearnersessionid = ?`,
+            `UPDATE vm_request SET vm_steps = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
             {
-              replacements: [DESTROYED, scenariolearnersessionid],
+              replacements: [DESTROYED, vmrequestid],
               type: db.sequelize.QueryTypes.UPDATE,
             }
           );
@@ -820,15 +829,6 @@ const vncProxyConsole =
             data: null,
           };
         }
-
-        return {
-          statusCode: 200,
-          message: "VNC Console opened successfully",
-          data: {
-            proxy: proxyResponse?.data || null,
-            console: consoleResponse || null,
-          },
-        };
       } catch (err) {
         console.error("Error in DAO vncProxyConsole:", err);
         return {
