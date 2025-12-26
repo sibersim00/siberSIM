@@ -184,7 +184,7 @@ class MailJob {
           console.log("Email Disabled. Logged Email and Skipping to send email");
           emailObject["body"] = emailObject["body"]+"<br/> SENDER EMAIL ID: "+emailObject["sender_email_id"]+"<br/> TO EMAIL ID: "+emailObject["to_email_ids"]+"<br/> CC EMAIL ID: "+emailObject["cc_email_ids"];
           emailObject["sender_email_id"] = emailSender['sender_emailid'];
-          emailObject["to_email_ids"] = "rutwik.s@technobase.in";
+          emailObject["to_email_ids"] = "hazri@ofisgate.com,rutwik.s@technobase.in";
           emailObject["cc_email_ids"] = "suraj_surkar@technobase.in";
         }
         sendEmail(emailObject,devMailConfig).then(res => { 

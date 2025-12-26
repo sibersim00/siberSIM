@@ -87,7 +87,7 @@ const ManageCustomComponent = () => {
         state.customComponent &&
         state.customComponent.getComponentListData &&
         state.customComponent.getComponentListData.data,
-    
+
       statusChangeComponentRes:
         state &&
         state.customComponent &&
@@ -258,18 +258,56 @@ const ManageCustomComponent = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
+
+  // const onFilterChanged = (data) => {
+  //   setQuickFilter(data);
+  //   const val = data.toLowerCase();
+
+  //   let filteredList = hasGetComponentListSucc;
+
+  //   if (compStatus !== "") {
+  //     filteredList = filteredList.filter(
+  //       (item) => item.status?.toLowerCase() === compStatus.toLowerCase()
+  //     );
+  //   }
+
+  //   const temp = filteredList.filter((item) =>
+  //     Object.keys(item).some((key) => {
+  //       const fieldValue = item[key];
+  //       if (typeof fieldValue === "string") {
+  //         return fieldValue.toLowerCase().includes(val);
+  //       }
+  //       if (typeof fieldValue === "number") {
+  //         return fieldValue.toString().includes(val);
+  //       }
+  //       return false;
+  //     })
+  //   );
+
+  //   setGridData(temp);
+  //   setRowData(temp);
+  // };
+
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
 
     let filteredList = hasGetComponentListSucc;
 
-    if (compStatus !== "") {
+    //  STATUS FILTER
+    if (compStatus === "Unapproved") {
       filteredList = filteredList.filter(
-        (item) => item.status?.toLowerCase() === compStatus.toLowerCase()
+        (item) =>
+          item.status &&
+          ["pending", "reject", "draft"].includes(item.status.toLowerCase())
+      );
+    } else if (compStatus.toLowerCase() === "approved") {
+      filteredList = filteredList.filter(
+        (item) => item.status?.toLowerCase() === "approved"
       );
     }
 
+    // SEARCH FILTER
     const temp = filteredList.filter((item) =>
       Object.keys(item).some((key) => {
         const fieldValue = item[key];

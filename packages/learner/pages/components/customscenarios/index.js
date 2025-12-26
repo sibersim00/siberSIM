@@ -361,8 +361,8 @@ const ManageScenarios = () => {
       scenStatus === ""
         ? "Scenarios_All"
         : scenStatus === "true"
-        ? "Scenarios_Active"
-        : "Scenarios_Inactive";
+          ? "Scenarios_Active"
+          : "Scenarios_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -376,100 +376,139 @@ const ManageScenarios = () => {
     setGridApi(params.api);
   };
 
-  const onFilterChanged = (data) => {
-    setQuickFilter(data);
-    let val = data.toLowerCase();
-    if (scenStatus == "") {
-      const temp =
-        hasGetScenarioListSucc &&
-        hasGetScenarioListSucc.filter((d) => {
-          console.log("dddddddddddddddddddddd", d);
-
-          return (
-            d.scenarioidentification?.toLowerCase().includes(val) ||
-            // d.instructor_name?.toLowerCase().includes(val) ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariotitle?.toLowerCase().includes(val) ||
-            d.approval_status?.toLowerCase().includes(val) ||
-            d.scenariolevel?.toLowerCase().includes(val) ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().toLowerCase().includes(val)) ||
-            d.name?.toLowerCase().includes(val) ||
-            d.scenariocategory?.toLowerCase().includes(val) ||
-            d.scenariosubcategory?.toLowerCase().includes(val) ||
-            !val
-          );
-        });
-
-      setGridData(temp);
-      setRowData(temp);
-    } else if (scenStatus == "true") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "true"
-        );
-
-      const temp =
-        filteredData &&
-        filteredData.filter((d) => {
-          return (
-            d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-            d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-            d.approval_status.toLowerCase().indexOf(val) !== -1 ||
-            // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-            (d.name &&
-              d.name != null &&
-              d.name.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariocategory &&
-              d.scenariocategory != null &&
-              d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariosubcategory &&
-              d.scenariosubcategory != null &&
-              d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-            !val
-          );
-        });
-      setGridData(temp);
-      setRowData(temp);
-    } else if (scenStatus == "false") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "false"
-        );
-
-      const temp =
-        filteredData &&
-        filteredData.filter((d) => {
-          return (
-            d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-            d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-            d.approval_status.toLowerCase().indexOf(val) !== -1 ||
-            // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-            (d.name &&
-              d.name != null &&
-              d.name.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariocategory &&
-              d.scenariocategory != null &&
-              d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariosubcategory &&
-              d.scenariosubcategory != null &&
-              d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-            !val
-          );
-        });
-      setGridData(temp);
-      setRowData(temp);
+  const getActiveDataSource = () => {
+    if (approvalFilter === "Approve") {
+      return hasGetScenarioListapprovedSucc || [];
     }
+    return hasGetScenarioListSucc || [];
+  };
+
+
+  // const onFilterChanged = (data) => {
+  //   setQuickFilter(data);
+  //   let val = data.toLowerCase();
+  //   if (scenStatus == "") {
+  //     const temp =
+  //       hasGetScenarioListSucc &&
+  //       hasGetScenarioListSucc.filter((d) => {
+  //         console.log("dddddddddddddddddddddd", d);
+
+  //         return (
+  //           d.scenarioidentification?.toLowerCase().includes(val) ||
+  //           // d.instructor_name?.toLowerCase().includes(val) ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariotitle?.toLowerCase().includes(val) ||
+  //           d.approval_status?.toLowerCase().includes(val) ||
+  //           d.scenariolevel?.toLowerCase().includes(val) ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().toLowerCase().includes(val)) ||
+  //           d.name?.toLowerCase().includes(val) ||
+  //           d.scenariocategory?.toLowerCase().includes(val) ||
+  //           d.scenariosubcategory?.toLowerCase().includes(val) ||
+  //           !val
+  //         );
+  //       });
+
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   } else if (scenStatus == "true") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "true"
+  //       );
+
+  //     const temp =
+  //       filteredData &&
+  //       filteredData.filter((d) => {
+  //         return (
+  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
+  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+  //           d.approval_status.toLowerCase().indexOf(val) !== -1 ||
+  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
+  //           (d.name &&
+  //             d.name != null &&
+  //             d.name.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariocategory &&
+  //             d.scenariocategory != null &&
+  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariosubcategory &&
+  //             d.scenariosubcategory != null &&
+  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
+  //           !val
+  //         );
+  //       });
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   } else if (scenStatus == "false") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "false"
+  //       );
+
+  //     const temp =
+  //       filteredData &&
+  //       filteredData.filter((d) => {
+  //         return (
+  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
+  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+  //           d.approval_status.toLowerCase().indexOf(val) !== -1 ||
+  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
+  //           (d.name &&
+  //             d.name != null &&
+  //             d.name.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariocategory &&
+  //             d.scenariocategory != null &&
+  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariosubcategory &&
+  //             d.scenariosubcategory != null &&
+  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
+  //           !val
+  //         );
+  //       });
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   }
+  // };
+
+  const onFilterChanged = (value) => {
+    setQuickFilter(value);
+    const val = value.toLowerCase();
+
+    const sourceData = getActiveDataSource();
+
+    if (!sourceData.length) {
+      setRowData([]);
+      setGridData([]);
+      return;
+    }
+
+    const filtered = sourceData.filter((d) => {
+      return (
+        d.scenarioidentification?.toLowerCase().includes(val) ||
+        d.scenariotitle?.toLowerCase().includes(val) ||
+        d.approval_status?.toLowerCase().includes(val) ||
+        d.scenariolevel?.toLowerCase().includes(val) ||
+        d.scenariocategory?.toLowerCase().includes(val) ||
+        d.scenariosubcategory?.toLowerCase().includes(val) ||
+        (d.instructor_name?.toLowerCase() || "").includes(val) ||
+        (typeof d.duration === "number" &&
+          d.duration.toString().includes(val))
+      );
+    });
+
+    //  If nothing found → show empty (NOT fallback)
+    setRowData(filtered);
+    setGridData(filtered);
   };
 
   useEffect(() => {
@@ -492,7 +531,7 @@ const ManageScenarios = () => {
       }
     }
   }, [hasGetScenarioListSucc, scenStatus]);
-  
+
   const handleChangeView = (thisView) => {
     setQuickFilter("");
     dispatch(handleManageView(thisView));
@@ -510,7 +549,7 @@ const ManageScenarios = () => {
     if (viewNameResp != "list") {
       dispatch(handleManageView("card"));
     }
-  },[]);
+  }, []);
 
   useEffect(() => {
     if (gridApi) {
@@ -546,11 +585,20 @@ const ManageScenarios = () => {
       console.log("first", props.custom_scenariouuid);
     }
   };
+
+
   useEffect(() => {
-    if (hasGetScenarioListSucc && hasGetScenarioListSucc.length > 0) {
-      handleApprovalFilter(approvalFilter);
+    if (approvalFilter === "Approve" && hasGetScenarioListapprovedSucc) {
+      setRowData(hasGetScenarioListapprovedSucc);
+      setGridData(hasGetScenarioListapprovedSucc);
     }
-  }, [hasGetScenarioListSucc, approvalFilter]);
+
+    if (approvalFilter === "Unapproved" && hasGetScenarioListSucc) {
+      setRowData(hasGetScenarioListSucc);
+      setGridData(hasGetScenarioListSucc);
+    }
+  }, [approvalFilter, hasGetScenarioListSucc, hasGetScenarioListapprovedSucc]);
+
   useEffect(() => {
     if (router.query.filter) {
       setApprovalFilter(router.query.filter);
@@ -566,15 +614,15 @@ const ManageScenarios = () => {
     });
   };
   const handleApprovalFilter = (status) => {
-  console.log("Selected Filter:", status);
-  setApprovalFilter(status);
+    console.log("Selected Filter:", status);
+    setApprovalFilter(status);
 
-  if (status === "Approve") {
-    dispatch(getScenarioListapproved());
-  } else {
-    // dispatch(getScenarioList()); // ✅ Unapproved / default
-  }
-};
+    if (status === "Approve") {
+      dispatch(getScenarioListapproved());
+    } else {
+      // dispatch(getScenarioList()); // ✅ Unapproved / default
+    }
+  };
   // Unapproved tab data
   useEffect(() => {
     if (approvalFilter === "Unapproved" && hasGetScenarioListSucc) {
@@ -596,53 +644,53 @@ const ManageScenarios = () => {
     setView(previousView);
     dispatch(handleManageView(previousView));
   };
-useEffect(() => {
-  if (gridApi) {
-    gridApi.refreshCells({ force: true });
-  }
-}, [approvalFilter]);
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.refreshCells({ force: true });
+    }
+  }, [approvalFilter]);
 
-const frameworkComponents = {
-  srNoRender: (props) => props.node.rowIndex + 1,
+  const frameworkComponents = {
+    srNoRender: (props) => props.node.rowIndex + 1,
 
-  actionButtonRenderer: (props) => {
-    const item = props.data;
-    const { approvalFilter } = props.context; // ✅ KEY FIX
+    actionButtonRenderer: (props) => {
+      const item = props.data;
+      const { approvalFilter } = props.context; // ✅ KEY FIX
 
-    return (
-      <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
-        {/* EDIT – only for Unapproved */}
-        {approvalFilter === "Unapproved" && (
-          <div
-            className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-            onClick={() => handleEdit(item)}
-          >
-            <OverlayTrigger placement="bottom" overlay={<Tooltip>Edit</Tooltip>}>
-              <i className="fe fe-edit"></i>
-            </OverlayTrigger>
-          </div>
-        )}
+      return (
+        <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+          {/* EDIT – only for Unapproved */}
+          {approvalFilter === "Unapproved" && (
+            <div
+              className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+              onClick={() => handleEdit(item)}
+            >
+              <OverlayTrigger placement="bottom" overlay={<Tooltip>Edit</Tooltip>}>
+                <i className="fe fe-edit"></i>
+              </OverlayTrigger>
+            </div>
+          )}
 
-        {/* VIEW – only for Approved */}
-        {approvalFilter === "Approve" && (
-          <div
-            className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-            onClick={() =>
-              push({
-                pathname: `/scenarios_view/${item?.scenariouuid}`,
-                query: { status: "Approve", tab: "Approve" },
-              })
-            }
-          >
-            <OverlayTrigger placement="bottom" overlay={<Tooltip>View</Tooltip>}>
-              <i className="fe fe-eye"></i>
-            </OverlayTrigger>
-          </div>
-        )}
-      </div>
-    );
-  },
-};
+          {/* VIEW – only for Approved */}
+          {approvalFilter === "Approve" && (
+            <div
+              className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
+              onClick={() =>
+                push({
+                  pathname: `/scenarios_view/${item?.scenariouuid}`,
+                  query: { status: "Approve", tab: "Approve" },
+                })
+              }
+            >
+              <OverlayTrigger placement="bottom" overlay={<Tooltip>View</Tooltip>}>
+                <i className="fe fe-eye"></i>
+              </OverlayTrigger>
+            </div>
+          )}
+        </div>
+      );
+    },
+  };
 
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
@@ -667,7 +715,7 @@ const frameworkComponents = {
     <>
       <Seo title="Custom Scenarios" />
       <ToastContainer />
-      {showTabs && (
+      {showTabs && view != "Form" &&(
         <Row className="mg-b-10 text-wrap">
           <Col md={12}>
             <div className="panel panel-primary tabs-style-2">
@@ -809,27 +857,6 @@ const frameworkComponents = {
                         <i className="fe fe-list"></i>
                       </Button>
                       &nbsp;&nbsp;
-                      {/* ====================== */}
-                      {/* <ToggleButtonGroup
-                        color="success"
-                        value={approvalFilter}
-                        size="small"
-                        exclusive
-                        onChange={(e) => {
-                          const selected = e.target.value;
-                          if (selected) handleApprovalFilter(selected);
-                        }}
-                       
-                      >
-                        <CustomToggleButton value="Unapproved">
-                          Unapproved
-                        </CustomToggleButton>
-                        <CustomToggleButton value="Approve">
-                          Approved
-                        </CustomToggleButton>
-                      </ToggleButtonGroup>
-                      &nbsp; &nbsp; */}
-                      {/* ========================== */}
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -894,10 +921,10 @@ const frameworkComponents = {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
-                        context={{ approvalFilter }}  
-                        //  overlayNoRowsTemplate={
-                        //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
-                        // }
+                        context={{ approvalFilter }}
+                      //  overlayNoRowsTemplate={
+                      //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
+                      // }
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -918,13 +945,12 @@ const frameworkComponents = {
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${
-                          item.scenariostatus === "Publish"
-                            ? "shadow-publish"
-                            : item.scenariostatus === "Draft"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
+                          ? "shadow-publish"
+                          : item.scenariostatus === "Draft"
                             ? "shadow-draft"
                             : ""
-                        }`}
+                          }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column  text-center">
                           {approvalFilter === "Unapproved" && (
@@ -944,8 +970,9 @@ const frameworkComponents = {
                                 </span>
                               ) : item.approval_status === "Reject" ? (
                                 <span
-                                  className="badge rounded-pill bg-danger text-white px-2 py-1 shadow-sm"
+                                  className="badge rounded-pill  text-white px-2 py-1 shadow-sm"
                                   style={{
+                                    backgroundColor:"#892B3F",
                                     fontSize: "0.8rem",
                                     fontWeight: 600,
                                   }}
@@ -1002,9 +1029,9 @@ const frameworkComponents = {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -1039,7 +1066,7 @@ const frameworkComponents = {
                                 onClick={() =>
                                   push({
                                     pathname: `/scenarios_view/${item?.scenariouuid}`,
-                                    query: { status: "Approve" , tab: "Approve"},
+                                    query: { status: "Approve", tab: "Approve" },
                                   })
                                 }
                               >
@@ -1188,9 +1215,9 @@ const frameworkComponents = {
                 { value: "all", label: "Select All Scenarios" },
                 ...(Array.isArray(hasGetScenarioListSucc)
                   ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
+                    value: s.scenarioid,
+                    label: s.scenariotitle,
+                  }))
                   : []),
               ]}
               value={selectedScenarios}

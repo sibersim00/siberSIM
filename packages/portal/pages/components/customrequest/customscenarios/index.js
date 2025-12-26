@@ -366,8 +366,8 @@ const ManageScenarios = () => {
       scenStatus === ""
         ? "Scenarios_All"
         : scenStatus === "true"
-        ? "Scenarios_Active"
-        : "Scenarios_Inactive";
+          ? "Scenarios_Active"
+          : "Scenarios_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -381,96 +381,141 @@ const ManageScenarios = () => {
     setGridApi(params.api);
   };
 
-  const onFilterChanged = (data) => {
-    setQuickFilter(data);
-    let val = data.toLowerCase();
-    if (scenStatus == "") {
-      const temp =
-        hasGetScenarioListSucc &&
-        hasGetScenarioListSucc.filter((d) => {
-          return (
-            d.scenarioidentification?.toLowerCase().includes(val) ||
-            // d.instructor_name?.toLowerCase().includes(val) ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariotitle?.toLowerCase().includes(val) ||
-            d.scenariolevel?.toLowerCase().includes(val) ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().toLowerCase().includes(val)) ||
-            d.name?.toLowerCase().includes(val) ||
-            d.scenariocategory?.toLowerCase().includes(val) ||
-            d.scenariosubcategory?.toLowerCase().includes(val) ||
-            !val
-          );
-        });
+  // const onFilterChanged = (data) => {
+  //   setQuickFilter(data);
+  //   let val = data.toLowerCase();
+  //   if (scenStatus == "") {
+  //     const temp =
+  //       hasGetScenarioListSucc &&
+  //       hasGetScenarioListSucc.filter((d) => {
+  //         return (
+  //           d.scenarioidentification?.toLowerCase().includes(val) ||
+  //           // d.instructor_name?.toLowerCase().includes(val) ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariotitle?.toLowerCase().includes(val) ||
+  //           d.scenariolevel?.toLowerCase().includes(val) ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().toLowerCase().includes(val)) ||
+  //           d.name?.toLowerCase().includes(val) ||
+  //           d.scenariocategory?.toLowerCase().includes(val) ||
+  //           d.scenariosubcategory?.toLowerCase().includes(val) ||
+  //           !val
+  //         );
+  //       });
 
-      setGridData(temp);
-      setRowData(temp);
-    } else if (scenStatus == "true") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "true"
-        );
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   } else if (scenStatus == "true") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "true"
+  //       );
 
-      const temp =
-        filteredData &&
-        filteredData.filter((d) => {
-          return (
-            d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-            d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-            // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-            (d.name &&
-              d.name != null &&
-              d.name.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariocategory &&
-              d.scenariocategory != null &&
-              d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariosubcategory &&
-              d.scenariosubcategory != null &&
-              d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-            !val
-          );
-        });
-      setGridData(temp);
-      setRowData(temp);
-    } else if (scenStatus == "false") {
-      const filteredData =
-        hasGetScenarioListSucc.length > 0 &&
-        hasGetScenarioListSucc.filter(
-          (data) => data?.status?.toString() == "false"
-        );
+  //     const temp =
+  //       filteredData &&
+  //       filteredData.filter((d) => {
+  //         return (
+  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
+  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
+  //           (d.name &&
+  //             d.name != null &&
+  //             d.name.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariocategory &&
+  //             d.scenariocategory != null &&
+  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariosubcategory &&
+  //             d.scenariosubcategory != null &&
+  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
+  //           !val
+  //         );
+  //       });
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   } else if (scenStatus == "false") {
+  //     const filteredData =
+  //       hasGetScenarioListSucc.length > 0 &&
+  //       hasGetScenarioListSucc.filter(
+  //         (data) => data?.status?.toString() == "false"
+  //       );
 
-      const temp =
-        filteredData &&
-        filteredData.filter((d) => {
-          return (
-            d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-            d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-            // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-            (d.instructor_name?.toLowerCase() || "").includes(val) ||
-            d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-            (typeof d.duration === "number" &&
-              d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-            (d.name &&
-              d.name != null &&
-              d.name.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariocategory &&
-              d.scenariocategory != null &&
-              d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-            (d.scenariosubcategory &&
-              d.scenariosubcategory != null &&
-              d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-            !val
-          );
-        });
-      setGridData(temp);
-      setRowData(temp);
+  //     const temp =
+  //       filteredData &&
+  //       filteredData.filter((d) => {
+  //         return (
+  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
+  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
+  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
+  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
+  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
+  //           (typeof d.duration === "number" &&
+  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
+  //           (d.name &&
+  //             d.name != null &&
+  //             d.name.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariocategory &&
+  //             d.scenariocategory != null &&
+  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
+  //           (d.scenariosubcategory &&
+  //             d.scenariosubcategory != null &&
+  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
+  //           !val
+  //         );
+  //       });
+  //     setGridData(temp);
+  //     setRowData(temp);
+  //   }
+  // };
+
+  const onFilterChanged = (value) => {
+    setQuickFilter(value);
+    const val = value.toLowerCase();
+
+    if (!hasGetScenarioListSucc) return;
+
+    let filtered = [...hasGetScenarioListSucc];
+
+    //  1. Filter by approval status first
+    if (approvalFilter) {
+      filtered = filtered.filter(
+        (item) =>
+          item.approval_status &&
+          item.approval_status.toLowerCase() === approvalFilter.toLowerCase()
+      );
     }
+
+    //  2. Filter by scenario status (active/inactive)
+    if (scenStatus === "true" || scenStatus === "false") {
+      filtered = filtered.filter(
+        (item) => item?.status?.toString() === scenStatus
+      );
+    }
+
+    //  3. Apply search text
+    if (val) {
+      filtered = filtered.filter((d) => {
+        return (
+          d.scenarioidentification?.toLowerCase().includes(val) ||
+          d.scenariotitle?.toLowerCase().includes(val) ||
+          d.scenariolevel?.toLowerCase().includes(val) ||
+          d.scenariocategory?.toLowerCase().includes(val) ||
+          d.scenariosubcategory?.toLowerCase().includes(val) ||
+          (d.instructor_name?.toLowerCase() || "").includes(val) ||
+          (typeof d.duration === "number" &&
+            d.duration.toString().includes(val))
+        );
+      });
+    }
+
+    setRowData(filtered);
+    setGridData(filtered);
   };
+
 
   useEffect(() => {
     if (hasGetScenarioListSucc) {
@@ -494,25 +539,25 @@ const ManageScenarios = () => {
   }, [hasGetScenarioListSucc, scenStatus]);
 
   const handleChangeView = (thisView) => {
-  setQuickFilter("");
-  dispatch(handleManageView(thisView));
-  setBackView(thisView);
-  let filtered = [...hasGetScenarioListSucc];
-  if (approvalFilter) {
-    filtered = filtered.filter(
-      (item) =>
-        item.approval_status &&
-        item.approval_status.toLowerCase() === approvalFilter.toLowerCase()
-    );
-  }
-  if (scenStatus === "true" || scenStatus === "false") {
-    filtered = filtered.filter(
-      (item) => item?.status?.toString() === scenStatus
-    );
-  }
-  setRowData(filtered);
-  setGridData(filtered);
-};
+    setQuickFilter("");
+    dispatch(handleManageView(thisView));
+    setBackView(thisView);
+    let filtered = [...hasGetScenarioListSucc];
+    if (approvalFilter) {
+      filtered = filtered.filter(
+        (item) =>
+          item.approval_status &&
+          item.approval_status.toLowerCase() === approvalFilter.toLowerCase()
+      );
+    }
+    if (scenStatus === "true" || scenStatus === "false") {
+      filtered = filtered.filter(
+        (item) => item?.status?.toString() === scenStatus
+      );
+    }
+    setRowData(filtered);
+    setGridData(filtered);
+  };
 
 
   useEffect(() => {
@@ -691,7 +736,7 @@ const ManageScenarios = () => {
                           &nbsp;
                         </>
                       )}
-                      
+
 
                       <Button
                         type="button"
@@ -719,7 +764,7 @@ const ManageScenarios = () => {
                       >
                         <i className="fe fe-list"></i>
                       </Button>
-                       &nbsp;
+                      &nbsp;
                       <ToggleButtonGroup
                         color="success"
                         value={approvalFilter}
@@ -730,7 +775,7 @@ const ManageScenarios = () => {
                           if (selected) handleApprovalFilter(selected);
                         }}
                       >
-                        
+
                         <CustomToggleButton value="Pending">
                           Pending
                         </CustomToggleButton>
@@ -793,13 +838,12 @@ const ManageScenarios = () => {
                       )}
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${
-                          item.scenariostatus === "Publish"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                             ? "shadow-publish"
                             : item.scenariostatus === "Draft"
-                            ? "shadow-draft"
-                            : ""
-                        }`}
+                              ? "shadow-draft"
+                              : ""
+                          }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column text-center">
                           <div className="mb-3">
@@ -838,9 +882,9 @@ const ManageScenarios = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -857,18 +901,18 @@ const ManageScenarios = () => {
                           <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
                             {item.approval_status?.toLowerCase() ===
                               "pending" && (
-                              <div
-                                className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                onClick={() => handleEdit(item)}
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>Update</Tooltip>}
+                                <div
+                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                                  onClick={() => handleEdit(item)}
                                 >
-                                  <i className="fe fe-edit"></i>
-                                </OverlayTrigger>
-                              </div>
-                            )}
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>Update</Tooltip>}
+                                  >
+                                    <i className="fe fe-edit"></i>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
 
                             {/* View Button */}
                             <div
@@ -957,9 +1001,9 @@ const ManageScenarios = () => {
                 { value: "all", label: "Select All Scenarios" },
                 ...(Array.isArray(hasGetScenarioListSucc)
                   ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
+                    value: s.scenarioid,
+                    label: s.scenariotitle,
+                  }))
                   : []),
               ]}
               value={selectedScenarios}

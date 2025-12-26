@@ -612,7 +612,7 @@ const saveComponentconfiguration =
             status: statusText,
           },
           "Learner",
-          "0"
+          scenarioDetails.learner_id
         );
       }
 

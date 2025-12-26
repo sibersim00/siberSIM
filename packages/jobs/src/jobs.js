@@ -106,36 +106,36 @@ const startJob = async ({ db }) => {
   }, commonCronConfig);
 
   // 🕛 Run auto-terminate job every midnight
-  cron.schedule("0 0 * * *",
-    () => {
-      console.log("Running midnight auto-terminate job...");
-      jobs.terminateExpiredEvents({ db }).catch((e) => {
-        console.error("Auto-terminate job failed:", e);
-      });
-    },
-    commonCronConfig
-  );
-  cron.schedule("0 0 * * *", // every day at midnight
-    () => {
-      console.log(
-        "🔁 Running auto-cleanup for Operation Failed scenario sessions..."
-      );
-      jobs.terminateFailedScenarios({ db }).catch((err) => {
-        console.error("Auto-cleanup cron failed:", err);
-      });
-    },
-    commonCronConfig
-  );
+  // cron.schedule("0 0 * * *",
+  //   () => {
+  //     console.log("Running midnight auto-terminate job...");
+  //     jobs.terminateExpiredEvents({ db }).catch((e) => {
+  //       console.error("Auto-terminate job failed:", e);
+  //     });
+  //   },
+  //   commonCronConfig
+  // );
+  // cron.schedule("0 0 * * *", // every day at midnight
+  //   () => {
+  //     console.log(
+  //       "🔁 Running auto-cleanup for Operation Failed scenario sessions..."
+  //     );
+  //     jobs.terminateFailedScenarios({ db }).catch((err) => {
+  //       console.error("Auto-cleanup cron failed:", err);
+  //     });
+  //   },
+  //   commonCronConfig
+  // );
 
-  cron.schedule("*/30 * * * * *",   // Every 30 seconds
-    () => {
-      console.log("Checking backup status for all UPIDs...");
-      jobs.checkbackupstatus({ db }).catch(err =>
-        console.error("Backup status cron failed:", err)
-      );
-    },
-    commonCronConfig
-  );
+  // cron.schedule("*/30 * * * * *",   // Every 30 seconds
+  //   () => {
+  //     console.log("Checking backup status for all UPIDs...");
+  //     jobs.checkbackupstatus({ db }).catch(err =>
+  //       console.error("Backup status cron failed:", err)
+  //     );
+  //   },
+  //   commonCronConfig
+  // );
 };
 
 

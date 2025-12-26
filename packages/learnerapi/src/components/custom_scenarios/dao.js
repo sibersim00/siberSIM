@@ -473,7 +473,7 @@ const saveDiagram =
             userid: 0,
           },
           "Admin",
-          "0"
+          scenarioDetails.learner_id
         );
       }
 

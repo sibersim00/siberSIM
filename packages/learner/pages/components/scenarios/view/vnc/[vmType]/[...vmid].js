@@ -128,7 +128,7 @@ export default function ProxmoxConsole() {
         showCancelButton: true,
         confirmButtonText: "Yes, Start VM",
         cancelButtonText: "No, Cancel",
-     
+
       });
 
       if (!result.isConfirmed) {
@@ -784,7 +784,7 @@ export default function ProxmoxConsole() {
 
         Swal.fire(
           "Success",
-          "Component created successfully (Pending Admin Approval)",
+          "Component creation request submitted successfully. Approval may take some time.",
           "success"
         );
 
