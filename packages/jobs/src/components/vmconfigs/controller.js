@@ -644,6 +644,45 @@ const deleteScenarioLearner =
       }
     };
 
+const deleteScenarioUsersession =
+  ({ dao, db }) =>
+    async (req, res, next) => {
+      try {
+        const { scenariolearnersessionid } = req.body;
+
+        if (!scenariolearnersessionid) {
+          return res.status(400).send({
+            statusCode: 400,
+            message: "scenariolearnersessionid is required",
+          });
+        }
+
+        const ipAddress =
+          req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+        const result = await dao.deleteScenarioUsersession({
+          db,
+          ipAddress,
+        })(scenariolearnersessionid);
+
+        if (!result.success) {
+          return res.status(400).send({
+            statusCode: 400,
+            message: result.message,
+          });
+        }
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: result.message,
+        });
+      } catch (err) {
+        console.error("Delete scenario controller error:", err);
+        next(err);
+      }
+    };
+
+
 const save =
   ({ dao, db }) =>
     async (req, res) => {
@@ -844,6 +883,7 @@ module.exports = {
   exportScenario,
   backupstatus,
   deleteScenarioLearner,
+  deleteScenarioUsersession,
   save,
   vmDetails,
   // getQemuConfig,

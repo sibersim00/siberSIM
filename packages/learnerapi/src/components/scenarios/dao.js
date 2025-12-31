@@ -885,11 +885,12 @@ const getPaused =
            sl.createdon,
            sl.modifiedon,
            s.scenariotitle AS scenario_name,
-           s.scenariouuid
+           s.scenariouuid,
+           s.scenarioimage  
          FROM scenario_learner sl
          LEFT JOIN scenarios s ON s.scenarioid = sl.scenarioid
          WHERE sl.learner_id = ?
-           AND sl.status = 'Pause'
+            AND sl.status IN ('Pause', 'Running')
          ORDER BY 
            CASE 
              WHEN sl.modifiedon IS NOT NULL THEN sl.modifiedon 

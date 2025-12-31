@@ -242,10 +242,10 @@ const getSnapshotsByVmid =
 const exportScenario = () => async (req, res) => {
   try {
     const { scenarioid, exportid } = req.body;
-    const file_name = `scenario_${scenarioid}.zip`; 
+    const file_name = `scenario_${scenarioid}.zip`;
     const response = await axios.post(
       `${EVENTLEARNER_API_URL}/vmconfigs/exports`,
-      { scenarioid, exportid,file_name },
+      { scenarioid, exportid, file_name },
       { responseType: "stream" } // <--- important
     );
 
@@ -260,38 +260,72 @@ const exportScenario = () => async (req, res) => {
 };
 
 const save =
-  ({}) =>
-  async (req, res, next) => {
-    try {
-      const payload = req.body;
-      console.log("payloajjjjjjjjjjjjjjjjjd", payload);
-
+  ({ }) =>
+    async (req, res, next) => {
       try {
-        const response = await axios.post(
-          `${EVENTLEARNER_API_URL}/vmconfigs/save`,
-          payload
-        );
+        const payload = req.body;
+        console.log("payloajjjjjjjjjjjjjjjjjd", payload);
 
-        return res.status(200).send({
-          statusCode: 200,
-          message: response.data?.message,
-          data: response.data,
-        });
-      } catch (error) {
-        console.error("Axios Request Failed:", error.response?.data || error.message);
+        try {
+          const response = await axios.post(
+            `${EVENTLEARNER_API_URL}/vmconfigs/save`,
+            payload
+          );
 
-        return res.status(error.response?.status || 500).send({
-          statusCode: error.response?.data?.statusCode || 500,
-          message: error.response?.data?.message || "Something went wrong.",
-          error: error.response?.data?.error,
-        });
+          return res.status(200).send({
+            statusCode: 200,
+            message: response.data?.message,
+            data: response.data,
+          });
+        } catch (error) {
+          console.error("Axios Request Failed:", error.response?.data || error.message);
+
+          return res.status(error.response?.status || 500).send({
+            statusCode: error.response?.data?.statusCode || 500,
+            message: error.response?.data?.message || "Something went wrong.",
+            error: error.response?.data?.error,
+          });
+        }
+      } catch (err) {
+        console.error("Error in event learner:", err);
+        next(err);
       }
-    } catch (err) {
-      console.error("Error in event learner:", err);
-      next(err);
-    }
-  };
+    };
 
+
+const deleteScenarioLearner =
+  ({ }) =>
+    async (req, res, next) => {
+      try {
+        const { scenariolearnersessionid, status, type } = req.body;
+        try {
+          const response = await axios.post(
+            `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-usersession`,
+            { scenariolearnersessionid, status, type }
+          );
+          return res.status(200).send({
+            statusCode: 200,
+            message: response.data.message || "Job started successfully.",
+            data: response.data,
+          });
+        } catch (error) {
+          console.error("Axios request failed:");
+          if (error.response) {
+            console.error("Response Error:");
+          } else {
+            console.error("Request Setup Error:", error.message);
+          }
+          return res.status(500).send({
+            statusCode: 500,
+            message: "Failed to call Jobs service.",
+            error: error.response?.data || error.message,
+          });
+        }
+      } catch (err) {
+        console.error("Error in starting event learner:", err);
+        next(err);
+      }
+    };
 
 
 module.exports = {
@@ -305,4 +339,5 @@ module.exports = {
   getSnapshotsByVmid,
   exportScenario,
   save,
+  deleteScenarioLearner,
 };

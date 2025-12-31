@@ -676,12 +676,27 @@ export default function ProxmoxConsole() {
     onSubmit: async (values) => {
       try {
         setIsSaving(true);
+        setOverlayLoading(true);
         const approvalFlag = qemuConfigRef?.current?.approvalFlag;
         const stopMessage = qemuConfigRef?.current?.stopMessage;
         const mustStopVM = qemuConfigRef?.current?.mustStopVM;
 
         console.log("approvalFlag", approvalFlag);
         if (mustStopVM === true) {
+          const stopConfirm = await Swal.fire({
+            title: "Stop Virtual Machine?",
+            text: stopMessage || "This action requires stopping the virtual machine. Do you want to continue?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Stop it",
+            cancelButtonText: "No, Cancel",
+          });
+
+          //  User clicked NO → STOP submission completely
+          if (!stopConfirm.isConfirmed) {
+            setIsSaving(false);
+            return;
+          }
           const stopRes = await dispatch(
             stopVm({
               vmid: realVmid,
@@ -725,6 +740,8 @@ export default function ProxmoxConsole() {
           const saveRes = await dispatch(saveCustomComponent(payload1));
           console.log("saveRes", saveRes?.data?.customcomponentid);
           if (!saveRes?.success) {
+            setIsSaving(false);
+            setOverlayLoading(false);
             await Swal.fire(
               "Error",
               saveRes?.error?.error ||
@@ -754,6 +771,8 @@ export default function ProxmoxConsole() {
           const res = await dispatch(saveComponent(payload));
 
           if (!res?.success) {
+            setOverlayLoading(false);
+            setIsSaving(false);
             await Swal.fire(
               "Error",
               res?.error?.error ||
@@ -826,6 +845,7 @@ export default function ProxmoxConsole() {
       }
       finally {
         // await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
+        setOverlayLoading(false); 
         setIsSaving(false); // stop loading
       }
     },
@@ -1432,6 +1452,39 @@ export default function ProxmoxConsole() {
             />
           </div>
         )}
+          {overlayLoading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 10000,
+              color: "#fff",
+              fontSize: "24px",
+              fontWeight: "bold",
+            }}
+          >
+            Please Wait...
+            <div
+              style={{
+                marginTop: "20px",
+                border: "6px solid rgba(255,255,255,0.3)",
+                borderTop: "6px solid #2a62f2",
+                borderRadius: "50%",
+                width: "50px",
+                height: "50px",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+          </div>
+        )}
 
         {/* Convert Component Drawer */}
         <Offcanvas
@@ -1440,7 +1493,7 @@ export default function ProxmoxConsole() {
           placement="end"
           backdrop="static"
           className=" text-light"
-          style={{ width: "700px", background: "#24243E" }}
+          style={{ width: "900px", background: "#24243E" }}
         >
           <Offcanvas.Header
             closeButton

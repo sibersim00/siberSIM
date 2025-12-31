@@ -41,6 +41,8 @@ module.exports = function (iocContainer) {
 
   router.post("/exports", controller.exportScenario(iocContainer));
   router.post("/save", controller.save(iocContainer));
+  router.post("/delete-scenario-usersession",controller.deleteScenarioLearner(iocContainer)
+  );
 
   return router;
 

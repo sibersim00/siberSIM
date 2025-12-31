@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import {
   Row,
   Col,
@@ -9,9 +9,7 @@ import {
   OverlayTrigger,
   Tooltip,
 } from "react-bootstrap";
-import {
-  getScenariosPauseList
-} from "../../../shared/redux/slices/scenarios/scenarios";
+import { getScenariosPauseList } from "../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../shared/layout-components/seo/seo";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
@@ -32,45 +30,42 @@ const PauseScenarios = () => {
   const [backview, setBackView] = useState("card");
   const [approvalFilter, setApprovalFilter] = useState("Unapproved"); // "", "Reject", "Pending", "Approved"
 
+  const { hasGetScenariospauseListData, viewNameResp, getUserDataFromLocal } =
+    useSelector((state) => {
+      return {
+        hasGetScenariospauseListData:
+          state &&
+          state.scenarios &&
+          state.scenarios.getScenariospauseListData.data,
+        getUserDataFromLocal:
+          state && state.localData && state.localData.getLocalData,
+        viewNameResp:
+          state && state.customScenario && state.customScenario.viewNameResp,
+      };
+    });
+  console.log("hasGetScenariospauseListData", hasGetScenariospauseListData);
 
-  const {
-    hasGetScenariospauseListData,
-    viewNameResp,
-    getUserDataFromLocal,
-  } = useSelector((state) => {
-    return {
-      hasGetScenariospauseListData:
-        state &&
-        state.scenarios &&
-        state.scenarios.getScenariospauseListData.data,
-      getUserDataFromLocal:
-        state && state.localData && state.localData.getLocalData,
-      viewNameResp:
-        state && state.customScenario && state.customScenario.viewNameResp,
-    };
-  });
   useEffect(() => {
-  if (hasGetScenariospauseListData) {
+    if (hasGetScenariospauseListData) {
+      const normalized = hasGetScenariospauseListData.map((item) => ({
+        ...item,
+        scenariotitle: item.scenario_name || "", // frontend expects this
+        scenarioidentification: item.scenarioid?.toString() || "", // optional
+        scenariolevel: "",
+        duration: "",
+        instructor_name: "",
+        scenariocategory: "",
+        scenariosubcategory: "",
+        scenarioimage: item.scenarioimage || "",
+      }));
+      setRowData(normalized);
+      setGridData(normalized);
+    }
+  }, [hasGetScenariospauseListData]);
 
-    const normalized = hasGetScenariospauseListData.map(item => ({
-      ...item,
-      scenariotitle: item.scenario_name || "",  // frontend expects this
-      scenarioidentification: item.scenarioid?.toString() || "", // optional
-      scenariolevel: "",
-      duration: "",
-      instructor_name: "",
-      scenariocategory: "",
-      scenariosubcategory: "",
-      scenarioimage: "",
-    }));
-    setRowData(normalized);
-    setGridData(normalized);
-  }
-}, [hasGetScenariospauseListData]);
-
-useEffect(()=>{
-  dispatch(getScenariosPauseList());
-},[dispatch])
+  useEffect(() => {
+    dispatch(getScenariosPauseList());
+  }, [dispatch]);
 
   useEffect(() => {
     if (viewNameResp) {
@@ -96,7 +91,6 @@ useEffect(()=>{
       }
     }
   }, [getUserDataFromLocal]);
-
 
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
@@ -129,7 +123,7 @@ useEffect(()=>{
                       {view === "card" && (
                         <>
                           <Button
-                           type="button"
+                            type="button"
                             variant="outline-primary"
                             onClick={zoomOut}
                             className="text-success mx-1"
@@ -138,7 +132,7 @@ useEffect(()=>{
                             <i className="fas fa-search-plus"></i>
                           </Button>
                           <Button
-                           type="button"
+                            type="button"
                             variant="outline-primary"
                             onClick={zoomIn}
                             className="text-success"
@@ -153,8 +147,7 @@ useEffect(()=>{
                         type="button"
                         title="Card View"
                         variant="outline-success"
-                        onClick={() => {
-                        }}
+                        onClick={() => {}}
                         className={
                           view === "card" ? "mx-1 active text-white" : "mx-1"
                         }
@@ -174,14 +167,11 @@ useEffect(()=>{
           {view === "card" ? (
             <>
               {gridData && gridData.length > 0 ? (
-                <Row className="g-3 mb-3">  
+                <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
                     
-                   
-                    
                     <Col key={index} md={12 / columnsPerRow}>
-                      
-                      {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
+                    {console.log("itemitemitemitemitemitem",item)}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${
                           item.scenariostatus === "Publish"
@@ -190,11 +180,25 @@ useEffect(()=>{
                             ? "shadow-draft"
                             : ""
                         }`}
-                        
                       >
-                        <Card.Body className="p-3 position-relative d-flex flex-column  text-center">
-                         
+                        {/* Status Pill */}
+                        {item.status && (
+                          <span
+                            className={`badge rounded-pill position-absolute top-0 end-0 m-2
+      ${
+        item.status === "Running"
+          ? "bg-success"
+          : item.status === "Pause"
+          ? "bg-warning text-dark"
+          : "bg-secondary"
+      }`}
+                            style={{ fontSize: "12px" }}
+                          >
+                            {item.status}
+                          </span>
+                        )}
 
+                        <Card.Body className="p-3 position-relative d-flex flex-column  text-center">
                           <div className="mb-3">
                             {/* Scenario Title */}
                             <div
@@ -241,27 +245,24 @@ useEffect(()=>{
                           </div>
                           {/* Second row for actions */}
                           <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                            <div
+                              className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
+                              onClick={() => {
+                                console.log("Clicked Item:", item);
 
-                              <div
-                                className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-                                onClick={() =>{
-                                  console.log("Clicked Item:", item); 
-                                  
-                                  push({
-                                    pathname: `/scenarios_view/${item?.scenariouuid}`,
-                                    query: { from: "pause" }
-                                   
-                                  })
-                                }}
+                                push({
+                                  pathname: `/scenarios_view/${item?.scenariouuid}`,
+                                  query: { from: "pause" },
+                                });
+                              }}
+                            >
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={<Tooltip>View</Tooltip>}
                               >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>View</Tooltip>}
-                                >
-                                  <i className="fe fe-eye"></i>
-                                </OverlayTrigger>
-                              </div>
-                          
+                                <i className="fe fe-eye"></i>
+                              </OverlayTrigger>
+                            </div>
                           </div>
                         </Card.Body>
                       </Card>

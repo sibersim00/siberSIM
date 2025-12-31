@@ -1218,38 +1218,235 @@ const getNextVmid = ({ db }) => async (transaction) => {
   return nextVmid;
 };
 
-const saveCustomComponent = ({ db }) => async (data) => {
-  const transaction = await db.sequelize.transaction();
+// const saveCustomComponent = ({ db }) => async (data) => {
+//   const transaction = await db.sequelize.transaction();
 
+//   try {
+//     const {
+//       componentname,
+//       componentcategoryid,
+//       duration,
+//       clone_vmid,        // from frontend (11494)
+//       componentimage,
+//       scenarioid,
+//       learner_id,
+//       componenttype,
+//       createdby
+//     } = data;
+//     console.log("dataaaaaaaaaaaaaaa", data)
+
+//     //  Generate ONLY vmid
+//     const vmid = await getNextVmid({ db })(transaction);
+
+//     // 1️⃣ Fetch approval flag
+//     const [settings] = await db.sequelize.query(
+//       `
+//           SELECT component_approval
+//           FROM web_settings
+//           WHERE status = 1
+//           LIMIT 1
+//         `,
+//       {
+//         type: db.sequelize.QueryTypes.SELECT,
+//         transaction,
+//       }
+//     );
+
+//     const approvalFlag = settings?.component_approval === "true";
+//     const approvalMessage = approvalFlag
+//       ? "Auto approval process"
+//       : "Admin approval process";
+
+//     // 🔹 Fetch original MASTER VMID from vm_configuration
+//     const [vmConfig] = await db.sequelize.query(
+//       `
+//       SELECT master_vmid
+//       FROM vm_configuration
+//       WHERE vmid = ?
+//       LIMIT 1
+//     `,
+//       {
+//         replacements: [clone_vmid], // cloned VMID (11494)
+//         type: db.sequelize.QueryTypes.SELECT,
+//         transaction,
+//       }
+//     );
+
+//     if (!vmConfig?.master_vmid) {
+//       throw new Error("Master VMID not found in vm_configuration");
+//     }
+
+//     const master_vmid = vmConfig.master_vmid;
+
+//     // DUPLICATE CHECK (ONLY componentname)
+//     //   const [existingComponent] = await db.sequelize.query(
+//     //     `
+//     //       SELECT customcomponentid
+//     //       FROM custom_component
+//     //       WHERE componentname = ?
+//     //         AND scenarioid = ?
+//     //         AND learner_id = ?
+//     //         AND status != 'deleted'
+//     //       LIMIT 1
+//     //     `,
+//     //     {
+//     //       replacements: [componentname, scenarioid, learner_id],
+//     //       type: db.sequelize.QueryTypes.SELECT,
+//     //       transaction,
+//     //     }
+//     //   );
+
+//     //   if (existingComponent) {
+//     //     throw new Error("Component name already exists. Please use a different name.");
+//     //   }
+
+//     //   //  DUPLICATE CHECK IN MASTER COMPONENTS (Active only)
+//     //   const [existingMasterComponent] = await db.sequelize.query(
+//     //     `
+//     //   SELECT componentid
+//     //   FROM components
+//     //   WHERE componentname = ?
+//     //     AND status = 'Active'
+//     //   LIMIT 1
+//     // `,
+//     //     {
+//     //       replacements: [componentname],
+//     //       type: db.sequelize.QueryTypes.SELECT,
+//     //       transaction,
+//     //     }
+//     //   );
+
+//     //   if (existingMasterComponent) {
+//     //     throw new Error(
+//     //       "Component name already exists in the system. Please choose a different name."
+//     //     );
+//     //   }
+
+//     // Insert (IMPORTANT PART)
+//     const [insertResult] = await db.sequelize.query(
+//       `
+//     INSERT INTO custom_component 
+//     (
+//       customcomponentuuid,
+//       componentname,
+//       scenarioid,
+//       learner_id,
+//       componentcategoryid,
+//       master_vmid,
+//       clone_vmid,
+//       vmid,
+//       componenttype,
+//       duration,
+//       componentimage,
+//       status,
+//       componentStatus,
+//       createdby,
+//       createdon
+//     )
+//     VALUES
+//     (
+//       UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW()
+//     )
+//   `,
+//       {
+//         replacements: [
+//           componentname,
+//           scenarioid,
+//           learner_id,
+//           componentcategoryid,
+//           master_vmid,
+//           clone_vmid,
+//           vmid,
+//           componenttype,
+//           duration,
+//           componentimage,
+//           createdby,
+//         ],
+//         type: db.sequelize.QueryTypes.INSERT,
+//         transaction,
+//       }
+//     );
+//     const customcomponentid = insertResult;
+//     await transaction.commit();
+
+//       const [componentDetails] = await db.sequelize.query(
+//     `
+//     SELECT
+//       cc.componentname,
+//       cc.learner_id,
+//       CONCAT(l.firstname, ' ', l.lastname) AS learner_name
+//     FROM custom_component cc
+//     JOIN learners l ON l.learner_id = cc.learner_id
+//     WHERE cc.customcomponentid = ?
+//     LIMIT 1
+//     `,
+//     {
+//       replacements: [customComponentId],
+//       type: db.sequelize.QueryTypes.SELECT,
+//     }
+//   );
+
+//   //  SEND notification to Learner
+//   if (componentDetails) {
+//     new NotiTemplate(
+//       db,
+//       "component_approval",
+//       {
+//         componenttitle: componentDetails.componentname,
+//         learner_name: componentDetails.learner_name,
+//         learner_id: componentDetails.learner_id,
+//         status: "Rejected",
+//         reject_reason: reason,
+//         userid: 0, // Admin
+//       },
+//       "Learner",
+//       componentDetails.learner_id
+//     );
+//   }
+
+
+//     return {
+//       success: true,
+//       approvalFlag,
+//       master_vmid,
+//       clone_vmid, // frontend value
+//       vmid,       // generated value
+//       customcomponentid,
+//       message: approvalMessage,
+//     };
+
+//   } catch (error) {
+//     await transaction.rollback();
+//     throw error;
+//   }
+// };
+
+const saveCustomComponent = ({ db }) => async (data) => {
   try {
     const {
       componentname,
       componentcategoryid,
       duration,
-      clone_vmid,        // from frontend (11494)
+      clone_vmid,
       componentimage,
       scenarioid,
       learner_id,
       componenttype,
       createdby
     } = data;
-    console.log("dataaaaaaaaaaaaaaa", data)
 
-    //  Generate ONLY vmid
-    const vmid = await getNextVmid({ db })(transaction);
+    // 1️⃣ Generate vmid
+    const vmid = await getNextVmid({ db })();
 
-    // 1️⃣ Fetch approval flag
+    // 2️⃣ Fetch approval flag
     const [settings] = await db.sequelize.query(
       `
-          SELECT component_approval
-          FROM web_settings
-          WHERE status = 1
-          LIMIT 1
-        `,
-      {
-        type: db.sequelize.QueryTypes.SELECT,
-        transaction,
-      }
+      SELECT component_approval
+      FROM web_settings
+      WHERE status = 1
+      LIMIT 1
+      `,
+      { type: db.sequelize.QueryTypes.SELECT }
     );
 
     const approvalFlag = settings?.component_approval === "true";
@@ -1257,18 +1454,17 @@ const saveCustomComponent = ({ db }) => async (data) => {
       ? "Auto approval process"
       : "Admin approval process";
 
-    // 🔹 Fetch original MASTER VMID from vm_configuration
+    // 3️⃣ Fetch master VMID
     const [vmConfig] = await db.sequelize.query(
       `
       SELECT master_vmid
       FROM vm_configuration
       WHERE vmid = ?
       LIMIT 1
-    `,
+      `,
       {
-        replacements: [clone_vmid], // cloned VMID (11494)
+        replacements: [clone_vmid],
         type: db.sequelize.QueryTypes.SELECT,
-        transaction,
       }
     );
 
@@ -1278,76 +1474,32 @@ const saveCustomComponent = ({ db }) => async (data) => {
 
     const master_vmid = vmConfig.master_vmid;
 
-    // DUPLICATE CHECK (ONLY componentname)
-    //   const [existingComponent] = await db.sequelize.query(
-    //     `
-    //       SELECT customcomponentid
-    //       FROM custom_component
-    //       WHERE componentname = ?
-    //         AND scenarioid = ?
-    //         AND learner_id = ?
-    //         AND status != 'deleted'
-    //       LIMIT 1
-    //     `,
-    //     {
-    //       replacements: [componentname, scenarioid, learner_id],
-    //       type: db.sequelize.QueryTypes.SELECT,
-    //       transaction,
-    //     }
-    //   );
-
-    //   if (existingComponent) {
-    //     throw new Error("Component name already exists. Please use a different name.");
-    //   }
-
-    //   //  DUPLICATE CHECK IN MASTER COMPONENTS (Active only)
-    //   const [existingMasterComponent] = await db.sequelize.query(
-    //     `
-    //   SELECT componentid
-    //   FROM components
-    //   WHERE componentname = ?
-    //     AND status = 'Active'
-    //   LIMIT 1
-    // `,
-    //     {
-    //       replacements: [componentname],
-    //       type: db.sequelize.QueryTypes.SELECT,
-    //       transaction,
-    //     }
-    //   );
-
-    //   if (existingMasterComponent) {
-    //     throw new Error(
-    //       "Component name already exists in the system. Please choose a different name."
-    //     );
-    //   }
-
-    // Insert (IMPORTANT PART)
-    const [insertResult] = await db.sequelize.query(
+    // 4️⃣ Insert custom component
+    const [customcomponentid] = await db.sequelize.query(
       `
-    INSERT INTO custom_component 
-    (
-      customcomponentuuid,
-      componentname,
-      scenarioid,
-      learner_id,
-      componentcategoryid,
-      master_vmid,
-      clone_vmid,
-      vmid,
-      componenttype,
-      duration,
-      componentimage,
-      status,
-      componentStatus,
-      createdby,
-      createdon
-    )
-    VALUES
-    (
-      UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW()
-    )
-  `,
+      INSERT INTO custom_component 
+      (
+        customcomponentuuid,
+        componentname,
+        scenarioid,
+        learner_id,
+        componentcategoryid,
+        master_vmid,
+        clone_vmid,
+        vmid,
+        componenttype,
+        duration,
+        componentimage,
+        status,
+        componentStatus,
+        createdby,
+        createdon
+      )
+      VALUES
+      (
+        UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW()
+      )
+      `,
       {
         replacements: [
           componentname,
@@ -1363,24 +1515,63 @@ const saveCustomComponent = ({ db }) => async (data) => {
           createdby,
         ],
         type: db.sequelize.QueryTypes.INSERT,
-        transaction,
       }
     );
-    const customcomponentid = insertResult;
-    await transaction.commit();
+
+    // 5️⃣ Fetch details for notification
+    const [componentDetails] = await db.sequelize.query(
+      `
+      SELECT
+        cc.componentname,
+        cc.learner_id,
+        CONCAT(l.firstname, ' ', l.lastname) AS learner_name
+      FROM custom_component cc
+      JOIN learners l ON l.learner_id = cc.learner_id
+      WHERE cc.customcomponentid = ?
+      LIMIT 1
+      `,
+      {
+        replacements: [customcomponentid],
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    console.log("componentDetails",componentDetails)
+
+    // 6️⃣ Send notification (NON-BLOCKING)
+    if (componentDetails) {
+      try {
+        new NotiTemplate(
+          db,
+          "component_approval",
+          {
+            componenttitle: componentDetails.componentname,
+            learner_name: componentDetails.learner_name,
+            learner_id: componentDetails.learner_id,
+            status: "Pending",
+            userid: 0,
+          },
+          "Admin",
+          0
+        );
+      } catch (notiError) {
+        console.error("Notification failed:", notiError);
+        //  Do NOT throw – insert already succeeded
+      }
+    }
 
     return {
       success: true,
       approvalFlag,
       master_vmid,
-      clone_vmid, // frontend value
-      vmid,       // generated value
+      clone_vmid,
+      vmid,
       customcomponentid,
       message: approvalMessage,
     };
 
   } catch (error) {
-    await transaction.rollback();
+    console.error("Error saving custom component:", error);
     throw error;
   }
 };

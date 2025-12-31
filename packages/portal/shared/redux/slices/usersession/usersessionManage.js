@@ -23,6 +23,7 @@ const initialState = {
   getSnapshot: [],
   getvmRestartScenario: [],
   getLogsData: [],
+  hasdeletescenarioSuccData: [],
 };
 
 const slice = createSlice({
@@ -76,6 +77,10 @@ const slice = createSlice({
     },
     hasGetSnapshot(state, action) {
       (state.isLoading = false), (state.getSnapshot = action.payload);
+    },
+    hasdeletescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.hasdeletescenarioSuccData = action.payload;
     },
     hasGetLogsListData(state, action) {
       (state.isLoading = false), (state.getLogsData = action.payload);
@@ -437,6 +442,27 @@ export function getSnapshot(payload) {
     try {
       const response = await axios.post(`${api.get_snapshot}`, payload);
       dispatch(slice.actions.hasGetSnapshot(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deletescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.terminate_scenario}`, payload);
+      dispatch(slice.actions.hasdeletescenarioSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function cleardeletescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletescenarioSucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

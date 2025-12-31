@@ -34,13 +34,22 @@ FROM custom_component cc
 LEFT JOIN component_categories mcc 
     ON mcc.componentcategoryid = cc.componentcategoryid
 LEFT JOIN components comp 
-    ON comp.vmid = cc.master_vmid
-   AND comp.deletedon IS NULL
+    ON comp.componentid = (
+        SELECT c2.componentid
+        FROM components c2
+        WHERE c2.vmid =
+            CASE 
+                WHEN cc.status = 'approved' THEN cc.vmid
+                ELSE cc.master_vmid
+            END
+          AND c2.status = 'Active'
+          AND c2.deletedon IS NULL
+        ORDER BY c2.createdon DESC
+        LIMIT 1
+    )
 WHERE cc.learner_id = :learnerId
 ORDER BY cc.customcomponentid DESC
 `;
-
-
         const rows = await db.sequelize.query(query, {
           replacements: { learnerId },
           type: db.sequelize.QueryTypes.SELECT,

@@ -22,7 +22,7 @@ const Dashboard = () => {
   const router = useRouter();
   const [userType, setUserType] = useState("");
   const [showLicensePopup, setShowLicensePopup] = useState(false);
- const [licenseInfo, setLicenseInfo] = useState({
+  const [licenseInfo, setLicenseInfo] = useState({
     daysLeft: null,
     expiryDate: '',
     companyName: ''
@@ -57,76 +57,76 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(getDashboardListData());
-       // Check license expiry on dashboard load
+    // Check license expiry on dashboard load
     checkLicenseAndShowPopup();
   }, [dispatch]);
 
-// Function to check license expiry and determine if popup should show
-const checkLicenseAndShowPopup = () => {
-  // Check if license expiry flag is true
-  const isLicenseExpiryFlag = localStorage.getItem('is_license_expiry') === 'true';
-  
-  // Get company settings
-  const storedSettings = localStorage.getItem("company_settings");
-  
-  if (storedSettings) {
-    try {
-      const parsedSettings = JSON.parse(storedSettings);
-      let licenseData;
-      
-      if (parsedSettings?.data?.licenseStatus) {
-        licenseData = parsedSettings.data;
-      } else if (parsedSettings?.licenseStatus) {
-        licenseData = parsedSettings;
-      } else if (parsedSettings?.statusCode === 200 && parsedSettings?.data) {
-        licenseData = parsedSettings.data;
-      }
+  // Function to check license expiry and determine if popup should show
+  const checkLicenseAndShowPopup = () => {
+    // Check if license expiry flag is true
+    const isLicenseExpiryFlag = localStorage.getItem('is_license_expiry') === 'true';
 
-      if (licenseData && licenseData.licenseStatus?.expiry_date) {
-        const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
-        const currentDate = new Date();
-        
-        // Use UTC for consistent date calculation
-        const expiryUTC = Date.UTC(
-          expiryDate.getUTCFullYear(),
-          expiryDate.getUTCMonth(),
-          expiryDate.getUTCDate()
-        );
-        
-        const currentUTC = Date.UTC(
-          currentDate.getUTCFullYear(),
-          currentDate.getUTCMonth(),
-          currentDate.getUTCDate()
-        );
-        
-        const timeDiff = expiryUTC - currentUTC;
-        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
-        // Format date using UTC methods
-        const formatDateDDMMYYYY = (dateObj) => {
-          const day = String(dateObj.getUTCDate()).padStart(2, "0");
-          const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-          const year = dateObj.getUTCFullYear();
-          return `${day}-${month}-${year}`;
-        };
-        
-        // Check conditions for showing popup:
-        // 1. License expiry flag is true (set on login)
-        // 2. License has 30 days or less remaining
-        if (daysLeft <= 30 && daysLeft > 0 && isLicenseExpiryFlag) {
-          setLicenseInfo({
-            daysLeft,
-            expiryDate: formatDateDDMMYYYY(expiryDate),
-            companyName: licenseData.name || "Your Company"
-          });
-          setShowLicensePopup(true);
+    // Get company settings
+    const storedSettings = localStorage.getItem("company_settings");
+
+    if (storedSettings) {
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+        let licenseData;
+
+        if (parsedSettings?.data?.licenseStatus) {
+          licenseData = parsedSettings.data;
+        } else if (parsedSettings?.licenseStatus) {
+          licenseData = parsedSettings;
+        } else if (parsedSettings?.statusCode === 200 && parsedSettings?.data) {
+          licenseData = parsedSettings.data;
         }
+
+        if (licenseData && licenseData.licenseStatus?.expiry_date) {
+          const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
+          const currentDate = new Date();
+
+          // Use UTC for consistent date calculation
+          const expiryUTC = Date.UTC(
+            expiryDate.getUTCFullYear(),
+            expiryDate.getUTCMonth(),
+            expiryDate.getUTCDate()
+          );
+
+          const currentUTC = Date.UTC(
+            currentDate.getUTCFullYear(),
+            currentDate.getUTCMonth(),
+            currentDate.getUTCDate()
+          );
+
+          const timeDiff = expiryUTC - currentUTC;
+          const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+          // Format date using UTC methods
+          const formatDateDDMMYYYY = (dateObj) => {
+            const day = String(dateObj.getUTCDate()).padStart(2, "0");
+            const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+            const year = dateObj.getUTCFullYear();
+            return `${day}-${month}-${year}`;
+          };
+
+          // Check conditions for showing popup:
+          // 1. License expiry flag is true (set on login)
+          // 2. License has 30 days or less remaining
+          if (daysLeft <= 30 && daysLeft > 0 && isLicenseExpiryFlag) {
+            setLicenseInfo({
+              daysLeft,
+              expiryDate: formatDateDDMMYYYY(expiryDate),
+              companyName: licenseData.name || "Your Company"
+            });
+            setShowLicensePopup(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking license expiry:", err);
       }
-    } catch (err) {
-      console.error("Error checking license expiry:", err);
     }
-  }
-};
+  };
 
   // Handle modal close
   const handleLicensePopupClose = () => {
@@ -158,13 +158,26 @@ const checkLicenseAndShowPopup = () => {
 
   const rowData = geDashboardListData || {};
 
+  const totalScenarios =
+    rowData?.scenarioCounts?.reduce(
+      (acc, curr) => acc + Number(curr.total_scenarios || 0),
+      0
+    ) ?? 0;
+
+  const publishedScenarios =
+    rowData?.scenarioCounts?.reduce(
+      (acc, curr) => acc + Number(curr.published_scenarios || 0),
+      0
+    ) ?? 0;
+
+
   console.log("rowDatarowDatarowData", rowData)
 
 
   return (
     <>
       <Seo title="Dashboard" />
-          {/* Add License Expiry Popup with props */}
+      {/* Add License Expiry Popup with props */}
       {showLicensePopup && (
         <LicenseExpiryPopup
           show={showLicensePopup}
@@ -349,7 +362,7 @@ const checkLicenseAndShowPopup = () => {
                   </Col>
 
                   {/* 3. Total Published Scenarios */}
-                  <Col sm={12} md={6} lg={6} xl={3}>
+                  {/* <Col sm={12} md={6} lg={6} xl={3}>
                     <Card
                       className="custom-card"
                       style={{ cursor: "pointer" }}
@@ -374,12 +387,44 @@ const checkLicenseAndShowPopup = () => {
                             Published<span className="float-end">
                               {rowData?.scenarioCounts?.reduce(
                                 (acc, curr) =>
-                                  acc + Number(curr.published_scenarios || 0),
+                                  acc + Number(curr.published_scenarios || 0))}
+                            </span>
+                          </p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col> */}
+                  <Col sm={12} md={6} lg={6} xl={3}>
+                    <Card
+                      className="custom-card"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleCardClick("scenario")}
+                    >
+                      <Card.Body>
+                        <div className="card-widget">
+                          <label className="main-content-label mb-3 pt-1">
+                            Total Scenario
+                          </label>
 
+                          <h2 className="text-end">
+                            <i className="fa fa-cube float-start text-info"></i>
+                            <span className="font-weight-bold">
+                              {rowData?.scenarioCounts?.reduce(
+                                (acc, curr) =>
+                                  acc + Number(curr?.total_scenarios || 0),
                                 0
-                              )}
+                              ) ?? 0}
+                            </span>
+                          </h2>
 
-
+                          <p className="mb-0 text-success">
+                            Published
+                            <span className="float-end">
+                              {rowData?.scenarioCounts?.reduce(
+                                (acc, curr) =>
+                                  acc + Number(curr?.published_scenarios || 0),
+                                0
+                              ) ?? 0}
                             </span>
                           </p>
                         </div>
@@ -387,11 +432,12 @@ const checkLicenseAndShowPopup = () => {
                     </Card>
                   </Col>
 
+
                   {/* 3. Total Running Scenarios */}
                   <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card className="custom-card" 
-                
-                     style={{ cursor: "pointer" }}
+                    <Card className="custom-card"
+
+                      style={{ cursor: "pointer" }}
                       onClick={() => handleCardClick("usersession")}
                     >
 
@@ -603,10 +649,10 @@ const checkLicenseAndShowPopup = () => {
                           </Card.Body>
                         </Card>
                       ))
-                    ) : 
-                    (
-                      <p className="text-muted text-center"></p>
-                    )
+                    ) :
+                      (
+                        <p className="text-muted text-center"></p>
+                      )
                     }
                   </Col>
 

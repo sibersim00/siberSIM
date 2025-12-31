@@ -144,7 +144,7 @@ axiosInstance.interceptors.response.use(
             closeOnClick: false,
             draggable: false,
             pauseOnHover: false,
-            style: { width: '400px' }
+            style: { width: '350px' }
           }
         );
       } else {
@@ -160,7 +160,7 @@ axiosInstance.interceptors.response.use(
             closeOnClick: false,
             draggable: false,
             pauseOnHover: false,
-            style: { width: '400px' }
+            style: { width: '350px' }
           }
         );
       }

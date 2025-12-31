@@ -20,7 +20,11 @@ import {
   clearSentNotification,
   clearTerminateScenario,
   clearTerminateScenarioByAdInst,
+  deletescenario
 } from "../../../shared/redux/slices/usersession/usersessionManage";
+// import {
+//   deletescenario
+// } from "../../../shared/redux/slices/scenariostart/scenariostartmanage";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import CustomToggleButton from "@mui/material/ToggleButton";
@@ -46,6 +50,7 @@ const UserSession = () => {
     hasGetUserSessionListSucc,
     hasSendNotificationSucc,
     hasGetTerminationSucc,
+    hasGetDeleteSucc,
     hasGetTerminationByAdInstSucc,
   } = useSelector((state) => {
     return {
@@ -53,13 +58,14 @@ const UserSession = () => {
         state.usersessionManage.getUserSessionListData?.data,
       hasSendNotificationSucc: state.usersessionManage.sendNotification,
       hasGetTerminationSucc: state.usersessionManage.saveTermination,
+      hasGetDeleteSucc: state.usersessionManage.hasdeletescenarioSuccData,
       hasGetTerminationByAdInstSucc: state.usersessionManage.sendTermination,
     };
   });
 
   console.log(
-    "hasGetUserSessionListSucchasGetUserSessionListSucc",
-    hasGetUserSessionListSucc
+    "hasGetDeleteSucchasGetDeleteSucc",
+    hasGetDeleteSucc
   );
 
   const getUserDataFromLocal = useSelector(
@@ -96,7 +102,7 @@ const UserSession = () => {
       floatingFilter: true,
       minWidth: 180,
     },
-    
+
     {
       headerName: "Start Time",
       field: "startedon",
@@ -142,16 +148,16 @@ const UserSession = () => {
       hasGetUserSessionListSucc.filter((d) => {
         const formattedStartedOn = d.startedon
           ? new Date(d.startedon)
-              .toLocaleString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "numeric",
-                second: "numeric",
-                hour12: true,
-              })
-              .toLowerCase()
+            .toLocaleString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric",
+              hour12: true,
+            })
+            .toLowerCase()
           : "";
 
         return (
@@ -210,6 +216,23 @@ const UserSession = () => {
     }
   }, [hasGetTerminationSucc]);
 
+  useEffect(() => {
+    if (hasGetDeleteSucc.statusCode === 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {hasGetDeleteSucc?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+      dispatch(getUserSessionList());
+      dispatch(clearTerminateScenario());
+    }
+  }, [hasGetDeleteSucc]);
+
   // termination by Admin or Instructor
   useEffect(() => {
     if (hasGetTerminationByAdInstSucc.statusCode === 200) {
@@ -230,7 +253,7 @@ const UserSession = () => {
 
   useEffect(() => {
     dispatch(getUserSessionList());
-    return () => {};
+    return () => { };
   }, []);
 
   const handleReturnView = (props) => {
@@ -291,10 +314,31 @@ const UserSession = () => {
       cancelButtonColor: "var(--secondary)",
       confirmButtonText: "Yes!",
       allowOutsideClick: false,
+      showLoaderOnConfirm: true,
     }).then((result) => {
       if (result.isConfirmed) {
         const scenariolearnersessionid = data?.currentsession_id;
         const type = getUserDataFromLocal?.usertype;
+        const sessionStatus = data?.session_status;
+        console.log("sessionStatus", sessionStatus)
+        const payload = {
+          scenariolearnersessionid,
+          type,
+          status: "Terminated",
+        };
+
+        if (sessionStatus === "Pause") {
+          //  Call deleteScenario API directly
+          dispatch(deletescenario(payload))
+            .then(() => {
+              dispatch(clearTerminateScenario());
+            })
+            .catch((err) => {
+              console.error("Delete scenario failed:", err);
+            });
+
+          return; //  stop further execution
+        }
 
         const firstPayload = {
           scenariolearnersessionid,
@@ -333,31 +377,31 @@ const UserSession = () => {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
     },
-vmStatusRenderer: (props) => {
-  const status = props.value;
+    vmStatusRenderer: (props) => {
+      const status = props.value;
 
-  const bg =
-    status === "Running"
-      ? "green"
-      : status === "Pause"
-      ? "orange" // yellow
-      : "#6c757d"; // grey default
+      const bg =
+        status === "Running"
+          ? "green"
+          : status === "Pause"
+            ? "orange" // yellow
+            : "#6c757d"; // grey default
 
-  return (
-    <span
-      className="badge"
-      style={{
-        backgroundColor: bg,
-        color: "white",
-        fontSize: "12px",
-        padding: "5px 10px",
-        borderRadius: "12px",
-      }}
-    >
-      {status}
-    </span>
-  );
-},
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: bg,
+            color: "white",
+            fontSize: "12px",
+            padding: "5px 10px",
+            borderRadius: "12px",
+          }}
+        >
+          {status}
+        </span>
+      );
+    },
 
     actionButtonRenderer: function (props) {
       return (
@@ -515,7 +559,7 @@ vmStatusRenderer: (props) => {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
-                        // overlayNoRowsTemplate="No data available"
+                      // overlayNoRowsTemplate="No data available"
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -566,8 +610,8 @@ vmStatusRenderer: (props) => {
                                 item.scenario_learner_status === "Running"
                                   ? "green"
                                   : item.scenario_learner_status === "Pause"
-                                  ? "orange"
-                                  : "#6c757d",
+                                    ? "orange"
+                                    : "#6c757d",
                             }}
                           >
                             {item.scenario_learner_status}
@@ -621,9 +665,9 @@ vmStatusRenderer: (props) => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>

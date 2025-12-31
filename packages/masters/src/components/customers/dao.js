@@ -496,8 +496,8 @@ const dashboardData =
       SELECT
         c.customerid,
         CONCAT_WS(' ', c.firstname, c.lastname) AS customer_name,
-        cl.start_date,
-        cl.expiry_date,
+        DATE_FORMAT(cl.start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
+        DATE_FORMAT(cl.expiry_date, '%Y-%m-%d %H:%i:%s') AS expiry_date,
         cl.domain_url,
         cl.license_key
       FROM customers c

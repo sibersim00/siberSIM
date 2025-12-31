@@ -39,7 +39,7 @@ const ManageCustomComponent = () => {
   const router = useRouter();
   const [openImportModal, setOpenImportModal] = useState(false);
   const { push } = useRouter();
-  const [compStatus, setCompStatus] = useState("Unapproved");
+  const [compStatus, setCompStatus] = useState("approved");
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
   const [gridData, setGridData] = useState([]);
@@ -552,27 +552,7 @@ const ManageCustomComponent = () => {
                 >
                   <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
                     <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
-                      <Nav.Item
-                        className="mastermenu"
-                        onClick={() => {
-                          setCompStatus("Unapproved");
-                        }}
-                      >
-                        <Nav.Link
-                          eventKey="Unapproved"
-                          className="masterlist"
-                          value={compStatus}
-                          exclusive
-                          style={{
-                            color:
-                              compStatus === "Unapproved" ? "#007bff" : "gray",
-                            fontWeight:
-                              compStatus === "Unapproved" ? "bold" : "normal",
-                          }}
-                        >
-                          Unapproved
-                        </Nav.Link>
-                      </Nav.Item>
+                    
 
                       <Nav.Item
                         className="mastermenu"
@@ -594,6 +574,28 @@ const ManageCustomComponent = () => {
                         >
                           {" "}
                           Approved
+                        </Nav.Link>
+                      </Nav.Item>
+
+                        <Nav.Item
+                        className="mastermenu"
+                        onClick={() => {
+                          setCompStatus("Unapproved");
+                        }}
+                      >
+                        <Nav.Link
+                          eventKey="Unapproved"
+                          className="masterlist"
+                          value={compStatus}
+                          exclusive
+                          style={{
+                            color:
+                              compStatus === "Unapproved" ? "#007bff" : "gray",
+                            fontWeight:
+                              compStatus === "Unapproved" ? "bold" : "normal",
+                          }}
+                        >
+                          Unapproved
                         </Nav.Link>
                       </Nav.Item>
                     </Nav>
@@ -811,12 +813,12 @@ const ManageCustomComponent = () => {
                                 placement="bottom"
                                 overlay={
                                   <Tooltip id="tooltip-vmid pointer">
-                                    VMID: {item.clone_vmid}
+                                    VMID: {item.vmid}
                                   </Tooltip>
                                 }
                               >
                                 <p className="pro-user-desc text-success mb-1 mt-1 pointer">
-                                  {item.clone_vmid}
+                                  {item.vmid}
                                 </p>
                               </OverlayTrigger>
                             </div>

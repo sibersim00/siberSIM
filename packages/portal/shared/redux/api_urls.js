@@ -302,6 +302,7 @@ const api = {
   termination_Failed_Logs: "/vmconfig/get-operation-failed-logs",
   termination_Failed_Events: "/vmconfig/cleanup-operation-failed-events",
   termination_Failed_Events_logs: "/vmconfig/get-event-operation-failed-logs",
+  terminate_scenario :"/vmconfig/delete-scenario-usersession",
   //----------chatbox for instructor
   chatmessage_get: "/chatbox/getMessages",
   chat_save: "/chatbox/send",
@@ -383,6 +384,7 @@ const api = {
   // start and restart
   vm_start_scenario: "/usersession/start-scenario-learner",
   vm_restart_scenario: "/usersession/restart-scenario-learner",
+  
 
   //scenario tabs
   scenario_tab_list: "/scenarios_tabs/list",
@@ -428,6 +430,7 @@ const api = {
   resume_scenario: "/vmstart/resume-vm-scenario",
   delete_scenario: "/vmstart/delete-scenario-learner",
   scenario_status_update: "/vm_scenario_start/update-session-status",
+
 
 // tab list
   tab_status: "/scenario/tablist",

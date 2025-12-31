@@ -77,7 +77,7 @@ const y_m_d = (date) => {
 
   return (
     <Fragment>
-      <Modal show={openFlag} backdrop="static" size="lg">
+      <Modal show={openFlag} backdrop="static" size="md">
         <Formik
           initialValues={initialValues}
           validationSchema={schema}
@@ -100,7 +100,7 @@ const y_m_d = (date) => {
               <Modal.Body>
                 <Row>
                   {/* START DATE */}
-                  <Form.Group as={Col} md="6" className="mb-4">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       Start Date <span className="text-danger">*</span>
                     </Form.Label>
@@ -140,7 +140,7 @@ const y_m_d = (date) => {
                   </Form.Group>
 
                   {/* END DATE */}
-                  <Form.Group as={Col} md="6" className="mb-4">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       End Date <span className="text-danger">*</span>
                     </Form.Label>
@@ -176,7 +176,7 @@ const y_m_d = (date) => {
                   </Form.Group>
 
                   {/* Domain URL */}
-                  <Form.Group as={Col} md="6" className="mb-5">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       Domain URL <span className="text-danger">*</span>
                     </Form.Label>
@@ -194,7 +194,7 @@ const y_m_d = (date) => {
                   </Form.Group>
 
                   {/* Counts */}
-                  <Form.Group as={Col} md="6" className="mb-5">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       User Scenario Limit <span className="text-danger">*</span>
                     </Form.Label>

@@ -828,28 +828,32 @@ const ScenariosView = () => {
                       <Button
                         variant="outline-secondary"
                         onClick={() => {
-                          const from = router.query.from;
+                          const { from, fromTab } = router.query;
+                          if (fromTab === "Approve") {
+                            router.push("/customscenarios");
+                            return;
+                          }
                           if (from === "pause") {
                             router.push("/scenarios");
+                            dispatch(clearSingleScenarios());
+                            return;
+                          }
+                          if (categoryId && subcategoryName) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
+                                backView || "list"
+                              }`
+                            );
+                          } else if (categoryId) {
+                            router.push(
+                              `/scenarios?categoryId=${categoryId}&view=${
+                                backView || "list"
+                              }`
+                            );
                           } else {
-                            // Default → Go back to Main Scenarios Page
-                            if (categoryId && subcategoryName) {
-                              router.push(
-                                `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
-                                  backView || "list"
-                                }`
-                              );
-                            } else if (categoryId) {
-                              router.push(
-                                `/scenarios?categoryId=${categoryId}&view=${
-                                  backView || "list"
-                                }`
-                              );
-                            } else {
-                              router.push(
-                                `/scenarios?view=${backView || "list"}`
-                              );
-                            }
+                            router.push(
+                              `/scenarios?view=${backView || "list"}`
+                            );
                           }
 
                           dispatch(clearSingleScenarios());
@@ -857,78 +861,6 @@ const ScenariosView = () => {
                       >
                         <i className="fe fe-arrow-left"></i>
                       </Button>
-
-                      <Button
-                        variant="outline-secondary"
-                        onClick={() => {
-                          const { from, tab, status } = router.query;
-                          const backView = backView || "list";
-
-                          // 1️⃣ Pause flow
-                          if (from === "pause") {
-                            router.push("/scenarios");
-                          }
-                          // 2️⃣ Came from Approve tab
-                          else if (tab === "Approve" || status === "Approve") {
-                            router.push(
-                              `/scenarios?view=${backView}&filter=Approve`
-                            );
-                          }
-                          // 3️⃣ Category + Subcategory
-                          else if (categoryId && subcategoryName) {
-                            router.push(
-                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView}`
-                            );
-                          }
-                          // 4️⃣ Only category
-                          else if (categoryId) {
-                            router.push(
-                              `/scenarios?categoryId=${categoryId}&view=${backView}`
-                            );
-                          }
-                          // 5️⃣ Default scenarios page
-                          else {
-                            router.push(`/scenarios?view=${backView}`);
-                          }
-
-                          dispatch(clearSingleScenarios());
-                        }}
-                      >
-                        <i className="fe fe-arrow-left"></i>
-                      </Button>
-
-                      {/* <Button
-                        variant="outline-secondary"
-                        onClick={() => {
-                          const from = router.query.from;
-                          const approvalTab = router.query.tab;
-
-                          if (from === "pause") {
-                            router.push("/scenarios");
-                          } else {
-                            // Default → Go back to Main Scenarios Page
-                            if (categoryId && subcategoryName) {
-                              router.push(
-                                `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
-                                  backView || "list"
-                                }${approvalTab ? `&filter=${approvalTab}` : ""}`
-                              );
-                            } else if (categoryId) {
-                              router.push(
-                                `/scenarios?categoryId=${categoryId}&view=${
-                                  backView || "list"
-                                }${approvalTab ? `&filter=${approvalTab}` : ""}`
-                              );
-                            } else {
-                              router.push(`/customscenarios`);
-                            }
-                          }
-
-                          dispatch(clearSingleScenarios());
-                        }}
-                      >
-                        <i className="fe fe-arrow-left"></i>
-                      </Button> */}
                     </div>
                   </div>
                 </Col>
