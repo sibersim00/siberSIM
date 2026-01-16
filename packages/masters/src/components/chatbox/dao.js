@@ -1,10 +1,8 @@
 
 // Get messages by scenario and mark instructor/admin messages as seen
 const getMessagesByScenario = ({ db }) =>
-  async ({ scenariolearnerid }) => {
-    if (!scenariolearnerid) {
-      throw new Error("Missing scenariolearnerid");
-    }
+  async ({ learner_id,scenarioid }) => {
+
 
     // Step 1: Fetch messages
     const result = await db.sequelize.query(
@@ -17,10 +15,10 @@ const getMessagesByScenario = ({ db }) =>
                DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')  -- e.g., May 20, 2025 2:30 PM
        END AS formatted_time 
        FROM scenario_learner_chats
-       WHERE scenariolearnerid = ? 
+       WHERE learner_id = ? AND scenarioid =?
        ORDER BY createdon ASC`,
       {
-        replacements: [scenariolearnerid],
+        replacements: [learner_id,scenarioid],
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
@@ -29,11 +27,11 @@ const getMessagesByScenario = ({ db }) =>
     await db.sequelize.query(
       `UPDATE scenario_learner_chats
          SET status = 'seen'
-        WHERE scenariolearnerid = ?
+        WHERE learner_id = ? AND scenarioid =?
        AND sender_type = 'Learner'
        AND status = 'sent';`,
       {
-        replacements: [scenariolearnerid],
+        replacements: [learner_id,scenarioid],
         type: db.sequelize.QueryTypes.UPDATE,
       }
     );
@@ -44,10 +42,8 @@ const getMessagesByScenario = ({ db }) =>
 
 // Get messages by scenario
 const refreshByScenario = ({ db }) =>
-  async ({ scenariolearnerid, scenariolearnerchatid }) => {
-    if (!scenariolearnerid || scenariolearnerchatid === undefined) {
-      throw new Error("Missing scenariolearnerid");
-    }
+  async ({ learner_id,scenarioid, scenariolearnerchatid }) => {
+
 
     const result = await db.sequelize.query(
       `SELECT *,  CASE
@@ -58,12 +54,12 @@ const refreshByScenario = ({ db }) =>
            ELSE 
                DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')  -- e.g., May 20, 2025 2:30 PM
        END AS formatted_time FROM scenario_learner_chats
-       WHERE scenariolearnerid = ? 
+       WHERE learner_id = ? AND scenarioid =? 
        AND scenariolearnerchatid > ?
        ORDER BY createdon ASC
        `,
       {
-        replacements: [scenariolearnerid, scenariolearnerchatid],
+        replacements: [learner_id,scenarioid, scenariolearnerchatid],
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
@@ -72,11 +68,11 @@ const refreshByScenario = ({ db }) =>
     await db.sequelize.query(
       `UPDATE scenario_learner_chats
        SET status = 'seen'
-       WHERE scenariolearnerid = ?
+       WHERE learner_id = ? AND scenarioid =?
        AND sender_type = 'Learner'
        AND status = 'sent';`,
       {
-        replacements: [scenariolearnerid],
+        replacements: [learner_id,scenarioid ],
         type: db.sequelize.QueryTypes.UPDATE,
       }
     );
@@ -87,7 +83,6 @@ const refreshByScenario = ({ db }) =>
 // Send a chat message
 const sendMessage = ({ db }) => async (body) => {
   const {
-    scenariolearnerid,
     scenarioid,
     learner_id,
     instructor_id,
@@ -99,11 +94,10 @@ const sendMessage = ({ db }) => async (body) => {
   // Insert the new message
   await db.sequelize.query(
     `INSERT INTO scenario_learner_chats
-      (scenariolearnerid, scenarioid, learner_id, instructor_id, sender_type, message, attachment, status, createdon)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
+      (scenarioid, learner_id, instructor_id, sender_type, message, attachment, status, createdon)
+     VALUES (?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
     {
       replacements: [
-        scenariolearnerid,
         scenarioid,
         learner_id,
         instructor_id,

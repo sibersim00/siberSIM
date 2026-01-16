@@ -5,7 +5,7 @@ const setEventLearnerConfiguration =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { scenarioid, learnerid, eventlearnerid } = req.body;
+      const { scenarioid, learnerid, eventlearnerid,vmrequestid } = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -20,11 +20,11 @@ const setEventLearnerConfiguration =
         db,
         ipAddress,
         validation,
-      })(scenarioid, learnerid, eventlearnerid);
+      })(scenarioid, learnerid, eventlearnerid,vmrequestid);
 
       if (!result.success) {
-        return res.status(404).send({
-          statusCode: 404,
+        return res.status(400).send({
+          statusCode: 400,
           message: result.message,
         });
       }
@@ -34,6 +34,7 @@ const setEventLearnerConfiguration =
         scenarioid,
         learnerid,
         eventlearnerid,
+        vmrequestid,
       });
 
       return res.status(200).send({
@@ -50,7 +51,7 @@ const updateCompleteTerminate =
   ({ dao, db }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid, status, type } = req.body;
+      const { eventlearnerid, status, type ,vmrequestid} = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -64,7 +65,8 @@ const updateCompleteTerminate =
       const result = await dao.updateCompleteTerminate({ db, ipAddress })(
         eventlearnerid,
         status,
-        type
+        type,
+        vmrequestid
       );
 
       if (!result.success) {
@@ -88,22 +90,16 @@ const restartEventLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { scenarioid, learnerid, eventlearnerid } = req.body;
+      const {vmrequestid } = req.body;
+      console.log("Controller------------------",vmrequestid);
+      
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
-      if (!scenarioid || !learnerid || !eventlearnerid) {
-        return res.status(400).send({
-          statusCode: 400,
-          message: "scenarioid, learnerid, and eventlearnerid are required.",
-        });
-      }
-
       const result = await dao.restartEventLearner({
         db,
         ipAddress,
         validation,
-      })(scenarioid, learnerid, eventlearnerid);
+      })(vmrequestid);
 
       if (!result.success) {
         return res.status(400).send({
@@ -177,20 +173,15 @@ const pauseScenarioLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid } = req.body;
+      const { eventlearnerid ,vmrequestid} = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-      // if (!vmid || !vmType) {
-      //   return res.status(400).send({
-      //     statusCode: 400,
-      //     message: "vmid and vmType are required.",
-      //   });
-      // }
+
       const result = await dao.pauseScenarioLearner({
         db,
         ipAddress,
         validation,
-      })(eventlearnerid);
+      })(eventlearnerid,vmrequestid);
 
       if (result.success) {
         return res.status(200).send({
@@ -212,7 +203,7 @@ const resumeScenarioLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid } = req.body;
+      const { eventlearnerid ,vmrequestid} = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -220,7 +211,7 @@ const resumeScenarioLearner =
         db,
         ipAddress,
         validation,
-      })(eventlearnerid);
+      })(eventlearnerid,vmrequestid);
 
       if (result.success) {
         return res.status(200).send({
@@ -239,6 +230,43 @@ const resumeScenarioLearner =
     }
   };
 
+  const deleteScenarioLearner =
+  ({ dao, db }) =>
+    async (req, res, next) => {
+      try {
+        const { vmrequestid, status, type } = req.body;
+        const ipAddress =
+          req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+        if (!vmrequestid || !status || !type) {
+          return res.status(400).send({
+            statusCode: 400,
+            message: "vmrequestid, status, and type are required.",
+          });
+        }
+
+        const result = await dao.deleteScenarioLearner({
+          db,
+          ipAddress,
+        })(vmrequestid, status, type);
+
+        if (!result.success) {
+          return res.status(400).send({
+            statusCode: 400,
+            message: result.message,
+          });
+        }
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: result.message,
+        });
+      } catch (err) {
+        console.error("Error in updating session status:", err);
+        next(err);
+      }
+    };
+
 
 
 module.exports = {
@@ -248,5 +276,7 @@ module.exports = {
   autoTerminateExpiredEvents,
   generateProxmoxAccessToken,
   pauseScenarioLearner,
-  resumeScenarioLearner
+  resumeScenarioLearner,
+  deleteScenarioLearner
+
 };

@@ -382,7 +382,7 @@ const ManageScenarios = () => {
   }, [viewNameResp]);
 
   useEffect(() => {
-    dispatch(getScenarioList());
+    dispatch(getScenarioListapproved());
     if (viewNameResp != "list") {
       dispatch(handleManageView("card"));
     }
@@ -456,7 +456,7 @@ const ManageScenarios = () => {
     if (status === "Approve") {
       dispatch(getScenarioListapproved());
     } else {
-      // dispatch(getScenarioList()); // ✅ Unapproved / default
+      dispatch(getScenarioList());
     }
   };
   // Unapproved tab data
@@ -491,11 +491,10 @@ const ManageScenarios = () => {
 
     actionButtonRenderer: (props) => {
       const item = props.data;
-      const { approvalFilter } = props.context; // ✅ KEY FIX
+      const { approvalFilter } = props.context;
 
       return (
         <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
-          {/* EDIT – only for Unapproved */}
           {approvalFilter === "Unapproved" && (
             <div
               className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
@@ -509,8 +508,6 @@ const ManageScenarios = () => {
               </OverlayTrigger>
             </div>
           )}
-
-          {/* VIEW – only for Approved */}
           {approvalFilter === "Approve" && (
             <div
               className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
@@ -533,7 +530,6 @@ const ManageScenarios = () => {
       );
     },
   };
-
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
   const zoomIn = () => {
@@ -548,9 +544,6 @@ const ManageScenarios = () => {
       setColumnsPerRow(colarray[currentIndex + 1]);
     }
   };
-
-
-
   return (
     <>
       <Seo title="Custom Scenarios" />
@@ -623,8 +616,6 @@ const ManageScenarios = () => {
                             Unapproved
                           </Nav.Link>
                         </Nav.Item>
-
-                      
                       </Nav>
                     </Row>
                   </Tab.Container>
@@ -634,7 +625,6 @@ const ManageScenarios = () => {
           </Col>
         </Row>
       )}
-
       <Row className="row-sm">
         {view != "Form" && (
           <Col md={12}>
@@ -772,7 +762,6 @@ const ManageScenarios = () => {
             </Card>
           </Col>
         )}
-
         <Col md={12}>
           {view === "card" ? (
             <>
@@ -874,7 +863,6 @@ const ManageScenarios = () => {
                                 </span>
                               </OverlayTrigger>
                             </h5>
-
                             {/* Scenario Identification */}
                             <p className="text-success mb-1">
                               {item.scenarioidentification}

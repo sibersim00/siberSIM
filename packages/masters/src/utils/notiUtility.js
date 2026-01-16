@@ -1,4 +1,3 @@
-
 class NotiTemplate {
   constructor(db, templateAction, payload, type, type_id) {
     this._db = db;
@@ -6,41 +5,38 @@ class NotiTemplate {
     this._payload = payload;
     this._type = type;
     this._type_id = type_id;
-
     this.init(); // Kick off the flow
   }
-
   async init() {
-    // Handle proxmox_down cooldown logic
     if (this._templateAction === "proxmox_down") {
       const shouldSend = await this.shouldSendProxmoxDownNotification();
       if (!shouldSend) return; // Skip insertion
     }
 
     let finalBody = "";
-
     if (this._templateAction === "publish_scenario") {
-      // Special logic for publish_scenario
       const [scenario] = await this._db.sequelize.query(
-        `SELECT component_config
-         FROM scenarios
-         WHERE scenarioid = :scenarioid LIMIT 1`,
+        `SELECT scenariotitle FROM scenarios WHERE scenariouuid = :scenarioid LIMIT 1`,
         {
           replacements: { scenarioid: this._payload.scenarioid },
           type: this._db.sequelize.QueryTypes.SELECT,
         }
       );
-
-      const config = JSON.parse(scenario?.component_config || "[]");
-      const title =
-        config.find((item) => item.key === "scenariotitle")?.value || "Scenario";
-      finalBody = title;
-
-    } else if (this._templateAction === "scenario_status_notification") {
-      // Special logic for scenario status (approved/rejected)
+      const scenariotitle = scenario?.scenariotitle || "Scenario";
       const [templateData] = await this._db.sequelize.query(
-        `SELECT body FROM noti_templates
-         WHERE template_action = :template_action AND status = 'Active' LIMIT 1`,
+        `SELECT body FROM noti_templates WHERE template_action = :template_action AND status = 'Active' LIMIT 1`,
+        {
+          replacements: { template_action: this._templateAction },
+          type: this._db.sequelize.QueryTypes.SELECT,
+        }
+      );
+      finalBody = (templateData?.body || "").replaceAll(
+        "$$scenariotitle$$",
+        scenariotitle
+      );
+    } else if (this._templateAction === "scenario_status_notification") {
+      const [templateData] = await this._db.sequelize.query(
+        `SELECT body FROM noti_templates WHERE template_action = :template_action AND status = 'Active' LIMIT 1`,
         {
           replacements: { template_action: this._templateAction },
           type: this._db.sequelize.QueryTypes.SELECT,
@@ -55,7 +51,6 @@ class NotiTemplate {
         const placeholder = `$$${key}$$`;
         finalBody = finalBody.replaceAll(placeholder, this._payload[key]);
       }
-
     } else {
       // Handles proxmox_terminate and all normal templates
       const [templateData] = await this._db.sequelize.query(

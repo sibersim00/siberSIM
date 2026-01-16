@@ -51,6 +51,7 @@ const list = ({ db }) => async (usertype, session_userid) => {
         -- vm_request info
         vr.status AS vm_status,
         vr.vm_steps,
+        vr.requestedby_role,
 
         sc.categoryname AS scenariocategory,
         scc.categoryname AS scenariosubcategory,
@@ -356,35 +357,133 @@ const update = ({ db }) => async (body, session_userid) => {
 };
 
 
+// const deleteById = ({ db }) => async (body, session_userid) => {
+//   try {
+//     const scenarioId = body.scenarioid;
+
+//     // Check if the scenario is currently running
+//     const [running] = await db.sequelize.query(
+//       `SELECT sl.scenariolearnerid
+//        FROM scenario_learner sl
+//        WHERE sl.scenarioid = :scenarioId
+//        AND sl.status = 'Running'`,
+//       {
+//         replacements: { scenarioId },
+//       }
+//     );
+
+//     if (running.length > 0) {
+//       return {
+//         status: false,
+//         message: "Scenario is currently running and cannot be deleted.",
+//       };
+//     }
+
+//     // Soft delete scenario if not running
+//     await db.sequelize.query(
+//       `UPDATE scenarios 
+//        SET deletedon = NOW(), modifiedby = :modifiedBy 
+//        WHERE scenarioid = :scenarioId`,
+//       {
+//         replacements: {
+//           scenarioId,
+//           modifiedBy: session_userid,
+//         },
+//       }
+//     );
+
+//     return {
+//       status: true,
+//       message: "Scenario has been deleted successfully.",
+//     };
+//   } catch (error) {
+//     console.error("Error in deleteById:", error);
+//     throw new Error("Failed to delete scenario due to database error.");
+//   }
+// };
 const deleteById = ({ db }) => async (body, session_userid) => {
   try {
     const scenarioId = body.scenarioid;
 
-    // Check if the scenario is currently running
-    const [running] = await db.sequelize.query(
-      `SELECT sl.scenariolearnerid
-       FROM scenario_learner sl
-       WHERE sl.scenarioid = :scenarioId
-       AND sl.status = 'Running'`,
+    /* -------- CHECK ACTIVE VM REQUEST -------- */
+    const [activeRequest] = await db.sequelize.query(
+      `
+      SELECT 1
+      FROM vm_request
+      WHERE scenarioid = :scenarioId
+        AND status IN (
+          'Pending',
+          'Initializing',
+          'Start',
+          'Running',
+          'Resume',
+          'Pause'
+        )
+      LIMIT 1
+      `,
       {
         replacements: { scenarioId },
+        type: db.sequelize.QueryTypes.SELECT,
       }
     );
 
-    if (running.length > 0) {
+    if (activeRequest) {
       return {
         status: false,
-        message: "Scenario is currently running and cannot be deleted.",
+        message:
+          "Scenario is currently active or in progress and cannot be deleted.",
       };
     }
 
-    // Soft delete scenario if not running
+    /* -------- GET SCENARIO UUID -------- */
+    const [scenario] = await db.sequelize.query(
+      `
+      SELECT scenariouuid
+      FROM scenarios
+      WHERE scenarioid = :scenarioId
+        AND deletedon IS NULL
+      `,
+      {
+        replacements: { scenarioId },
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (!scenario) {
+      return {
+        status: false,
+        message: "Scenario not found or already deleted.",
+      };
+    }
+
+    /* -------- SOFT DELETE FROM SCENARIOS -------- */
     await db.sequelize.query(
-      `UPDATE scenarios 
-       SET deletedon = NOW(), modifiedby = :modifiedBy 
-       WHERE scenarioid = :scenarioId`,
+      `
+      UPDATE scenarios
+      SET deletedon = NOW(),
+          modifiedby = :modifiedBy
+      WHERE scenarioid = :scenarioId
+      `,
       {
         replacements: {
+          scenarioId,
+          modifiedBy: session_userid,
+        },
+      }
+    );
+
+    /* -------- SOFT DELETE FROM CUSTOM_SCENARIOS -------- */
+    await db.sequelize.query(
+      `
+      UPDATE custom_scenarios
+      SET deletedon = NOW(),
+          modifiedby = :modifiedBy
+      WHERE custom_scenariouuid = :scenariouuid
+         OR scenarioid = :scenarioId
+      `,
+      {
+        replacements: {
+          scenariouuid: scenario.scenariouuid,
           scenarioId,
           modifiedBy: session_userid,
         },
@@ -397,7 +496,10 @@ const deleteById = ({ db }) => async (body, session_userid) => {
     };
   } catch (error) {
     console.error("Error in deleteById:", error);
-    throw new Error("Failed to delete scenario due to database error.");
+    return {
+      status: false,
+      message: "Failed to delete scenario due to database error.",
+    };
   }
 };
 
@@ -498,6 +600,8 @@ const scenariodigramlist = ({ db }) => async (scenarioid) => {
 
 
 const saveComponentconfiguration = ({ db, validation }) => async (body, session_userid) => {
+  console.log("bodybodybodybodybodybodybody",body);
+  
   try {
     if (
       !body.scenarioid ||
@@ -516,9 +620,7 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
     const updateParams = [JSON.stringify(body.component_config), JSON.stringify(body.network_config), body.scenariostatus, session_userid, body.scenarioid,
     ];
     await db.sequelize.query(updateQuery, { replacements: updateParams, type: db.sequelize.QueryTypes.UPDATE, });
-    if (body.scenariostatus === 'Publish') {
-      // const noti = new NotiTemplate(
-      // db, 'publish_scenario', {learner_id: 0,scenarioid: body.scenarioid }, 'System', '0');
+    if (body.scenariostatus === 'Publish') {;
       new NotiTemplate(db, 'publish_scenario', { learner_id: 0, scenarioid: body.scenarioid }, 'System', '0');
       // await noti.send();
     }

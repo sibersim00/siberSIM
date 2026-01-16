@@ -21,6 +21,11 @@ module.exports = function (iocContainer) {
   controller.resumeScenarioLearner(iocContainer)
 );
 
+  router.post(
+    "/delete-scenario-learner",
+    controller.deleteScenarioLearner(iocContainer)
+  );
+
 
   return router;
 };

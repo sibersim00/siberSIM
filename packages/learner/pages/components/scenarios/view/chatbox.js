@@ -6,7 +6,7 @@ import {
   saveChatMessage,
   getRefreshMessage,
 } from "../../../../shared/redux/slices/chatbox/chatboxManage";
-const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
+const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues ,learner_id}) => {
   const dispatch = useDispatch();
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
@@ -36,12 +36,14 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
 
     return () => observer.disconnect();
   }, []);
+console.log("showChatshowChatshowChat",showChat);
 
   useEffect(() => {
-    if (showChat && rowValues?.scenariolearnerid) {
+    if (showChat && rowValues?.learner_id || rowValues?.scenarioid ) {
       dispatch(
         getChatMessages({
-          scenariolearnerid: rowValues.scenariolearnerid,
+          learner_id: learner_id,
+        scenarioid: rowValues.scenarioid,
         })
       );
     }
@@ -52,6 +54,7 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
       Array.isArray(getChatMessagesListData) ? getChatMessagesListData : []
     );
   }, [getChatMessagesListData]);
+console.log("getChatMessagesListDatagetChatMessagesListData",getChatMessagesListData);
 
   useEffect(() => {
     if (getRefreshMsg && getRefreshMsg.length > 0) {
@@ -73,7 +76,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
     if (!chatInput.replace(/\s/g, "")) return;
 
     const payload = {
-      scenariolearnerid: rowValues?.scenariolearnerid,
       scenarioid: rowValues?.scenarioid,
       learner_id: rowValues?.learner_id,
       // message: chatInput.trim(),
@@ -108,8 +110,11 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
   const handleRefresh = () => {
     if (chatMessages?.length) {
       const lastchatobject = chatMessages[chatMessages.length - 1];
+      console.log("lastchatobjectlastchatobject",lastchatobject);
+      
       const payload = {
-        scenariolearnerid: lastchatobject.scenariolearnerid,
+        learner_id: lastchatobject.learner_id,
+        scenarioid: lastchatobject.scenarioid,
         scenariolearnerchatid: lastchatobject.scenariolearnerchatid,
       };
 
@@ -124,7 +129,8 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues }) => {
 
       intervalId = setInterval(() => {
         const payload = {
-          scenariolearnerid: lastMessage.scenariolearnerid,
+          learner_id: lastMessage.learner_id,
+          scenarioid: lastMessage.scenarioid,
           scenariolearnerchatid: lastMessage.scenariolearnerchatid,
         };
         dispatch(getRefreshMessage(payload));

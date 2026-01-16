@@ -1,34 +1,10 @@
 const Joi = require("joi");
 
-const setScenarioLearnerConfigSchema = Joi.object({
-  scenarioid: Joi.number().required().messages({
-    "number.base": `Scenario ID must be a number.`,
-    "any.required": `scenarioid is required.`,
-  }),
-  learnerid: Joi.number().required().messages({
-    "number.base": `SIMUser ID must be a number.`,
-    "any.required": `learnerid is required.`,
-  }),
-  scenariolearnersessionid: Joi.number().required().messages({
-    "number.base": `Session ID must be a number.`,
-    "any.required": `scenariolearnersessionid is required.`,
-  }),
-});
-
-
 const updateCompleteTerminate = Joi.object({
-  scenariolearnersessionid: Joi.number().required().messages({
-    "number.base": `Session ID must be a number.`,
-    "any.required": `scenariolearnersessionid is required.`,
-  }),
   status: Joi.string().valid("Completed", "Terminated").required().messages({
     "any.only": `Status must be either 'Completed' or 'Terminated'.`,
     "any.required": `Status is required.`,
     "string.empty": `Status cannot be empty.`,
-  }),
-  type: Joi.string().required().messages({
-    "any.required": `Type is required.`,
-    "string.empty": `Type cannot be empty.`,
   }),
 });
 
@@ -56,7 +32,6 @@ const ERROR_MESSAGES = {
 
 
 module.exports = {
-  setScenarioLearnerConfigSchema,
   updateCompleteTerminate,
   ERROR_MESSAGES
 };

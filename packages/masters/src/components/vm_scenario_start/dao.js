@@ -16,8 +16,8 @@ const getAll =
             s.scenariostatus,
 
             vr.isnotitermination,
-            vr.vmrequestid AS scenariolearnersessionid,
-
+            vr.vmrequestid AS vmrequestid,
+            vr.vmrequestuuid,
             sc.categoryname AS scenariocategory_name,
             sc.scenariocategoryid AS scenariocategoryid,
             sc.categoryimage AS category_image,
@@ -202,6 +202,7 @@ const getByID =
         `
        SELECT
   vr.vmrequestid,
+  vr.vmrequestuuid,
   vr.status,
   vr.vm_steps,
   vr.timer,
@@ -229,7 +230,7 @@ INNER JOIN scenario_categories sc
   ON sc.scenariocategoryid = s.scenariocategoryid
 INNER JOIN scenario_categories ssc
   ON ssc.scenariocategoryid = s.scenariosubcategoryid
-/* ✅ Latest vm_request per scenario per user */
+/* Latest vm_request per scenario per user */
 LEFT JOIN vm_request vr
   ON vr.vmrequestid = (
     SELECT v2.vmrequestid
@@ -374,8 +375,24 @@ const getPauselimit = async (db) => {
 };
 const startScenario =
   ({ db, validation }) =>
-  async (body) => {
+  async (body,user_count_limit) => {
     try {
+       const [activeUsersResult] = await db.sequelize.query(
+        `SELECT COUNT(*) AS activeUsers
+         FROM vm_request
+         WHERE status IN ('Start','Resume')
+         AND vm_steps = 'Running'`
+      );
+
+      const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+      const limit = Number(user_count_limit || 0);
+
+      if (limit > 0 && activeUsers >= limit) {
+        return {
+          statusCode: 500,
+          message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+        };
+      }
       const {
         scenarioid,
         requestedby_id,
@@ -444,6 +461,7 @@ const startScenario =
         `
         INSERT INTO vm_request
         (
+        vmrequestuuid,
           scenarioid,
           requestedby_id,
           requestedby_role,
@@ -453,7 +471,7 @@ const startScenario =
           network_bridges,
           isnotitermination
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (UUID(),?, ?, ?, ?, ?, ?, ?, ?)
         `,
         {
           replacements: [
@@ -526,7 +544,7 @@ const updateSessionStatus =
       // STEP 1: Block Resume if another VM is Running/Initializing
       if (body.status === "Resume") {
         const [activeVM] = await db.sequelize.query(
-          `SELECT vmrequestid
+          `SELECT vmrequestid,vmrequestuuid
            FROM vm_request
            WHERE requestedby_id = :requestedby_id
              AND requestedby_role = :requestedby_role
@@ -617,7 +635,7 @@ WHERE vmrequestid = ?;
         status: body.status,
         vmrequestid: body.vmrequestid,
         type: "VM",
-        remark: `VM status changed to ${body.status} by SIMUser`,
+        remark: `VM status changed to ${body.status} by SIMMaster`,
       });
 
       //  STEP 4: Pause / Resume diagram handling (SAME FLOW)
@@ -834,23 +852,71 @@ const markMessagesSeen =
     }
   };
 
+// const getLogs =
+//   ({ db }) =>
+//   async (scenariouuid, learner_id) => {
+//     try {
+//       let result = await db.sequelize.query(
+//         `SELECT sll.status, DATE_FORMAT(sll.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, sll.type, sll.remark, IFNULL(DATE_FORMAT(sls.startedon, '%Y-%m-%d %H:%i:%s'), '') AS startedon FROM scenario_learner_logs sll INNER JOIN scenarios s ON s.scenarioid = sll.scenarioid INNER JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sll.scenariolearnersessionid WHERE s.scenariouuid = ? AND sll.learner_id = ? ORDER BY sll.createdon DESC;`,
+//         {
+//           replacements: [scenariouuid, learner_id],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+//       return result;
+//     } catch (error) {
+//       console.error("Error fetching scenario logs:", error);
+//       throw error;
+//     }
+//   };
 const getLogs =
   ({ db }) =>
   async (scenariouuid, learner_id) => {
     try {
-      let result = await db.sequelize.query(
-        `SELECT sll.status, DATE_FORMAT(sll.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, sll.type, sll.remark, IFNULL(DATE_FORMAT(sls.startedon, '%Y-%m-%d %H:%i:%s'), '') AS startedon FROM scenario_learner_logs sll INNER JOIN scenarios s ON s.scenarioid = sll.scenarioid INNER JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sll.scenariolearnersessionid WHERE s.scenariouuid = ? AND sll.learner_id = ? ORDER BY sll.createdon DESC;`,
+      const result = await db.sequelize.query(
+        `
+        SELECT 
+          vrl.status,
+          DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
+          vrl.requestedby_role AS type,
+          vrl.remark,
+
+          -- Scenario started time (first start/init event)
+          IFNULL(
+            (
+              SELECT DATE_FORMAT(MIN(vrl2.createdon), '%Y-%m-%d %H:%i:%s')
+              FROM vm_request_logs vrl2
+              WHERE vrl2.vmrequestid = vrl.vmrequestid
+                AND vrl2.status IN ('Initiated', 'Start', 'Running')
+            ),
+            ''
+          ) AS startedon
+
+        FROM vm_request_logs vrl
+
+        INNER JOIN scenarios s 
+          ON s.scenarioid = vrl.scenarioid
+
+        WHERE 
+          s.scenariouuid = ?
+          AND vrl.requestedby_id = ?
+          AND vrl.requestedby_role = 'Learner'
+
+        ORDER BY vrl.createdon DESC
+        `,
         {
           replacements: [scenariouuid, learner_id],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
+
       return result;
     } catch (error) {
       console.error("Error fetching scenario logs:", error);
       throw error;
     }
   };
+
 
 const getTabList =
   ({ db }) =>
@@ -876,31 +942,70 @@ const getTabList =
 
 // dao.js (partial)
 
+// const getPaused =
+//   ({ db }) =>
+//   async (learner_id) => {
+//     try {
+//       const result = await db.sequelize.query(
+//         `SELECT 
+//            sl.scenariolearnerid,
+//            sl.scenarioid,
+//            sl.learner_id,
+//            sl.instructor_id,
+//            sl.currentsession_id,
+//            sl.status,
+//            sl.createdon,
+//            sl.modifiedon,
+//            s.scenariotitle AS scenario_name,
+//            s.scenariouuid
+//          FROM scenario_learner sl
+//          LEFT JOIN scenarios s ON s.scenarioid = sl.scenarioid
+//          WHERE sl.learner_id = ?
+//            AND sl.status = 'Pause'
+//          ORDER BY 
+//            CASE 
+//              WHEN sl.modifiedon IS NOT NULL THEN sl.modifiedon 
+//              ELSE sl.createdon 
+//            END DESC`,
+//         {
+//           replacements: [learner_id],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       return result || [];
+//     } catch (error) {
+//       console.error("Error in dao.getPaused:", error);
+//       throw error;
+//     }
+//   };
 const getPaused =
   ({ db }) =>
   async (learner_id) => {
     try {
       const result = await db.sequelize.query(
-        `SELECT 
-           sl.scenariolearnerid,
-           sl.scenarioid,
-           sl.learner_id,
-           sl.instructor_id,
-           sl.currentsession_id,
-           sl.status,
-           sl.createdon,
-           sl.modifiedon,
-           s.scenariotitle AS scenario_name,
-           s.scenariouuid
-         FROM scenario_learner sl
-         LEFT JOIN scenarios s ON s.scenarioid = sl.scenarioid
-         WHERE sl.learner_id = ?
-           AND sl.status = 'Pause'
-         ORDER BY 
-           CASE 
-             WHEN sl.modifiedon IS NOT NULL THEN sl.modifiedon 
-             ELSE sl.createdon 
-           END DESC`,
+        `
+        SELECT
+          vr.vmrequestid,
+          vr.vmrequestuuid,
+          vr.scenarioid,
+          vr.requestedby_id AS learner_id,
+          vr.status,
+          vr.createdon,
+          vr.modifiedon,
+          s.scenariotitle AS scenario_name,
+          s.scenariouuid
+        FROM vm_request vr
+        INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid
+        WHERE vr.requestedby_id = ?
+          AND vr.requestedby_role = 'Learner'
+          AND vr.status = 'Pause'
+        ORDER BY
+          CASE
+            WHEN vr.modifiedon IS NOT NULL THEN vr.modifiedon
+            ELSE vr.createdon
+          END DESC
+        `,
         {
           replacements: [learner_id],
           type: db.sequelize.QueryTypes.SELECT,
@@ -909,10 +1014,57 @@ const getPaused =
 
       return result || [];
     } catch (error) {
-      console.error("Error in dao.getPaused:", error);
+      console.error("Error in dao.getPaused (vm_request):", error);
       throw error;
     }
   };
+
+
+  const canResumeScenario =
+  ({ db, validation }) =>
+  async (body) => {
+    try {
+      console.log("bodybodybodybodybody",body);
+      
+      const { requestedby_id, vmrequestid } = body;
+
+      const [activeScenario] = await db.sequelize.query(
+        `
+        SELECT scenarioid
+        FROM vm_request
+        WHERE requestedby_id = :requestedby_id
+          AND requestedby_role = 'Admin'
+          AND status IN ('Initializing', 'Running','Start','Resume')
+          AND vmrequestid != :vmrequestid
+        LIMIT 1
+        `,
+        {
+          replacements: { requestedby_id, vmrequestid },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (activeScenario) {
+        return {
+          statusCode: 400,
+          message:
+            "Another scenario is already running. Please pause it before resuming this one.",
+        };
+      }
+
+      return {
+        statusCode: 200,
+        message: "Resume allowed",
+      };
+    } catch (error) {
+      console.error("Error in canResumeScenario DAO:", error.message);
+      return {
+        statusCode: 500,
+        message: "Internal server error while checking scenario resume status",
+      };
+    }
+  };
+
 
 module.exports = {
   getAll,
@@ -926,4 +1078,5 @@ module.exports = {
   getLogs,
   getTabList,
   getPaused,
+  canResumeScenario
 };

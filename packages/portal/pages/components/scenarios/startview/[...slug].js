@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Row, Col, Card, Button, Tab, Nav, Modal } from "react-bootstrap";
+import { Row, Col, Card, Button, Tab, Nav, Modal , Alert } from "react-bootstrap";
 import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import {
-  // getSingleScenarios,
-  // getLogsData,
   clearSingleScenarios,
   clearHasError,
 } from "../../../../shared/redux/slices/scenario/scenarioManage";
@@ -27,6 +25,8 @@ import {
   getTabList,
   pausescenario,
   resumescenario,
+  canresumescenario,
+  clearcanresumescenario
 } from "../../../../shared/redux/slices/scenariostart/scenariostartmanage";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
@@ -34,10 +34,7 @@ import { useTranslation } from "react-i18next";
 import ScenarioDiagram from "../startview/scenariodiagram";
 import { toast, ToastContainer } from "react-toastify";
 import dynamic from "next/dynamic";
-// import ChatBox from "./chatbox";
 import { getsceanriotabList } from "../../../../shared/redux/slices/scenariotabs/scenariotabsManage";
-// import Quiz from "./quiz";
-
 const PdfLoader = dynamic(
   () => import("../../../../shared/data/common/PdfLoader"),
   { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
@@ -103,6 +100,7 @@ const ScenarioView = () => {
     haspausescenarioSucc,
     hasresumescenarioSucc,
     hasUpdateCompletedTerminatedSucc,
+    hasGetresume,
     hasdeletescenarioSucc,
   } = useSelector((state) => {
     return {
@@ -127,12 +125,14 @@ const ScenarioView = () => {
       hasresumescenarioSucc: state?.scenariostart?.resumescenarioData,
       hasdeletescenarioSucc:
         state?.scenariostart?.hasdeletescenarioSuccData?.data,
+      hasGetresume:
+        state?.scenariostart?.getresume,
       errorData: state?.scenariostart?.error,
     };
   });
 
-  console.log("tabListSucctabListSucctabListSucc",tabListSucc);
-  
+  console.log("errorDataerrorDataerrorData", errorData);
+
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
@@ -172,12 +172,14 @@ const ScenarioView = () => {
       dispatch(getSingleScenarios(query.slug[0]));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
+useEffect(() => {
+  if (!query.slug?.[0]) return;
+  dispatch(clearcanresumescenario());   
+}, [query.slug]);
 
   useEffect(() => {
     dispatch(getTabList());
   }, [dispatch]);
-
-
   useEffect(() => {
     if (errorData?.statusCode === 400) {
       setIsScenarioError400(true);
@@ -210,13 +212,12 @@ const ScenarioView = () => {
   const formatEventKey = (name) =>
     name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
 
-const filteredTabs = tabListSucc
-  ?.filter(
-    (tab) =>
-      tab.tab_status === "True" &&
-      tab.tab_name?.toLowerCase() !== "quiz"
-  )
-  ?.sort((a, b) => a.tab_ordering - b.tab_ordering);
+  const filteredTabs = tabListSucc
+    ?.filter(
+      (tab) =>
+        tab.tab_status === "True" && tab.tab_name?.toLowerCase() !== "quiz"
+    )
+    ?.sort((a, b) => a.tab_ordering - b.tab_ordering);
   useEffect(() => {
     if (tabListSucc && Array.isArray(tabListSucc)) {
       const enabledTabs = tabListSucc
@@ -238,27 +239,28 @@ const filteredTabs = tabListSucc
     }
   }, [tabListSucc]);
 
+
   useEffect(() => {
-    if (hasGetSingleScenariosSucc && hasGetSingleScenariosSucc.length > 0) {
-      const scenario = hasGetSingleScenariosSucc[0];
-      setRowValues(scenario);
+    if (!hasGetSingleScenariosSucc?.length) return;
 
-      // 🔥 FIX: ONLY set from backend on first load, NOT after button click
-      setScenarioStatus((prev) => {
-        if (prev === "Pause" || prev === "Resume") return prev;
-        return scenario.status;
-      });
+    const scenario = hasGetSingleScenariosSucc[0];
 
-      if (scenario.calculated_timer) {
-        const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
-        const totalSeconds = h * 3600 + m * 60 + s;
-        setElapsedSeconds(totalSeconds);
+    setRowValues(scenario);
 
-        if (scenario.status === "Start" || scenario.status === "Resume") {
-          setTimerActive(true);
-          setTimerPaused(false);
-        }
-      }
+    // ✅ ALWAYS trust backend on load
+    setScenarioStatus(scenario.status);
+
+    if (scenario.calculated_timer) {
+      const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
+      setElapsedSeconds(h * 3600 + m * 60 + s);
+    }
+
+    if (scenario.status === "Start" || scenario.status === "Resume") {
+      setTimerActive(true);
+      setTimerPaused(false);
+    } else {
+      setTimerActive(false);
+      setTimerPaused(true);
     }
   }, [hasGetSingleScenariosSucc]);
 
@@ -351,7 +353,6 @@ const filteredTabs = tabListSucc
     setTimerActive(false);
   };
 
-  
   const handleConfirmAction = async () => {
     try {
       setActionLoading(true);
@@ -387,10 +388,6 @@ const filteredTabs = tabListSucc
         scenarioid: scenarioData?.scenarioid,
         status: mappedStatus[confirmAction],
         timer: formatTime(elapsedSeconds),
-        // scenariolearnerid: scenarioData?.scenariolearnerid,
-        // scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
-        // type: "learner",
-
         requestedby_id: getUserDataFromLocal?.userid,
         type: getUserDataFromLocal?.usertype,
         vmrequestid: rowValues?.vmrequestid,
@@ -576,23 +573,30 @@ const filteredTabs = tabListSucc
         requestedby_id: getUserDataFromLocal?.userid,
         status: "Resume",
         timer: formatTime(elapsedSeconds),
-        scenarioid: rowValues?.scenarioid,
+        scenarioid: scenarioData?.scenarioid,
         requestedby_role: getUserDataFromLocal?.usertype,
-        vmrequestid: rowValues?.vmrequestid,
+        vmrequestid: scenarioData?.vmrequestid,
       };
+      const canResumeRes = await dispatch(canresumescenario(payload));
 
-      //   Step 1: resume first
+      const canResumeOk = canResumeRes?.statusCode === 200;
+
+      if (!canResumeOk) {
+  dispatch(clearcanresumescenario());
+        return;
+      }
+
+      // Step 2: Call Proxmox resume API
       const resResume = await dispatch(resumescenario(payload));
       const resumeOk =
         resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
 
       if (!resumeOk) {
-        console.error("Unable to resume scenario.");
         return;
       }
 
-      // Step 2: only update status if resume succeeded
-      const resUpdate = await dispatch(updateSessionStatus(payload));
+      // 🔹 Step 3: Update session status in DB
+      await dispatch(updateSessionStatus(payload));
 
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
@@ -609,6 +613,7 @@ const filteredTabs = tabListSucc
       dispatch(getSingleScenarios(query.slug[0]));
     } catch (err) {
       console.error("Resume failed:", err);
+      toast.error("An error occurred while resuming the scenario.");
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
@@ -679,6 +684,7 @@ const filteredTabs = tabListSucc
     // If any action is loading and it's not the current button type
     return actionLoading && confirmAction !== buttonType;
   };
+
   return (
     <>
       <Seo title="Scenario" />
@@ -756,6 +762,7 @@ const filteredTabs = tabListSucc
 
                           if (from === "pause") {
                             router.push("/pausescenarios");
+                            dispatch(clearSingleScenarios());
                           } else {
                             // Default → Go back to Main Scenarios Page
                             if (categoryId && subcategoryName) {
@@ -790,7 +797,7 @@ const filteredTabs = tabListSucc
                   md={12}
                   className="d-flex justify-content-between align-items-center my-3"
                 >
-                  {isScenarioError400 ||
+                  {
                   ["Terminated", "Completed", "Pending", "Failed"].includes(
                     scenarioStatus
                   ) ? (
@@ -806,8 +813,8 @@ const filteredTabs = tabListSucc
                       >
                         {actionLoading && confirmAction === "initializing" ? (
                           <>
-                            <i className="fas fa-spinner fa-spin me-1"></i>{" "}
-                            Starting...
+                             <i className="fe fe-play"></i> Start
+
                           </>
                         ) : (
                           <>
@@ -1106,26 +1113,31 @@ const filteredTabs = tabListSucc
                               ))}
                           </Nav> */}
                           <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white w-100">
-  {filteredTabs?.map((tab) => (
-    <Nav.Item
-      key={tab.scenariotabid}
-      onClick={() => setActiveTab(tab.tab_name)}
-      style={{ flex: 1, textAlign: "start" }}
-    >
-      <Nav.Link
-        eventKey={tab.tab_name}
-        className="masterlist"
-        style={{
-          color: activeTab === tab.tab_name ? "#007bff" : "gray",
-          fontWeight: activeTab === tab.tab_name ? "bold" : "normal",
-        }}
-      >
-        {tab.tab_name}
-      </Nav.Link>
-    </Nav.Item>
-  ))}
-</Nav>
-
+                            {filteredTabs?.map((tab) => (
+                              <Nav.Item
+                                key={tab.scenariotabid}
+                                onClick={() => setActiveTab(tab.tab_name)}
+                                style={{ flex: 1, textAlign: "start" }}
+                              >
+                                <Nav.Link
+                                  eventKey={tab.tab_name}
+                                  className="masterlist"
+                                  style={{
+                                    color:
+                                      activeTab === tab.tab_name
+                                        ? "#007bff"
+                                        : "gray",
+                                    fontWeight:
+                                      activeTab === tab.tab_name
+                                        ? "bold"
+                                        : "normal",
+                                  }}
+                                >
+                                  {tab.tab_name}
+                                </Nav.Link>
+                              </Nav.Item>
+                            ))}
+                          </Nav>
                         </Row>
 
                         <Row>

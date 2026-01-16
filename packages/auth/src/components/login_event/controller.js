@@ -45,7 +45,7 @@ const verifylogin = ({ dao, db, keys, crypto }) => async (req, res, next) => {
       ];
       const extractSources = (items) => items.flatMap(i => [i.source,...(i.children ? extractSources(i.children) : [])]);
       jwtObj.menus = extractSources(menus[0]?.Items);
-      const accessToken = await generateAccessToken(hostname,userObj);
+      const accessToken = await generateAccessToken(hostname,jwtObj);
 
 
 

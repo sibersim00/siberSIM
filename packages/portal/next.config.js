@@ -24,9 +24,9 @@ const nextConfig = withTM({
     CRYPTO_SECURITY_KEY: "techno5202jarus",
     BASE_PATH: `/app/`,
     VNC_PROXY_URL: `ws://sibersim.battlerangers.com:4007`,
-    API_URL_LOGIN : `/authapi`,
-    API_URL_MASTERS : `/masterapi`,
-    API_URL_FILEMANAGER:`/jobapi`,
+    API_URL_LOGIN : `http://sibersim.battlerangers.com/authapi`,
+    API_URL_MASTERS : `http://sibersim.battlerangers.com/masterapi`,
+    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
     LEARNER_BASE_PATH: "http://sibersim.battlerangers.com",
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {

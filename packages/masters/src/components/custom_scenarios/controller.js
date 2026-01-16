@@ -128,20 +128,33 @@ const saveComponentconfiguration =
   ({ dao, db, validation }) =>
   async (req, res) => {
     try {
-      let body = req.body;
+      const body = req.body;
       const session_userid = req.user.userid;
+
       const result = await dao.saveComponentconfiguration({ db, validation })(
         body,
         session_userid
       );
-      return res
-        .status(result.statusCode)
-        .send({ statusCode: result.statusCode, message: result.message });
+      if (!result || !result.statusCode) {
+        return res.status(500).json({
+          statusCode: 500,
+          message: "No response received from server logic",
+        });
+      }
+      return res.status(result.statusCode).json({
+        statusCode: result.statusCode,
+        message: result.message,
+      });
     } catch (error) {
-      console.error("Error Component Configuration save data:", error.message);
-      res
-        .status(500)
-        .json({ error: "An error occurred. Please try again later." });
+      console.error(
+        "Error Component Configuration save data:",
+        error.message
+      );
+
+      return res.status(500).json({
+        statusCode: 500,
+        message: "An error occurred. Please try again later.",
+      });
     }
   };
   

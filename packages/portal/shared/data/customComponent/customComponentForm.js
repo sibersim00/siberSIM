@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef,useState, useEffect } from "react";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import * as Yup from "yup";
@@ -170,6 +170,11 @@ const CustomComponentForm = (props) => {
     };
   });
  const { isSaving } = useSelector((state) => state.customComponent);
+
+const prevIsSavingRef = useRef(isSaving);
+
+
+ console.log("saveComponentDatasaveComponentData",isSaving)
   useEffect(() => {
     if (getSingleComponentSucc && getSingleComponentSucc !== "") {
       setRowValues(getSingleComponentSucc);
@@ -218,7 +223,7 @@ const CustomComponentForm = (props) => {
   }, [hasgetCatListSucc]);
 
   useEffect(() => {
-    if (saveComponentData?.statusCode === 200) {
+    if (saveComponentData?.statusCode === 200 ) {
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
           {saveComponentData?.message}
@@ -255,6 +260,23 @@ const CustomComponentForm = (props) => {
       setRowValues({});
     }
   }, [rejectComponentData]);
+
+useEffect(() => {
+  // run only when saving finished (true -> false)
+  if (
+    prevIsSavingRef.current === true &&
+    isSaving === false  &&
+    saveComponentData?.statusCode === 200
+  ) {
+    setView(backView);
+    dispatch(getComponentList());
+    dispatch(clearUpdateCustomComponent());
+    dispatch(clearSingleComponent());
+    setRowValues({});
+  }
+  prevIsSavingRef.current = isSaving;
+}, [isSaving, saveComponentData]);
+
 
   useEffect(() => {
     if (rowValues?.vmid) {
@@ -349,7 +371,7 @@ const CustomComponentForm = (props) => {
       ),
     }),
 
-    onSubmit: (data, action) => {
+    onSubmit: (data,) => {
       const payload = {
         ...(rowValues?.customcomponentid && { customcomponentid: rowValues?.customcomponentid }),
         componentcategoryid:
@@ -408,28 +430,9 @@ const CustomComponentForm = (props) => {
     }
   }, [rowValues]);
 
-  const [formFields, setFormFields] = useState(
-    rowValues?.checkilistdata || [{ checklistname: "", checklistid: "" }]
-  );
-
-  const handleAddField = () => {
-    const checklist_details = [
-      ...formValidation.values.checklist,
-      { checklistname: "", checklistid: "" },
-    ];
-    formValidation.setFieldValue("checklist", checklist_details);
-  };
-  const handleRemoveField = (index) => {
-    const checklist_details = formValidation.values.checklist.filter(
-      (_, i) => i !== index
-    );
-    formValidation.setFieldValue("checklist", checklist_details);
-  };
 
   const type =
     formValidation.values.componenttype?.componenttype?.toLowerCase();
-
-
 
   useEffect(() => {
     if (mode === "update") {

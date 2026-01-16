@@ -108,8 +108,11 @@ const authenticateToken = (routeslug) => {
                   ? "Access denied: Your license seems expired or not registered. Please update your license to continue."
                   : "Your access has expired or is not activated. Please contact your administrator for assistance.",
             });
+
           }
+          userData.user_count_limit  = Number(licenseStatus.user_count)
         }
+console.log("eeeeeeeeeeeeeee",userData.user_count_limit );
 
         if (routeslug && userData.menus) {
           let allowed = false;

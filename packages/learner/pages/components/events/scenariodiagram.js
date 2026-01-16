@@ -27,21 +27,28 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible,scenari
 
 
 const handleClick = (dataobj) => {
+  console.log("dataobjdataobjdataobj",dataobj);
+  
     if (scenarioStatus === "Pause") return; 
-  if (!isTimerVisible) return;
+  // if (!isTimerVisible) return;
   const vmid = dataobj?.vmid;
   const vmType = dataobj?.vmType;
   if (!vmid || !vmType) return;
+  console.log("Inside vmc");
 
   const rawLabel = dataobj?.label || "";
   const namePart = rawLabel.split("-")[1]?.trim() || "";
   const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+  
   window.open(
-    `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+    `${process.env.BASE_PATH}vnc_event_view/${vmType}/${vmid}/${cleanName}`,
     "_blank"
   );
 };
 
+// const handleClick = (dataobj) => {
+//   console.log("CLICKED NODE DATA", dataobj);
+// };
 
   return (
     <div
@@ -223,6 +230,8 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
               : node.data.image,
         },
       }));
+      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
+
 
       setElements({ nodes: updatedNodes, edges: parsedData.edges });
     } catch (err) {

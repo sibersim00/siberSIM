@@ -3709,7 +3709,8 @@ table thead tr .table-title-heading {
 /* Base card style */
 .custom-scenario-card {
   background-color: #f8f9fc;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, 
+  box-shadow 0.2s ease;
   border: 2px solid transparent;
 }
 
@@ -3717,18 +3718,18 @@ table thead tr .table-title-heading {
 .shadow-publish {
   border-color: #bfe7d4;
   /* green */
-  box-shadow: 0 4px 12px rgba(25, 165, 58, 0.2);
+  box-shadow: 0 4px 12px rgba(25, 165, 58, 0.473);
 }
 
 .shadow-publish:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(19, 171, 54, 0.3);
+  box-shadow: 0 10px 20px rgba(60, 240, 102, 0.205);
 }
 
 .shadow-draft {
   border-color: #f5edd4;
   /* yellow */
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.342);
 }
 
 .shadow-draft:hover {

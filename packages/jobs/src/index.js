@@ -41,7 +41,7 @@ app.all('*', (req, res, next) => {
 // app.use(errorLogger);
 const server = http.createServer(app); 
 server.listen((keys.JOBS_PORT || 4005), async () => {
-    startJob(iocContainer)
+//    startJob(iocContainer)
 });
 server.on('listening', () => { 
     console.log(`Job Service Started On Port - ${keys.JOBS_PORT}`);

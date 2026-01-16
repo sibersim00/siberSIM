@@ -31,8 +31,6 @@ import {
   clearimportMastersAction,
 } from "../../redux/slices/companySetting/companySetting";
 import { error } from "./vaidationMessage/formValidationMsg";
-import defaultLogo from "../../../public/assets/img/brand/logo-light.png";
-import defaultLightLogo from "../../../public/assets/img/brand/logo.png";
 import defaultFavicon from "../../../public/assets/img/brand/favicon.png";
 import defaultAdminLogin from "../../../public/assets/img/brand/logo-light.png";
 import axios from "axios";
@@ -325,6 +323,9 @@ const CompanySettingsCommon = ({ isSL }) => {
       cloning_delay: cmpSettingData?.cloning_delay
         ? cmpSettingData?.cloning_delay
         : "",
+      hibernate_delay: cmpSettingData?.hibernate_delay
+        ? cmpSettingData?.hibernate_delay
+        : "",
       pause_limit: cmpSettingData?.pause_limit
         ? cmpSettingData?.pause_limit
         : "",
@@ -376,6 +377,7 @@ const CompanySettingsCommon = ({ isSL }) => {
           ? data?.configuration_delay
           : "",
         cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
+        hibernate_delay: data?.hibernate_delay ? data?.hibernate_delay : "",
         pause_limit: data?.pause_limit ? data?.pause_limit : "",
         address: data?.address ? data?.address : "",
 
@@ -460,10 +462,7 @@ const CompanySettingsCommon = ({ isSL }) => {
 
   return (
     <>
-      <Seo
-        // title={componentData && componentData?.title ? componentData.title : ""}
-        title="Company Setting"
-      />
+      <Seo title="Company Setting" />
       <ToastContainer />
       <Card className="custom-card overflow-hidden">
         <Card.Body>
@@ -472,7 +471,7 @@ const CompanySettingsCommon = ({ isSL }) => {
           </div>
 
           <Row className="row-sm">
-            <Col md={12} className="mg-b-5 bd-b">
+            {/* <Col md={12} className="mg-b-5 bd-b">
               <div className="d-flex justify-content-between">
                 <h5>
                   {componentData && componentData?.title
@@ -481,7 +480,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                 </h5>
                 <div></div>
               </div>
-            </Col>
+            </Col> */}
             <Col md={12}>
               <Form
                 noValidate
@@ -491,19 +490,20 @@ const CompanySettingsCommon = ({ isSL }) => {
                   return false;
                 }}
               >
-                <Card className="custom-card">
+                <Card className="mb-4 border">
+                  <Card.Header className="bg-light">
+                    <h5 className="mb-3">SiberSim</h5>
+                  </Card.Header>
+
                   <Card.Body>
                     <Row>
-                      {/* //name */}
+                      {/* Customer / Company */}
                       <Form.Group
                         as={Col}
                         md="4"
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        {/* <Form.Label>
-                          Name <span className="text-danger">*</span>
-                        </Form.Label> */}
                         <Form.Label>
                           Customer/Company Name{" "}
                           <span className="text-danger">*</span>
@@ -527,14 +527,12 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
-                      {/* phone number */}
                       <Form.Group
                         as={Col}
                         md="4"
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        {/* <Form.Label>Phone Number</Form.Label> */}
                         <Form.Label>Customer/Company Phone Number</Form.Label>
                         <Form.Control
                           type="text"
@@ -553,14 +551,12 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
-                      {/* email */}
                       <Form.Group
                         as={Col}
                         md="4"
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        {/* <Form.Label>Email</Form.Label> */}
                         <Form.Label>Customer/Company Email</Form.Label>
                         <Form.Control
                           type="text"
@@ -585,7 +581,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        {/* <Form.Label>Address</Form.Label> */}
                         <Form.Label>Customer/Company Address</Form.Label>
                         <Form.Control
                           type="text"
@@ -604,6 +599,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
+                      {/* System */}
                       <Form.Group
                         as={Col}
                         md="4"
@@ -656,15 +652,13 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
+                      {/* Quiz / Website */}
                       <Form.Group
                         as={Col}
                         md="4"
                         controlid="validationFormik102"
                         className="mb-3"
                       >
-                        {/* <Form.Label>
-                          Max Question <span className="text-danger">*</span>
-                        </Form.Label> */}
                         <Form.Label>
                           Quiz Max Question Limit{" "}
                           <span className="text-danger">*</span>
@@ -685,7 +679,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.max_questions}
                         </Form.Control.Feedback>
                       </Form.Group>
-
                       <Form.Group
                         as={Col}
                         md="4"
@@ -693,7 +686,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
-                          {/* <Form.Label>Pause Limit</Form.Label> */}
                           <Form.Label>Max Hibernate Scenario Limit</Form.Label>
                           <OverlayTrigger
                             placement="bottom"
@@ -726,7 +718,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
-                      {/* url website */}
                       <Form.Group
                         as={Col}
                         md="4"
@@ -751,41 +742,54 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </Form.Control.Feedback>
                       </Form.Group>
 
+                      {/* Toggles */}
+
                       <Form.Group
                         as={Col}
                         md="4"
-                        controlId="validationFormikOtp"
-                        className="my-4"
+                        controlid="validationFormik102"
+                        className="mb-3"
                       >
-                        <div className="d-flex gap-2 align-items-center">
-                          <Form.Label className="mb-0">
-                            OTP Verification Required
-                          </Form.Label>
-                          <OverlayTrigger
-                            placement="bottom"
-                            overlay={<Tooltip>Toggle OTP Requirement</Tooltip>}
-                          >
-                            <label className="custom-switch mb-0">
-                              <input
-                                type="checkbox"
-                                className="custom-switch-input"
-                                checked={otp_verification}
-                                onChange={(e) => {
-                                  setisotp_verification(!otp_verification);
-                                  formValidation.setFieldValue(
-                                    "otp_verification",
-                                    e.target.checked
-                                  );
-                                }}
-                              />
-                              <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                            </label>
-                          </OverlayTrigger>
-                        </div>
+                        <Form.Label>SiberSim Alert Time (Minutes)</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="proxmox_alert_time"
+                          autoComplete="off"
+                          placeholder="Enter SiberSim Alert Time"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_alert_time}
+                          isInvalid={
+                            formValidation.touched.proxmox_alert_time &&
+                            formValidation.errors.proxmox_alert_time
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_alert_time}
+                        </Form.Control.Feedback>
                       </Form.Group>
-
-                      {/* ------------- */}
-
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <Form.Label>SiberSim Email Sent</Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="proxmox_email_sent"
+                          autoComplete="off"
+                          placeholder="Enter SiberSim Email Sent"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_email_sent}
+                          isInvalid={
+                            formValidation.touched.proxmox_email_sent &&
+                            formValidation.errors.proxmox_email_sent
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_email_sent}
+                        </Form.Control.Feedback>
+                      </Form.Group>
                       <Form.Group
                         as={Col}
                         md="4"
@@ -826,53 +830,116 @@ const CompanySettingsCommon = ({ isSL }) => {
                       <Form.Group
                         as={Col}
                         md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
+                        controlId="validationFormikOtp"
+                        className="my-4"
                       >
-                        <Form.Label>SiberSim Email Sent</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="proxmox_email_sent"
-                          autoComplete="off"
-                          placeholder="Enter SiberSim Email Sent"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.proxmox_email_sent}
-                          isInvalid={
-                            formValidation.touched.proxmox_email_sent &&
-                            formValidation.errors.proxmox_email_sent
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.proxmox_email_sent}
-                        </Form.Control.Feedback>
+                        <div className="d-flex gap-2 align-items-center">
+                          <Form.Label className="mb-0">
+                            OTP Verification Required
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={<Tooltip>Toggle OTP Requirement</Tooltip>}
+                          >
+                            <label className="custom-switch mb-0">
+                              <input
+                                type="checkbox"
+                                className="custom-switch-input"
+                                checked={otp_verification}
+                                onChange={(e) => {
+                                  setisotp_verification(!otp_verification);
+                                  formValidation.setFieldValue(
+                                    "otp_verification",
+                                    e.target.checked
+                                  );
+                                }}
+                              />
+                              <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                            </label>
+                          </OverlayTrigger>
+                        </div>
                       </Form.Group>
 
-                      <Form.Group
-                        as={Col}
-                        md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
-                      >
-                        <Form.Label>SiberSim Alert Time (Minutes)</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="proxmox_alert_time"
-                          autoComplete="off"
-                          placeholder="Enter SiberSim Alert Time"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.proxmox_alert_time}
-                          isInvalid={
-                            formValidation.touched.proxmox_alert_time &&
-                            formValidation.errors.proxmox_alert_time
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.proxmox_alert_time}
-                        </Form.Control.Feedback>
-                      </Form.Group>
+                      {!isSL && (
+                        <>
+                          <Form.Group as={Col} md="4" className="my-4">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label className="mb-0">
+                                Export Master Data
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Export the Masters of Scenario , Component ,
+                                    Component Category , Scenario Category and
+                                    Scenario Subcategory
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+                            <div className="mt-3">
+                              <Button
+                                type="button"
+                                variant="outline-info"
+                                onClick={() => handleExport()}
+                              >
+                                <i className="fa fa-file-excel-o"></i> Export
+                              </Button>
+                            </div>
+                          </Form.Group>
+                          <Form.Group as={Col} md="4" className="my-4">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label className="mb-0">
+                                Import Master Data
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Import the Masters of Scenario , Component ,
+                                    Component Category , Scenario Category and
+                                    Scenario Subcategory
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+                            <div className="mt-3">
+                              <Button
+                                type="button"
+                                variant="outline-warning"
+                                onClick={() => {
+                                  setShowListImport(true);
+                                  handleImportModal();
+                                }}
+                              >
+                                <i className="fa fa-file-excel-o"></i> Import
+                              </Button>
+                            </div>
+                          </Form.Group>
+                        </>
+                      )}
+                    </Row>
+                  </Card.Body>
+                </Card>
 
-                      {/* ------------ */}
+                <Card className="mb-4 border custom-card">
+                  <Card.Header className="bg-light">
+                    <h5 className="mb-3">Proxmox</h5>
+                  </Card.Header>
 
+                  <Card.Body>
+                    <Row>
                       <Form.Group
                         as={Col}
                         md="4"
@@ -880,9 +947,8 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
-                          {/* <Form.Label>Cloning Delay (Seconds)</Form.Label> */}
                           <Form.Label>
-                            Delay Bettwen Two Component Cloning (In Sec)
+                            Delay Bettwen Two Component Cloning (Sec)
                           </Form.Label>
                           <OverlayTrigger
                             placement="bottom"
@@ -914,6 +980,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.cloning_delay}
                         </Form.Control.Feedback>
                       </Form.Group>
+
                       <Form.Group
                         as={Col}
                         md="4"
@@ -961,6 +1028,46 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>Hibernate Delay (Seconds)</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Hibernate delay between the components in
+                                seconds.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="hibernate_delay"
+                          autoComplete="off"
+                          placeholder="Enter system footer"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.hibernate_delay}
+                          isInvalid={
+                            formValidation.touched.hibernate_delay &&
+                            formValidation.errors.hibernate_delay
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.hibernate_delay}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
                           <Form.Label>Termination Delay (Seconds)</Form.Label>
                           <OverlayTrigger
                             placement="bottom"
@@ -977,7 +1084,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                             ></i>
                           </OverlayTrigger>
                         </div>
-
                         <Form.Control
                           type="text"
                           name="termination_delay"
@@ -994,79 +1100,15 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.termination_delay}
                         </Form.Control.Feedback>
                       </Form.Group>
-
-                      {!isSL && (
-                        <>
-                          <Form.Group as={Col} md="4" className="my-4">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <Form.Label className="mb-0">
-                                Export Master Data
-                              </Form.Label>
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={
-                                  <Tooltip>
-                                    Export the Masters of Scenario , Component ,
-                                    Component Category , Scenario Category and
-                                    Scenario Subcategory
-                                  </Tooltip>
-                                }
-                              >
-                                <i
-                                  className="fa fa-info-circle text-info"
-                                  style={{ cursor: "pointer" }}
-                                ></i>
-                              </OverlayTrigger>
-                            </div>
-                            <div className="mt-3">
-                              <Button
-                                type="button"
-                                variant="outline-info"
-                                onClick={() => handleExport()}
-                              >
-                                <i className="fa fa-file-excel-o"></i> Export
-                              </Button>
-                            </div>
-                          </Form.Group>
-
-                          <Form.Group as={Col} md="4" className="my-4">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <Form.Label className="mb-0">
-                                Import Master Data
-                              </Form.Label>
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={
-                                  <Tooltip>
-                                    Import the Masters of Scenario , Component ,
-                                    Component Category , Scenario Category and
-                                    Scenario Subcategory
-                                  </Tooltip>
-                                }
-                              >
-                                <i
-                                  className="fa fa-info-circle text-warning"
-                                  style={{ cursor: "pointer" }}
-                                ></i>
-                              </OverlayTrigger>
-                            </div>
-                            <div className="mt-3">
-                              <Button
-                                type="button"
-                                variant="outline-warning"
-                                onClick={() => {
-                                  setShowListImport(true);
-                                  handleImportModal();
-                                }}
-                              >
-                                <i className="fa fa-file-excel-o"></i> Import
-                              </Button>
-                            </div>
-                          </Form.Group>
-                        </>
-                      )}
                     </Row>
+                  </Card.Body>
+                </Card>
 
+                <Card className="">
+                  <Card.Header className="bg-light">
+                    <h5 className="mb-3">SiberSim image</h5>
+                  </Card.Header>
+                  <Card.Body>
                     <Row>
                       <Col md={12} className="">
                         <Alert>
@@ -1287,27 +1329,26 @@ const CompanySettingsCommon = ({ isSL }) => {
                         </div>
                       </Form.Group>
                     </Row>
-
-                    <Row>
-                      <Col className="d-flex justify-content-end">
-                        {oneClick ? (
-                          <Button>
-                            <Spinner
-                              as="span"
-                              animation="grow"
-                              size="sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Loading
-                          </Button>
-                        ) : (
-                          <Button type="submit">Submit</Button>
-                        )}
-                      </Col>
-                    </Row>
                   </Card.Body>
                 </Card>
+                <Row>
+                  <Col className="d-flex justify-content-end mt-3">
+                    {oneClick ? (
+                      <Button>
+                        <Spinner
+                          as="span"
+                          animation="grow"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Loading
+                      </Button>
+                    ) : (
+                      <Button type="submit">Submit</Button>
+                    )}
+                  </Col>
+                </Row>
               </Form>
             </Col>
           </Row>

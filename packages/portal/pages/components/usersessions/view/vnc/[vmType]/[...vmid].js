@@ -63,6 +63,8 @@ export default function ProxmoxConsole() {
   const handleSelectSnapshot = (snapshotId) => {
     setSelectedSnapshotId(snapshotId);
   };
+  console.log("snapshotApiDatasnapshotApiData", snapshotApiData);
+  console.log("snapshotApiDatasnapshotApiDat123a", snapshotApiData1);
 
   const updateStatus = (msg) => setStatus(msg);
   useEffect(() => {
@@ -354,51 +356,70 @@ export default function ProxmoxConsole() {
       >
         <Modal.Body className="text-white" style={{ background: "#24243E" }}>
           <h2 className="text-center mb-2">Snapshot List</h2>
-          <div className="p-3 rounded" style={{ background: "#24243E" }}>
-            <div
-              className=" justify-content-between align-items-center p-3 rounded-5"
-              style={{
-                background: "#0E0E23",
-                fontSize: "13px",
-                border: "3px dashed #6f6f8a",
-              }}
-            >
+
+          {/* HEADER DETAILS – SHOW ONLY IF SNAPSHOTS EXIST */}
+          {snapshotList.length > 0 && (
+            <div className="p-3 rounded" style={{ background: "#24243E" }}>
               <div
+                className="justify-content-between align-items-center p-3 rounded-5"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "95px 10px auto",
-                  rowGap: "6px",
+                  background: "#0E0E23",
+                  fontSize: "13px",
+                  border: "3px dashed #6f6f8a",
                 }}
               >
-                {/* Row 1 */}
-                <div style={{ fontSize: "12px", fontWeight: 400 }}>
-                  Component Name
-                </div>
-                <div>:</div>
-                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
-                  {snapshotApiData1?.componentname}
-                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "95px 10px auto",
+                    rowGap: "6px",
+                  }}
+                >
+                  {/* Row 1 */}
+                  <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                    Component Name
+                  </div>
+                  <div>:</div>
+                  <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                    {snapshotApiData1?.componentname}
+                  </div>
 
-                {/* Row 2 */}
-                <div style={{ fontSize: "12px", fontWeight: 400 }}>
-                  Scenario Name
-                </div>
-                <div>:</div>
-                <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
-                  {snapshotApiData1?.scenariotitle}
+                  {/* Row 2 */}
+                  <div style={{ fontSize: "12px", fontWeight: 400 }}>
+                    Scenario Name
+                  </div>
+                  <div>:</div>
+                  <div className="fs-6 fw-bold" style={{ color: "#dc3545" }}>
+                    {snapshotApiData1?.scenariotitle}
+                  </div>
                 </div>
               </div>
-
-              {/* <p>Component Type : {snapshotApiData1?.componenttype}</p> */}
             </div>
-          </div>
-          <div className="p-2 rounded" style={{ background: "#24243E" }}>
-            <div className="p-4 rounded" style={{ background: "#24243E" }}>
-              <div className="d-flex justify-content-center align-items-center gap-4">
-                {snapshotList.slice(0, 3).map((snap, index) => (
+          )}
+
+          {/* SNAPSHOT CONTENT */}
+          <div className="p-4 rounded" style={{ background: "#24243E" }}>
+            <div className="d-flex justify-content-center align-items-center gap-4">
+              {/* EMPTY STATE */}
+              {snapshotList.length === 0 ? (
+                <div
+                  className="text-center text-muted"
+                  style={{
+                    fontSize: "14px",
+                    padding: "40px",
+                    background: "#0E0E23",
+                    borderRadius: "12px",
+                    border: "2px dashed #6f6f8a",
+                    minWidth: "300px",
+                  }}
+                >
+                  No snapshot taken
+                </div>
+              ) : (
+                snapshotList.slice(0, 3).map((snap, index) => (
                   <React.Fragment key={snap.snapshotid}>
                     <div
-                      className=" rounded-5 d-flex flex-column justify-content-between"
+                      className="rounded-5 d-flex flex-column justify-content-between"
                       style={{
                         background: "#0E0E23",
                         minWidth: "190px",
@@ -409,6 +430,7 @@ export default function ProxmoxConsole() {
                         boxShadow: "0px 0px 15px rgba(0,0,0,0.25)",
                       }}
                     >
+                      {/* PARENT BADGE */}
                       {index === 0 && (
                         <span
                           className="position-absolute fw-bold"
@@ -420,29 +442,30 @@ export default function ProxmoxConsole() {
                             padding: "2px 10px",
                             borderRadius: "6px",
                             fontSize: "11px",
-                            boxShadow: "0px 2px 6px rgba(0,0,0,0.3)",
                           }}
                         >
                           Parent
                         </span>
                       )}
+
                       <img
                         src={snapicon.src}
+                        alt="Snapshot"
                         className="mx-auto"
                         style={{ width: "75px", height: "75px", opacity: 0.9 }}
                       />
+
                       <h5
                         className="text-center"
                         style={{
                           fontSize: "12px",
                           fontWeight: 400,
-                          lineHeight: "16px",
-                          margin: "4px 0 2px",
                           wordBreak: "break-all",
                         }}
                       >
                         {snap.snapshot_name}
                       </h5>
+
                       <p
                         className="text-center m-0"
                         style={{ fontSize: "11px", opacity: 0.7 }}
@@ -450,22 +473,19 @@ export default function ProxmoxConsole() {
                         Created: {new Date(snap.createdon).toLocaleString()}
                       </p>
                     </div>
+
+                    {/* ARROW */}
                     {index < snapshotList.slice(0, 3).length - 1 && (
                       <div
                         className="align-self-center"
-                        style={{
-                          fontSize: "26px",
-                          color: "#fff",
-                          opacity: 0.5,
-                        }}
+                        style={{ fontSize: "26px", opacity: 0.5 }}
                       >
-                        {/* → */}
-                        <i class="fa fa-arrow-right"></i>
+                        <i className="fa fa-arrow-right"></i>
                       </div>
                     )}
                   </React.Fragment>
-                ))}
-              </div>
+                ))
+              )}
             </div>
           </div>
 

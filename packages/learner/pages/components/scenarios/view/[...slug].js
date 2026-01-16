@@ -145,14 +145,10 @@ const ScenariosView = () => {
 
     errorData: state?.scenarios?.error,
   }));
-
-  console.log(
-    "hasresumescenarioSucchasresumescenarioSucc",
-    hasresumescenarioSucc
-  );
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
+const learnerId = getUserDataFromLocal?.learner_id;
 
   useEffect(() => {
     dispatch(getTabList());
@@ -181,31 +177,8 @@ const ScenariosView = () => {
       }
     }
   }, [tabListSucc]);
-
-  // useEffect(() => {
-  //   if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
-  //     const scenario = getSingleScenariosSucc[0];
-  //     setRowValues(scenario);
-
-  //     // 🔥 FIX: ONLY set from backend on first load, NOT after button click
-  //     setScenarioStatus((prev) => {
-  //       if (prev === "Pause" || prev === "Resume") return prev;
-  //       return scenario.status;
-  //     });
-
-  //     if (scenario.calculated_timer) {
-  //       const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
-  //       const totalSeconds = h * 3600 + m * 60 + s;
-  //       setElapsedSeconds(totalSeconds);
-
-  //       if (scenario.status === "Start" || scenario.status === "Resume") {
-  //         setTimerActive(true);
-  //         setTimerPaused(false);
-  //       }
-  //     }
-  //   }
-  // }, [getSingleScenariosSucc]);
-
+  console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
+  
   const activeScenarioIdRef = useRef(null);
   useEffect(() => {
     if (!getSingleScenariosSucc?.length || !query.slug?.[0]) return;
@@ -232,18 +205,17 @@ const ScenariosView = () => {
       }
     }
   }, [getSingleScenariosSucc, query.slug?.[0]]);
-
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       setActionLoading(false); //  Reset loading for Start action
       setIsTerminatingOrCompleting(false); // Reset loading for Start action
       dispatch(getSingleScenarios(query.slug[0]));
 
-      handleClone(saveScenariosData?.scenariolearnersessionuuid);
+      handleClone(saveScenariosData?.vmrequestid);
       const payload = {
         scenarioid: rowValues?.scenarioid,
         learnerid: getUserDataFromLocal?.learner_id,
-        scenariolearnersessionid: saveScenariosData?.scenariolearnersessionid,
+        vmrequestid: saveScenariosData?.vmrequestid,
       };
       dispatch(getConfigurations(payload));
       setShowCloneModal(true);
@@ -276,6 +248,7 @@ const ScenariosView = () => {
       dispatch(getSingleScenarios(query.slug[0]));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
+  
   useEffect(() => {
     if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
       if (hasdeletescenarioSucc?.statusCode === 200) {
@@ -379,7 +352,6 @@ const ScenariosView = () => {
     setTimerPaused(true);
     setTimerActive(false);
   };
-
   const handleConfirmAction = async () => {
     try {
       setActionLoading(true);
@@ -405,15 +377,13 @@ const ScenariosView = () => {
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
-        instructor_id: scenarioData?.instructor_id,
         status: mappedStatus[confirmAction],
         timer:
           confirmAction === "initializing"
             ? "00:00:00"
             : formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
-        type: "learner",
+        vmrequestid: scenarioData?.vmrequestid,
+        type: "Learner",
       };
 
       if (confirmAction === "initializing") {
@@ -462,7 +432,6 @@ const ScenariosView = () => {
       alert("Something went wrong while confirming the action.");
     }
   };
-
   const handlePause = async () => {
     try {
       setConfirmAction("pause");
@@ -475,8 +444,8 @@ const ScenariosView = () => {
         instructor_id: scenarioData?.instructor_id,
         status: "Pause",
         timer: formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+        vmrequestid: scenarioData?.vmrequestid,
+        // scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
       };
 
       // 🔹 Step 1: pause first
@@ -513,74 +482,21 @@ const ScenariosView = () => {
     }
   };
 
-  // const handleResume = async () => {
-  //   try {
-  //     setConfirmAction("resume");
-  //     setActionLoading(true);
-
-  //     const scenarioData = getSingleScenariosSucc?.[0];
-  //     const payload = {
-  //       scenarioid: scenarioData?.scenarioid,
-  //       learner_id: getUserDataFromLocal?.learner_id,
-  //       instructor_id: scenarioData?.instructor_id,
-  //       status: "Resume",
-  //       timer: formatTime(elapsedSeconds),
-  //       scenariolearnerid: scenarioData?.scenariolearnerid,
-  //       scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
-  //     };
-
-  //     //   Step 1: resume first
-  //     const resResume = await dispatch(resumescenario(payload));
-  //     const resumeOk =
-  //       resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
-
-  //     if (!resumeOk) {
-  //       console.error("Unable to resume scenario.");
-  //       return;
-  //     }
-
-  //     // Step 2: only update status if resume succeeded
-  //     const resUpdate = await dispatch(updateSessionStatus(payload));
-
-  //     toast.success(
-  //       <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-  //         Scenario Resumed Successfully.
-  //       </p>,
-  //       {
-  //         position: toast.POSITION.TOP_RIGHT,
-  //         hideProgressBar: false,
-  //         theme: "colored",
-  //       }
-  //     );
-
-  //     setScenarioStatus("Resume");
-  //     dispatch(getSingleScenarios(query.slug[0]));
-  //   } catch (err) {
-  //     console.error("Resume failed:", err);
-  //   } finally {
-  //     setActionLoading(false);
-  //     setConfirmAction(null);
-  //   }
-  // };
-
   const handleResume = async () => {
     try {
       setConfirmAction("resume");
       setActionLoading(true);
-
       const scenarioData = getSingleScenariosSucc?.[0];
-
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
         instructor_id: scenarioData?.instructor_id,
         status: "Resume",
         timer: formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+        vmrequestid: scenarioData?.vmrequestid,
       };
 
-      // 🔹 Step 1: Validate with backend
+      //Step 1: Validate with backend
       const canResumeRes = await dispatch(canresumescenario(payload));
 
       const canResumeOk = canResumeRes?.statusCode === 200;
@@ -752,12 +668,11 @@ const ScenariosView = () => {
       scenarioStatus
     )
   );
-  console.log("scenarioStatusscenarioStatusscenarioStatus", scenarioStatus);
+console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
 
   return (
     <>
       <Seo title="View Scenario" />
-
       <ToastContainer />
       <Row className="view-component-row-sm">
         <Col md={12}>
@@ -1695,6 +1610,7 @@ const ScenariosView = () => {
         setShowChat={setShowChat}
         scenarioTitle={rowValues?.scenariotitle}
         rowValues={rowValues}
+        learner_id={getUserDataFromLocal?.learner_id}
       />
     </>
   );

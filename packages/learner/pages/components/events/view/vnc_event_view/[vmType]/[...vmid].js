@@ -1335,9 +1335,9 @@ export default function ProxmoxConsole() {
                         >
                           Rollback
                         </Button>
-                        <button onClick={handleOpenDrawer} style={subButtonStyle}>
+                        {/* <button onClick={handleOpenDrawer} style={subButtonStyle}>
                           Convert Component
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </div>

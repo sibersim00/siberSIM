@@ -1103,7 +1103,7 @@ const createSnapshot =
       // Fetch config with componentname
       const vmConfig = await db.sequelize.query(
         `SELECT master_vmid, learner_id, scenarioid, componentname
-         FROM vm_configuration
+         FROM vm_config
          WHERE vmid = ?
          LIMIT 1`,
         {
@@ -1538,6 +1538,14 @@ const pauseScenarioLearner =
         }
 
         if (pauseResult?.status === 200) {
+           await db.sequelize.query(
+            `UPDATE vm_config
+             SET status = 'Hibernate', modifiedon = NOW()
+             WHERE vmrequestid = ? AND vmid = ?`,
+            {
+              replacements: [vmrequestid, vmid],
+            }
+          );
           results.push({
             vmid,
             status: "success",
@@ -1637,6 +1645,14 @@ const resumeScenarioLearner =
         }
         // ----------- SUCCESS CASE -----------
         if (resumeResult?.status === 200) {
+           await db.sequelize.query(
+            `UPDATE vm_config
+             SET status = 'Running', modifiedon = NOW()
+             WHERE vmrequestid = ? AND vmid = ?`,
+            {
+              replacements: [vmrequestid, vmid],
+            }
+          );
           results.push({
             vmid,
             status: "success",

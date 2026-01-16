@@ -25,14 +25,13 @@ import {
   getLogs,
   getEventList,
   eventRestart,
+  deletescenario,
   clearEventRestart,
   clearGetSessionStatusList,
   pausescenario,
   resumescenario,
 } from "../../../shared/redux/slices/events/events";
-import {
-  getTabList,
-} from "../../../shared/redux/slices/scenarios/scenarios";
+import { getTabList } from "../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../shared/layout-components/seo/seo";
 import "../../../shared/utils/i18n";
 import ScenarioDiagram from "./scenariodiagram";
@@ -151,15 +150,17 @@ const Dashboard = () => {
     }
     return () => clearInterval(reverseInterval);
   }, [reverseTimerActive, reverseSeconds]);
+  console.log("rowValuesrowValuesroddddddddwValues", saveScenariosData);
 
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       dispatch(getEventList());
 
-      handleClone(saveScenariosData?.eventlearnerid);
+      handleClone(saveScenariosData?.vmrequestid);
       const payload = {
         scenarioid: rowValues?.scenarioid,
         learnerid: rowValues?.learner_id,
+        vmrequestid: saveScenariosData?.vmrequestid,
         eventlearnerid: saveScenariosData?.eventlearnerid,
       };
       dispatch(getEventsConfigurations(payload));
@@ -169,27 +170,26 @@ const Dashboard = () => {
   }, [saveScenariosData]);
 
   useEffect(() => {
-  if (
-    hasGetUpdateSessionStatusSucc?.statusCode == 200 &&
-    confirmAction !== "pause" &&
-    confirmAction !== "resume"
-  ) {
-    // logout only for terminate/stop/similar actions
-    localStorage.removeItem("userLearner");
-    localStorage.removeItem("accessTokenLearner");
-    localStorage.removeItem("menusLearner");
-    localStorage.clear();
-    dispatch({ type: "LOGOUT" });
-    navigate.replace("/event-login", "", { shallow: true });
-  }
-}, [hasGetUpdateSessionStatusSucc]);
-
+    if (
+      hasGetUpdateSessionStatusSucc?.statusCode == 200 &&
+      confirmAction !== "pause" &&
+      confirmAction !== "resume"
+    ) {
+      // logout only for terminate/stop/similar actions
+      localStorage.removeItem("userLearner");
+      localStorage.removeItem("accessTokenLearner");
+      localStorage.removeItem("menusLearner");
+      localStorage.clear();
+      dispatch({ type: "LOGOUT" });
+      navigate.replace("/event-login", "", { shallow: true });
+    }
+  }, [hasGetUpdateSessionStatusSucc]);
 
   useEffect(() => {
     // Success case
     if (hasGetEventRestartSucc?.statusCode === 200) {
       dispatch(getEventList());
-      handleClone(rowValues?.eventlearnerid);
+      handleClone(rowValues?.vmrequestid);
       setShowCloneModal(true);
       setIsActionInProgress(false);
       dispatch(clearEventRestart());
@@ -245,7 +245,7 @@ const Dashboard = () => {
       dispatch(clearHasError());
     }
   }, [errorData]);
-console.log("hasGetEventSucchasGetEventSucchasGetEventSucc",hasGetEventSucc);
+  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
 
   useEffect(() => {
     if (hasGetEventSucc && hasGetEventSucc.length > 0) {
@@ -300,194 +300,105 @@ console.log("hasGetEventSucchasGetEventSucchasGetEventSucc",hasGetEventSucc);
     setShowConfirm(true);
   };
 
-  // const handlePause = async () => {
-  //   try {
-  //     setConfirmAction("pause");
-  //     setActionLoading(true);
-  //     const scenarioData = hasGetEventSucc?.[0];
-  //     const payload = {
-  //       scenarioid: scenarioData?.scenarioid,
-  //       learner_id: scenarioData?.learner_id,
-  //       instructor_id: scenarioData?.instructor_id,
-  //       status: "Pause",
-  //       timer: formatTime(elapsedSeconds),
-  //       eventlearnerid: scenarioData?.eventlearnerid,
-  //       type: "learner",
-  //     };
-  //     const resPause = await dispatch(pausescenario(payload));
-  //     const pauseOk =
-  //       resPause?.payload?.statusCode === 200 || resPause?.statusCode === 200;
+  const handlePause = async () => {
+    try {
+      setConfirmAction("pause");
+      setActionLoading(true);
 
-  //     if (!pauseOk) {
-  //       console.error("Failed to pause scenario.");
-  //       return;
-  //     }
+      const scenarioData = hasGetEventSucc?.[0];
+      const payload = {
+        scenarioid: scenarioData?.scenarioid,
+        learner_id: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        instructor_id: scenarioData?.instructor_id,
+        status: "Pause",
+        timer: formatTime(elapsedSeconds),
+        eventlearnerid: scenarioData?.eventlearnerid,
+        type: "learner",
+      };
 
-  //     // 🔹 Step 2: pause success → update session status
-  //     const resUpdate = await dispatch(updateSessionStatus(payload));
+      const resPause = await dispatch(pausescenario(payload));
+      const pauseOk =
+        resPause?.payload?.statusCode === 200 || resPause?.statusCode === 200;
 
-  //     toast.success(
-  //       <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-  //         Scenario Paused Successfully.
-  //       </p>,
-  //       {
-  //         position: toast.POSITION.TOP_RIGHT,
-  //         hideProgressBar: false,
-  //         theme: "colored",
-  //       }
-  //     );
+      if (!pauseOk) {
+        console.error("Failed to pause scenario.");
+        return;
+      }
 
-  //     setScenarioStatus("Pause");
-  //   } catch (err) {
-  //     console.error("Failed to pause scenario.");
-  //   } finally {
-  //     setActionLoading(false);
-  //     setConfirmAction(null);
-  //   }
-  // };
-const handlePause = async () => {
-  try {
-    setConfirmAction("pause");
-    setActionLoading(true);
+      // 🔹 Step 2: pause success → update session status
+      const resUpdate = await dispatch(updateSessionStatus(payload));
 
-    const scenarioData = hasGetEventSucc?.[0];
-    const payload = {
-      scenarioid: scenarioData?.scenarioid,
-      learner_id: scenarioData?.learner_id,
-      instructor_id: scenarioData?.instructor_id,
-      status: "Pause",
-      timer: formatTime(elapsedSeconds),
-      eventlearnerid: scenarioData?.eventlearnerid,
-      type: "learner",
-    };
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Paused Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
 
-    // STEP 1: Call pause API
-    const resPause = await dispatch(pausescenario(payload));
-    const pauseOk =
-      resPause?.payload?.statusCode === 200 || resPause?.statusCode === 200;
+      setScenarioStatus("Pause");
+      dispatch(getEventList());
+      // dispatch(getSingleScenarios(query.slug[0]));
+    } catch (err) {
+      console.error("Failed to pause scenario.");
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
 
-    if (!pauseOk) return;
+  const handleResume = async () => {
+    try {
+      setConfirmAction("resume");
+      setActionLoading(true);
 
-    // STEP 2: Call update session API
-    const resUpdate = await dispatch(updateSessionStatus(payload));
-    const updateOk =
-      resUpdate?.payload?.statusCode === 200 ||
-      resUpdate?.statusCode === 200;
+      const scenarioData = hasGetEventSucc?.[0];
+      const payload = {
+        scenarioid: scenarioData?.scenarioid,
+        learner_id: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        instructor_id: scenarioData?.instructor_id,
+        status: "Resume",
+        timer: formatTime(elapsedSeconds),
+        eventlearnerid: scenarioData?.eventlearnerid,
+        type: "learner",
+      };
+      const resResume = await dispatch(resumescenario(payload));
+      const resumeOk =
+        resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
 
-    if (!updateOk) return;
+      if (!resumeOk) {
+        return;
+      }
+      // 🔹 Step 3: Update session status in DB
+      await dispatch(updateSessionStatus(payload));
 
-    // ⛔ NOW STOP TIMER (Only after both APIs succeed)
-    setTimerActive(false);
-    setTimerPaused(true);
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Resumed Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
 
-    toast.success("Scenario Paused Successfully.");
-
-    setScenarioStatus("Pause");
-    dispatch(getSingleScenarios(query.slug[0]));
-  } catch (err) {
-    toast.error("Failed to pause scenario.");
-  } finally {
-    setActionLoading(false);
-    setConfirmAction(null);
-  }
-};
-
-
-
-
-
-  // const handleResume = async () => {
-  //   try {
-  //     setConfirmAction("resume");
-  //     setActionLoading(true);
-
-  //     const scenarioData = hasGetEventSucc?.[0];
-  //     const payload = {
-  //       scenarioid: scenarioData?.scenarioid,
-  //       learner_id: scenarioData?.learner_id,
-  //       instructor_id: scenarioData?.instructor_id,
-  //       status: "Resume",
-  //       timer: formatTime(elapsedSeconds),
-  //       eventlearnerid: scenarioData?.eventlearnerid,
-  //       type: "learner",
-  //     };
-  //     const resResume = await dispatch(resumescenario(payload));
-  //     const resumeOk =
-  //       resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
-  //     if (!resumeOk) {
-  //       console.error("Unable to resume scenario.");
-  //       return;
-  //     }
-  //     const resUpdate = await dispatch(updateSessionStatus(payload));
-  //     toast.success(
-  //       <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-  //         Scenario Resumed Successfully.
-  //       </p>,
-  //       {
-  //         position: toast.POSITION.TOP_RIGHT,
-  //         hideProgressBar: false,
-  //         theme: "colored",
-  //       }
-  //     );
-
-  //     setScenarioStatus("Resume");
-  //   } catch (err) {
-  //     console.error("Resume failed:", err);
-  //   } finally {
-  //     setActionLoading(false);
-  //     setConfirmAction(null);
-  //   }
-  // };
-const handleResume = async () => {
-  try {
-    setConfirmAction("resume");
-    setActionLoading(true);
-
-    const scenarioData = hasGetEventSucc?.[0];
-    const payload = {
-      scenarioid: scenarioData?.scenarioid,
-      learner_id: scenarioData?.learner_id,
-      instructor_id: scenarioData?.instructor_id,
-      status: "Resume",
-      timer: formatTime(elapsedSeconds),
-      eventlearnerid: scenarioData?.eventlearnerid,
-      type: "learner",
-    };
-
-    // STEP 1: Resume API
-    const resResume = await dispatch(resumescenario(payload));
-    const resumeOk =
-      resResume?.payload?.statusCode === 200 ||
-      resResume?.statusCode === 200;
-
-    if (!resumeOk) return;
-
-    // STEP 2: Update session API
-    const resUpdate = await dispatch(updateSessionStatus(payload));
-    const updateOk =
-      resUpdate?.payload?.statusCode === 200 ||
-      resUpdate?.statusCode === 200;
-
-    if (!updateOk) return;
-
-    // ▶ NOW START TIMER AGAIN
-    setTimerActive(true);
-    setTimerPaused(false);
-
-    toast.success("Scenario Resumed Successfully.");
-
-    setScenarioStatus("Resume");
-    dispatch(getSingleScenarios(query.slug[0]));
-  } catch (err) {
-    console.error("Resume failed:", err);
-  } finally {
-    setActionLoading(false);
-    setConfirmAction(null);
-  }
-};
+      setScenarioStatus("Resume");
+      dispatch(getEventList());
+    } catch (err) {
+      console.error("Resume failed:", err);
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
 
   const handleDelete = () => {
-    setIsTerminatingOrCompleting(true);
     setConfirmAction("delete");
     setShowConfirm(true);
     setTimerPaused(true);
@@ -503,6 +414,7 @@ const handleResume = async () => {
       setTimerPaused(false);
     }
   }, [scenarioStatus]);
+  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
 
   const handleConfirmAction = async () => {
     try {
@@ -526,7 +438,8 @@ const handleResume = async () => {
 
       const payload = {
         scenarioid: scenarioData?.scenarioid,
-        learnerid: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        learner_id: scenarioData?.learner_id,
         status: mappedStatus[confirmAction],
         timer: formatTime(elapsedSeconds),
         eventlearnerid: scenarioData?.eventlearnerid,
@@ -545,6 +458,9 @@ const handleResume = async () => {
       } else if (confirmAction === "restart") {
         setIsActionInProgress(true);
         dispatch(eventRestart(payload));
+      } else if (confirmAction === "delete") {
+        dispatch(updateSessionStatus(payload));
+        dispatch(deletescenario(payload));
       }
       setShowConfirm(false);
     } catch (err) {
@@ -553,7 +469,6 @@ const handleResume = async () => {
     }
   };
 
-  
   useEffect(() => {
     if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
       if (hasdeletescenarioSucc?.statusCode === 200) {
@@ -573,7 +488,7 @@ const handleResume = async () => {
       }
       setActionLoading(false); // Remove loading
       dispatch(cleardeletescenario());
-      dispatch(getSingleScenarios(query.slug[0]));
+      dispatch(hasGetEventSucc(query.slug[0]));
     }
   }, [hasdeletescenarioSucc, errorData]);
   const handleCancelAction = () => {
@@ -608,17 +523,17 @@ const handleResume = async () => {
     return `${hours}:${mins}:${secs}`;
   };
 
-  const handleClone = (eventlearnerid) => {
-    if (!eventlearnerid) return;
+  const handleClone = (vmrequestid) => {
+    if (!vmrequestid) return;
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
     setShowCloneModal(true);
-    dispatch(getSessionStatusList(eventlearnerid));
+    dispatch(getSessionStatusList(vmrequestid));
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
-        dispatch(getSessionStatusList(eventlearnerid));
+        dispatch(getSessionStatusList(vmrequestid));
       }, 10000);
     }, 100);
   };
@@ -695,16 +610,15 @@ const handleResume = async () => {
     setScenarioStatus("Initializing");
     dispatch(getEventList());
   };
-// useEffect(() => {
-//     let interval;
-//     if (timerActive && !timerPaused) {
-//       interval = setInterval(() => {
-//         setElapsedSeconds((prev) => prev + 1);
-//       }, 1000);
-//     }
-//     return () => clearInterval(interval);
-//   }, [timerActive, timerPaused]);
-
+  // useEffect(() => {
+  //     let interval;
+  //     if (timerActive && !timerPaused) {
+  //       interval = setInterval(() => {
+  //         setElapsedSeconds((prev) => prev + 1);
+  //       }, 1000);
+  //     }
+  //     return () => clearInterval(interval);
+  //   }, [timerActive, timerPaused]);
 
   useEffect(() => {
     let interval;
@@ -715,7 +629,6 @@ const handleResume = async () => {
     }
     return () => clearInterval(interval);
   }, [timerActive]);
-
 
   const formatEventKey = (name) =>
     name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
@@ -748,6 +661,11 @@ const handleResume = async () => {
       scenarioStatus
     )
   );
+  console.log(
+    "scenarioStatusscenarioStatussrrrrrrrrrrrrcenarioStatus",
+    rowValues
+  );
+
   return (
     <>
       <Seo title="Events" />
@@ -830,7 +748,7 @@ const handleResume = async () => {
                       <Button
                         variant="info"
                         size="sm"
-                        onClick={() => handleClone(rowValues?.eventlearnerid)}
+                        onClick={() => handleClone(rowValues?.vmrequestid)}
                       >
                         <i
                           className="fas fa-spinner fa-spin"
@@ -871,6 +789,7 @@ const handleResume = async () => {
                         <>
                           {scenarioStatus === "Pause" ? (
                             <>
+                              {/* RESUME */}
                               <Button
                                 variant="primary"
                                 size="sm"
@@ -888,31 +807,29 @@ const handleResume = async () => {
                                   "Resume"
                                 )}
                               </Button>
+
+                              {/* DELETE */}
                               <Button
-                                variant="warning"
+                                variant="danger"
                                 size="sm"
-                                onClick={handleRestart}
-                                disabled={isActionInProgress}
+                                onClick={handleDelete}
+                                disabled={
+                                  actionLoading && confirmAction === "delete"
+                                }
                               >
-                                {isActionInProgress ? (
+                                {actionLoading && confirmAction === "delete" ? (
                                   <>
-                                    <span
-                                      className="spinner-border spinner-border-sm me-2"
-                                      role="status"
-                                      aria-hidden="true"
-                                    ></span>
-                                    Restarting...
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Deleting...
                                   </>
                                 ) : (
-                                  <>
-                                    <i className="fe fe-play"></i> Restart
-                                  </>
+                                  "Delete"
                                 )}
                               </Button>
                             </>
                           ) : (
-                            // ➤ Pause is visible → Show Terminate + Complete
                             <>
+                              {/* PAUSE */}
                               <Button
                                 variant="secondary"
                                 size="sm"
@@ -931,7 +848,7 @@ const handleResume = async () => {
                                 )}
                               </Button>
 
-                              {/* TERMINATE BUTTON */}
+                              {/* RESTART */}
                               <Button
                                 variant="warning"
                                 size="sm"
@@ -954,7 +871,7 @@ const handleResume = async () => {
                                 )}
                               </Button>
 
-                              {/* COMPLETE BUTTON */}
+                              {/* COMPLETE */}
                               <Button
                                 variant="success"
                                 size="sm"
@@ -976,6 +893,7 @@ const handleResume = async () => {
                             </>
                           )}
                         </>
+
                         <Button
                           variant={
                             isNotified && !replyReceived ? "danger" : "info"
@@ -1077,435 +995,6 @@ const handleResume = async () => {
         </Col>
 
         <Col md={12}>
-          {/* <Card className="bg-white shadow-sm rounded-4 border-0 mb-4">
-            <Card.Body>
-              <Row className="mg-b-10 text-wrap">
-                <div className="panel panel-primary tabs-style-2 w-100">
-                  <div className="tab-menu-heading">
-                    <div className="tabs-menu">
-                      <Tab.Container id="scenario-tabs" activeKey={activeTab}>
-                        <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
-                          <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white w-100">
-                            <Nav.Item
-                              onClick={() => setActiveTab("basic_info")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="basic_info"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "basic_info"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "basic_info"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Basic Information
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("instruction")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="instruction"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "instruction"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "instruction"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Instruction Details
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("diagram")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="diagram"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "diagram"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "diagram" ? "bold" : "normal",
-                                }}
-                              >
-                                Scenario Diagram
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("logs")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="logs"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "logs" ? "#007bff" : "gray",
-                                  fontWeight:
-                                    activeTab === "logs" ? "bold" : "normal",
-                                }}
-                              >
-                                Logs
-                              </Nav.Link>
-                            </Nav.Item>
-                          </Nav>
-                        </Row>
-
-                        <Row>
-                          <Col md={12} className="pt-3">
-                            <Tab.Content>
-                              <Tab.Pane eventKey="basic_info">
-                                <Row className="gy-4">
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-layers text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariocategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Category
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-tag text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariosubcategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Subcategory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-clock text-danger fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.duration
-                                            ? `${rowValues.duration} mins`
-                                            : "0 mins"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Duration (In Minutes)
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariolevel || "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Level
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-server text-primary fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.component_count}
-                                        </div>
-                                        <small className="text-muted">
-                                          Total VM
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-cpu text-info fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_cpu} Cores
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual CPU
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-box text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_memory} M
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual Memory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-hard-drive text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.storage_size} GB
-                                        </div>
-                                        <small className="text-muted">
-                                          Storage Size
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-
-                                  <Col md={12}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
-                                      <div>
-                                        <div
-                                          className="fw-semibold text-dark mb-2"
-                                          dangerouslySetInnerHTML={{
-                                            __html:
-                                              rowValues?.scenariodescription ||
-                                              "—",
-                                          }}
-                                        />
-                                        <small className="text-muted">
-                                          Description
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="instruction">
-                                {pdfUrl ? (
-                                  <PdfLoader fileUrl={pdfUrl} />
-                                ): (
-                                  <Row>
-                                    <Col sm={12}>
-                                      <Card className="custom-card">
-                                        <Card.Body className="overflow-auto pd-t-10">
-                                          <Row className="signpages text-center">
-                                            <Col md={10} className="mx-auto">
-                                              <Card
-                                                style={{
-                                                  border: "none",
-                                                  backgroundColor: "#f6f7fb",
-                                                }}
-                                              >
-                                                <Card.Body>
-                                                  <div className="text-center">
-                                                    <img
-                                                      src={crossEvalicon.src}
-                                                      alt="No data"
-                                                      className="wd-150"
-                                                    />
-                                                    <h5 className="mt-4">
-                                                      No instruction PDF
-                                                      provided.
-                                                    </h5>
-                                                  </div>
-                                                </Card.Body>
-                                              </Card>
-                                            </Col>
-                                          </Row>
-                                        </Card.Body>
-                                      </Card>
-                                    </Col>
-                                  </Row>
-                                )}
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="diagram">
-                                <div>
-                                  <ScenarioDiagram
-                                    scenariodiagram={
-                                      rowValues?.scenariodiagram &&
-                                      rowValues.scenariodiagram.trim() !== ""
-                                        ? rowValues.scenariodiagram
-                                        : ""
-                                    }
-                                  />
-                                </div>
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="logs">
-                                <div>
-                                  {hasGetLogsListData &&
-                                  hasGetLogsListData.length > 0 ? (
-                                    <div
-                                      style={{
-                                        maxHeight: "600px",
-                                        overflowY: "auto",
-                                        border: "1px solid #ddd",
-                                        borderRadius: "6px",
-                                      }}
-                                    >
-                                      <table className="table text-nowrap table-bordered m-0">
-                                        <thead className="table-info">
-                                          <tr>
-                                            <th>Session Start</th>
-                                            <th>Type</th>
-                                            <th>Status</th>
-                                            <th>Log Date</th>
-                                            <th>Remark</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {hasGetLogsListData.map(
-                                            (log, index) => {
-                                              const statusColor =
-                                                statusBadgeMap[log.status] ||
-                                                "light-transparent";
-                                              const typeColor =
-                                                typeBadgeMap[log.type] ||
-                                                "light-transparent";
-
-                                              const statusTextClass =
-                                                badgeTextColorMap[
-                                                  statusColor
-                                                ] || "text-dark";
-                                              const typeTextClass =
-                                                badgeTextColorMap[typeColor] ||
-                                                "text-dark";
-
-                                              return (
-                                                <tr key={index}>
-                                                  <td>
-                                                    {new Date(
-                                                      log.startedon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={typeColor}
-                                                      className={`rounded-pill ${typeTextClass}`}
-                                                    >
-                                                      {log.type}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={statusColor}
-                                                      className={`rounded-pill ${statusTextClass}`}
-                                                    >
-                                                      {log.status}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    {new Date(
-                                                      log.createdon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
-                                                  </td>
-
-                                                  <td>{log.remark}</td>
-                                                </tr>
-                                              );
-                                            }
-                                          )}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  ) : (
-                                    <Row>
-                                      <Col sm={12}>
-                                        <Card className="custom-card">
-                                          <Card.Body className="overflow-auto pd-t-10">
-                                            <Row className="signpages text-center">
-                                              <Col md={10} className="mx-auto">
-                                                <Card
-                                                  style={{
-                                                    border: "none",
-                                                    backgroundColor: "#f6f7fb",
-                                                  }}
-                                                >
-                                                  <Card.Body>
-                                                    <div className="text-center">
-                                                      <img
-                                                        src={crossEvalicon.src}
-                                                        alt="No data"
-                                                        className="wd-150"
-                                                      />
-                                                      <h5 className="mt-4">
-                                                        No logs available.
-                                                      </h5>
-                                                    </div>
-                                                  </Card.Body>
-                                                </Card>
-                                              </Col>
-                                            </Row>
-                                          </Card.Body>
-                                        </Card>
-                                      </Col>
-                                    </Row>
-                                  )}
-                                </div>
-                              </Tab.Pane>
-                            </Tab.Content>
-                          </Col>
-                        </Row>
-                      </Tab.Container>
-                    </div>
-                  </div>
-                </div>
-              </Row>
-            </Card.Body>
-          </Card> */}
-
           <Card className="bg-white shadow-sm rounded-4 border-0 mb-4">
             <Card.Body>
               <Row className="mg-b-10 text-wrap">
@@ -2021,6 +1510,9 @@ const handleResume = async () => {
                 <p>Are you sure you want to start the event?</p>
               )}
               {confirmAction === "terminate" && (
+                <p>Are you sure you want to terminate the event?</p>
+              )}
+              {confirmAction === "delete" && (
                 <p>Are you sure you want to terminate the event?</p>
               )}
               {confirmAction === "complete" && !isAutoComplete && (

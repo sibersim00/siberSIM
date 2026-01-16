@@ -27,9 +27,9 @@ const nextConfig = withTM({
     CRYPTO_SECURITY_KEY: 'techno5202jarus',
     BASE_PATH: `http://sibersim.battlerangers.com/`,
     VNC_PROXY_URL: `ws://sibersim.battlerangers.com:4007`,
-    API_URL_LOGIN :  `/authapi`,
-    API_URL_LEARNER : '/learnerapi',
-    API_URL_FILEMANAGER:`/jobapi`,
+    API_URL_LOGIN :  `http://sibersim.battlerangers.com/authapi`,
+    API_URL_LEARNER : 'http://sibersim.battlerangers.com/learnerapi',
+    API_URL_FILEMANAGER:`http://sibersim.battlerangers.com/jobapi`,
   },
   async headers() {
     return [
@@ -75,6 +75,7 @@ const nextConfig = withTM({
       { source: '/faqs', destination: '/components/faqs' },
       { source: '/event-login', destination: '/components/event_learner' },
       { source: '/vnc_view/:slug*', destination: '/components/scenarios/view/vnc/:slug*' },
+      { source: '/vnc_event_view/:slug*', destination: '/components/events/view/vnc_event_view/:slug*' },
       { source: '/customcomponent', destination: '/components/customcomponent' },
       { source: "/custom_component_view/:slug*", destination: "/components/customcomponent/view/:slug*", },
       { source: '/event-dashboard', destination: '/components/events/dashboard' },

@@ -49,22 +49,6 @@ const setVMRequestConfiguration =
             errorData: error.response.data,
           });
         }
-
-        // fallback (generic, not learner-based)
-        const result = await dao.setScenarioLearnerConfigurationOnFailure({
-        db,
-        ipAddress,
-        scenarioid,
-        vmrequestid,
-        requestedby_id,
-       requestedby_role,
-       });
-
-
-        return res.status(500).send({
-          statusCode: 500,
-          message: result?.message || "Something went wrong. Please try later",
-        });
       }
     } catch (err) {
       console.error("Error in VM request configuration:", err);
@@ -73,7 +57,7 @@ const setVMRequestConfiguration =
   };
 
 const updateCompleteTerminate =
-  ({ dao, db }) =>
+  ({}) =>
   async (req, res, next) => {
     try {
       const { vmrequestid, status, type } = req.body;
@@ -171,33 +155,6 @@ const getOperationFailedLogs =
     }
   };
 
-const vncProxyConsole =
-  ({ dao, db, validation }) =>
-  async (req, res) => {
-    try {
-      const { vmid, vmType } = req.body;
-
-      if (!vmid || !vmType) {
-        return res.status(400).json({
-          statusCode: 400,
-          message: "vmid and vmType are required",
-        });
-      }
-
-      const ipAddress =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
-      const result = await dao.vncProxyConsole({ db, validation })(
-        { vmid, vmType },
-        ipAddress
-      );
-
-      res.status(result.statusCode || 200).json(result);
-    } catch (err) {
-      console.error("Error generating VNC Console:", err);
-      res.status(500).json({ message: "Internal Server Error" });
-    }
-  };
 
 const startScenarioLearner =
   ({  }) =>
@@ -608,7 +565,6 @@ module.exports = {
   getOperationFailedLogs,
   startScenarioLearner,
   restartscenarioLearner,
-  vncProxyConsole,
   createsnapshot,
   deletesnapshot,
   restoresnapshot,

@@ -663,8 +663,8 @@ const DnDFlow = ({
         </div>
       </div>
       <div className="justify-content-end d-flex">
-        <div class="pull-left">
-          <small class="text-warning d-block mt-2">
+        <div className="pull-left">
+          <small className="text-warning d-block mt-2">
             Note: After saving the diagram, ensure the components order is
             reinitialized or reset to maintain consistency.
           </small>

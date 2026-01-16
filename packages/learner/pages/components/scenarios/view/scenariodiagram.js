@@ -270,6 +270,8 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible, scenarioStatus }) =>
               : node.data.image,
         },
       }));
+      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
+      
 
       setElements({ nodes: updatedNodes, edges: parsedData.edges });
     } catch (err) {

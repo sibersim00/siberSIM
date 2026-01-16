@@ -49,10 +49,6 @@ module.exports = function (iocContainer) {
     "/delete-scenario-learner",
     controller.deleteScenarioLearner(iocContainer)
   );
-  router.post(
-    "/delete-scenario-usersession",
-    controller.deleteScenarioUsersession(iocContainer)
-  );
   router.post("/save", controller.save(iocContainer));
   router.post(
     "/vm-details",

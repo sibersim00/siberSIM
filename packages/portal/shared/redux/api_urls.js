@@ -434,9 +434,7 @@ const api = {
 
 // tab list
   tab_status: "/scenario/tablist",
-
-
-
+  can_resume_admin:"/vm_scenario_start/can-resume"
 };
 
 

@@ -41,7 +41,7 @@ const CustomComponentView = () => {
       dispatch(getSingleComponent(query.slug[0]));
     }
   }, [query.slug]);
-  console.log("rowValuesrowValues", rowValues)
+  console.log("rowValuesrowValues", rowValues?.componentimage)
   return (
     <>
       <Seo title="Custom Components" />
@@ -125,10 +125,13 @@ const CustomComponentView = () => {
                   <div className="mt-2">
                     <img
                       src={
-                        rowValues?.componentimage
-                          ? `${process.env.API_URL_FILEMANAGER}${rowValues.main_componentimage}`
-                          : dummy_network.src
+                        `${process.env.API_URL_FILEMANAGER}${rowValues?.componentimage}` ||
+                        dummy_network.src
                       }
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = dummy_network.src;
+                      }}
                       alt="Subcategory Preview"
                       className=""
                       style={{

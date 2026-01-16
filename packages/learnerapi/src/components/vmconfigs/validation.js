@@ -9,16 +9,16 @@ const setScenarioLearnerConfigSchema = Joi.object({
     "number.base": `SIMUser ID must be a number.`,
     "any.required": `learnerid is required.`,
   }),
-  scenariolearnersessionid: Joi.number().required().messages({
+  vmrequestid: Joi.number().required().messages({
     "number.base": `Session ID must be a number.`,
-    "any.required": `scenariolearnersessionid is required.`,
+    "any.required": `vmrequestid is required.`,
   }),
 });
 
 const updateCompleteTerminate = Joi.object({
-  scenariolearnersessionid: Joi.number().required().messages({
+  vmrequestid: Joi.number().required().messages({
     "number.base": `Session ID must be a number.`,
-    "any.required": `scenariolearnersessionid is required.`,
+    "any.required": `vmrequestid is required.`,
   }),
   status: Joi.string().valid("Completed", "Terminated").required().messages({
     "any.only": `Status must be either 'Completed' or 'Terminated'.`,

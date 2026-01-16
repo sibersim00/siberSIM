@@ -38,6 +38,7 @@ const list =
         ON scc.scenariocategoryid = s.scenariosubcategoryid
         WHERE s.learner_id = :learnerId
          AND s.approval_status != 'Approve'
+          AND s.deletedon IS NULL
       ORDER BY s.scenariotitle;
     `;
 
@@ -252,6 +253,7 @@ const create =
         FROM custom_scenarios 
         WHERE scenarioidentification = ? 
           AND status = 'Active'
+           AND deletedon IS NULL
         LIMIT 1;
         `,
         {

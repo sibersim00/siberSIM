@@ -32,7 +32,7 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
     body.instructor_id = req.learneruser.instructor_id;
     const user_count_limit = req.learneruser.user_count_limit;
     const result = await dao.startScenario({ db, validation })(body, user_count_limit);
-    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, scenariolearnerid: result.scenariolearnerid || null, scenariolearnersessionid: result.scenariolearnersessionid || null, scenariolearnersessionuuid: result.scenariolearnersessionuuid || null });
+    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, vmrequestid: result.vmrequestid || null});
   } catch (error) {
     console.error("Error saving scenario learner:", error.message);
     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });

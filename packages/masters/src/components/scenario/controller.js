@@ -7,6 +7,8 @@ const list = ({ dao, db }) => async (req, res) => {
     try {
         let usertype = req.user.usertype;         // e.g., "Admin" or "Instructor"
         let session_userid = req.user.userid;
+            const user_count_limit = req.user.user_count_limit; // ✅ admin user id
+console.log("user_count_limituser_count_limit",user_count_limit);
         const result = await dao.list({ db })(usertype, session_userid);
         res.status(200).send({ statusCode: 200, message: "Get Scenario List", data: result });
     } catch (error) {
@@ -80,16 +82,31 @@ const changeStatus = ({ dao, db, validation }) => async (req, res) => {
 };
 
 const deleteById = ({ dao, db }) => async (req, res) => {
-    try {
-        let body = req.body
-        const session_userid = req.user.userid
-        const result = await dao.deleteById({ db })(body, session_userid);
-        res.status(200).send({ statusCode: 200, message: "Scenario Deleted Successfully" });
-    } catch (error) {
-        console.error("Error Scenario Deleting data:", error.message);
-        res.status(500).json({ error: "An error occurred. Please try again later." });
+  try {
+    let body = req.body;
+    const session_userid = req.user.userid;
+
+    const result = await dao.deleteById({ db })(body, session_userid);
+    if (result && result.status === false) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: result.message,
+      });
     }
+
+    res.status(200).send({
+      statusCode: 200,
+      message: "Scenario Deleted Successfully",
+    });
+  } catch (error) {
+    console.error("Error Scenario Deleting data:", error.message);
+    res.status(500).json({
+      statusCode: 500,
+      message: "An error occurred. Please try again later.",
+    });
+  }
 };
+
 
 const saveDiagram = ({ dao, db, validation }) => async (req, res) => {
     try {

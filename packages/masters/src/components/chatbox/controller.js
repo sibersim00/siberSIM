@@ -1,9 +1,9 @@
 // controller for chatbox
 const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
   try {
-    const {scenariolearnerid} = req.body;
+    const {learner_id,scenarioid } = req.body;
      const result = await dao.getMessagesByScenario({ db })({
-      scenariolearnerid,
+      learner_id,scenarioid ,
    });
 
     return res.status(200).json({ statusCode: 200, data: result });
@@ -18,9 +18,9 @@ const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
 
 const refreshByScenario = ({ dao, db }) => async (req, res) => {
   try {
-    const {scenariolearnerid,scenariolearnerchatid } = req.body;
+    const {learner_id,scenarioid ,scenariolearnerchatid } = req.body;
      const result = await dao.refreshByScenario({ db })({
-      scenariolearnerid,
+     learner_id,scenarioid ,
       scenariolearnerchatid,
    });
 

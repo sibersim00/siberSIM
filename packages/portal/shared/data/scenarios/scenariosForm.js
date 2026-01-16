@@ -167,14 +167,14 @@ const ScenarioForm = (props) => {
       boxShadow: isDisabled
         ? null
         : isFocused
-          ? "0 0 0 0.001rem #00d683"
-          : null,
+        ? "0 0 0 0.001rem #00d683"
+        : null,
       "&:hover": {
         borderColor: isDisabled
           ? "#e8e8f7"
           : isFocused
-            ? "#00d683"
-            : styles.borderColor,
+          ? "#00d683"
+          : styles.borderColor,
       },
     }),
   };
@@ -267,9 +267,20 @@ const ScenarioForm = (props) => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              }
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -277,17 +288,6 @@ const ScenarioForm = (props) => {
               theme: "colored",
             }
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
 
       dispatch(clearHasError());
       setIsLoading(false);
@@ -341,7 +341,7 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
-console.log("saveScenariosData",saveScenariosData)
+  console.log("saveScenariosData", saveScenariosData);
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
       toast.success(
@@ -1049,13 +1049,13 @@ console.log("saveScenariosData",saveScenariosData)
                                                         fetchfiles={
                                                           ismulti
                                                             ? formValidation.values.image_url.split(
-                                                              ","
-                                                            )
+                                                                ","
+                                                              )
                                                             : [
-                                                              formValidation
-                                                                .values
-                                                                .image_url,
-                                                            ]
+                                                                formValidation
+                                                                  .values
+                                                                  .image_url,
+                                                              ]
                                                         }
                                                       />
 
@@ -1088,37 +1088,37 @@ console.log("saveScenariosData",saveScenariosData)
                                                         </span>
                                                         {rowValues?.id !==
                                                           0 && (
-                                                            <OverlayTrigger
-                                                              placement="top"
-                                                              overlay={
-                                                                <Tooltip
-                                                                  id={`tooltip-${rowValues.id}`}
-                                                                >
-                                                                  Removing the
-                                                                  file will
-                                                                  permanently
-                                                                  delete it from
-                                                                  storage and
-                                                                  update the
-                                                                  record.
-                                                                </Tooltip>
-                                                              }
-                                                            >
-                                                              <i
-                                                                className="fe fe-alert-circle text-warning"
-                                                                style={{
-                                                                  position:
-                                                                    "absolute",
-                                                                  top: "2px",
-                                                                  right: "5px",
-                                                                  cursor:
-                                                                    "pointer",
-                                                                  color:
-                                                                    "#212122ff",
-                                                                }}
-                                                              ></i>
-                                                            </OverlayTrigger>
-                                                          )}
+                                                          <OverlayTrigger
+                                                            placement="top"
+                                                            overlay={
+                                                              <Tooltip
+                                                                id={`tooltip-${rowValues.id}`}
+                                                              >
+                                                                Removing the
+                                                                file will
+                                                                permanently
+                                                                delete it from
+                                                                storage and
+                                                                update the
+                                                                record.
+                                                              </Tooltip>
+                                                            }
+                                                          >
+                                                            <i
+                                                              className="fe fe-alert-circle text-warning"
+                                                              style={{
+                                                                position:
+                                                                  "absolute",
+                                                                top: "2px",
+                                                                right: "5px",
+                                                                cursor:
+                                                                  "pointer",
+                                                                color:
+                                                                  "#212122ff",
+                                                              }}
+                                                            ></i>
+                                                          </OverlayTrigger>
+                                                        )}
                                                       </Form.Label>
 
                                                       <FileUploader
@@ -1137,16 +1137,16 @@ console.log("saveScenariosData",saveScenariosData)
                                                         fetchfiles={
                                                           ismulti
                                                             ? (
-                                                              formValidation
-                                                                .values
-                                                                .scenarioimage ||
-                                                              ""
-                                                            ).split(",")
+                                                                formValidation
+                                                                  .values
+                                                                  .scenarioimage ||
+                                                                ""
+                                                              ).split(",")
                                                             : [
-                                                              formValidation
-                                                                .values
-                                                                .scenarioimage,
-                                                            ]
+                                                                formValidation
+                                                                  .values
+                                                                  .scenarioimage,
+                                                              ]
                                                         }
                                                       />
                                                     </div>
@@ -1163,27 +1163,27 @@ console.log("saveScenariosData",saveScenariosData)
 
                                                     {formValidation.values
                                                       .scenarioimage && (
-                                                        <div className="picture avatar-lg online text-center mt-2 mb-3">
-                                                          <div className="pointer overflow-hidden">
-                                                            <img
-                                                              alt="Scenario Category Preview"
-                                                              src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.scenarioimage}`}
-                                                              onError={(e) => {
-                                                                e.target.onerror =
-                                                                  null || "";
-                                                                e.target.src =
-                                                                  dummy_network.src;
-                                                              }}
-                                                              style={{
-                                                                objectFit:
-                                                                  "cover",
-                                                                width: "100%",
-                                                                height: "100%",
-                                                              }}
-                                                            />
-                                                          </div>
+                                                      <div className="picture avatar-lg online text-center mt-2 mb-3">
+                                                        <div className="pointer overflow-hidden">
+                                                          <img
+                                                            alt="Scenario Category Preview"
+                                                            src={`${process.env.API_URL_FILEMANAGER}${formValidation.values.scenarioimage}`}
+                                                            onError={(e) => {
+                                                              e.target.onerror =
+                                                                null || "";
+                                                              e.target.src =
+                                                                dummy_network.src;
+                                                            }}
+                                                            style={{
+                                                              objectFit:
+                                                                "cover",
+                                                              width: "100%",
+                                                              height: "100%",
+                                                            }}
+                                                          />
                                                         </div>
-                                                      )}
+                                                      </div>
+                                                    )}
                                                   </Form.Group>
                                                 </Col>
 

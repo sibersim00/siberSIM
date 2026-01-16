@@ -106,7 +106,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'400px',
+            width:'330px',
           }
         });
       }else{
@@ -119,7 +119,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'400px',
+            width:'330px',
           }
         });
       }

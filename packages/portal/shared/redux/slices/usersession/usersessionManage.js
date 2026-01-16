@@ -125,10 +125,14 @@ export function clearGetChatMessages() {
 }
 
 export function getSingleUserSession(id) {
+  console.log("idididididididididididididididididididid",id);
+  
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.usersession_getbyId}/${id}`);
+      console.log("responseresponserespocccccccccccnseresponse",response);
+      
       dispatch(slice.actions.hasGetSingleUserSessionSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

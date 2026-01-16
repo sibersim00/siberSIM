@@ -28,6 +28,9 @@ import {
   exportScenario,
   ScenarioExport,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
+import {
+  clearHasErrorr,
+} from "../../../shared/redux/slices/scenariostart/scenariostartmanage";
 import * as XLSX from "xlsx";
 import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
@@ -84,6 +87,7 @@ const ManageScenarios = () => {
     deleteScenariosRes,
     hasScenariosStatusSucc,
     viewNameResp,
+    errorData1,
     getUserDataFromLocal,
     hasGetScenarioExportSucc,
   } = useSelector((state) => {
@@ -101,6 +105,7 @@ const ManageScenarios = () => {
         state.scenarioManage &&
         state.scenarioManage.statusChangeScenarios,
       errorData: state && state.scenarioManage && state.scenarioManage.error,
+      errorData1: state && state.scenariostart && state.scenariostart.error,
       getUserDataFromLocal:
         state && state.localData && state.localData.getLocalData,
       viewNameResp:
@@ -617,6 +622,12 @@ const ManageScenarios = () => {
       dispatch(clearHasError());
     }
   }, [errorData]);
+  useEffect(() => {
+    if (errorData1?.statusCode) {
+      handleOneClick(false);
+      dispatch(clearHasErrorr());
+    }
+  }, [errorData1]);
 
   useEffect(() => {
     if (hasScenariosStatusSucc?.statusCode) {
@@ -1031,7 +1042,8 @@ const ManageScenarios = () => {
                         }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
-                          {item.vm_steps === "Running" &&
+                          {item.requestedby_role === "Admin" &&
+                            item.vm_steps === "Running" &&
                             ["Start", "Resume", "Pause"].includes(
                               item.vm_status
                             ) && (
@@ -1046,7 +1058,7 @@ const ManageScenarios = () => {
                                 }}
                               >
                                 {item.vm_status === "Pause"
-                                  ? "Pause "
+                                  ? "Pause"
                                   : "Running"}
                               </span>
                             )}

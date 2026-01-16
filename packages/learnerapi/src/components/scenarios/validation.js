@@ -21,18 +21,18 @@ const startScenarioSchema = joi.object({
 });
 
 const updateSessionStatusSchema = joi.object({
-  scenariolearnersessionid: joi.number().integer().required().messages({
-    "any.required": "Session ID is required.",
-    "number.base": "Session ID must be a number.",
-  }),
+  // scenariolearnersessionid: joi.number().integer().required().messages({
+  //   "any.required": "Session ID is required.",
+  //   "number.base": "Session ID must be a number.",
+  // }),
   scenarioid: joi.number().integer().required().messages({
     "any.required": "Scenario ID is required.",
     "number.base": "Scenario ID must be a number.",
   }),
-  scenariolearnerid: joi.number().integer().required().messages({
-    "any.required": "Scenario Learner ID is required.",
-    "number.base": "Scenario Learner ID must be a number.",
-  }),
+  // scenariolearnerid: joi.number().integer().required().messages({
+  //   "any.required": "Scenario Learner ID is required.",
+  //   "number.base": "Scenario Learner ID must be a number.",
+  // }),
   status: joi
     .string()
     .valid("Start", "Pause", "Resume", "Completed", "Terminated")

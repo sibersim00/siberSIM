@@ -3,10 +3,13 @@ const keys = require("../../keys");
 const EVENTLEARNER_API_URL = keys.EVENTLEARNER_API_URL;
 
 const setEventLearnerConfiguration =
-  ({ dao, db }) =>
+  ({}) =>
   async (req, res, next) => {
     try {
-      const { scenarioid, learnerid, eventlearnerid } = req.body;
+      const { scenarioid, learnerid, eventlearnerid,vmrequestid } = req.body;
+      console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+      
+      
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
       if (!scenarioid || !learnerid || !eventlearnerid) {
@@ -20,7 +23,7 @@ const setEventLearnerConfiguration =
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/eventlearner/set-event-learner-config`,
-          { scenarioid, learnerid, eventlearnerid }
+          { scenarioid, learnerid, eventlearnerid,vmrequestid }
         );
         return res
           .status(200)
@@ -37,33 +40,6 @@ const setEventLearnerConfiguration =
             errorData: error.response.data
           });
         }
-        try {
-          const result = await dao.setEventLearnerConfigurationOnFailure({
-            db,
-            ipAddress,
-            scenarioid,
-            learnerid,
-            eventlearnerid,
-          });
-          const message =
-            result?.message ||
-            "Something went wrong. Please try later";
-
-          return res.status(500).send({
-            statusCode: 500,
-            message,
-            fallback: result,
-          });
-        } catch (fallbackError) {
-          console.error("Fallback DAO also failed:", fallbackError);
-          return res
-            .status(500)
-            .send({
-              statusCode: 500,
-              message: "Job service and fallback both failed.",
-              error: fallbackError.message || fallbackError,
-            });
-        }
       }
     } catch (err) {
       console.error("Error in setting scenario learner configuration:", err);
@@ -75,10 +51,7 @@ const updateCompleteTerminate =
   ({ dao, db }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid, status, type } = req.body;
-      const ipAddress =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
+      const { eventlearnerid, status, type,vmrequestid } = req.body;
       if (!eventlearnerid || !status || !type) {
         return res
           .status(400)
@@ -90,7 +63,7 @@ const updateCompleteTerminate =
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/eventlearner/update-complete-event`,
-          { eventlearnerid, status, type }
+          { eventlearnerid, status, type,vmrequestid }
         );
         return res
           .status(200)
@@ -131,24 +104,14 @@ const updateCompleteTerminate =
   };
 
 const restartEventLearner =
-  ({ dao, db, validation }) =>
+  ({  }) =>
   async (req, res, next) => {
     try {
-      const { scenarioid, learnerid, eventlearnerid } = req.body;
-      const ipAddress =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-      if (!scenarioid || !learnerid || !eventlearnerid) {
-        return res
-          .status(400)
-          .send({
-            statusCode: 400,
-            message: "scenarioid, learnerid, and eventlearnerid are required.",
-          });
-      }
+      const {vmrequestid } = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/eventlearner/restart-event-learner`,
-          { scenarioid, learnerid, eventlearnerid }
+          {vmrequestid}
         );
         return res
           .status(200)
@@ -206,7 +169,7 @@ const generateProxmoxAccessToken =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { scenarioid, learnerid, eventlearnerid } = req.body;
+      const { scenarioid, learnerid, eventlearnerid,vmrequestid } = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -220,7 +183,7 @@ const generateProxmoxAccessToken =
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/eventlearner/start-event-learner`,
-          { scenarioid, learnerid, eventlearnerid }
+          { scenarioid, learnerid, eventlearnerid,vmrequestid }
         );
 
         return res.status(200).send({
@@ -260,11 +223,11 @@ const generateProxmoxAccessToken =
     ({}) =>
     async (req, res, next) => {
       try {
-        const { eventlearnerid } = req.body;
+        const { eventlearnerid,vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/eventlearner/pause-scenario-learner`,
-            { eventlearnerid }
+            { eventlearnerid ,vmrequestid}
           );
           return res.status(200).send({
             statusCode: 200,
@@ -294,11 +257,11 @@ const generateProxmoxAccessToken =
     ({ }) =>
     async (req, res, next) => {
       try {
-        const { eventlearnerid } = req.body;
+        const { eventlearnerid,vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/eventlearner/resume-scenario-learner`,
-            {eventlearnerid }
+            {eventlearnerid,vmrequestid }
           );
           return res.status(200).send({
             statusCode: 200,
@@ -324,7 +287,39 @@ const generateProxmoxAccessToken =
       }
     };
     
-
+const deleteScenarioLearner =
+  ({ }) =>
+    async (req, res, next) => {
+      try {
+        const { vmrequestid, status, type } = req.body;
+        try {
+          const response = await axios.post(
+            `${EVENTLEARNER_API_URL}/eventlearner/delete-scenario-learner`,
+            { vmrequestid, status, type }
+          );
+          return res.status(200).send({
+            statusCode: 200,
+            message: response.data.message || "Job started successfully.",
+            data: response.data,
+          });
+        } catch (error) {
+          console.error("Axios request failed:");
+          if (error.response) {
+            console.error("Response Error:");
+          } else {
+            console.error("Request Setup Error:", error.message);
+          }
+          return res.status(500).send({
+            statusCode: 500,
+            message: "Failed to call Jobs service.",
+            error: error.response?.data || error.message,
+          });
+        }
+      } catch (err) {
+        console.error("Error in starting event learner:", err);
+        next(err);
+      }
+    };
 
 module.exports = {
   setEventLearnerConfiguration,
@@ -333,5 +328,6 @@ module.exports = {
   startEventLearner,
   generateProxmoxAccessToken,
   resumeScenarioLearner,
-  pauseScenarioLearner
+  pauseScenarioLearner,
+  deleteScenarioLearner
 };

@@ -1,92 +1,14 @@
 const axios = require("axios");
 const keys = require("../../keys");
 const EVENTLEARNER_API_URL = keys.EVENTLEARNER_API_URL;
-const fs = require("fs");
-const path = require("path");
-const archiver = require("archiver");
-
-const setScenarioLearnerConfiguration =
-  ({ dao, db, validation, keys }) =>
-    async (req, res, next) => {
-      try {
-        const { scenarioid, learnerid, scenariolearnersessionid } = req.body;
-        const ipAddress =
-          req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
-        if (!scenarioid || !learnerid || !scenariolearnersessionid) {
-          return res.status(400).send({
-            statusCode: 400,
-            message:
-              "scenarioid,scenariolearnersessionid and learnerid is required.",
-          });
-        }
-
-        try {
-          const response = await axios.post(
-            `${keys.EVENTLEARNER_API_URL}/vmconfigs/set-scenario-learner-config`,
-            { scenarioid, learnerid, scenariolearnersessionid }
-          );
-
-          return res.status(200).send({
-            statusCode: 200,
-            message: response.data.message || "Job started successfully.",
-            data: response.data,
-          });
-        } catch (error) {
-          console.error("Axios request failed:");
-
-          if (error.response) {
-            console.error("Response Error:");
-            console.error("Status:", error.response.status);
-            console.error("Data:", error.response.data);
-            console.error("Headers:", error.response.headers);
-          } else if (error.request) {
-            console.error("No Response:");
-            console.error(error.request);
-          } else {
-            console.error("Request Setup Error:", error.message);
-          }
-
-          // Fallback: Call DAO directly and mark as failed
-          try {
-            const result = await dao.setScenarioLearnerConfigurationOnFailure({
-              db,
-              ipAddress,
-              scenarioid,
-              learnerid,
-              scenariolearnersessionid,
-            });
-
-            return res.status(500).send({
-              statusCode: 500,
-              message: "Job service failed. Fallback handled via DB update.",
-              fallback: result,
-            });
-          } catch (fallbackError) {
-            console.error("Fallback DAO also failed:", fallbackError);
-            return res.status(500).send({
-              statusCode: 500,
-              message: "Job service and fallback both failed.",
-              error: fallbackError.message || fallbackError,
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Error in setting scenario learner configuration:", err);
-        next(err);
-      }
-    };
 
 const updateCompleteTerminate = ({ dao, db }) => async (req, res, next) => {
   try {
-    const { scenariolearnersessionid, status, type } = req.body;
+    const { vmrequestid, status, type } = req.body;
     const ipAddress = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    if (!scenariolearnersessionid || !status || !type) {
-      return res.status(400).send({ statusCode: 400, message: "scenariolearnersessionid, status, and type are required." });
-    }
     try {
       const response = await axios.post(`${EVENTLEARNER_API_URL}/vmconfigs/update-complete-terminate`,
-        { scenariolearnersessionid, status, type }
+        { vmrequestid, status, type }
       );
       return res.status(200).send({ statusCode: 200, message: response.data.message || "Job Updated successfully.", data: response.data });
     } catch (error) {
@@ -101,13 +23,6 @@ const updateCompleteTerminate = ({ dao, db }) => async (req, res, next) => {
         console.error(error.request);
       } else {
         console.error("Request Setup Error:", error.message);
-      }
-      try {
-        const result = await dao.updateCompleteTerminate({ db, ipAddress, status, type, scenariolearnersessionid });
-        return res.status(500).send({ statusCode: 500, message: "Job service failed. Fallback handled via DB update.", fallback: result });
-      } catch (fallbackError) {
-        console.error("Fallback DAO also failed:", fallbackError);
-        return res.status(500).send({ statusCode: 500, message: "Job service and fallback both failed.", error: fallbackError.message || fallbackError });
       }
     }
   } catch (err) {
@@ -242,10 +157,10 @@ const getSnapshotsByVmid =
 const exportScenario = () => async (req, res) => {
   try {
     const { scenarioid, exportid } = req.body;
-    const file_name = `scenario_${scenarioid}.zip`;
+    const file_name = `scenario_${scenarioid}.zip`; 
     const response = await axios.post(
       `${EVENTLEARNER_API_URL}/vmconfigs/exports`,
-      { scenarioid, exportid, file_name },
+      { scenarioid, exportid,file_name },
       { responseType: "stream" } // <--- important
     );
 
@@ -260,76 +175,75 @@ const exportScenario = () => async (req, res) => {
 };
 
 const save =
-  ({ }) =>
-    async (req, res, next) => {
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const payload = req.body;
+      console.log("payloajjjjjjjjjjjjjjjjjd", payload);
+
       try {
-        const payload = req.body;
-        console.log("payloajjjjjjjjjjjjjjjjjd", payload);
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/save`,
+          payload
+        );
 
-        try {
-          const response = await axios.post(
-            `${EVENTLEARNER_API_URL}/vmconfigs/save`,
-            payload
-          );
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data?.message,
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios Request Failed:", error.response?.data || error.message);
 
-          return res.status(200).send({
-            statusCode: 200,
-            message: response.data?.message,
-            data: response.data,
-          });
-        } catch (error) {
-          console.error("Axios Request Failed:", error.response?.data || error.message);
-
-          return res.status(error.response?.status || 500).send({
-            statusCode: error.response?.data?.statusCode || 500,
-            message: error.response?.data?.message || "Something went wrong.",
-            error: error.response?.data?.error,
-          });
-        }
-      } catch (err) {
-        console.error("Error in event learner:", err);
-        next(err);
+        return res.status(error.response?.status || 500).send({
+          statusCode: error.response?.data?.statusCode || 500,
+          message: error.response?.data?.message || "Something went wrong.",
+          error: error.response?.data?.error,
+        });
       }
-    };
+    } catch (err) {
+      console.error("Error in event learner:", err);
+      next(err);
+    }
+  };
 
-
-const deleteScenarioLearner =
-  ({ }) =>
-    async (req, res, next) => {
-      try {
-        const { scenariolearnersessionid, status, type } = req.body;
+  const deleteScenarioLearner =
+    ({ }) =>
+      async (req, res, next) => {
         try {
-          const response = await axios.post(
-            `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-usersession`,
-            { scenariolearnersessionid, status, type }
-          );
-          return res.status(200).send({
-            statusCode: 200,
-            message: response.data.message || "Job started successfully.",
-            data: response.data,
-          });
-        } catch (error) {
-          console.error("Axios request failed:");
-          if (error.response) {
-            console.error("Response Error:");
-          } else {
-            console.error("Request Setup Error:", error.message);
+          const { vmrequestid, status, type } = req.body;
+          try {
+            const response = await axios.post(
+              `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-learner`,
+              { vmrequestid, status, type }
+            );
+            return res.status(200).send({
+              statusCode: 200,
+              message: response.data.message || "Job started successfully.",
+              data: response.data,
+            });
+          } catch (error) {
+            console.error("Axios request failed:");
+            if (error.response) {
+              console.error("Response Error:");
+            } else {
+              console.error("Request Setup Error:", error.message);
+            }
+            return res.status(500).send({
+              statusCode: 500,
+              message: "Failed to call Jobs service.",
+              error: error.response?.data || error.message,
+            });
           }
-          return res.status(500).send({
-            statusCode: 500,
-            message: "Failed to call Jobs service.",
-            error: error.response?.data || error.message,
-          });
+        } catch (err) {
+          console.error("Error in starting event learner:", err);
+          next(err);
         }
-      } catch (err) {
-        console.error("Error in starting event learner:", err);
-        next(err);
-      }
-    };
+      };
+
 
 
 module.exports = {
-  setScenarioLearnerConfiguration,
   updateCompleteTerminate,
   generateProxmoxAccessToken,
   stopAndDestroyFailedScenarios,

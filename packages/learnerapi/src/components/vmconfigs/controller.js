@@ -1,4 +1,3 @@
-const { componentSetupJob } = require("../../jobs/componentSetupJob");
 const keys = require("../../keys");
 const EVENTLEARNER_API_URL = keys.EVENTLEARNER_API_URL;
 const axios = require("axios");
@@ -7,22 +6,22 @@ const setScenarioLearnerConfiguration =
   ({ dao, db }) =>
     async (req, res, next) => {
       try {
-        const { scenarioid, learnerid, scenariolearnersessionid } = req.body;
+        const { scenarioid, learnerid, vmrequestid } = req.body;
         const ipAddress =
           req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-        if (!scenarioid || !learnerid || !scenariolearnersessionid) {
+        if (!scenarioid || !learnerid || !vmrequestid) {
           return res.status(400).send({
             statusCode: 400,
             message:
-              "scenarioid,scenariolearnersessionid and learnerid is required.",
+              "scenarioid,vmrequestid and learnerid is required.",
           });
         }
 
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/set-scenario-learner-config`,
-            { scenarioid, learnerid, scenariolearnersessionid }
+            { scenarioid, learnerid, vmrequestid }
           );
 
           return res.status(200).send({
@@ -51,7 +50,7 @@ const setScenarioLearnerConfiguration =
               ipAddress,
               scenarioid,
               learnerid,
-              scenariolearnersessionid,
+              vmrequestid,
             });
 
             return res.status(500).send({
@@ -79,19 +78,19 @@ const updateCompleteTerminate =
   ({ dao, db }) =>
     async (req, res, next) => {
       try {
-        const { scenariolearnersessionid, status, type } = req.body;
+        const { vmrequestid, status, type } = req.body;
         const ipAddress =
           req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-        if (!scenariolearnersessionid || !status || !type) {
+        if (!vmrequestid || !status || !type) {
           return res.status(400).send({
             statusCode: 400,
-            message: "scenariolearnersessionid, status, and type are required.",
+            message: "vmrequestid, status, and type are required.",
           });
         }
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/update-complete-terminate`,
-            { scenariolearnersessionid, status, type }
+            { vmrequestid, status, type }
           );
           return res.status(200).send({
             statusCode: 200,
@@ -110,27 +109,6 @@ const updateCompleteTerminate =
             console.error(error.request);
           } else {
             console.error("Request Setup Error:", error.message);
-          }
-          try {
-            const result = await dao.updateCompleteTerminate({
-              db,
-              ipAddress,
-              status,
-              type,
-              scenariolearnersessionid,
-            });
-            return res.status(500).send({
-              statusCode: 500,
-              message: "Job service failed. Fallback handled via DB update.",
-              fallback: result,
-            });
-          } catch (fallbackError) {
-            console.error("Fallback DAO also failed:", fallbackError);
-            return res.status(500).send({
-              statusCode: 500,
-              message: "Job service and fallback both failed.",
-              error: fallbackError.message || fallbackError,
-            });
           }
         }
       } catch (err) {
@@ -225,7 +203,7 @@ const vncProxyConsole =
     };
 
 const startScenarioLearner =
-  ({ dao, db, validation }) =>
+  ({ }) =>
     async (req, res, next) => {
       try {
         const { vmid, vmType } = req.body;
@@ -263,7 +241,7 @@ const startScenarioLearner =
     };
 
 const restartscenarioLearner =
-  ({ dao, db, validation }) =>
+  ({ }) =>
     async (req, res, next) => {
       try {
         const { vmid, vmType } = req.body;
@@ -435,11 +413,11 @@ const pauseScenarioLearner =
   ({ }) =>
     async (req, res, next) => {
       try {
-        const { scenariolearnersessionid } = req.body;
+        const { vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/pause-scenario-learner`,
-            { scenariolearnersessionid }
+            { vmrequestid }
           );
           return res.status(200).send({
             statusCode: 200,
@@ -469,11 +447,11 @@ const resumeScenarioLearner =
   ({ }) =>
     async (req, res, next) => {
       try {
-        const { scenariolearnersessionid } = req.body;
+        const { vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/resume-scenario-learner`,
-            { scenariolearnersessionid }
+            { vmrequestid }
           );
           return res.status(200).send({
             statusCode: 200,
@@ -503,11 +481,11 @@ const deleteScenarioLearner =
   ({ }) =>
     async (req, res, next) => {
       try {
-        const { scenariolearnersessionid, status, type } = req.body;
+        const { vmrequestid, status, type } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-learner`,
-            { scenariolearnersessionid, status, type }
+            { vmrequestid, status, type }
           );
           return res.status(200).send({
             statusCode: 200,

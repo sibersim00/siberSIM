@@ -30,6 +30,7 @@ const initialState = {
   getSnapshot: [],
   deleteSnapshot: [],
   pausescenarioData: [],
+  getresume: [],
   resumescenarioData: [],
   getrestoresnapshot: [],
   getVMdetail: [],
@@ -152,6 +153,10 @@ const slice = createSlice({
     hasDeleteSnapshot(state, action) {
       state.isLoading = false,
         state.deleteSnapshot = action.payload;
+    },
+        hasGetresume(state, action) {
+      state.isLoading = false,
+        state.getresume = action.payload;
     },
     hasGetrestoresnapshot(state, action) {
       state.isLoading = false,
@@ -337,6 +342,32 @@ export function pausescenario(payload) {
     }
   };
 }
+
+export function canresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.can_resume_admin}`, payload);
+      dispatch(slice.actions.hasGetresume(response));
+      console.log("responseresponseresprrrrrrrrrrrronse",response)
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearcanresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetresume([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
 export function resumescenario(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -764,7 +795,7 @@ export function startScenario(payload) {
 }
 
 
-export function clearHasError() {
+export function clearHasErrorr() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {

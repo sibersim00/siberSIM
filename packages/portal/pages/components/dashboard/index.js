@@ -449,7 +449,7 @@ const Dashboard = () => {
                           <h2 className="text-end">
                             <i className="	fa fa-server float-start text-mute"></i>
                             <span className="font-weight-bold">
-                              {Number(rowData?.sessionStats?.running_sessions || 0)}
+                              {Number(rowData?.sessionStats?.pause_resume_count || 0)}
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
