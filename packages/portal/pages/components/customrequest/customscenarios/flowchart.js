@@ -360,7 +360,7 @@ const DnDFlow = ({
           {
             ...params,
             type: "custom",
-            isAttacked: "Yes",
+            isAttacked: "No",
             data: {
               label: "",
               source: params.source,

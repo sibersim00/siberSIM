@@ -11,28 +11,74 @@ const organizationList = ({ db }) => async (id) => {
   return data;
 }
 
+// const getCompanyWebSetting = ({ db }) => async (hostname) => {
+//   let [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
+//   if(result?.license_key){
+//     let licenseStatus = serialLicense.checkValidate(hostname,result?.license_key);
+//     console.log("licenseStatus===============>",licenseStatus);
+//     if(licenseStatus.isKeyValid && licenseStatus.isHost && licenseStatus.isStart && !licenseStatus.isExp){
+//       result.licenseStatus=licenseStatus;
+//       return {status : true, message : "", data : result, redirect : false}
+//     } else if(licenseStatus.isKeyValid && licenseStatus.isHost && !licenseStatus.isStart && !licenseStatus.isExp){
+//       return {status : true, message : "", data : {licenseStatus:licenseStatus}, redirect : false}
+//     } else {
+//       return {status : true, message : "", data : licenseStatus, redirect : true}
+//     }
+//   }else{
+//     return {status : true, message : "", data : null, redirect : true}
+//   }
+// };
+
 const getCompanyWebSetting = ({ db }) => async (hostname) => {
-  let [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
-  if(result?.license_key){
-    let licenseStatus = serialLicense.checkValidate(hostname,result?.license_key);
-    console.log("licenseStatus===============>",licenseStatus);
-    if(licenseStatus.isKeyValid && licenseStatus.isHost && licenseStatus.isStart && !licenseStatus.isExp){
-      result.licenseStatus=licenseStatus;
-      return {status : true, message : "", data : result, redirect : false}
-    } else if(licenseStatus.isKeyValid && licenseStatus.isHost && !licenseStatus.isStart && !licenseStatus.isExp){
-      return {status : true, message : "", data : {licenseStatus:licenseStatus}, redirect : false}
-    } else {
-      return {status : true, message : "", data : licenseStatus, redirect : true}
+  let [result] = await db.sequelize.query(
+    `SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`,
+    { type: db.sequelize.QueryTypes.SELECT }
+  );
+  if (result?.license_key) {
+    let oldLicenseKey = result.license_key; 
+    let licenseStatus = serialLicense.checkValidate(hostname, result?.license_key);
+  if (licenseStatus.isExp) {
+      const [latestLicense] = await db.sequelize.query(
+        `SELECT license_key FROM license_logs WHERE status = 'New' ORDER BY createdon DESC LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+      console.log("latestLicenselatestLicenselatestLicense",latestLicense ?.license_key)
+      let newLicenseKey = latestLicense ?.license_key;
+     if (latestLicense?.license_key) {
+        await db.sequelize.query(`UPDATE license_logs SET status = 'Expired' WHERE license_key = :oldKey`,
+          { replacements: { oldKey: oldLicenseKey } }
+        );
+        await db.sequelize.query(`UPDATE license_logs SET status = 'Active'  WHERE license_key = :newKey`,
+          { replacements: { newKey: newLicenseKey } }
+        );
+        await db.sequelize.query(
+          `UPDATE web_settings SET license_key = :license_key, modifiedon = NOW() WHERE id = :id`,
+          {
+            replacements: { license_key: latestLicense.license_key, id: result.id }
+          }
+        );
+        result.license_key = latestLicense.license_key;
+        licenseStatus = serialLicense.checkValidate( hostname, latestLicense.license_key );
+      }
     }
-  }else{
-    return {status : true, message : "", data : null, redirect : true}
+ // ⬇EXISTING LOGIC (UNCHANGED)
+    if (licenseStatus.isKeyValid && licenseStatus.isHost && licenseStatus.isStart && !licenseStatus.isExp) {
+      result.licenseStatus = licenseStatus;
+      return { status: true, message: "", data: result, redirect: false };
+    }
+    else if (licenseStatus.isKeyValid && licenseStatus.isHost && !licenseStatus.isStart && !licenseStatus.isExp) {
+      return { status: true, message: "", data: { licenseStatus }, redirect: false };
+    }
+    else {
+      return { status: true, message: "", data: licenseStatus, redirect: true };
+    }
+  }
+  else {
+    return { status: true, message: "", data: null, redirect: false };
   }
 };
 
-// const getCompanyWebSetting = ({ db }) => async (body) => {
-//   const [result] = await db.sequelize.query(`SELECT * FROM web_settings LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
-//   return {status : true, message : "", data : result}
-// };
+
 
 const checklogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
   try {

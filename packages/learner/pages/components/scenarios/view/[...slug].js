@@ -214,7 +214,7 @@ const learnerId = getUserDataFromLocal?.learner_id;
       handleClone(saveScenariosData?.vmrequestid);
       const payload = {
         scenarioid: rowValues?.scenarioid,
-        learnerid: getUserDataFromLocal?.learner_id,
+        requestedby_id: getUserDataFromLocal?.learner_id,
         vmrequestid: saveScenariosData?.vmrequestid,
       };
       dispatch(getConfigurations(payload));

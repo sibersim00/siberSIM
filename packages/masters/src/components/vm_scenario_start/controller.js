@@ -41,7 +41,7 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
 
    body.requestedby_id = req.user.userid;
    body.requestedby_role = req.user.usertype; // Admin | Instructor
-            const user_count_limit = req.user.user_count_limit; // ✅ admin user id
+   const user_count_limit = req.user.user_count_limit; // admin user id
 console.log("user_count_limituser_count_limit",user_count_limit);
     const result = await dao.startScenario({ db, validation })(body,user_count_limit);
 
@@ -201,7 +201,8 @@ const getPaused = ({ dao, db, validation }) => async (req, res) => {
 const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
-    const result = await dao.canResumeScenario({ db, validation })(body);
+    const user_count_limit = req.user.user_count_limit;
+    const result = await dao.canResumeScenario({ db, validation })(body,user_count_limit);
 
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,

@@ -112,7 +112,6 @@ const {
       setRowValues(getScenarioFlowchart);
     }
   }, [getScenarioFlowchart])
-  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({

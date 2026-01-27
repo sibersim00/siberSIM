@@ -4187,3 +4187,222 @@ body.dark-theme .ag-row-drag {
 .ag-header-cell-resize{
   z-index: 0;
 }
+
+//----------license dashboard css 
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  color: #cbd5f5;
+}
+
+.sphura-card {
+  background: #1f2933;
+  color: #e5e7eb;
+  border-radius: 10px;
+}
+
+.core-utilization {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.core-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 8px solid #3b82f6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.expiry-row {
+  margin-bottom: 10px;
+}
+
+.chart-placeholder {
+  height: 240px;
+  background: #0f172a;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.consumer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.uptime-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 6px solid #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+.header-actions i {
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.consumer-icon {
+  font-size: 18px;
+  color: #94a3b8;
+}
+
+///- new css ---
+.util-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 6px solid #0d6efd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: auto;
+}
+//---- new css 2
+
+.sphura-card {
+  background: linear-gradient(180deg, #0b1020, #070b16);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.sphura-card:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* ===== Metrics ===== */
+.metric-value {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ===== Circular Progress ===== */
+.util-ring {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: auto;
+}
+
+.progress-ring {
+  transition: stroke-dashoffset 0.9s ease;
+}
+
+.ring-center {
+  position: absolute;
+  top: 61%;
+  left:61%;
+  transform: translate(-50%, -50%);   
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.ring-center h4 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;      
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.ring-center small {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+/* ===== Expiry Badge ===== */
+.badge-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+/* ===== Placeholder ===== */
+.chart-placeholder {
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+/* ===== Summary ===== */
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+
+.vertical-bounce-loader {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px; /* space between bars */
+  height: 40px; /* overall loader height */
+}
+
+.vertical-bounce-loader span {
+  display: block;
+  width: 8px;      /* thickness of each bar */
+  height: 20px;    /* initial height */
+  background-color: #28a745; /* green color */
+  border-radius: 4px;
+  animation: bounceY 1s infinite ease-in-out;
+}
+
+/* stagger each bar */
+.vertical-bounce-loader span:nth-child(1) {
+  animation-delay: 0s;
+}
+.vertical-bounce-loader span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.vertical-bounce-loader span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounceY {
+  0%, 80%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}

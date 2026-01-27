@@ -78039,7 +78039,7 @@ pre {
     display: flex;
     width: 100%;
     padding-top: 2px;
-    align-items: start;
+    align-items: flex-start;
 }
 
 .shoutbox .fig {

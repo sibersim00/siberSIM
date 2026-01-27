@@ -1,37 +1,3 @@
-
-// const labSessionList =
-// ({ db }) =>
-// async (usertype,session_userid) => {
-//       let whereClause = `WHERE deletedon IS NULL`;
-
-//   // If Instructor → show only instructor-created sessions
-//   if (usertype === "Instructor") {
-//     whereClause += ` AND createdby = :_session_userid`; 
-//     // OR use instructor_id if your table column name is different
-//     // whereClause += ` AND instructor_id = :_session_userid`
-//   }
-//   const [res] = await db.sequelize.query(`
-//     SELECT 
-//       labid AS lab_id,
-//       labuuid,
-//       bookingname,
-//       DATE_FORMAT(datetime, '%Y-%m-%d %H:%i:%s') AS datetime,
-//       duration,
-//       accesslevel,
-//       personincharge,
-//       reservedseats,
-//       allowedusers,
-//       CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status,
-//       DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-//       DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-//     FROM lab_sessions
-//     ${whereClause}
-//     ORDER BY bookingname ASC;
-//   `);
-
-//   return res;
-// };
-
 const labSessionList =
   ({ db }) =>
   async (usertype, session_userid) => {
@@ -46,42 +12,10 @@ const labSessionList =
 
     const [res] = await db.sequelize.query(
       `
-      SELECT 
-        ls.labid AS lab_id,
-        ls.labuuid,
-        ls.bookingname,
-        DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime,
-        ls.duration,
-        ls.accesslevel,
-        ls.personincharge,
-        CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name,
-        ls.reservedseats,
-        (
-          SELECT 
-            CONCAT(
-              '[',
-              GROUP_CONCAT(
-                CONCAT(
-                  '{"learner_id":', l.learner_id,
-                  ',"name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}'
-                )
-              ),
-              ']'
-            )
-          FROM learners l
-          WHERE FIND_IN_SET(l.learner_id, REPLACE(REPLACE(ls.allowedusers, '[',''), ']',''))
-        ) AS allowed_user_details,
-        CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status,
-        DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-      FROM lab_sessions ls
-      LEFT JOIN ad_users u ON u.userid = ls.personincharge
-      ${whereClause}
-      ORDER BY ls.bookingname ASC;
+    SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
       `,
       { replacements }
     );
-
     return res;
   };
 
@@ -451,8 +385,7 @@ const changeStatus =
         return {
           statusCode: 404,
           message:
-            validation.messages.data_not_found ||
-            "Lab session not found.",
+            validation.messages.data_not_found || "Lab session not found.",
         };
       }
 
@@ -483,11 +416,10 @@ const changeStatus =
     }
   };
 
-
 module.exports = {
   labSessionList,
   save,
   update,
   deleteById,
-  changeStatus
+  changeStatus,
 };

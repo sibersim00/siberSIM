@@ -63,8 +63,6 @@ async function componentSetupJob(
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
-console.log("componentConfigcomponentConfig",componentConfig);
-
     if (componentConfig.length == 0) {
       console.error(ERROR_MESSAGES.CONFIG_NOT_FOUND);
       await handleComponentFailure(
@@ -81,28 +79,6 @@ console.log("componentConfigcomponentConfig",componentConfig);
         message: ERROR_MESSAGES.CONFIG_NOT_FOUND,
       };
     }
-    console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqq",eventlearnerid);
-    
-    // await db.sequelize.query(
-    //   `INSERT INTO vm_request_logs 
-    //    (vmrequestid,scenarioid, requestedby_id, requestedby_role, remark, status, createdon)
-    //    SELECT 
-    //      sls.vmrequestid,
-    //      sls.scenarioid,
-    //      sls.learner_id,
-    //      'System',
-    //      'Component setup initiated for Scenario.',       
-    //      'Initiated',
-    //      NOW()
-    //    FROM event_learners sls
-    //    WHERE sls.eventlearnerid = ?`,
-    //   {
-    //     replacements: [eventlearnerid],
-    //     type: db.sequelize.QueryTypes.INSERT,
-    //   }
-    // );
-
-
 await db.sequelize.query(
   `
   INSERT INTO vm_request_logs
@@ -127,7 +103,14 @@ await db.sequelize.query(
   }
 );
 
-console.log("INSideeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+  const proxmoxService = ProxMoxService(db,{}, ipAddress);
+    const tokenResult = await proxmoxService.generateAccessTicket();
+    if (!tokenResult || tokenResult.status != "200") {
+      return {
+        success: false,
+        message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,
+      };
+    }
 
     const { cloningDelayMs, configurationDelayMs } = await getDelays(db);
 
@@ -261,14 +244,6 @@ async function cloneComponentVM(db, ipAddress, component) {
   } = component;
   const vmType = componenttype.toLowerCase();
   const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-  const tokenResult = await proxmoxService.generateAccessTicket();
-  if (!tokenResult || tokenResult.status != "200") {
-    sendProxmoxDownAlerts(db, learner_id);
-    return {
-      success: false,
-      message: `Could not connect to the siberSIM server while Cloning. Please check server status or credentials.`,
-    };
-  }
   const result = await proxmoxService.cloneVM(
     vmType,
     clone_vmid,
@@ -308,14 +283,6 @@ async function configureComponentVM(
     } = component;
     const vmType = componenttype.toLowerCase();
     const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-    const tokenResult = await proxmoxService.generateAccessTicket();
-    if (!tokenResult || tokenResult.status != "200") {
-      sendProxmoxDownAlerts(db, learner_id);
-      return {
-        success: false,
-        message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,
-      };
-    }
     const bridgeJson = JSON.parse(network_bridge_json || "{}");
     const result = await proxmoxService.configureVM(vmid, vmType, bridgeJson);
     if (!result || result.status !== 200 || !result.data) {
@@ -361,16 +328,6 @@ async function startComponentVM(
         component;
       const vmType = componenttype.toLowerCase();
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-      const tokenResult = await proxmoxService.generateAccessTicket();
-
-      if (!tokenResult || tokenResult.status !== "200") {
-        sendProxmoxDownAlerts(db, learner_id);
-        return {
-          success: false,
-          message: `Could not connect to the siberSIM server while Starting. Please check server status or credentials.`,
-        };
-      }
-
       const result = await proxmoxService.startVM(vmid, vmType);
       if (!result || result.status !== 200 || !result.data) {
         return {
@@ -647,7 +604,6 @@ async function stopAndDestroyComponentVM(
 ) {
   const OP_FAILED = "Operation Failed";
   let hasFailed = false;
-  console.log("Inside stoppppppppppppppppppp======>>>>>>>>>");
 
   const handleFailureOnce = async (err) => {
     if (!hasFailed) {
@@ -820,7 +776,6 @@ async function handleComponentFailure(
   console.error(
     `Marking all components and session as 'Failed'. Reason: ${reason}`
   );
-  console.log("vmrequestidvmrequefffffffffffffffstid",vmrequestid);
   
 
   const [result] = await db.sequelize.query(
@@ -938,7 +893,6 @@ async function handleComponentFailure(
 }
 
 async function sendProxmoxDownAlerts(db, learner_id = 0) {
-  // Notification
   new NotiTemplate(
     db,
     "proxmox_down",

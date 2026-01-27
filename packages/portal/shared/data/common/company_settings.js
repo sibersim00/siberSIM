@@ -466,21 +466,7 @@ const CompanySettingsCommon = ({ isSL }) => {
       <ToastContainer />
       <Card className="custom-card overflow-hidden">
         <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5>Company Settings</h5>
-          </div>
-
           <Row className="row-sm">
-            {/* <Col md={12} className="mg-b-5 bd-b">
-              <div className="d-flex justify-content-between">
-                <h5>
-                  {componentData && componentData?.title
-                    ? componentData.title
-                    : ""}
-                </h5>
-                <div></div>
-              </div>
-            </Col> */}
             <Col md={12}>
               <Form
                 noValidate
@@ -490,13 +476,28 @@ const CompanySettingsCommon = ({ isSL }) => {
                   return false;
                 }}
               >
-                <Card className="mb-4 border">
-                  <Card.Header className="bg-light">
-                    <h5 className="mb-3">SiberSim</h5>
-                  </Card.Header>
+                <Card
+                  className=""
+                  style={{
+                    border: "2px dashed #666769",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
+                    style={{
+                      top: "-20px",
+                      left: "20px",
+                      borderRadius: "20px",
+                      fontSize: "18px",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    Company Settings
+                  </div>
 
                   <Card.Body>
-                    <Row>
+                    <Row className="mb-3 mt-3">
                       {/* Customer / Company */}
                       <Form.Group
                         as={Col}
@@ -933,13 +934,28 @@ const CompanySettingsCommon = ({ isSL }) => {
                   </Card.Body>
                 </Card>
 
-                <Card className="mb-4 border custom-card">
-                  <Card.Header className="bg-light">
-                    <h5 className="mb-3">Proxmox</h5>
-                  </Card.Header>
+                <Card
+                  className="mb-4 mt-4"
+                  style={{
+                    border: "2px dashed #666769",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
+                    style={{
+                      top: "-20px",
+                      left: "20px",
+                      borderRadius: "20px",
+                      fontSize: "18px",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    SiberSim Settings
+                  </div>
 
                   <Card.Body>
-                    <Row>
+                    <Row className="mt-3">
                       <Form.Group
                         as={Col}
                         md="4"
@@ -1104,10 +1120,25 @@ const CompanySettingsCommon = ({ isSL }) => {
                   </Card.Body>
                 </Card>
 
-                <Card className="">
-                  <Card.Header className="bg-light">
-                    <h5 className="mb-3">SiberSim image</h5>
-                  </Card.Header>
+                <Card
+                  className="mb-4 mt-4"
+                  style={{
+                    border: "2px dashed #666769",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
+                    style={{
+                      top: "-20px",
+                      left: "20px",
+                      borderRadius: "20px",
+                      fontSize: "18px",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    SiberSim Logo Settings
+                  </div>
                   <Card.Body>
                     <Row>
                       <Col md={12} className="">

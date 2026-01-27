@@ -223,11 +223,11 @@ const generateProxmoxAccessToken =
     ({}) =>
     async (req, res, next) => {
       try {
-        const { eventlearnerid,vmrequestid } = req.body;
+        const { vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/eventlearner/pause-scenario-learner`,
-            { eventlearnerid ,vmrequestid}
+            {vmrequestid}
           );
           return res.status(200).send({
             statusCode: 200,
@@ -257,11 +257,11 @@ const generateProxmoxAccessToken =
     ({ }) =>
     async (req, res, next) => {
       try {
-        const { eventlearnerid,vmrequestid } = req.body;
+        const { vmrequestid } = req.body;
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/eventlearner/resume-scenario-learner`,
-            {eventlearnerid,vmrequestid }
+            {vmrequestid }
           );
           return res.status(200).send({
             statusCode: 200,

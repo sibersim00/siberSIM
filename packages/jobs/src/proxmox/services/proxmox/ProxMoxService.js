@@ -2,9 +2,9 @@ const axios = require("axios");
 const constants = require("./constants");
 const https = require("https");
 const validator = require("validator");
+let accessInfo = null;
 
 function ProxMoxService(db, payload, ip_address) {
-  let accessInfo = null;
 
   async function logApiRequest({
     api_end_point,
@@ -329,6 +329,7 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
   // ----------------------------VM Confugration Functions----------------------------------------
+console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
 
   async function cloneVM(vmType, newid, name, sourceVMID) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {

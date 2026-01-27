@@ -66,7 +66,6 @@ const Labs = () => {
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
   const [columnsPerRow, setColumnsPerRow] = useState(4);
-  const [monthOffset, setMonthOffset] = useState(0);
   const [filterSlot, setfilterSlot] = useState([]);
   const [selectedEventData, setSelectedEventData] = useState(null);
   const [allowedUsersModal, setAllowedUsersModal] = useState(false);
@@ -104,20 +103,19 @@ const Labs = () => {
       deleteLabsResp:
         state &&
         state.Labs &&
-        state.Labs.deleteLabsResp &&
-        state.Labs.deleteLabsResp,
+        state.Labs.deleteLabResp &&
+        state.Labs.deleteLabResp,
       statusChangeLabResp:
         state && state.Labs && state.Labs.statusChangeLabResp,
       getUserDataFromLocal:
         state && state.localData && state.localData.getLocalData,
     };
   });
-
   const columnDefs = [
     {
       headerName: "Sr No.",
       field: "Sr No.",
-      maxWidth: 100,
+      maxWidth: 50,
       cellRenderer: "srNoRender",
       floatingFilter: true,
     },
@@ -131,23 +129,27 @@ const Labs = () => {
       headerName: "Date Time",
       field: "datetime",
       filter: true,
+      minWidth: 130,
       floatingFilter: true,
     },
     {
       headerName: "Duration",
       field: "duration",
+      minWidth: 100,
       filter: true,
       floatingFilter: true,
     },
     {
       headerName: "Access Level",
       field: "accesslevel",
+      minWidth: 100,
       filter: true,
       floatingFilter: true,
     },
     {
       headerName: "Person In Charge",
       field: "personincharge_name",
+      minWidth: 100,
       filter: true,
       floatingFilter: true,
     },
@@ -173,19 +175,19 @@ const Labs = () => {
         </button>
       ),
     },
-    {
-      headerName: "Status",
-      field: "status",
-      pinned: "right",
-      minWidth: 80,
-      cellRenderer: "actionSwitchRenderer",
-    },
+    // {
+    //   headerName: "Status",
+    //   field: "status",
+    //   pinned: "right",
+    //   minWidth: 80,
+    //   cellRenderer: "actionSwitchRenderer",
+    // },
     {
       headerName: "Action",
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 130,
+      minWidth: 110,
       cellRenderer: "actionButtonRenderer",
     },
   ];
@@ -359,7 +361,6 @@ const Labs = () => {
 
   const handleEdit = (props) => {
     handleOneClick(false);
-
     if (props) {
       setRowValues({
         title: "Edit Lab Session",
@@ -370,7 +371,7 @@ const Labs = () => {
         accesslevel: props.accesslevel,
         personincharge: props.personincharge,
         reservedseats: props.reservedseats,
-        allowedusers: props.allowedusers || [],
+        allowedusers: props.allowed_user_details || [],
       });
 
       setformModal(true);
@@ -816,7 +817,7 @@ const Labs = () => {
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
-                              <div className="btn btn-sm ripple me-1 mg-t-5">
+                              {/* <div className="btn btn-sm ripple me-1 mg-t-5">
                                 <OverlayTrigger
                                   placement="bottom"
                                   overlay={<Tooltip>{"Change Status"}</Tooltip>}
@@ -832,7 +833,7 @@ const Labs = () => {
                                     <span className="custom-switch-indicator custom-switch-indicator-md"></span>
                                   </label>
                                 </OverlayTrigger>
-                              </div>
+                              </div> */}
                             </div>
                           </Card.Body>
                         </Card>
@@ -862,7 +863,7 @@ const Labs = () => {
                                     alt="user-img"
                                     className="wd-150 mt-5"
                                   />
-                                  <h5 className="mt-4">Loading...</h5>
+                                  <h5 className="mt-4">No Data Found</h5>
                                 </div>
                               </Card.Body>
                             </Card>

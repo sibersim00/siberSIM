@@ -265,8 +265,8 @@ const nextConfig = withTM({
         destination: "/components/labs",
       },
       {
-        source: "/license-manage-dashboard",
-        destination: "/components/licensemanagedashboard",
+        source: "/license-dashboard",
+        destination: "/components/licensedashboard",
       },
       {
         source: "/scenarioexport",
@@ -282,9 +282,13 @@ const nextConfig = withTM({
         source: "/custom_scenarios_view/:slug*",
         destination: "/components/customrequest/customscenarios/view/:slug*",
       },
-     {
+      {
         source: "/custom_component_view/:slug*",
         destination: "/components/customrequest/customcomponent/view/:slug*",
+      },
+      {
+        source: "/running_components",
+        destination: "/components/running_components",
       },
     ];
   },

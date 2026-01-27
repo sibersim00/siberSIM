@@ -7,16 +7,16 @@ const setScenarioLearnerConfiguration =
   ({ dao, db, validation }) =>
     async (req, res, next) => {
       try {
-        const { scenarioid, learnerid, vmrequestid } = req.body;
+        const { scenarioid, requestedby_id, vmrequestid } = req.body;
         
         const ipAddress =
           req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-        if (!scenarioid || !learnerid || !vmrequestid) {
+        if (!scenarioid || !requestedby_id || !vmrequestid) {
           return res.status(400).send({
             statusCode: 400,
             message:
-              "scenarioid,vmrequestid and learnerid is required.",
+              "scenarioid,vmrequestid and requestedby_id is required.",
           });
         }
 
@@ -24,11 +24,11 @@ const setScenarioLearnerConfiguration =
           db,
           ipAddress,
           validation,
-        })(scenarioid, learnerid, vmrequestid);
+        })(scenarioid, requestedby_id, vmrequestid);
         if (result.success) {
           componentSetupJob(db, ipAddress, {
             scenarioid,
-            learnerid,
+            requestedby_id,
             vmrequestid,
           });
           return res

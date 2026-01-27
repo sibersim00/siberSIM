@@ -1,6 +1,17 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { Modal, Button, OverlayTrigger, Tooltip, Offcanvas, Form, Table, Row, Col, Spinner } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  OverlayTrigger,
+  Tooltip,
+  Offcanvas,
+  Form,
+  Table,
+  Row,
+  Col,
+  Spinner,
+} from "react-bootstrap";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
@@ -24,15 +35,13 @@ import {
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
 import snapicon from "../../../../../../public/assets/img/pngs/snap.png";
-import {
-  getCategoriesList,
-} from "../../../../../../shared/redux/slices/commons/commons";
+import { getCategoriesList } from "../../../../../../shared/redux/slices/commons/commons";
 import dynamic from "next/dynamic";
 const FileUploader = dynamic(
   () => {
     return import("../../../../../../shared/data/common/fileuploads/fileuploader");
   },
-  { ssr: false }
+  { ssr: false },
 );
 import { FilePath } from "../../../../../../shared/data/common/fileuploads/filepath";
 import { useFormik } from "formik";
@@ -58,6 +67,7 @@ export default function ProxmoxConsole() {
   const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [catDropDownData, setCatDropDownData] = useState([]);
   const updateStatus = (msg) => setStatus(msg);
@@ -65,38 +75,32 @@ export default function ProxmoxConsole() {
   const ismulti = false;
   const category_path = FilePath.component_image;
   const snapshotApiData = useSelector(
-    (state) => state.scenarios?.getSnapshot?.data?.snapshots || []
+    (state) => state.scenarios?.getSnapshot?.data?.snapshots || [],
   );
   const snapshotApiData1 = useSelector(
-    (state) => state.scenarios?.getSnapshot?.data || []
+    (state) => state.scenarios?.getSnapshot?.data || [],
   );
   const saveCustomComponent1 = useSelector(
-    (state) => state.scenarios?.saveCustomComponent || {}
+    (state) => state.scenarios?.saveCustomComponent || {},
   );
   const hasgetqemuconfig = useSelector(
-    (state) => state.scenarios?.hasgetqemuconfig || {}
+    (state) => state.scenarios?.hasgetqemuconfig || {},
   );
   const handleSelectSnapshot = (snapshotId) => {
     setSelectedSnapshotId(snapshotId);
   };
   const { getVMdetail } = useSelector((state) => state.scenarios);
-
   const catListData = useSelector(
-    (state) => state.commonsdata?.getMasterCatListData?.data || []
-  )
+    (state) => state.commonsdata?.getMasterCatListData?.data || [],
+  );
 
   const customcomponentid = saveCustomComponent1?.customcomponentid;
   const vmStatus = getVMdetail?.data?.vm_status;
   const customRequestStatus = getVMdetail?.data?.custom_request_status;
-  console.log("saveCustomComponent1", saveCustomComponent1)
-  console.log("customcomponentid", customcomponentid)
-  console.log("getVMdetail", getVMdetail)
-  console.log("vmStatus", vmStatus)
   const qemuConfigRef = useRef({});
   useEffect(() => {
     if (hasgetqemuconfig && Object.keys(hasgetqemuconfig).length > 0) {
       qemuConfigRef.current = hasgetqemuconfig;
-
     }
   }, [hasgetqemuconfig]);
   useEffect(() => {
@@ -119,17 +123,14 @@ export default function ProxmoxConsole() {
   }, [dispatch, realVmid]);
 
   const handleConnectClick = async () => {
-    // If VM is stopped → show warning
     if (vmStatus === "Stopped" && customRequestStatus) {
       const result = await Swal.fire({
         title: "Virtual Machine is Stopped",
-        text:
-          "This VM is currently stopped. If you force start it, your request against this VM may be automatically rejected. Do you want to continue?",
+        text: "This VM is currently stopped. If you force start it, your request against this VM may be automatically rejected. Do you want to continue?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Yes, Start VM",
         cancelButtonText: "No, Cancel",
-
       });
 
       if (!result.isConfirmed) {
@@ -144,7 +145,7 @@ export default function ProxmoxConsole() {
         await dispatch(
           rejectStoppedVm({
             vmid: realVmid,
-          })
+          }),
         );
         updateStatus("Starting virtual machine...");
 
@@ -152,7 +153,7 @@ export default function ProxmoxConsole() {
           vmStartScenario({
             vmid: realVmid,
             vmType,
-          })
+          }),
         );
 
         // Optional small delay to allow VM to boot
@@ -165,7 +166,7 @@ export default function ProxmoxConsole() {
         Swal.fire(
           "Failed",
           "Unable to start the virtual machine. Please try again later.",
-          "error"
+          "error",
         );
       }
 
@@ -180,20 +181,19 @@ export default function ProxmoxConsole() {
           vmStartScenario({
             vmid: realVmid,
             vmType,
-          })
+          }),
         );
 
         setTimeout(() => {
           setOverlayLoading(false);
           connect();
         }, 3000);
-
       } catch (err) {
         setOverlayLoading(false);
         Swal.fire(
           "Failed",
           "Unable to start the virtual machine. Please try again later.",
-          "error"
+          "error",
         );
       }
 
@@ -206,18 +206,18 @@ export default function ProxmoxConsole() {
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
-      `/ticket?vmid=${encodeURIComponent(
-        realVmid
-      )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
-        cleanName
-      )}`,
+        `/ticket?vmid=${encodeURIComponent(
+          realVmid,
+        )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
+          cleanName,
+        )}`,
       {
         method: "GET",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     const data = await res.json();
@@ -236,16 +236,16 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
         rfbRef.current = null;
       }
 
       const ticket = await fetchVNCTicket();
       const wsUrl = `${backend.replace(
         /\/$/,
-        ""
+        "",
       )}/vnc?vmid=${encodeURIComponent(vmid)}&vmType=${encodeURIComponent(
-        vmType
+        vmType,
       )}`;
 
       updateStatus("Connecting to VNC...");
@@ -285,7 +285,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
       }
     };
   }, []);
@@ -314,7 +314,9 @@ export default function ProxmoxConsole() {
 
     setConnected(false);
     setSidebarOpen(false);
-    setStatus("The VM is currently stopped Please click on the component again to start the VM and connect to the console.");
+    setStatus(
+      "The VM is currently stopped Please click on the component again to start the VM and connect to the console.",
+    );
   };
   const wrapperRef = useRef(null);
   const toggleFullscreen = () => {
@@ -323,7 +325,7 @@ export default function ProxmoxConsole() {
         wrapperRef.current
           .requestFullscreen()
           .catch((err) =>
-            console.error(`Error attempting fullscreen: ${err.message}`)
+            console.error(`Error attempting fullscreen: ${err.message}`),
           );
       } else {
         document.exitFullscreen();
@@ -556,7 +558,7 @@ export default function ProxmoxConsole() {
           "Snapshot deleted successfully.",
       });
       setSnapshotList((prev) =>
-        prev.filter((s) => s.snapshot_name !== snapName)
+        prev.filter((s) => s.snapshot_name !== snapName),
       );
     } catch (err) {
       Swal.fire({
@@ -584,7 +586,7 @@ export default function ProxmoxConsole() {
 
   // const handleOpenDrawer = () => setShowConvertDrawer(true);
   const handleOpenDrawer = async () => {
-    setShowConvertDrawer(true);  // open drawer immediately
+    setShowConvertDrawer(true); // open drawer immediately
 
     const payload = {
       vmid: Number(realVmid),
@@ -599,16 +601,14 @@ export default function ProxmoxConsole() {
   const handleCloseDrawer = () => {
     setShowConvertDrawer(false);
     formik.resetForm();
-  }
+  };
   useEffect(() => {
     if (getVMdetail?.data) {
       const details = getVMdetail.data;
       setVmDetails({
         memory: details.memory || "N/A",
         cpu: details.cores || "N/A",
-        ports: details.network_ports
-          ? details.network_ports.split("\n")
-          : [],
+        ports: details.network_ports ? details.network_ports.split("\n") : [],
         storage: details.storage || "N/A",
       });
     }
@@ -641,11 +641,11 @@ export default function ProxmoxConsole() {
     } else {
       formik.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
       setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : ""
+        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
       );
     }
   };
-  console.log("getVMdetail", getVMdetail)
+  console.log("getVMdetail", getVMdetail);
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -655,7 +655,7 @@ export default function ProxmoxConsole() {
         ? `${getVMdetail.data.componentname}.NEW`
         : "",
       componentcategoryid: "",
-      duration: "",              // <-- added
+      duration: "", // <-- added
       componentimage: "",
     },
     validationSchema: Yup.object({
@@ -665,12 +665,14 @@ export default function ProxmoxConsole() {
         .test(
           "no-leading-trailing-spaces",
           "Component name must not have spaces at the beginning or end",
-          (value) => value === value?.trim()
+          (value) => value === value?.trim(),
         ),
       // .matches(/\.NEW$/, "Component name must end with .NEW"),
-      componentcategoryid: Yup.string().required("Component category is required"),
-      duration: Yup.number().nullable(),     // optional field
-      componentimage: Yup.string().nullable()
+      componentcategoryid: Yup.string().required(
+        "Component category is required",
+      ),
+      duration: Yup.number().nullable(), // optional field
+      componentimage: Yup.string().nullable(),
     }),
 
     onSubmit: async (values) => {
@@ -685,7 +687,9 @@ export default function ProxmoxConsole() {
         if (mustStopVM === true) {
           const stopConfirm = await Swal.fire({
             title: "Stop Virtual Machine?",
-            text: stopMessage || "This action requires stopping the virtual machine. Do you want to continue?",
+            text:
+              stopMessage ||
+              "This action requires stopping the virtual machine. Do you want to continue?",
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Yes, Stop it",
@@ -701,21 +705,21 @@ export default function ProxmoxConsole() {
             stopVm({
               vmid: realVmid,
               vmType: getVMdetail?.data?.componenttype,
-            })
+            }),
           );
-          console.log("stopRes", stopRes)
+          console.log("stopRes", stopRes);
           if (stopRes?.statusCode === 200) {
             closeVNC();
             Swal.fire(
               "Success",
               stopRes?.message || "Successfully stopped VM",
-              "success"
+              "success",
             );
           } else {
             await Swal.fire(
               "Error",
               stopRes?.message || "Failed to stop VM",
-              "error"
+              "error",
             );
             setShowConvertDrawer(false);
             return;
@@ -724,7 +728,6 @@ export default function ProxmoxConsole() {
 
         /************** AUTO APPROVAL *****************/
         if (approvalFlag === true) {
-
           // 1️⃣ SAVE CUSTOM COMPONENT FIRST
           const payload1 = {
             componentname: values.componentName,
@@ -745,13 +748,12 @@ export default function ProxmoxConsole() {
             await Swal.fire(
               "Error",
               saveRes?.error?.error ||
-              saveRes?.error?.message ||
-              "Failed to save component",
-              "error"
+                saveRes?.error?.message ||
+                "Failed to save component",
+              "error",
             );
             setShowConvertDrawer(false);
             return;
-
           }
 
           // 2️⃣ THEN CREATE ACTUAL COMPONENT
@@ -767,7 +769,7 @@ export default function ProxmoxConsole() {
             componentimage: values.componentimage || "",
             customcomponentid: saveRes?.data?.customcomponentid,
           };
-          console.log("payload", payload)
+          console.log("payload", payload);
           const res = await dispatch(saveComponent(payload));
 
           if (!res?.success) {
@@ -776,9 +778,9 @@ export default function ProxmoxConsole() {
             await Swal.fire(
               "Error",
               res?.error?.error ||
-              res?.error?.message ||
-              "Failed to Save component",
-              "error"
+                res?.error?.message ||
+                "Failed to Save component",
+              "error",
             );
             setShowConvertDrawer(false);
             return;
@@ -820,9 +822,9 @@ export default function ProxmoxConsole() {
           await Swal.fire(
             "Error",
             saveRes?.error?.error ||
-            saveRes?.error?.message ||
-            "Failed to save component",
-            "error"
+              saveRes?.error?.message ||
+              "Failed to save component",
+            "error",
           );
           setShowConvertDrawer(false);
           return;
@@ -831,21 +833,19 @@ export default function ProxmoxConsole() {
         Swal.fire(
           "Success",
           "Component creation request submitted successfully. Approval may take some time.",
-          "success"
+          "success",
         );
 
         setShowConvertDrawer(false);
         dispatch(clearCustomComponent());
         formik.resetForm();
-
       } catch (err) {
         console.error("Unexpected error:", err);
         Swal.fire("Error", "Something went wrong", "error");
-        // setShowConvertDrawer(false);  
-      }
-      finally {
+        // setShowConvertDrawer(false);
+      } finally {
         // await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
-        setOverlayLoading(false); 
+        setOverlayLoading(false);
         setIsSaving(false); // stop loading
       }
     },
@@ -1166,7 +1166,7 @@ export default function ProxmoxConsole() {
               }}
               onClick={() => {
                 const selected = snapshotList.find(
-                  (s) => s.snapshotid === selectedSnapshotId
+                  (s) => s.snapshotid === selectedSnapshotId,
                 );
                 if (!selected) {
                   setShowWarning(true);
@@ -1174,7 +1174,7 @@ export default function ProxmoxConsole() {
                 }
                 handleDeleteSnapshott(
                   selected.snapshot_name,
-                  selected.snapshotid
+                  selected.snapshotid,
                 );
               }}
             >
@@ -1250,13 +1250,6 @@ export default function ProxmoxConsole() {
                   >
                     ⌨️
                   </button>
-                  <button
-                    onClick={toggleFullscreen}
-                    title="Fullscreen"
-                    style={buttonStyle}
-                  >
-                    ⛶
-                  </button>
                   <div style={{ position: "relative" }}>
                     <button
                       onClick={() => setPowerMenuOpen(!powerMenuOpen)}
@@ -1265,6 +1258,7 @@ export default function ProxmoxConsole() {
                     >
                       ⏻
                     </button>
+
                     {powerMenuOpen && (
                       <div
                         style={{
@@ -1284,17 +1278,53 @@ export default function ProxmoxConsole() {
                         <button
                           onClick={handleStartClick}
                           style={subButtonStyle}
-                          title="Start VM"
                         >
                           Start
                         </button>
+
                         <button
                           onClick={handleRestartClick}
                           style={subButtonStyle}
-                          title="Hard Reset VM"
                         >
                           Hard Reset
                         </button>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={toggleFullscreen}
+                    title="Fullscreen"
+                    style={buttonStyle}
+                  >
+                    ⛶
+                  </button>
+                  
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                      title="Settings"
+                      style={buttonStyle}
+                    >
+                      ⚙️
+                    </button>
+
+                    {settingsMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "110%",
+                          transform: "translateY(-50%)",
+                          background: "rgba(17,17,17,0.95)",
+                          borderRadius: "6px",
+                          padding: "8px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          zIndex: 9999,
+                        }}
+                      >
+                        {/* Snapshot Rollback */}
                         <button
                           onClick={handleCreateSnapshot}
                           style={subButtonStyle}
@@ -1302,40 +1332,33 @@ export default function ProxmoxConsole() {
                         >
                           Snapshot
                         </button>
-
-
-                        {/* <Button
-                          onClick={() => {
-                            dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
-                            setShowRollbackModal(true);
-                          }}
-                          style={subButtonStyle}
-                        >
-                          Rollback
-                        </Button> */}
                         <Button
-                          disabled={snapshotApiData.length === 0} // <<✔ disable when no snapshots
+                          disabled={snapshotApiData.length === 0}
                           onClick={() => {
                             if (snapshotApiData.length > 0) {
-                              // ✔ only open modal if snapshots exist
                               dispatch(
-                                getSnapshot({ vmid: Number(realVmid), vmType })
+                                getSnapshot({ vmid: Number(realVmid), vmType }),
                               );
                               setShowRollbackModal(true);
                             }
                           }}
                           style={{
                             ...subButtonStyle,
-                            opacity: snapshotApiData.length === 0 ? 0.5 : 1, // UI feedback
+                            opacity: snapshotApiData.length === 0 ? 0.5 : 1,
                             cursor:
                               snapshotApiData.length === 0
                                 ? "not-allowed"
                                 : "pointer",
                           }}
                         >
-                          Rollback
+                          Rollback Snapshot
                         </Button>
-                        <button onClick={handleOpenDrawer} style={subButtonStyle}>
+
+                        {/* Convert Component */}
+                        <button
+                          onClick={handleOpenDrawer}
+                          style={subButtonStyle}
+                        >
                           Convert Component
                         </button>
                       </div>
@@ -1438,7 +1461,7 @@ export default function ProxmoxConsole() {
               fontWeight: "bold",
             }}
           >
-            Connecting...
+            Please Wait...
             <div
               style={{
                 marginTop: "20px",
@@ -1452,7 +1475,7 @@ export default function ProxmoxConsole() {
             />
           </div>
         )}
-          {overlayLoading && (
+        {overlayLoading && (
           <div
             style={{
               position: "fixed",
@@ -1501,7 +1524,10 @@ export default function ProxmoxConsole() {
             className="d-flex align-items-center justify-content-between mt-2"
             style={{ position: "relative" }}
           >
-            <Offcanvas.Title className="fw-semibold" style={{ marginBottom: "0" }}>
+            <Offcanvas.Title
+              className="fw-semibold"
+              style={{ marginBottom: "0" }}
+            >
               Convert to Component
             </Offcanvas.Title>
           </Offcanvas.Header>
@@ -1521,7 +1547,7 @@ export default function ProxmoxConsole() {
                 color: "#FF4D4D",
                 fontSize: "12px",
                 fontWeight: "500",
-                margin: "10px 25px"
+                margin: "10px 25px",
               }}
             >
               {hasgetqemuconfig.stopMessage}
@@ -1545,11 +1571,12 @@ export default function ProxmoxConsole() {
                       onBlur={formik.handleBlur}
                       className="custom-input"
                     />
-                    {formik.touched.componentName && formik.errors.componentName && (
-                      <div className="text-danger small mt-1">
-                        {formik.errors.componentName}
-                      </div>
-                    )}
+                    {formik.touched.componentName &&
+                      formik.errors.componentName && (
+                        <div className="text-danger small mt-1">
+                          {formik.errors.componentName}
+                        </div>
+                      )}
                   </Form.Group>
                 </Col>
 
@@ -1580,15 +1607,14 @@ export default function ProxmoxConsole() {
                         </option>
                       ))}
                     </Form.Select>
-                    {formik.touched.componentcategoryid && formik.errors.componentcategoryid && (
-                      <div className="text-danger small mt-1">
-                        {formik.errors.componentcategoryid}
-                      </div>
-                    )}
+                    {formik.touched.componentcategoryid &&
+                      formik.errors.componentcategoryid && (
+                        <div className="text-danger small mt-1">
+                          {formik.errors.componentcategoryid}
+                        </div>
+                      )}
                   </Form.Group>
                 </Col>
-
-
               </Row>
 
               <Row>
@@ -1620,10 +1646,7 @@ export default function ProxmoxConsole() {
                       folderpath={category_path}
                       ismulti={false}
                       name="componentimage"
-                      acceptedFileTypes={[
-                        "image/png",
-                        "image/jpeg",
-                      ]}
+                      acceptedFileTypes={["image/png", "image/jpeg"]}
                       handleUpload={handleUpload}
                       fetchfiles={
                         formik.values.componentimage
@@ -1636,7 +1659,11 @@ export default function ProxmoxConsole() {
                         <img
                           alt="Component Preview"
                           src={`${process.env.API_URL_FILEMANAGER}${formik.values.componentimage}`}
-                          style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                          style={{
+                            objectFit: "cover",
+                            width: "100%",
+                            height: "100%",
+                          }}
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = dummy_network.src;
@@ -1648,20 +1675,25 @@ export default function ProxmoxConsole() {
                 </Col>
               </Row>
 
-
               <div
                 className="rounded-4 p-3 mb-4"
                 style={{
                   background: "#0E0E23",
                   boxShadow: "0 0 10px rgba(0,0,0,0.4)",
-                  overflow: "hidden"
+                  overflow: "hidden",
                 }}
               >
-                <h6 className="fw-semibold mb-3" style={{ letterSpacing: "0.4px" }}>
+                <h6
+                  className="fw-semibold mb-3"
+                  style={{ letterSpacing: "0.4px" }}
+                >
                   VM Details
                 </h6>
 
-                <Table bordered responsive size="sm"
+                <Table
+                  bordered
+                  responsive
+                  size="sm"
                   className="mb-0 text-light vm-table "
                   style={{
                     borderColor: "#000000ff", // or #0E0E23 for invisible border
@@ -1669,8 +1701,12 @@ export default function ProxmoxConsole() {
                 >
                   <thead>
                     <tr style={{ background: "#0E0E23" }}>
-                      <th className="text-center" style={{ color: "#fff" }}>PROPERTY</th>
-                      <th className="text-center" style={{ color: "#fff" }}>VALUE</th>
+                      <th className="text-center" style={{ color: "#fff" }}>
+                        PROPERTY
+                      </th>
+                      <th className="text-center" style={{ color: "#fff" }}>
+                        VALUE
+                      </th>
                     </tr>
                   </thead>
                   <tbody style={{ background: "#0E0E23" }}>
@@ -1691,7 +1727,9 @@ export default function ProxmoxConsole() {
                       {/* <td style={{ whiteSpace: "pre-wrap" }}>{vmDetails.ports}</td> */}
                       <td>
                         {vmDetails.ports?.length > 0
-                          ? vmDetails.ports.map((p, i) => <div key={i}>{p}</div>)
+                          ? vmDetails.ports.map((p, i) => (
+                              <div key={i}>{p}</div>
+                            ))
                           : "N/A"}
                       </td>
                     </tr>
@@ -1715,7 +1753,12 @@ export default function ProxmoxConsole() {
                   Close
                 </Button>
 
-                <Button type="submit" disabled={isSaving} className="px-4 rounded-4" style={{ background: "#19B159", borderColor: "#19B159" }}>
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 rounded-4"
+                  style={{ background: "#19B159", borderColor: "#19B159" }}
+                >
                   {isSaving ? (
                     <>
                       <Spinner
@@ -1731,11 +1774,9 @@ export default function ProxmoxConsole() {
                     "Submit"
                   )}
                 </Button>
-
               </div>
             </Form>
           </Offcanvas.Body>
-
         </Offcanvas>
 
         <style jsx>{`

@@ -419,7 +419,6 @@ const ManageScenarios = () => {
       setView("Form");
       setApprovalStatus(props.approval_status);
       dispatch(handleManageView("Form"));
-      console.log("first", props.custom_scenariouuid);
     }
   };
 
@@ -441,7 +440,6 @@ const ManageScenarios = () => {
       handleApprovalFilter(router.query.filter);
     }
   }, [router.query.filter]);
-  console.log("approvalFilterapprovalFilter", approvalFilter);
 
   const handleReturnView = (props) => {
     push({
@@ -450,7 +448,6 @@ const ManageScenarios = () => {
     });
   };
   const handleApprovalFilter = (status) => {
-    console.log("Selected Filter:", status);
     setApprovalFilter(status);
 
     if (status === "Approve") {
@@ -558,7 +555,6 @@ const ManageScenarios = () => {
                     id="scenario-tabs"
                     activeKey={approvalFilter}
                     onSelect={(key) => {
-                      console.log("key---------------", key);
                       setApprovalFilter(key);
                       handleApprovalFilter(key);
                     }}

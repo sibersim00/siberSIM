@@ -45,6 +45,7 @@ class NotiTemplate {
 
       let rawTemplate = templateData?.body || "";
       finalBody = rawTemplate;
+console.log("finalBodyfinalBodyfinalBody",finalBody);
 
       // Replace placeholders (learner_name, scenariotitle, status)
       for (const key in this._payload) {

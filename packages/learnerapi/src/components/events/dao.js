@@ -1,274 +1,3 @@
-// const getAll = ({ db }) => async ({ learner_id, eventid }) => {
-//   try {
-//     const result = await db.sequelize.query(
-//       `SELECT e.eventid, e.eventuuid, e.eventname, el.eventlearnerid, el.status, el.vm_steps, el.team_name, el.team_description, el.startedon,
-//               COALESCE(el.scenariodiagram, s.scenariodiagram) AS scenariodiagram, el.learner_id, el.completedon,
-//               s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariolevel, s.duration, s.scenariodescription,
-//               s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name,
-//               CASE WHEN el.startedon IS NOT NULL THEN SEC_TO_TIME(GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime)))
-//                    ELSE SEC_TO_TIME(GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime))) END AS reverse_timer,
-//               IFNULL(chat_instructor_admin.unseen_instructor_admin_message_count, 0) AS unseen_instructor_admin_message_count
-//        FROM event_learners el
-//        INNER JOIN events e ON e.eventid = el.eventid
-//        INNER JOIN learners l ON l.learner_id = el.learner_id
-//        INNER JOIN scenarios s ON s.scenarioid = e.scenarioid
-//        INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid
-//        INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid
-//        LEFT JOIN (
-//          SELECT elc.eventlearnerid, COUNT(*) AS unseen_instructor_admin_message_count
-//          FROM event_learner_chats elc
-//          INNER JOIN event_learners elr ON elc.eventlearnerid = elr.eventlearnerid
-//          WHERE elc.status = 'sent' AND elc.sender_type IN ('Instructor', 'Admin')
-//          GROUP BY elc.eventlearnerid
-//        ) AS chat_instructor_admin ON chat_instructor_admin.eventlearnerid = el.eventlearnerid
-//        WHERE el.learner_id = ? AND el.eventid = ? AND s.deletedon IS NULL;`,
-//       {
-//         replacements: [learner_id, eventid],
-//         type: db.sequelize.QueryTypes.SELECT,
-//       }
-//     );
-
-//     for (let item of result) {
-//       item.virtual_cpu = 0;
-//       item.virtual_memory = 0;
-//       item.storage_size = 0;
-
-//       try {
-//         const components = JSON.parse(item.component_config || "[]");
-//         item.component_count = components.length;
-
-//         // Sum totals and cache details for images
-//         const componentDetails = {};
-
-//         for (const comp of components) {
-//           if (comp.componentid) {
-//             const [rowData] = await db.sequelize.query(
-//               `SELECT cores, memory, storage, componentimage FROM components WHERE componentid = ?`,
-//               {
-//                 replacements: [comp.componentid],
-//                 type: db.sequelize.QueryTypes.SELECT,
-//               }
-//             );
-//             if (rowData) {
-//               componentDetails[comp.componentid] = rowData;
-//               item.virtual_cpu += rowData.cores || 0;
-//               item.virtual_memory += rowData.memory || 0;
-//               item.storage_size += parseInt(rowData.storage) || 0;
-//             }
-//           }
-//         }
-
-//         // Update scenariodiagram node images
-//         if (item.scenariodiagram) {
-//           let diagramObj = JSON.parse(item.scenariodiagram);
-
-//           if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
-//             diagramObj.nodes = diagramObj.nodes.map((node) => {
-//               const compId = node.data?.componentId || node.data?.componentid;
-//               if (compId && componentDetails[compId]) {
-//                 node.data.image = componentDetails[compId].componentimage || node.data.image;
-//               }
-//               return node;
-//             });
-//           }
-
-//           item.scenariodiagram = JSON.stringify(diagramObj);
-//         }
-//       } catch (err) {
-//         console.error("Error processing component_config or scenariodiagram for event:", err);
-//       }
-//     }
-
-//     return result;
-//   } catch (error) {
-//     console.log("Scenario fetch error =>", error);
-//     throw error;
-//   }
-// };
-
-// const getAll =
-//   ({ db }) =>
-//   async ({ learner_id, eventid }) => {
-//     try {
-//       const result = await db.sequelize.query(
-//         `
-//       SELECT
-//         e.eventid,
-//         e.eventuuid,
-//         e.eventname,
-
-//         el.eventlearnerid,
-//         el.learner_id,
-//         el.team_name,
-//         el.team_description,
-//         el.loggedon,
-
-//         vr.vmrequestid,
-//         vr.vmrequestuuid,
-//         vr.status,
-//         vr.vm_steps,
-//         vr.startedon,
-//         vr.completedon,
-//         vr.timer,
-//         COALESCE(vr.scenariodiagram, s.scenariodiagram) AS scenariodiagram,
-//         s.scenarioid,
-//         s.scenariouuid,
-//         s.scenariotitle,
-//         s.scenarioidentification,
-//         s.scenariolevel,
-//         s.duration,
-//         s.scenariodescription,
-//         s.instruction_file,
-//         s.component_config,
-//     'Pending' AS status,
-//             'Pending' AS vm_steps,
-//             '00:00:00' AS timer,
-//             '00:00:00' AS calculated_timer,
-//         sc.categoryname AS scenariocategory_name,
-//         scc.categoryname AS scenariosubcategory_name,
-
-//         CASE
-//           WHEN vr.startedon IS NOT NULL
-//           THEN SEC_TO_TIME(GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime)))
-//           ELSE SEC_TO_TIME(GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime)))
-//         END AS reverse_timer,
-
-//         IFNULL(chat_instructor_admin.unseen_instructor_admin_message_count, 0)
-//           AS unseen_instructor_admin_message_count
-
-//       FROM event_learners el
-//       INNER JOIN events e ON e.eventid = el.eventid
-//       INNER JOIN learners l ON l.learner_id = el.learner_id
-//       INNER JOIN scenarios s ON s.scenarioid = e.scenarioid
-//       INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid
-//       INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid
-//       LEFT JOIN vm_request vr ON vr.vmrequestid = el.vmrequestid
-
-//       LEFT JOIN (
-//         SELECT elc.eventlearnerid, COUNT(*) AS unseen_instructor_admin_message_count
-//         FROM event_learner_chats elc
-//         WHERE elc.status = 'sent'
-//           AND elc.sender_type IN ('Instructor', 'Admin')
-//         GROUP BY elc.eventlearnerid
-//       ) AS chat_instructor_admin
-//         ON chat_instructor_admin.eventlearnerid = el.eventlearnerid
-
-//       WHERE
-//         el.learner_id = ?
-//         AND el.eventid = ?
-//         AND s.deletedon IS NULL
-//       `,
-//         {
-//           replacements: [learner_id, eventid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       /* -------------------- Component & Diagram Processing (UNCHANGED LOGIC) -------------------- */
-
-//       for (let item of result) {
-//         item.virtual_cpu = 0;
-//         item.virtual_memory = 0;
-//         item.storage_size = 0;
-
-//         try {
-//           const components = JSON.parse(item.component_config || "[]");
-//           item.component_count = components.length;
-
-//           const componentDetails = {};
-
-//           for (const comp of components) {
-//             if (comp.componentid) {
-//               const [rowData] = await db.sequelize.query(
-//                 `
-//               SELECT cores, memory, storage, componentimage
-//               FROM components
-//               WHERE componentid = ?
-//               `,
-//                 {
-//                   replacements: [comp.componentid],
-//                   type: db.sequelize.QueryTypes.SELECT,
-//                 }
-//               );
-
-//               if (rowData) {
-//                 componentDetails[comp.componentid] = rowData;
-//                 item.virtual_cpu += rowData.cores || 0;
-//                 item.virtual_memory += rowData.memory || 0;
-//                 item.storage_size += parseInt(rowData.storage) || 0;
-//               }
-//             }
-//           }
-
-//           if (item.scenariodiagram) {
-//             const diagramObj = JSON.parse(item.scenariodiagram);
-
-//             if (Array.isArray(diagramObj.nodes)) {
-//               diagramObj.nodes = diagramObj.nodes.map((node) => {
-//                 const compId = node.data?.componentId || node.data?.componentid;
-//                 if (compId && componentDetails[compId]) {
-//                   node.data.image =
-//                     componentDetails[compId].componentimage || node.data.image;
-//                 }
-//                 return node;
-//               });
-//             }
-
-//             item.scenariodiagram = JSON.stringify(diagramObj);
-//           }
-//         } catch (err) {
-//           console.error("Diagram/component parse error:", err);
-//         }
-//       }
-
-//       return result;
-//     } catch (error) {
-//       console.error("Scenario fetch error =>", error);
-//       throw error;
-//     }
-//   };
-
-// const startEvent = ({ db, validation }) => async (body) => {
-//     try {
-//       const [existing] = await db.sequelize.query(`SELECT eventlearnerid,eventid FROM event_learners WHERE eventlearnerid = :eventlearnerid LIMIT 1`,
-//         {
-//           replacements: {eventlearnerid: body.eventlearnerid},
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-//       if (!existing) {
-//         return { statusCode: 404, message: validation.messages.event_not_found};
-//       }
-//       let updateFields = [];
-//       let replacements = [];
-//       if (body.status) {
-//         updateFields.push("status = ?");
-//         replacements.push(body.status);
-//         if (body.status === "Start") {
-//           updateFields.push("startedon = CURRENT_TIMESTAMP");
-//         } else if (body.status === "Completed") {
-//           updateFields.push("completedon = CURRENT_TIMESTAMP");
-//         }
-//       }
-//       if (body.timer !== undefined) {
-//         updateFields.push("timer = ?");
-//         replacements.push(body.timer);
-//       }
-//       updateFields.push("modifiedon = CURRENT_TIMESTAMP");
-//       const updateQuery = `UPDATE event_learners SET ${updateFields.join(", ")} WHERE eventlearnerid = ?`;
-//       replacements.push(body.eventlearnerid);
-//       await db.sequelize.query(updateQuery, {
-//         replacements,
-//         type: db.sequelize.QueryTypes.UPDATE,
-//       });
-//       await insertEventLog(db, {eventlearnerid: body.eventlearnerid,eventid: existing.eventid, learner_id: body.learner_id, instructor_id: body.instructor_id || null, type: "Learner", remark: `Event started by learner`, status: "Start",});
-//       return {statusCode: 200, message: validation.messages.event_updated, eventlearnerid: body.eventlearnerid};
-//     } catch (error) {
-//       console.error("Error in updating event_learners:", error);
-//       throw error;
-//     }
-//   };
-
 const getAll =
   ({ db }) =>
   async ({ learner_id, eventid }) => {
@@ -489,9 +218,28 @@ const getAll =
 
 const startEvent =
   ({ db, validation }) =>
-  async (body) => {
+  async (body ) => {
+    console.log("gggggggggggg",body)
     try {
-      /* ---------------- VALIDATE EVENT LEARNER ---------------- */
+      /* ---------------- ACTIVE USER LIMIT ---------------- */
+      const [activeUsersResult] = await db.sequelize.query(
+        `SELECT COUNT(*) AS activeUsers
+         FROM vm_request
+         WHERE status IN ('Start','Resume')
+         AND vm_steps = 'Running'`
+      );
+
+      const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+      const limit = Number(body.user_count_limit || 0);
+
+      if (limit > 0 && activeUsers >= limit) {
+        return {
+          statusCode: 500,
+          message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+        };
+      }
+
+      /* ---------------- VALIDATE EVENT LEARNER---------------- */
       const existing = await db.sequelize.query(
         `SELECT eventlearnerid, eventid, learner_id
        FROM event_learners
@@ -549,7 +297,7 @@ const startEvent =
       /* ---------------- UPDATE EVENT_LEARNERS ---------------- */
       await db.sequelize.query(
         `
-  UPDATE event_learners
+ UPDATE event_learners
   SET
     vmrequestid = ?,
     modifiedon = CURRENT_TIMESTAMP
@@ -617,6 +365,7 @@ const updateEventLearnerStatus =
   }) => {
     try {
       // Fetch missing details from DB
+      
       const [existing] = await db.sequelize.query(
         `SELECT eventid, learner_id 
        FROM event_learners 
@@ -815,9 +564,27 @@ const getLogs =
 
 const canResumeScenario =
   ({ db, validation }) =>
-  async (body) => {
+  async (body ,user_count_limit) => {
     try {
       const { learner_id, vmrequestid } = body;
+
+       /* ---------------- ACTIVE USER LIMIT ---------------- */
+        const [activeUsersResult] = await db.sequelize.query(
+          `SELECT COUNT(*) AS activeUsers
+         FROM vm_request
+         WHERE status IN ('Start','Resume')
+         AND vm_steps = 'Running'`
+        );
+
+        const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+        const limit = Number(user_count_limit || 0);
+
+        if (limit > 0 && activeUsers >= limit) {
+          return {
+            statusCode: 500,
+            message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+          };
+        }
 
       const [activeScenario] = await db.sequelize.query(
         `

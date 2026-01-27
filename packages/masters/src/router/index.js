@@ -45,6 +45,8 @@ const customersRouter = require("../components/customers");
 const labSessions = require("../components/lab_sessions");
 const vmScenarioStart = require("../components/vm_scenario_start");
 const customcomponentRouter = require("../components/custom_component");
+const runningComponnets = require("../components/running_component");
+const licenseDashboardRouter = require("../components/licensedashboard");
 
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
@@ -221,6 +223,10 @@ module.exports = function (iocContainer) {
 
   router.use("/custom_component", [authJwt.authenticateToken([""])], customcomponentRouter(iocContainer));
   router.use("/vm_scenario_start", [authJwt.authenticateToken([""])], vmScenarioStart(iocContainer));
+  router.use("/running_component", [authJwt.authenticateToken([""])], runningComponnets(iocContainer));
+   router.use("/licensedashboard",
+       [authJwt.authenticateToken([""])], 
+       licenseDashboardRouter(iocContainer));
   router.get("/", (_req, res) => res.json("Masters Module"));
   return router;
 };

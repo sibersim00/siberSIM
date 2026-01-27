@@ -63,6 +63,7 @@ const NotificationList = () => {
       field: "body",
       filter: true,
       floatingFilter: true,
+      tooltipValueGetter: (params) => `${params.value}`,
       flex: 1
     },
 
@@ -71,6 +72,7 @@ const NotificationList = () => {
       field: "date",
       filter: true,
       floatingFilter: true,
+      tooltipValueGetter: (params) => `${params.value}`,
       width: 180
     },
 

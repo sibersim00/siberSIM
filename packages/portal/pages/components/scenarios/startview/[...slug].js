@@ -362,9 +362,9 @@ useEffect(() => {
         const payload = {
           scenarioid: scenarioData?.scenarioid,
           status: "Initializing",
-          vm_steps: scenarioData?.component_config
-            ? JSON.stringify(JSON.parse(scenarioData.component_config))
-            : "[]",
+          // vm_steps: scenarioData?.component_config
+          //   ? JSON.stringify(JSON.parse(scenarioData.component_config))
+          //   : "[]",
           timer: "00:00:00",
           network_bridges: scenarioData?.network_config
             ? JSON.stringify(scenarioData.network_config)

@@ -341,17 +341,6 @@ const saveLicense =
         },
       });
 
-      const insertLogQuery = `
-      INSERT INTO license_logs (license_key, createdby, createdon) 
-      VALUES (:license_key, :createdby, CURRENT_TIMESTAMP);
-    `;
-
-      await db.sequelize.query(insertLogQuery, {
-        replacements: {
-          license_key: license_key,
-          createdby: session_userid,
-        },
-      });
       const [formattedDates] = await db.sequelize.query(
         `SELECT 
             DATE_FORMAT(:start_date, '%d-%m-%Y') AS start_date,

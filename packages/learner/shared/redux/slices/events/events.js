@@ -187,7 +187,7 @@ export function canresumescenario(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.can_resume}`, payload);
+      const response = await axios.post(`${api.event_can_resume}`, payload);
       dispatch(slice.actions.hasGetresume(response.data));
       return response.data;
     } catch (error) {

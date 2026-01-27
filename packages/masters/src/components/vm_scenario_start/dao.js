@@ -1,9 +1,9 @@
 const getAll =
   ({ db }) =>
-  async (user_id) => {
-    try {
-      let result = await db.sequelize.query(
-        `
+    async (user_id) => {
+      try {
+        let result = await db.sequelize.query(
+          `
           SELECT 
             s.scenariouuid,
             s.scenarioidentification,
@@ -53,153 +53,25 @@ const getAll =
               ELSE s.createdon 
             END DESC;
           `,
-        {
-          replacements: [user_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [user_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      return result;
-    } catch (error) {
-      console.log("admin scenarios err==>", error);
-      throw error;
-    }
-  };
-
-// const getByID =
-//   ({ db }) =>
-//     async (scenarioUUID, learner_id) => {
-//       try {
-//         let result = await db.sequelize.query(
-//           `SELECT sl.scenariolearnerid, sls.scenariolearnersessionid, sls.scenariolearnersessionuuid,
-//               COALESCE(sls.scenariodiagram, s.scenariodiagram) AS scenariodiagram,
-//               s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariodescription,
-//               s.scenariolevel, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name,
-//               ssc.categoryname AS scenariosubcategory_name, s.duration, sls.status, sls.vm_steps, sls.timer,
-//               sls.isnotitermination,
-//               CASE
-//                 WHEN sls.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, sls.startedon, NOW()))
-//                 WHEN sls.status = 'Resume' AND sls.resumeon IS NOT NULL THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, sls.resumeon, NOW()) + TIME_TO_SEC(sls.timer))
-//                 ELSE sls.timer
-//               END AS calculated_timer,
-//               IFNULL(chat_instructor_admin.unseen_instructor_admin_message_count, 0) AS unseen_instructor_admin_message_count
-//        FROM scenario_learner sl
-//        INNER JOIN scenarios s ON s.scenarioid = sl.scenarioid
-//        INNER JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid
-//        INNER JOIN scenario_categories ssc ON s.scenariosubcategoryid = ssc.scenariocategoryid
-//        LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id
-//        LEFT JOIN (
-//          SELECT slc.scenariolearnerid, COUNT(*) AS unseen_instructor_admin_message_count
-//          FROM scenario_learner_chats slc
-//          INNER JOIN scenario_learner sl2 ON slc.scenariolearnerid = sl2.scenariolearnerid
-//          WHERE slc.status = 'sent' AND slc.sender_type IN ('Instructor', 'Admin') AND sl2.learner_id = ?
-//          GROUP BY slc.scenariolearnerid
-//        ) AS chat_instructor_admin ON chat_instructor_admin.scenariolearnerid = sl.scenariolearnerid
-//        WHERE s.scenariouuid = ? AND sl.learner_id = ? AND s.deletedon IS NULL
-//        ORDER BY s.scenarioid DESC;`,
-//           {
-//             replacements: [learner_id, scenarioUUID, learner_id],
-//             type: db.sequelize.QueryTypes.SELECT,
-//           }
-//         );
-
-//         if (result.length === 0) {
-//           result = await db.sequelize.query(
-//             `SELECT s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenariodiagram, s.scenarioidentification,
-//                 s.scenariodescription, s.scenariolevel, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name,
-//                 ssc.categoryname AS scenariosubcategory_name, s.duration, 'Pending' as status
-//          FROM scenarios s
-//          INNER JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid
-//          INNER JOIN scenario_categories ssc ON s.scenariosubcategoryid = ssc.scenariocategoryid
-//          WHERE s.scenariouuid = ? AND s.deletedon IS NULL
-//          ORDER BY s.scenarioid DESC;`,
-//             {
-//               replacements: [scenarioUUID],
-//               type: db.sequelize.QueryTypes.SELECT,
-//             }
-//           );
-//         }
-
-//         if (!result[0]) return null;
-
-//         let components = JSON.parse(result[0].component_config || "[]");
-
-//         // Initialize totals
-//         result[0].component_count = components.length;
-//         result[0].virtual_cpu = 0;
-//         result[0].virtual_memory = 0;
-//         result[0].storage_size = 0;
-
-//         // Map componentId to component details (including image)
-//         const componentDetails = {};
-
-//         await Promise.all(
-//           components.map(async (element) => {
-//             try {
-//               if (element.componentid) {
-//                 const [rowData] = await db.sequelize.query(
-//                   `SELECT cores, memory, storage, componentimage FROM components WHERE componentid = ?`,
-//                   {
-//                     replacements: [element.componentid],
-//                     type: db.sequelize.QueryTypes.SELECT,
-//                   }
-//                 );
-
-//                 if (rowData) {
-//                   componentDetails[element.componentid] = rowData;
-
-//                   result[0].virtual_cpu += rowData.cores || 0;
-//                   result[0].virtual_memory += rowData.memory || 0;
-//                   result[0].storage_size += parseInt(rowData.storage) || 0;
-//                 }
-//               }
-//             } catch (err) {
-//               console.error(
-//                 `Error fetching componentid ${element.componentid}:`,
-//                 err
-//               );
-//             }
-//           })
-//         );
-
-//         // Update scenariodiagram node images using component images
-//         if (result[0].scenariodiagram) {
-//           try {
-//             let diagramObj = JSON.parse(result[0].scenariodiagram);
-
-//             if (diagramObj.nodes && Array.isArray(diagramObj.nodes)) {
-//               diagramObj.nodes = diagramObj.nodes.map((node) => {
-//                 // componentid key might be componentId or componentid depending on case
-//                 const compId = node.data?.componentId || node.data?.componentid;
-
-//                 if (compId && componentDetails[compId]) {
-//                   node.data.image =
-//                     componentDetails[compId].componentimage || node.data.image;
-//                 }
-
-//                 return node;
-//               });
-//             }
-
-//             result[0].scenariodiagram = JSON.stringify(diagramObj);
-//           } catch (err) {
-//             console.error("Error parsing or updating scenariodiagram JSON:", err);
-//           }
-//         }
-
-//         return result;
-//       } catch (error) {
-//         console.error("Error fetching scenario by ID:", error);
-//         throw error;
-//       }
-//     };
+        return result;
+      } catch (error) {
+        console.log("admin scenarios err==>", error);
+        throw error;
+      }
+    };
 
 const getByID =
   ({ db }) =>
-  async (scenarioUUID, requestedby_id) => {
-    try {
-      let result = await db.sequelize.query(
-        `
+    async (scenarioUUID, requestedby_id) => {
+      try {
+        let result = await db.sequelize.query(
+          `
        SELECT
   vr.vmrequestid,
   vr.vmrequestuuid,
@@ -244,16 +116,16 @@ WHERE s.scenariouuid = ?
   AND s.deletedon IS NULL
 ORDER BY s.scenarioid DESC;
         `,
-        {
-          replacements: [requestedby_id, scenarioUUID],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [requestedby_id, scenarioUUID],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      /* ---------- fallback if no vm_request ---------- */
-      if (result.length === 0 || !result[0].vmrequestid) {
-        result = await db.sequelize.query(
-          `
+        /* ---------- fallback if no vm_request ---------- */
+        if (result.length === 0 || !result[0].vmrequestid) {
+          result = await db.sequelize.query(
+            `
           SELECT
             s.scenarioid,
             s.scenariouuid,
@@ -279,79 +151,79 @@ ORDER BY s.scenarioid DESC;
           WHERE s.scenariouuid = ?
             AND s.deletedon IS NULL;
           `,
-          {
-            replacements: [scenarioUUID],
-            type: db.sequelize.QueryTypes.SELECT,
-          }
-        );
-      }
+            {
+              replacements: [scenarioUUID],
+              type: db.sequelize.QueryTypes.SELECT,
+            }
+          );
+        }
 
-      if (!result[0]) return null;
+        if (!result[0]) return null;
 
-      /* ---------- component aggregation (same as old code) ---------- */
-      let components = JSON.parse(result[0].component_config || "[]");
+        /* ---------- component aggregation (same as old code) ---------- */
+        let components = JSON.parse(result[0].component_config || "[]");
 
-      result[0].component_count = components.length;
-      result[0].virtual_cpu = 0;
-      result[0].virtual_memory = 0;
-      result[0].storage_size = 0;
+        result[0].component_count = components.length;
+        result[0].virtual_cpu = 0;
+        result[0].virtual_memory = 0;
+        result[0].storage_size = 0;
 
-      const componentDetails = {};
+        const componentDetails = {};
 
-      await Promise.all(
-        components.map(async (element) => {
-          if (!element.componentid) return;
+        await Promise.all(
+          components.map(async (element) => {
+            if (!element.componentid) return;
 
-          const [rowData] = await db.sequelize.query(
-            `
+            const [rowData] = await db.sequelize.query(
+              `
             SELECT cores, memory, storage, componentimage
             FROM components
             WHERE componentid = ?
             `,
-            {
-              replacements: [element.componentid],
-              type: db.sequelize.QueryTypes.SELECT,
-            }
-          );
-
-          if (rowData) {
-            componentDetails[element.componentid] = rowData;
-            result[0].virtual_cpu += rowData.cores || 0;
-            result[0].virtual_memory += rowData.memory || 0;
-            result[0].storage_size += parseInt(rowData.storage) || 0;
-          }
-        })
-      );
-
-      /* ---------- update diagram images ---------- */
-      if (result[0].scenariodiagram) {
-        try {
-          let diagramObj = JSON.parse(result[0].scenariodiagram);
-
-          if (Array.isArray(diagramObj.nodes)) {
-            diagramObj.nodes = diagramObj.nodes.map((node) => {
-              const compId = node.data?.componentId || node.data?.componentid;
-
-              if (compId && componentDetails[compId]) {
-                node.data.image =
-                  componentDetails[compId].componentimage || node.data.image;
+              {
+                replacements: [element.componentid],
+                type: db.sequelize.QueryTypes.SELECT,
               }
-              return node;
-            });
+            );
+
+            if (rowData) {
+              componentDetails[element.componentid] = rowData;
+              result[0].virtual_cpu += rowData.cores || 0;
+              result[0].virtual_memory += rowData.memory || 0;
+              result[0].storage_size += parseInt(rowData.storage) || 0;
+            }
+          })
+        );
+
+        /* ---------- update diagram images ---------- */
+        if (result[0].scenariodiagram) {
+          try {
+            let diagramObj = JSON.parse(result[0].scenariodiagram);
+
+            if (Array.isArray(diagramObj.nodes)) {
+              diagramObj.nodes = diagramObj.nodes.map((node) => {
+                const compId = node.data?.componentId || node.data?.componentid;
+
+                if (compId && componentDetails[compId]) {
+                  node.data.image =
+                    componentDetails[compId].componentimage || node.data.image;
+                }
+                return node;
+              });
+            }
+
+            result[0].scenariodiagram = JSON.stringify(diagramObj);
+          } catch (err) {
+            console.error("Diagram parse/update error:", err);
           }
-
-          result[0].scenariodiagram = JSON.stringify(diagramObj);
-        } catch (err) {
-          console.error("Diagram parse/update error:", err);
         }
-      }
 
-      return result;
-    } catch (error) {
-      console.error("Error fetching scenario by ID:", error);
-      throw error;
-    }
-  };
+        return result;
+      } catch (error) {
+        console.error("Error fetching scenario by ID:", error);
+        throw error;
+      }
+    };
 
 const { v4: uuidv4 } = require("uuid");
 
@@ -375,44 +247,46 @@ const getPauselimit = async (db) => {
 };
 const startScenario =
   ({ db, validation }) =>
-  async (body,user_count_limit) => {
-    try {
-       const [activeUsersResult] = await db.sequelize.query(
-        `SELECT COUNT(*) AS activeUsers
+    async (body, user_count_limit) => {
+      console.log("bodybodydddddddddbody", body);
+
+      try {
+        const [activeUsersResult] = await db.sequelize.query(
+          `SELECT COUNT(*) AS activeUsers
          FROM vm_request
          WHERE status IN ('Start','Resume')
          AND vm_steps = 'Running'`
-      );
+        );
 
-      const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
-      const limit = Number(user_count_limit || 0);
+        const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+        const limit = Number(user_count_limit || 0);
 
-      if (limit > 0 && activeUsers >= limit) {
-        return {
-          statusCode: 500,
-          message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
-        };
-      }
-      const {
-        scenarioid,
-        requestedby_id,
-        requestedby_role,
-        status,
-        vm_steps,
-        timer,
-        // scenariodiagram,
-        network_bridges,
-        isnotitermination,
-      } = body;
-      if (!requestedby_id || !requestedby_role) {
-        return {
-          statusCode: 400,
-          message: "Invalid user context",
-        };
-      }
-      const pauseLimit = await getPauselimit(db);
-      const [activeVM] = await db.sequelize.query(
-        `
+        if (limit > 0 && activeUsers >= limit) {
+          return {
+            statusCode: 500,
+            message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+          };
+        }
+        const {
+          scenarioid,
+          requestedby_id,
+          requestedby_role,
+          status,
+          vm_steps,
+          timer,
+          // scenariodiagram,
+          network_bridges,
+          isnotitermination,
+        } = body;
+        if (!requestedby_id || !requestedby_role) {
+          return {
+            statusCode: 400,
+            message: "Invalid user context",
+          };
+        }
+        const pauseLimit = await getPauselimit(db);
+        const [activeVM] = await db.sequelize.query(
+          `
         SELECT vmrequestid, status
         FROM vm_request
         WHERE requestedby_id = :requestedby_id
@@ -420,103 +294,112 @@ const startScenario =
           AND status IN ('Resume','Initializing', 'Running','start')
         LIMIT 1
         `,
-        {
-          replacements: { requestedby_id, requestedby_role },
-          type: db.sequelize.QueryTypes.SELECT,
+          {
+            replacements: { requestedby_id, requestedby_role },
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        if (activeVM) {
+          return {
+            statusCode: 400,
+            message: validation.messages.ONE_ACTIVE_SCENARIO,
+          };
         }
-      );
-      if (activeVM) {
-        return {
-          statusCode: 400,
-          message: validation.messages.ONE_ACTIVE_SCENARIO,
-        };
-      }
 
-      // Pause count check
-      const [pausedCountResult] = await db.sequelize.query(
-        `
+        // Pause count check
+        const [pausedCountResult] = await db.sequelize.query(
+          `
         SELECT COUNT(*) AS pausedCount
         FROM vm_request
         WHERE requestedby_id = :requestedby_id
           AND requestedby_role = :requestedby_role
           AND status = 'Pause'
         `,
-        {
-          replacements: { requestedby_id, requestedby_role },
-          type: db.sequelize.QueryTypes.SELECT,
+          {
+            replacements: { requestedby_id, requestedby_role },
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        const pausedCount = pausedCountResult?.pausedCount || 0;
+
+        if (pausedCount >= pauseLimit) {
+          return {
+            statusCode: 400,
+            message: `You have reached the maximum pause limit (${pauseLimit}). Please Terminate or complete a scenario before starting a new one.`,
+          };
         }
-      );
 
-      const pausedCount = pausedCountResult?.pausedCount || 0;
+        // Insert vm_request
+        // await db.sequelize.query(
+        //   `
+        //   INSERT INTO vm_request
+        //   (
+        //   vmrequestuuid,
+        //     scenarioid,
+        //     requestedby_id,
+        //     requestedby_role,
+        //     status,
+        //     vm_steps,
+        //     timer,
+        //     network_bridges,
+        //     isnotitermination
+        //   )
+        //   VALUES (UUID(),?, ?, ?, ?, ?, ?, ?, ?)
+        //   `,
+        //   {
+        //     replacements: [
+        //       scenarioid,
+        //       requestedby_id,
+        //       requestedby_role,
+        //       status,
+        //       vm_steps,
+        //       timer,
+        //       // scenariodiagram,
+        //       network_bridges,
+        //       isnotitermination,
+        //     ],
+        //     type: db.sequelize.QueryTypes.INSERT,
+        //   }
+        // );
+        await db.sequelize.query(
+          `INSERT INTO vm_request
+           (vmrequestuuid,scenarioid, requestedby_id, requestedby_role, status, vm_steps, timer, startedon)
+           VALUES (UUID(),?, ?, ?, 'Initializing', 'Initializing', ?, CURRENT_TIMESTAMP)`,
+          {
+            replacements: [scenarioid, requestedby_id, requestedby_role, timer],
+            type: db.sequelize.QueryTypes.INSERT,
+          }
+        );
 
-      if (pausedCount >= pauseLimit) {
-        return {
-          statusCode: 400,
-          message: `You have reached the maximum pause limit (${pauseLimit}). Please Terminate or complete a scenario before starting a new one.`,
-        };
-      }
+        // Get ID
+        const [vmResult] = await db.sequelize.query(
+          `SELECT LAST_INSERT_ID() AS vmrequestid`,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
 
-      // Insert vm_request
-      await db.sequelize.query(
-        `
-        INSERT INTO vm_request
-        (
-        vmrequestuuid,
+        const vmrequestid = vmResult?.vmrequestid;
+
+        // Log entry
+        await insertLog(db, {
+          vmrequestid,
           scenarioid,
           requestedby_id,
           requestedby_role,
-          status,
-          vm_steps,
-          timer,
-          network_bridges,
-          isnotitermination
-        )
-        VALUES (UUID(),?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        {
-          replacements: [
-            scenarioid,
-            requestedby_id,
-            requestedby_role,
-            status,
-            vm_steps,
-            timer,
-            // scenariodiagram,
-            network_bridges,
-            isnotitermination,
-          ],
-          type: db.sequelize.QueryTypes.INSERT,
-        }
-      );
+          status: "Start",
+          remark: "Scenario started",
+        });
 
-      // Get ID
-      const [vmResult] = await db.sequelize.query(
-        `SELECT LAST_INSERT_ID() AS vmrequestid`,
-        { type: db.sequelize.QueryTypes.SELECT }
-      );
-
-      const vmrequestid = vmResult?.vmrequestid;
-
-      // Log entry
-      await insertLog(db, {
-        vmrequestid,
-        scenarioid,
-        requestedby_id,
-        requestedby_role,
-        status:"Start",
-        remark: "Scenario started",
-      });
-
-      return {
-        statusCode: 200,
-        message: validation.messages.CONFIGURATION_STARTED,
-        vmrequestid,
-      };
-    } catch (error) {
-      console.error("Error in startScenario DAO:", error);
-      throw error;
-    }
-  };
+        return {
+          statusCode: 200,
+          message: validation.messages.CONFIGURATION_STARTED,
+          vmrequestid,
+        };
+      } catch (error) {
+        console.error("Error in startScenario DAO:", error);
+        throw error;
+      }
+    };
 
 async function insertLog(db, logData) {
   const logQuery = `INSERT INTO vm_request_logs (vmrequestid, scenarioid, requestedby_id, requestedby_role, status, remark, createdon) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
@@ -539,38 +422,38 @@ async function insertLog(db, logData) {
 
 const updateSessionStatus =
   ({ db, validation }) =>
-  async (body) => {
-    try {
-      // STEP 1: Block Resume if another VM is Running/Initializing
-      if (body.status === "Resume") {
-        const [activeVM] = await db.sequelize.query(
-          `SELECT vmrequestid,vmrequestuuid
+    async (body) => {
+      try {
+        // STEP 1: Block Resume if another VM is Running/Initializing
+        if (body.status === "Resume") {
+          const [activeVM] = await db.sequelize.query(
+            `SELECT vmrequestid,vmrequestuuid
            FROM vm_request
            WHERE requestedby_id = :requestedby_id
              AND requestedby_role = :requestedby_role
              AND status IN ('Initializing', 'Running','Start','Resume')
              AND vmrequestid != :current_vmrequestid
            LIMIT 1`,
-          {
-            replacements: {
-              requestedby_id: body.requestedby_id,
-              requestedby_role: body.requestedby_role,
-              current_vmrequestid: body.vmrequestid,
-            },
-            type: db.sequelize.QueryTypes.SELECT,
+            {
+              replacements: {
+                requestedby_id: body.requestedby_id,
+                requestedby_role: body.requestedby_role,
+                current_vmrequestid: body.vmrequestid,
+              },
+              type: db.sequelize.QueryTypes.SELECT,
+            }
+          );
+          if (activeVM) {
+            return {
+              statusCode: 400,
+              message:
+                "You cannot resume this scenario while another scenario is running. Please pause the running scenario first.",
+            };
           }
-        );
-        if (activeVM) {
-          return {
-            statusCode: 400,
-            message:
-              "You cannot resume this scenario while another scenario is running. Please pause the running scenario first.",
-          };
         }
-      }
-      //STEP 2: Update vm_request table (same as scenario_learner_session)
-      await db.sequelize.query(
-        `UPDATE vm_request
+        //STEP 2: Update vm_request table (same as scenario_learner_session)
+        await db.sequelize.query(
+          `UPDATE vm_request
 SET
   status = ?,
   modifiedon = CURRENT_TIMESTAMP,
@@ -611,52 +494,52 @@ SET
 
 WHERE vmrequestid = ?;
 `,
-        {
-          replacements: [
-            body.status, // status
-            body.status, // terminatedon
-            body.status, // completedon
-            body.status, // startedon (Start/Resume)
-            body.status, // timer condition
-            body.status,
-            body.timer, // timer value
-            body.status, // isnotitermination
-            body.vmrequestid,
-          ],
-          type: db.sequelize.QueryTypes.UPDATE,
+          {
+            replacements: [
+              body.status, // status
+              body.status, // terminatedon
+              body.status, // completedon
+              body.status, // startedon (Start/Resume)
+              body.status, // timer condition
+              body.status,
+              body.timer, // timer value
+              body.status, // isnotitermination
+              body.vmrequestid,
+            ],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+
+        //STEP 3: Log the action (unchanged conceptually)
+        await insertLog(db, {
+          scenarioid: body.scenarioid,
+          requestedby_id: body.requestedby_id,
+          requestedby_role: body.requestedby_role,
+          status: body.status,
+          vmrequestid: body.vmrequestid,
+          type: "VM",
+          remark: `VM status changed to ${body.status} by SIMMaster`,
+        });
+
+        //  STEP 4: Pause / Resume diagram handling (SAME FLOW)
+        if (body.status === "Pause") {
+          await updateScenarioDiagram(db, body.vmrequestid);
         }
-      );
 
-      //STEP 3: Log the action (unchanged conceptually)
-      await insertLog(db, {
-        scenarioid: body.scenarioid,
-        requestedby_id: body.requestedby_id,
-        requestedby_role: body.requestedby_role,
-        status: body.status,
-        vmrequestid: body.vmrequestid,
-        type: "VM",
-        remark: `VM status changed to ${body.status} by SIMMaster`,
-      });
+        if (body.status === "Resume") {
+          await updateScenarioDiagramOnResume(db, body.vmrequestid);
+        }
 
-      //  STEP 4: Pause / Resume diagram handling (SAME FLOW)
-      if (body.status === "Pause") {
-        await updateScenarioDiagram(db, body.vmrequestid);
+        return {
+          statusCode: 200,
+          message: validation.messages.CONFIGURATION_STARTED,
+          vmrequestid: body.vmrequestid,
+        };
+      } catch (error) {
+        console.error("Error updating vm_request:", error);
+        throw error;
       }
-
-      if (body.status === "Resume") {
-        await updateScenarioDiagramOnResume(db, body.vmrequestid);
-      }
-
-      return {
-        statusCode: 200,
-        message: validation.messages.CONFIGURATION_STARTED,
-        vmrequestid: body.vmrequestid,
-      };
-    } catch (error) {
-      console.error("Error updating vm_request:", error);
-      throw error;
-    }
-  };
+    };
 
 async function updateScenarioDiagram(db, vmrequestid) {
   try {
@@ -740,117 +623,117 @@ async function updateScenarioDiagramOnResume(db, vmrequestid) {
 
 const getSessionStatus =
   ({ db }) =>
-  async (vmrequestid) => {
-    try {
-      const [result] = await db.sequelize.query(
-        `SELECT vm_steps FROM vm_request WHERE vmrequestid = ?`,
-        {
-          replacements: [vmrequestid],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("getSessionStatus DAO Error:", error);
-      throw error;
-    }
-  };
+    async (vmrequestid) => {
+      try {
+        const [result] = await db.sequelize.query(
+          `SELECT vm_steps FROM vm_request WHERE vmrequestid = ?`,
+          {
+            replacements: [vmrequestid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("getSessionStatus DAO Error:", error);
+        throw error;
+      }
+    };
 
 const getMessagesByScenario =
   ({ db, validation }) =>
-  async ({ scenariolearnerid }) => {
-    if (!scenariolearnerid) {
-      throw new Error(validation.messages.MISSING_SCENARIOLEARNERID);
-    }
-    try {
-      const result = await db.sequelize.query(
-        `SELECT *, CASE WHEN DATE(createdon) = CURDATE() THEN CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p')) WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p')) ELSE DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p') END AS formatted_time FROM scenario_learner_chats WHERE scenariolearnerid = ? ORDER BY createdon ASC`,
-        {
-          replacements: [scenariolearnerid],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      await db.sequelize.query(
-        `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenariolearnerid = ? AND sender_type IN ('Admin', 'Instructor') AND status = 'sent'`,
-        {
-          replacements: [scenariolearnerid],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("Error fetching or updating messages:", error);
-      throw new Error(validation.messages.INTERNAL_SERVER_ERROR);
-    }
-  };
+    async ({ scenariolearnerid }) => {
+      if (!scenariolearnerid) {
+        throw new Error(validation.messages.MISSING_SCENARIOLEARNERID);
+      }
+      try {
+        const result = await db.sequelize.query(
+          `SELECT *, CASE WHEN DATE(createdon) = CURDATE() THEN CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p')) WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p')) ELSE DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p') END AS formatted_time FROM scenario_learner_chats WHERE scenariolearnerid = ? ORDER BY createdon ASC`,
+          {
+            replacements: [scenariolearnerid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+        await db.sequelize.query(
+          `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenariolearnerid = ? AND sender_type IN ('Admin', 'Instructor') AND status = 'sent'`,
+          {
+            replacements: [scenariolearnerid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("Error fetching or updating messages:", error);
+        throw new Error(validation.messages.INTERNAL_SERVER_ERROR);
+      }
+    };
 
 const sendMessage =
   ({ db, validation }) =>
-  async (body, sender_id) => {
-    try {
-      const {
-        scenariolearnerid,
-        scenarioid,
-        learner_id,
-        instructor_id,
-        sender_type,
-        message,
-        attachment = null,
-      } = body;
-      await db.sequelize.query(
-        `INSERT INTO scenario_learner_chats (scenariolearnerid,scenarioid, learner_id, instructor_id,sender_type, message, attachment, status, createdon) VALUES (?,?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
-        {
-          replacements: [
-            scenariolearnerid,
-            scenarioid,
-            learner_id,
-            instructor_id,
-            sender_type,
-            message,
-            attachment,
-          ],
-          type: db.sequelize.QueryTypes.INSERT,
-        }
-      );
-      const [result] = await db.sequelize.query(
-        `SELECT * FROM scenario_learner_chats WHERE scenariolearnerchatid = LAST_INSERT_ID()`,
-        { type: db.sequelize.QueryTypes.SELECT }
-      );
-      return {
-        statusCode: 200,
-        message: validation.messages.MESSAGE_SENT,
-        data: result,
-      };
-    } catch (error) {
-      console.error("Error:", error.message);
-      return { statusCode: 500, message: "Internal Server Error" };
-    }
-  };
+    async (body, sender_id) => {
+      try {
+        const {
+          scenariolearnerid,
+          scenarioid,
+          learner_id,
+          instructor_id,
+          sender_type,
+          message,
+          attachment = null,
+        } = body;
+        await db.sequelize.query(
+          `INSERT INTO scenario_learner_chats (scenariolearnerid,scenarioid, learner_id, instructor_id,sender_type, message, attachment, status, createdon) VALUES (?,?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
+          {
+            replacements: [
+              scenariolearnerid,
+              scenarioid,
+              learner_id,
+              instructor_id,
+              sender_type,
+              message,
+              attachment,
+            ],
+            type: db.sequelize.QueryTypes.INSERT,
+          }
+        );
+        const [result] = await db.sequelize.query(
+          `SELECT * FROM scenario_learner_chats WHERE scenariolearnerchatid = LAST_INSERT_ID()`,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+        return {
+          statusCode: 200,
+          message: validation.messages.MESSAGE_SENT,
+          data: result,
+        };
+      } catch (error) {
+        console.error("Error:", error.message);
+        return { statusCode: 500, message: "Internal Server Error" };
+      }
+    };
 
 const markMessagesSeen =
   ({ db }) =>
-  async ({ scenarioid, learner_id, instructor_id, viewer_type }) => {
-    try {
-      const oppositeSenderType =
-        viewer_type === "learner" ? "Instructor" : "Learner";
-      const [result] = await db.sequelize.query(
-        `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenarioid = ? AND learner_id = ? AND instructor_id = ? AND sender_type = ? AND status != 'seen'`,
-        {
-          replacements: [
-            scenarioid,
-            learner_id,
-            instructor_id,
-            oppositeSenderType,
-          ],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-      return result;
-    } catch (error) {
-      console.error("Error:", error.message);
-      return { statusCode: 500, message: "Internal Server Error" };
-    }
-  };
+    async ({ scenarioid, learner_id, instructor_id, viewer_type }) => {
+      try {
+        const oppositeSenderType =
+          viewer_type === "learner" ? "Instructor" : "Learner";
+        const [result] = await db.sequelize.query(
+          `UPDATE scenario_learner_chats SET status = 'seen' WHERE scenarioid = ? AND learner_id = ? AND instructor_id = ? AND sender_type = ? AND status != 'seen'`,
+          {
+            replacements: [
+              scenarioid,
+              learner_id,
+              instructor_id,
+              oppositeSenderType,
+            ],
+            type: db.sequelize.QueryTypes.UPDATE,
+          }
+        );
+        return result;
+      } catch (error) {
+        console.error("Error:", error.message);
+        return { statusCode: 500, message: "Internal Server Error" };
+      }
+    };
 
 // const getLogs =
 //   ({ db }) =>
@@ -871,10 +754,10 @@ const markMessagesSeen =
 //   };
 const getLogs =
   ({ db }) =>
-  async (scenariouuid, learner_id) => {
-    try {
-      const result = await db.sequelize.query(
-        `
+    async (scenariouuid, learner_id) => {
+      try {
+        const result = await db.sequelize.query(
+          `
         SELECT 
           vrl.status,
           DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
@@ -904,25 +787,25 @@ const getLogs =
 
         ORDER BY vrl.createdon DESC
         `,
-        {
-          replacements: [scenariouuid, learner_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [scenariouuid, learner_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      return result;
-    } catch (error) {
-      console.error("Error fetching scenario logs:", error);
-      throw error;
-    }
-  };
+        return result;
+      } catch (error) {
+        console.error("Error fetching scenario logs:", error);
+        throw error;
+      }
+    };
 
 
 const getTabList =
   ({ db }) =>
-  async () => {
-    try {
-      const [res] = await db.sequelize.query(`SELECT 
+    async () => {
+      try {
+        const [res] = await db.sequelize.query(`SELECT 
         scenariotabid,
         tab_name,
         tab_status,
@@ -933,12 +816,12 @@ const getTabList =
         createdon,
         modifiedon
       FROM scenario_tabs`);
-      return res;
-    } catch (error) {
-      console.error("Error fetching scenario tab list:", error);
-      throw error;
-    }
-  };
+        return res;
+      } catch (error) {
+        console.error("Error fetching scenario tab list:", error);
+        throw error;
+      }
+    };
 
 // dao.js (partial)
 
@@ -981,10 +864,10 @@ const getTabList =
 //   };
 const getPaused =
   ({ db }) =>
-  async (learner_id) => {
-    try {
-      const result = await db.sequelize.query(
-        `
+    async (learner_id) => {
+      try {
+        const result = await db.sequelize.query(
+          `
         SELECT
           vr.vmrequestid,
           vr.vmrequestuuid,
@@ -1006,30 +889,47 @@ const getPaused =
             ELSE vr.createdon
           END DESC
         `,
-        {
-          replacements: [learner_id],
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: [learner_id],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      return result || [];
-    } catch (error) {
-      console.error("Error in dao.getPaused (vm_request):", error);
-      throw error;
-    }
-  };
+        return result || [];
+      } catch (error) {
+        console.error("Error in dao.getPaused (vm_request):", error);
+        throw error;
+      }
+    };
 
 
-  const canResumeScenario =
+const canResumeScenario =
   ({ db, validation }) =>
-  async (body) => {
-    try {
-      console.log("bodybodybodybodybody",body);
-      
-      const { requestedby_id, vmrequestid } = body;
+    async (body,user_count_limit) => {
+      try {
+        console.log("bodybodybodybodybody", user_count_limit);
 
-      const [activeScenario] = await db.sequelize.query(
-        `
+        const [activeUsersResult] = await db.sequelize.query(
+          `SELECT COUNT(*) AS activeUsers
+         FROM vm_request
+         WHERE status IN ('Start','Resume')
+         AND vm_steps = 'Running'`
+        );
+
+        const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+        const limit = Number(user_count_limit || 0);
+
+        if (limit > 0 && activeUsers >= limit) {
+          return {
+            statusCode: 500,
+            message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+          };
+        }
+
+        const { requestedby_id, vmrequestid } = body;
+
+        const [activeScenario] = await db.sequelize.query(
+          `
         SELECT scenarioid
         FROM vm_request
         WHERE requestedby_id = :requestedby_id
@@ -1038,32 +938,32 @@ const getPaused =
           AND vmrequestid != :vmrequestid
         LIMIT 1
         `,
-        {
-          replacements: { requestedby_id, vmrequestid },
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
+          {
+            replacements: { requestedby_id, vmrequestid },
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
 
-      if (activeScenario) {
+        if (activeScenario) {
+          return {
+            statusCode: 400,
+            message:
+              "Another scenario is already running. Please pause it before resuming this one.",
+          };
+        }
+
         return {
-          statusCode: 400,
-          message:
-            "Another scenario is already running. Please pause it before resuming this one.",
+          statusCode: 200,
+          message: "Resume allowed",
+        };
+      } catch (error) {
+        console.error("Error in canResumeScenario DAO:", error.message);
+        return {
+          statusCode: 500,
+          message: "Internal server error while checking scenario resume status",
         };
       }
-
-      return {
-        statusCode: 200,
-        message: "Resume allowed",
-      };
-    } catch (error) {
-      console.error("Error in canResumeScenario DAO:", error.message);
-      return {
-        statusCode: 500,
-        message: "Internal server error while checking scenario resume status",
-      };
-    }
-  };
+    };
 
 
 module.exports = {

@@ -173,7 +173,7 @@ const pauseScenarioLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid ,vmrequestid} = req.body;
+      const {vmrequestid} = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -181,7 +181,7 @@ const pauseScenarioLearner =
         db,
         ipAddress,
         validation,
-      })(eventlearnerid,vmrequestid);
+      })(vmrequestid);
 
       if (result.success) {
         return res.status(200).send({
@@ -203,7 +203,7 @@ const resumeScenarioLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { eventlearnerid ,vmrequestid} = req.body;
+      const {vmrequestid} = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -211,7 +211,7 @@ const resumeScenarioLearner =
         db,
         ipAddress,
         validation,
-      })(eventlearnerid,vmrequestid);
+      })(vmrequestid);
 
       if (result.success) {
         return res.status(200).send({

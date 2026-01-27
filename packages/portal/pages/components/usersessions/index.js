@@ -8,6 +8,7 @@ import {
   Button,
   OverlayTrigger,
   Tooltip,
+  Badge,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
@@ -101,7 +102,15 @@ const UserSession = () => {
       floatingFilter: true,
       minWidth: 180,
       valueGetter: (params) =>
-        params.data?.learner_name || params.data?.instructor_name || "",
+        params.data?.learner_name || params.data?.user_name || "",
+    },
+    {
+      headerName: "SIMUser Type",
+      field: "requestedby_role",
+      filter: true,
+      floatingFilter: true,
+      minWidth: 180,
+
     },
 
     {
@@ -166,6 +175,8 @@ const UserSession = () => {
             d.scenario_learner_status.toLowerCase().includes(val)) ||
           (d.scenariotitle && d.scenariotitle.toLowerCase().includes(val)) ||
           (d.learner_name && d.learner_name.toLowerCase().includes(val)) ||
+          (d.requestedby_role && d.requestedby_role.toLowerCase().includes(val)) ||
+          (d.scenario_status && d.scenario_status.toLowerCase().includes(val)) ||
           formattedStartedOn.includes(val) ||
           !val // show all if search box is empty
         );
@@ -381,7 +392,7 @@ const UserSession = () => {
     },
 
     actionButtonRenderer: function (props) {
-      console.log("propspropspropspropsprops",props)
+      console.log("propspropspropspropsprops", props)
       return (
         <ActionButtonRenderer
           handleEditView={handleReturnView}
@@ -391,8 +402,8 @@ const UserSession = () => {
           terminateStudent={handleToTerminate}
           handleShowTerminateStudent={true}
           raiseRequest={handleToSentRaiserequest} // Open chat on raiseRequest
-          handleShowRaiseRequest={true} // Open chat on raiseRequest
-       propsVal={props}
+          handleShowRaiseRequest={props?.data?.requestedby_role !== "Admin" && props?.data?.requestedby_role !== "Instructor" && props?.data?.requestedby_role !== "Event"} // Open chat on raiseRequest
+          propsVal={props}
         />
       );
     },
@@ -563,7 +574,7 @@ const UserSession = () => {
           {view === "card" ? (
             <>
               {gridData && gridData.length > 0 ? (
-                <Row className="g-3">
+                <Row className="g-3 mb-3" >
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
@@ -573,6 +584,8 @@ const UserSession = () => {
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${item.scenario_status === "Resume"
                           ? "shadow-publish"
+                           : item.scenario_status === "Start"
+                            ? "shadow-publish"
                           : item.scenario_status === "Pause"
                             ? "shadow-draft"
                             : ""
@@ -588,20 +601,29 @@ const UserSession = () => {
                         }}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
-                          <span
+                          {/* <span
                             className="position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill text-white"
                             style={{
                               fontSize: "12px",
                               backgroundColor:
-                                item.scenario_type === "Public"
+                                item.requestedby_role === "Admin"
                                   ? "green"
-                                  : item.scenario_type === "Private"
-                                    ? "orange"
-                                    : "#6c757d",
+                                  : item.requestedby_role === "Instructor"
+                                     ? "green"
+                                    : item.requestedby_role === "Learner"
+                                  ? "orange" :item.requestedby_role === "Event" ? "orange" : ""
                             }}
                           >
-                            {item.scenario_type}
-                          </span>
+                            {item.requestedby_role}
+                          </span> */}
+                          <Badge
+                            pill
+                            bg="dark"
+                            className="position-absolute top-0 start-0 m-2"
+                            style={{ fontSize: "12px" }}
+                          >
+                            {item.requestedby_role}
+                          </Badge>
                           <span
                             className="position-absolute top-0 end-0 m-2 px-2 py-1 rounded-pill text-white"
                             style={{
@@ -654,7 +676,7 @@ const UserSession = () => {
                             </div>
                             {/* Learner Name */}
                             <p className="text-success mt-4 mb-1">
-                              {item.learner_name || item.instructor_name}
+                              {item.learner_name || item.user_name}
                             </p>
                             {/* Scenario Title */}
                             <h5 className="text-dark  mb-1 fs-5 pointer">
@@ -695,36 +717,38 @@ const UserSession = () => {
                             </p>
 
                             <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap ">
-                              <div
-                                className="btn btn-sm ripple rounded-circle"
-                                style={{
-                                  backgroundColor:
-                                    item.isnotitermination === "Yes"
-                                      ? "rgba(220, 53, 69, 0.2)" // bg-danger-transparent
-                                      : "rgba(255, 193, 7, 0.2)", // bg-warning-transparent
-                                  color:
-                                    item.isnotitermination === "Yes"
-                                      ? "rgb(220, 53, 69)" // text-danger
-                                      : "rgb(255, 193, 7)", // text-warning
-                                  transition:
-                                    "background-color 0.3s ease, color 0.3s ease",
-                                }}
-                                onClick={() =>
-                                  handleSentTerminationNotification(item)
-                                }
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={
-                                    <Tooltip>
-                                      Sent Termination Notification
-                                    </Tooltip>
+                              {item.requestedby_role !== "Event" && (
+                                <div
+                                  className="btn btn-sm ripple rounded-circle"
+                                  style={{
+                                    backgroundColor:
+                                      item.isnotitermination === "Yes"
+                                        ? "rgba(220, 53, 69, 0.2)" // bg-danger-transparent
+                                        : "rgba(255, 193, 7, 0.2)", // bg-warning-transparent
+                                    color:
+                                      item.isnotitermination === "Yes"
+                                        ? "rgb(220, 53, 69)" // text-danger
+                                        : "rgb(255, 193, 7)", // text-warning
+                                    transition:
+                                      "background-color 0.3s ease, color 0.3s ease",
+                                  }}
+                                  onClick={() =>
+                                    handleSentTerminationNotification(item)
                                   }
                                 >
-                                  <i className="fa fa-bell"></i>
-                                </OverlayTrigger>
-                              </div>
-                             
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={
+                                      <Tooltip>
+                                        Sent Termination Notification
+                                      </Tooltip>
+                                    }
+                                  >
+                                    <i className="fa fa-bell"></i>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
+                              {item.requestedby_role !== "Admin" && item.requestedby_role !== "Instructor" && item.requestedby_role !== "Event" && (
                                 <div
                                   className="btn btn-sm ripple bg-success-transparent text-success rounded-circle position-relative"
                                   onClick={() => {
@@ -744,7 +768,7 @@ const UserSession = () => {
                                       {item.unseen_message_count > 0 && (
                                         <span
                                           className="position-absolute top-0 start-100 translate-middle-y bg-danger badge rounded-pill text-white 
-             px-1 py-0 small"
+  px-1 py-0 small"
                                           style={{
                                             transform: "translate(30%, -40%)",
                                             zIndex: 1,
@@ -762,7 +786,7 @@ const UserSession = () => {
                                     </span>
                                   </OverlayTrigger>
                                 </div>
-                            
+                              )}
 
                               <div
                                 className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"

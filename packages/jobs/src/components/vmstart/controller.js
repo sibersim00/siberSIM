@@ -1,4 +1,4 @@
-const { componentSetupJob } = require("../../vmstartjob/componentSetupJob");
+const { componentSetupJob } = require("../../jobs/componentSetupJob");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
@@ -33,7 +33,6 @@ const setVMRequestConfiguration =
           requestedby_id,
             requestedby_role,
         });
-
         return res.status(200).send({
           statusCode: 200,
           message: result.message,

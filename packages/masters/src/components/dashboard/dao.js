@@ -184,6 +184,7 @@ WHERE deletedon IS NULL`;
     //   sessionQuery += ` AND instructor_id = :userid`;
     // }
     // sessionQuery += ` GROUP BY sls.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
+   
     let sessionQuery = `
   SELECT 
     vr.scenarioid, 
@@ -238,8 +239,8 @@ WHERE deletedon IS NULL`;
   INNER JOIN learners l 
     ON vr.requestedby_id = l.learner_id
   WHERE 
-    vr.requestedby_role = 'Learner'
-    AND vr.status IN ('Start', 'Running')
+    vr.requestedby_role IN ('Learner','Admin','Instructor')
+    AND vr.status IN ('Start', 'Resume')
     AND s.deletedon IS NULL
 `;
 
@@ -294,7 +295,7 @@ WHERE deletedon IS NULL`;
        ) AS running_sessions
      FROM vm_request vr
      INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
-     WHERE vr.requestedby_role = 'Learner'
+     WHERE vr.requestedby_role IN ('Learner','Instructor','Admin','Event')
        AND s.deletedon IS NULL
        ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
         {

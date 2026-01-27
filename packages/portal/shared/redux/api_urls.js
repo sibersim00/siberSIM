@@ -434,7 +434,11 @@ const api = {
 
 // tab list
   tab_status: "/scenario/tablist",
-  can_resume_admin:"/vm_scenario_start/can-resume"
+  can_resume_admin:"/vm_scenario_start/can-resume",
+//----------license dashboard ----------
+get_license_dashboard_stats : "/licensedashboard/licensedashboardstats",
+//-- running componet list----------
+get_running_component : "/running_component/get"
 };
 
 

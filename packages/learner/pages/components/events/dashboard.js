@@ -30,6 +30,7 @@ import {
   clearGetSessionStatusList,
   pausescenario,
   resumescenario,
+  canresumescenario,
 } from "../../../shared/redux/slices/events/events";
 import { getTabList } from "../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../shared/layout-components/seo/seo";
@@ -40,7 +41,7 @@ import dynamic from "next/dynamic";
 
 const PdfLoader = dynamic(
   () => import("../../../shared/data/common/PdfLoader"),
-  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> },
 );
 
 const Dashboard = () => {
@@ -122,11 +123,21 @@ const Dashboard = () => {
         }
       }
 
+      // if (scenario.reverse_timer) {
+      //   const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
+      //   const reverseTotalSeconds = rh * 3600 + rm * 60 + rs;
+      //   setReverseSeconds(reverseTotalSeconds);
+      //   setReverseTimerActive(true);
+      // }
       if (scenario.reverse_timer) {
         const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
-        const reverseTotalSeconds = rh * 3600 + rm * 60 + rs;
-        setReverseSeconds(reverseTotalSeconds);
-        setReverseTimerActive(true);
+        setReverseSeconds(rh * 3600 + rm * 60 + rs);
+
+        if (scenario.status === "Start" || scenario.status === "Resume") {
+          setReverseTimerActive(true);
+        } else {
+          setReverseTimerActive(false); // ⏸ pause stops countdown
+        }
       }
     }
   }, [hasGetEventSucc]);
@@ -150,6 +161,7 @@ const Dashboard = () => {
     }
     return () => clearInterval(reverseInterval);
   }, [reverseTimerActive, reverseSeconds]);
+
   console.log("rowValuesrowValuesroddddddddwValues", saveScenariosData);
 
   useEffect(() => {
@@ -227,7 +239,7 @@ const Dashboard = () => {
                 position: toast.POSITION.TOP_RIGHT,
                 hideProgressBar: true,
                 theme: "colored",
-              }
+              },
             );
           })
         : toast.error(
@@ -240,7 +252,7 @@ const Dashboard = () => {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
       dispatch(clearHasError());
     }
@@ -337,10 +349,12 @@ const Dashboard = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setScenarioStatus("Pause");
+      setTimerActive(false); // ⛔ stop interval
+      setTimerPaused(true);
       dispatch(getEventList());
       // dispatch(getSingleScenarios(query.slug[0]));
     } catch (err) {
@@ -367,6 +381,16 @@ const Dashboard = () => {
         eventlearnerid: scenarioData?.eventlearnerid,
         type: "learner",
       };
+
+      //Step 1: Validate with backend
+      const canResumeRes = await dispatch(canresumescenario(payload));
+
+      const canResumeOk = canResumeRes?.statusCode === 200;
+
+      if (!canResumeOk) {
+        return;
+      }
+
       const resResume = await dispatch(resumescenario(payload));
       const resumeOk =
         resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
@@ -385,10 +409,12 @@ const Dashboard = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setScenarioStatus("Resume");
+      setTimerActive(true); // ▶ start interval
+      setTimerPaused(false);
       dispatch(getEventList());
     } catch (err) {
       console.error("Resume failed:", err);
@@ -480,10 +506,10 @@ const Dashboard = () => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         setScenarioStatus(
-          confirmAction === "terminate" ? "Terminated" : "Completed"
+          confirmAction === "terminate" ? "Terminated" : "Completed",
         );
       }
       setActionLoading(false); // Remove loading
@@ -493,6 +519,10 @@ const Dashboard = () => {
   }, [hasdeletescenarioSucc, errorData]);
   const handleCancelAction = () => {
     setShowConfirm(false);
+    if (timerActive === false && timerPaused === true) {
+      setTimerPaused(false);
+      setTimerActive(true);
+    }
   };
 
   const handleConfirm = () => {
@@ -610,25 +640,16 @@ const Dashboard = () => {
     setScenarioStatus("Initializing");
     dispatch(getEventList());
   };
-  // useEffect(() => {
-  //     let interval;
-  //     if (timerActive && !timerPaused) {
-  //       interval = setInterval(() => {
-  //         setElapsedSeconds((prev) => prev + 1);
-  //       }, 1000);
-  //     }
-  //     return () => clearInterval(interval);
-  //   }, [timerActive, timerPaused]);
-
+  //added
   useEffect(() => {
     let interval;
-    if (timerActive) {
+    if (timerActive && !timerPaused) {
       interval = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timerActive]);
+  }, [timerActive, timerPaused]);
 
   const formatEventKey = (name) =>
     name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
@@ -639,7 +660,7 @@ const Dashboard = () => {
         .sort((a, b) => a.tab_ordering - b.tab_ordering);
       if (enabledTabs.length > 0) {
         const basicTab = enabledTabs.find(
-          (tab) => tab.tab_name?.toLowerCase() === "Basic Information"
+          (tab) => tab.tab_name?.toLowerCase() === "Basic Information",
         );
         if (basicTab) {
           setDynamicTab(formatEventKey(basicTab.tab_name));
@@ -658,12 +679,12 @@ const Dashboard = () => {
   const isTimerVisible = !(
     isScenarioError400 ||
     ["Terminated", "Completed", "Pending", "Failed", "Initializing"].includes(
-      scenarioStatus
+      scenarioStatus,
     )
   );
   console.log(
     "scenarioStatusscenarioStatussrrrrrrrrrrrrcenarioStatus",
-    rowValues
+    rowValues,
   );
 
   return (
@@ -686,18 +707,18 @@ const Dashboard = () => {
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                              ? 2
-                              : level === "Hard"
-                              ? 3
-                              : 0;
+                                ? 2
+                                : level === "Hard"
+                                  ? 3
+                                  : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                              ? "text-warning"
-                              : level === "Hard"
-                              ? "text-danger"
-                              : "text-muted";
+                                ? "text-warning"
+                                : level === "Hard"
+                                  ? "text-danger"
+                                  : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
@@ -730,7 +751,7 @@ const Dashboard = () => {
                 >
                   {isScenarioError400 ||
                   ["Terminated", "Completed", "Pending", "Failed"].includes(
-                    scenarioStatus
+                    scenarioStatus,
                   ) ? (
                     <>
                       <div style={{ display: "flex", gap: "10px" }}>
@@ -1042,7 +1063,7 @@ const Dashboard = () => {
                               {tabListSucc
                                 ?.filter((tab) => tab.event_status === "True")
                                 ?.sort(
-                                  (a, b) => a.tab_ordering - b.tab_ordering
+                                  (a, b) => a.tab_ordering - b.tab_ordering,
                                 )
                                 ?.map((tab) => (
                                   <Tab.Pane
@@ -1244,7 +1265,7 @@ const Dashboard = () => {
                                                       <td>
                                                         {log.startedon
                                                           ? new Date(
-                                                              log.startedon
+                                                              log.startedon,
                                                             ).toLocaleString()
                                                           : "-"}
                                                       </td>
@@ -1252,12 +1273,12 @@ const Dashboard = () => {
                                                       <td>{log.status}</td>
                                                       <td>
                                                         {new Date(
-                                                          log.createdon
+                                                          log.createdon,
                                                         ).toLocaleString()}
                                                       </td>
                                                       <td>{log.remark}</td>
                                                     </tr>
-                                                  )
+                                                  ),
                                                 )}
                                               </tbody>
                                             </table>
@@ -1342,7 +1363,7 @@ const Dashboard = () => {
                                                 onClick={() => {
                                                   const frame =
                                                     document.getElementById(
-                                                      `flex-iframe-${tab.tab_name}`
+                                                      `flex-iframe-${tab.tab_name}`,
                                                     );
                                                   if (frame)
                                                     frame.src = frame.src;
@@ -1358,7 +1379,7 @@ const Dashboard = () => {
                                                 onClick={() => {
                                                   const frame =
                                                     document.getElementById(
-                                                      `flex-iframe-${tab.tab_name}`
+                                                      `flex-iframe-${tab.tab_name}`,
                                                     );
                                                   if (
                                                     frame &&
@@ -1459,13 +1480,13 @@ const Dashboard = () => {
                               <div className="d-flex">
                                 <i
                                   className={`fa ${item.icon} ${iconBackground(
-                                    item.step
+                                    item.step,
                                   )} product-icon ${getStepClass(item.step)}`}
                                 ></i>
                                 <div className="ml-2">
                                   <span
                                     className={`font-weight-semibold mb-4 tx-14 ${getStepClass(
-                                      item.step
+                                      item.step,
                                     )}`}
                                   >
                                     {item.label}
@@ -1476,7 +1497,7 @@ const Dashboard = () => {
                                 </div>
                               </div>
                               {getStepClass(item.step).includes(
-                                "text-warning"
+                                "text-warning",
                               ) && (
                                 <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
                               )}

@@ -6,22 +6,22 @@ const setScenarioLearnerConfiguration =
   ({ dao, db }) =>
     async (req, res, next) => {
       try {
-        const { scenarioid, learnerid, vmrequestid } = req.body;
+        const { scenarioid, requestedby_id, vmrequestid } = req.body;
         const ipAddress =
           req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-        if (!scenarioid || !learnerid || !vmrequestid) {
+        if (!scenarioid || !requestedby_id || !vmrequestid) {
           return res.status(400).send({
             statusCode: 400,
             message:
-              "scenarioid,vmrequestid and learnerid is required.",
+              "scenarioid,vmrequestid and requestedby_id is required.",
           });
         }
 
         try {
           const response = await axios.post(
             `${EVENTLEARNER_API_URL}/vmconfigs/set-scenario-learner-config`,
-            { scenarioid, learnerid, vmrequestid }
+            { scenarioid, requestedby_id, vmrequestid }
           );
 
           return res.status(200).send({

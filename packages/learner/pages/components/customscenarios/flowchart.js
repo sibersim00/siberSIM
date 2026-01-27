@@ -356,13 +356,12 @@ const DnDFlow = ({
   }, [selectedScenario]);
 
   const onConnect = useCallback((params) => {
-    console.log("params 111", params) /
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: "custom",
-            isAttacked: "Yes",
+            isAttacked: "No",
             data: {
               label: "",
               source: params.source,

@@ -124,32 +124,6 @@ const verifyDirectLogin = ({ dao, db, keys, crypto}) => async (req, res, next) =
 };
 
 
-const checkforgot = ({ dao, db, keys, crypto }) => async (req, res, next) => {
-  try {
-    const { loginid } = req.body;
-    let user = await dao.checkforgot({ db, keys })({ loginid: loginid });
-    if (user) {
-      return res.status(200).send({ statusCode: 200, data: crypto.cryptoEncrypt(user), message: 'OTP has been sent successfully' });
-    } else {
-      return res.status(400).send({ statusCode: 400, message: 'No details were found for the provided credentials. Please verify and try again.' });
-    }
-  }
-  catch (err) { console.log('checkforgot err==>>', err); next(err) }
-}
-
-const verifyforgot = ({ dao, db, keys, crypto }) => async (req, res, next) => {
-  try {
-    const { loginid, password, otp } = req.body;
-    let user = await dao.verifyforgot({ db, keys })({ loginid: loginid, password: password, otp: otp });
-    if (user) {
-      return res.send({ statusCode: 200, message: 'New password updated successfully', data: crypto.cryptoEncrypt({ user: user }) });
-    } else {
-      return res.status(400).send({ statusCode: 400, message: 'Invalid credentials. Please verify and try again.' });
-    }
-  }
-  catch (err) { console.log('verifyforgot err==>>', err); next(err) }
-}
-
 const geteventlist = ({ dao, db }) => async (req, res, next) => {
   try {
     const result = await dao.geteventlist({ db })();

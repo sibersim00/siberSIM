@@ -456,9 +456,15 @@ const updateCompleteTerminate =
       components.forEach(({ vmid }) => {
         vmConfig[vmid] = { stop: false, destroy: false };
       });
-
-      //Stop loop
-
+    const proxmoxService = ProxMoxService(db,{}, ipAddress);
+      const tokenResult = await proxmoxService.generateAccessTicket();      
+      if (!tokenResult || tokenResult.status !== "200") {
+        return {
+          success: false,
+          message:
+            "Could not connect to the Proxmox server while destroying components.",
+        };
+      }
       for (const {
         vmid,
         componenttype,
@@ -477,13 +483,6 @@ const updateCompleteTerminate =
           { vmType: componenttype.toLowerCase() },
           ipAddress
         );
-        const tokenResult = await proxmoxService.generateAccessTicket();
-        if (!tokenResult || tokenResult.status !== "200") {
-          return {
-            success: false,
-            message: `Could not connect to the siberSIM server while destroying components.`,
-          };
-        }
 
         const stopResult = await proxmoxService.stopVM(
           vmid,
@@ -533,13 +532,6 @@ const updateCompleteTerminate =
           { vmType: componenttype.toLowerCase() },
           ipAddress
         );
-        const tokenResult = await proxmoxService.generateAccessTicket();
-        if (!tokenResult || tokenResult.status !== "200") {
-          return {
-            success: false,
-            message: `Could not connect to the siberSIM server while destroying components.`,
-          };
-        }
 
         const destroyResult = await proxmoxService.destroyVM(
           vmid,
@@ -556,7 +548,7 @@ const updateCompleteTerminate =
             }
           );
           await db.sequelize.query(
-            `UPDATE vm_request SET status = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
+            `UPDATE vm_request SET vm_steps = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
             {
               replacements: ["Destroyed", vmrequestid],
               type: db.sequelize.QueryTypes.UPDATE,
@@ -721,7 +713,14 @@ const deleteScenarioLearner =
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
+        const proxmoxService = ProxMoxService(db, { }, ipAddress);
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: "Could not connect to Proxmox server.",
+          };
+        }
       // Loop over components and delete based on type
       for (const {
         vmid,
@@ -733,15 +732,6 @@ const deleteScenarioLearner =
 
         const vmType = componenttype.toLowerCase();
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-
-        const tokenResult = await proxmoxService.generateAccessTicket();
-        if (!tokenResult || tokenResult.status !== "200") {
-          return {
-            success: false,
-            message: "Could not connect to Proxmox server.",
-          };
-        }
-
         if (vmType === "lxc") {
           const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
           if (destroyRes?.status === 200) {
@@ -903,7 +893,17 @@ const restartEventLearner =
           message: "No components found for this event learner.",
         };
       }
+        const proxmoxService = ProxMoxService(
+          db, { },ipAddress
+        );
 
+        const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: `Could not connect to the siberSIM server for ${componentname}.`,
+          };
+        }
       // Stop each component
       for (const {
         vmid,
@@ -916,15 +916,6 @@ const restartEventLearner =
           { vmType: componenttype.toLowerCase() },
           ipAddress
         );
-
-        const tokenResult = await proxmoxService.generateAccessTicket();
-        if (!tokenResult || tokenResult.status !== "200") {
-          return {
-            success: false,
-            message: `Could not connect to the siberSIM server for ${componentname}.`,
-          };
-        }
-
         const stopResult = await proxmoxService.stopVM(
           vmid,
           componenttype.toLowerCase()
@@ -945,6 +936,8 @@ const restartEventLearner =
           console.warn(`${vmid}-${componentname} - Stop failed`);
         }
       }
+
+      
 
       // Wait for 10 seconds
       await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -1174,9 +1167,29 @@ const generateProxmoxAccessToken =
     }
   };
 
+  const getHibernateDelay = async (db) => {
+  try {
+    const [settings] = await db.sequelize.query(
+      `SELECT hibernate_delay FROM web_settings WHERE status = 1 LIMIT 1`,
+      { type: db.sequelize.QueryTypes.SELECT },
+    );
+
+    const delaySeconds =
+      settings?.hibernate_delay && Number.isFinite(settings.hibernate_delay)
+        ? settings.hibernate_delay
+        : 10;
+
+    return delaySeconds * 1000; // convert to ms
+  } catch (err) {
+    console.error("Error fetching Hibernate Delay:", err);
+    return 10000; // fallback to 10 sec
+  }
+};
 const pauseScenarioLearner =
   ({ db, ipAddress }) =>
-  async (eventlearnerid, vmrequestid) => {
+  async (vmrequestid) => {
+    console.log("vmrequestidvmrequestid",vmrequestid);
+    
     try {
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
@@ -1186,58 +1199,73 @@ const pauseScenarioLearner =
         {
           replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!components.length) {
         return {
           success: false,
-          message: "No VM components found for this session.",
+          message: "No VM components found for this VM request.",
         };
       }
 
-      // Track status of all components
+      const hibernateDelayMs = await getHibernateDelay(db);
+
       let allSuccess = true;
+      let proxmoxFailed = false;
       let results = [];
+      let pausedVMs = []; // 🔥 Track successfully paused VMs for rollback
 
-      // ------------------ LOOP THROUGH EACH COMPONENT ------------------
-      for (const { vmid, componenttype, componentname } of components) {
+      // ------------------ PAUSE LOOP ------------------
+      for (const { vmid, componenttype } of components) {
         const vmType = componenttype.toLowerCase();
-
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
-        // Generate token
+        // -------- Generate Proxmox Ticket --------
         const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
             message: `Proxmox connection failed for VM ${vmid}`,
           });
-          continue;
+          break; // ⛔ Stop further pauses → trigger rollback
         }
 
+        // -------- Pause / Stop VM --------
         let pauseResult;
-
-        // QEMU → pause
         if (vmType === "qemu") {
           pauseResult = await proxmoxService.pauseVM(vmid, vmType);
-        }
-        // LXC → stop (pause equivalent)
-        else if (vmType === "lxc") {
+        } else if (vmType === "lxc") {
           pauseResult = await proxmoxService.stopVM(vmid, vmType);
         } else {
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
             message: `Invalid VM type ${vmType} for VM ${vmid}`,
           });
-          continue;
+          break;
         }
 
+        // -------- Pause Success --------
         if (pauseResult?.status === 200) {
+          await db.sequelize.query(
+            `UPDATE vm_config
+             SET status = 'Hibernate', modifiedon = NOW()
+             WHERE vmrequestid = ? AND vmid = ?`,
+            {
+              replacements: [vmrequestid, vmid],
+            },
+          );
+
+          pausedVMs.push({ vmid, vmType });
+
           results.push({
             vmid,
             status: "success",
@@ -1247,7 +1275,10 @@ const pauseScenarioLearner =
                 : `VM ${vmid} stopped successfully (LXC pause equivalent)`,
           });
         } else {
+          // -------- Pause Failed --------
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
@@ -1256,13 +1287,55 @@ const pauseScenarioLearner =
                 ? `Failed to pause VM ${vmid}`
                 : `Failed to stop VM ${vmid}`,
           });
+          break;
+        }
+
+        await sleep(hibernateDelayMs);
+      }
+
+      // ------------------ ROLLBACK (FALLBACK) ------------------
+      if (proxmoxFailed && pausedVMs.length > 0) {
+        console.warn(
+          `Rollback started for vmrequestid ${vmrequestid}. Restoring ${pausedVMs.length} VMs`,
+        );
+
+        for (const { vmid, vmType } of pausedVMs) {
+          try {
+            const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+            await proxmoxService.generateAccessTicket();
+
+            if (vmType === "qemu") {
+              await proxmoxService.resumeVM(vmid, vmType);
+            } else if (vmType === "lxc") {
+              await proxmoxService.startVM(vmid, vmType);
+            }
+
+            // 🔄 Restore DB status to Running
+            await db.sequelize.query(
+              `UPDATE vm_config
+               SET status = 'Running', modifiedon = NOW()
+               WHERE vmrequestid = ? AND vmid = ?`,
+              {
+                replacements: [vmrequestid, vmid],
+              },
+            );
+          } catch (rollbackErr) {
+            console.error(
+              `Rollback failed for VM ${vmid}:`,
+              rollbackErr.message,
+            );
+          }
         }
       }
+
+      // ------------------ FINAL RESPONSE ------------------
       return {
         success: allSuccess,
         message: allSuccess
           ? "All VMs paused successfully."
-          : "Scenario failed to pause.",
+          : proxmoxFailed
+            ? "Pause failed. Rollback executed. Scenario restored to running state."
+            : "Scenario failed to pause.",
         details: results,
       };
     } catch (err) {
@@ -1276,7 +1349,7 @@ const pauseScenarioLearner =
 
 const resumeScenarioLearner =
   ({ db, ipAddress }) =>
-  async (eventlearnerid, vmrequestid) => {
+  async (vmrequestid) => {
     try {
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
@@ -1286,35 +1359,43 @@ const resumeScenarioLearner =
         {
           replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!components.length) {
         return {
           success: false,
-          message: "No VM components found for this session.",
+          message: "No VM components found for this VM request.",
         };
       }
 
-      // Track status for all VMs
-      let allSuccess = true;
-      let results = [];
+      const hibernateDelayMs = await getHibernateDelay(db);
 
-      // ------------------ LOOP FOR EACH VM ------------------
-      for (const { vmid, componenttype, componentname } of components) {
+      let allSuccess = true;
+      let proxmoxFailed = false;
+      let results = [];
+      let resumedVMs = []; // 🔥 Track resumed VMs for rollback
+
+      // ------------------ RESUME LOOP ------------------
+      for (const { vmid, componenttype } of components) {
         const vmType = componenttype.toLowerCase();
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-        // Generate token
+
+        // -------- Generate Proxmox Ticket --------
         const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
             message: `Proxmox connection failed for VM ${vmid}`,
           });
-          continue;
+          break; // ⛔ stop further resumes → rollback
         }
+
+        // -------- Resume / Start VM --------
         let resumeResult;
         if (vmType === "qemu") {
           resumeResult = await proxmoxService.resumeVM(vmid, vmType);
@@ -1322,14 +1403,29 @@ const resumeScenarioLearner =
           resumeResult = await proxmoxService.startVM(vmid, vmType);
         } else {
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
             message: `Invalid VM type ${vmType} for VM ${vmid}`,
           });
-          continue;
+          break;
         }
+
+        // -------- Resume Success --------
         if (resumeResult?.status === 200) {
+          await db.sequelize.query(
+            `UPDATE vm_config
+             SET status = 'Running', modifiedon = NOW()
+             WHERE vmrequestid = ? AND vmid = ?`,
+            {
+              replacements: [vmrequestid, vmid],
+            },
+          );
+
+          resumedVMs.push({ vmid, vmType });
+
           results.push({
             vmid,
             status: "success",
@@ -1340,6 +1436,8 @@ const resumeScenarioLearner =
           });
         } else {
           allSuccess = false;
+          proxmoxFailed = true;
+
           results.push({
             vmid,
             status: "failed",
@@ -1348,13 +1446,55 @@ const resumeScenarioLearner =
                 ? `Failed to resume VM ${vmid}`
                 : `Failed to start VM ${vmid}`,
           });
+          break;
+        }
+
+        await sleep(hibernateDelayMs);
+      }
+
+      // ------------------ ROLLBACK (FALLBACK) ------------------
+      if (proxmoxFailed && resumedVMs.length > 0) {
+        console.warn(
+          `Resume rollback started for vmrequestid ${vmrequestid}. Re-hibernating ${resumedVMs.length} VMs`,
+        );
+
+        for (const { vmid, vmType } of resumedVMs) {
+          try {
+            const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+            await proxmoxService.generateAccessTicket();
+
+            if (vmType === "qemu") {
+              await proxmoxService.pauseVM(vmid, vmType);
+            } else if (vmType === "lxc") {
+              await proxmoxService.stopVM(vmid, vmType);
+            }
+
+            // 🔄 Restore DB status to Hibernate
+            await db.sequelize.query(
+              `UPDATE vm_config
+               SET status = 'Hibernate', modifiedon = NOW()
+               WHERE vmrequestid = ? AND vmid = ?`,
+              {
+                replacements: [vmrequestid, vmid],
+              },
+            );
+          } catch (rollbackErr) {
+            console.error(
+              `Resume rollback failed for VM ${vmid}:`,
+              rollbackErr.message,
+            );
+          }
         }
       }
+
+      // ------------------ FINAL RESPONSE ------------------
       return {
         success: allSuccess,
         message: allSuccess
           ? "All VMs resumed successfully."
-          : "Scenario failed to resume.",
+          : proxmoxFailed
+            ? "Resume failed. Rollback executed. Scenario restored to hibernate state."
+            : "Scenario failed to resume.",
         details: results,
       };
     } catch (err) {

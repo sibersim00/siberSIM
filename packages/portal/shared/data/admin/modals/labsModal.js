@@ -41,7 +41,7 @@ const LabsAdd = ({
     }
   );
 
-  console.log("hasGetStudentListSuccreport", hasGetStudentListSuccreport);
+  console.log("rowValuesrowValuesrddddddddowValues", rowValues);
 
   useEffect(() => {
     dispatch(getStudentListreport());
@@ -101,7 +101,11 @@ const LabsAdd = ({
         : typeof rowValues?.allowedusers === "string"
         ? (() => {
             try {
-              return JSON.parse(rowValues.allowedusers);
+              const parsed = JSON.parse(rowValues.allowedusers);
+              return parsed.map((u) => ({
+                label: u.name,
+                value: Number(u.learner_id),
+              }));
             } catch (e) {
               return [];
             }
@@ -118,7 +122,8 @@ const LabsAdd = ({
         accesslevel: data.accesslevel,
         personincharge: Number(data.personincharge),
         reservedseats: Number(data.reservedseats),
-        allowedusers: data.allowedusers,
+        allowedusers: data.allowedusers.map((u) => String(u.value)),
+
       };
       handleOneClick(true);
 
@@ -128,7 +133,6 @@ const LabsAdd = ({
       if (!rowValues || rowValues.lab_id === 0) {
         result = await dispatch(addLabDetails(payload));
       }
-
       // ---------- EDIT MODE ----------
       else {
         result = await dispatch(editLabDetails(payload));
@@ -160,25 +164,46 @@ const LabsAdd = ({
   console.log("formikformik", formik);
   const { values, errors, touched, handleChange, handleSubmit, setFieldValue } =
     formik;
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
+
+  
+  const customStyles = () => {
+  return {
+    control: (styles) => ({
       ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-          ? "#00d683"
-          : styles.borderColor,
+      backgroundColor: "var(--dark-bg-color)",
+      borderColor: "#ced4da",
+      minHeight: "38px",
+    }),
+    multiValue: (styles) => ({
+      ...styles,
+      backgroundColor: "var(--primary-bg-color)",
+    }),
+    multiValueLabel: (styles) => ({
+      ...styles,
+       color: "#fff",
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: "#fff",
+      ":hover": {
+        backgroundColor: "#EB5757",
+        color: "white",
       },
     }),
+    input: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    singleValue: (styles) => ({
+      ...styles,
+      color: "var(--light-text-color)",
+    }),
+    placeholder: (styles) => ({
+      ...styles,
+      color: "#aaa",
+    }),
   };
-
+};
   const getSelectStyles = (fieldName) => {
     const error = !values[fieldName] && errors[fieldName] && touched[fieldName];
 
@@ -199,18 +224,17 @@ const LabsAdd = ({
         color: "var(--light-text-color)", // text while typing
       }),
 
- 
-        multiValue: (provided) => ({
-    ...provided,
-    backgroundColor: "#1e263a",    // darker chip color
-    borderRadius: "4px",
-  }),
+      multiValue: (provided) => ({
+        ...provided,
+        backgroundColor: "#1e263a", // darker chip color
+        borderRadius: "4px",
+      }),
 
-  multiValueLabel: (provided) => ({
-    ...provided,
-    color: "#fff",
-    fontWeight: 500,
-  }),
+      multiValueLabel: (provided) => ({
+        ...provided,
+        color: "#fff",
+        fontWeight: 500,
+      }),
     };
   };
 
@@ -390,7 +414,7 @@ const LabsAdd = ({
                 <Form.Control
                   type="number"
                   name="reservedseats"
-                  placeholder="enter the no. of reserved seats"
+                  placeholder="Enter the no. of reserved seats"
                   value={values.reservedseats}
                   onChange={handleChange}
                   isInvalid={touched.reservedseats && errors.reservedseats}
@@ -406,7 +430,7 @@ const LabsAdd = ({
                   Allowed Users <span className="text-danger">*</span>
                 </Form.Label>
 
-                <Select
+                {/* <Select
                   isMulti
                   name="allowedusers"
                   theme={(theme) => ({
@@ -444,6 +468,43 @@ const LabsAdd = ({
                       "allowedusers",
                       selectedList.map((s) => String(s.value))
                     );
+                  }}
+                  placeholder="Select Allowed Users"
+                  menuPosition="fixed"
+                /> */}
+
+                <Select
+                  isMulti
+                  name="allowedusers"
+                  options={studentOptions}
+                  value={values.allowedusers}
+                  styles={customStyles()}
+                  theme={(theme) => ({
+                    ...theme,
+                    colors: {
+                      ...theme.colors,
+                      primary25: "var(--primary-bg-color)",
+                      primary: "var(--primary-bg-color)",
+                    },
+                  })}
+                  onChange={(selectedList) => {
+                    const reserved = Number(values.reservedseats || 0);
+
+                    if (selectedList.length > reserved) {
+                      toast.error(
+                        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                          You can select only {reserved} users!
+                        </p>,
+                        {
+                          position: toast.POSITION.TOP_RIGHT,
+                          hideProgressBar: false,
+                          theme: "colored",
+                        }
+                      );
+                      return;
+                    }
+
+                    setFieldValue("allowedusers", selectedList);
                   }}
                   placeholder="Select Allowed Users"
                   menuPosition="fixed"

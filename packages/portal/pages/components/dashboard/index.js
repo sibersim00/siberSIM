@@ -66,6 +66,8 @@ const Dashboard = () => {
     // Check if license expiry flag is true
     const isLicenseExpiryFlag = localStorage.getItem('is_license_expiry') === 'true';
 
+    console.log("isLicenseExpiryFlagisLicenseExpiryFlag",isLicenseExpiryFlag)
+
     // Get company settings
     const storedSettings = localStorage.getItem("company_settings");
 
@@ -101,7 +103,7 @@ const Dashboard = () => {
 
           const timeDiff = expiryUTC - currentUTC;
           const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
+          console.log("daysLeftttttttttt",daysLeft)
           // Format date using UTC methods
           const formatDateDDMMYYYY = (dateObj) => {
             const day = String(dateObj.getUTCDate()).padStart(2, "0");
@@ -113,7 +115,7 @@ const Dashboard = () => {
           // Check conditions for showing popup:
           // 1. License expiry flag is true (set on login)
           // 2. License has 30 days or less remaining
-          if (daysLeft <= 30 && daysLeft > 0 && isLicenseExpiryFlag) {
+          if (daysLeft <= 30 && isLicenseExpiryFlag) {
             setLicenseInfo({
               daysLeft,
               expiryDate: formatDateDDMMYYYY(expiryDate),

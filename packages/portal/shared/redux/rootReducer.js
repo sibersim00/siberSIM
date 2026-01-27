@@ -78,6 +78,8 @@ import company_setting from "./slices/companySetting/companySetting";
 import Labs from "./slices/labs/labs";
 import customComponent from "./slices/customcomponent/customcomponentManage";
 import scenariostart from "./slices/scenariostart/scenariostartmanage";
+import licenseDashboard from "./slices/licenseDashboard/licenseDashbaordManage";
+import runningComponent from "./slices/runningComponents/runningComponents";
 
 
 const rootPersistConfig = {
@@ -149,7 +151,9 @@ const rootReducer = (state, action) => {
     customerData: customerData,
     Labs: Labs,
     customComponent: customComponent,
-    scenariostart: scenariostart
+    scenariostart: scenariostart,
+    licenseDashboard:licenseDashboard,
+    runningComponent:runningComponent
   })(state, action);
 };
 

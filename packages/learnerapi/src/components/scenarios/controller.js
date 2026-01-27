@@ -32,7 +32,7 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
     body.instructor_id = req.learneruser.instructor_id;
     const user_count_limit = req.learneruser.user_count_limit;
     const result = await dao.startScenario({ db, validation })(body, user_count_limit);
-    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, vmrequestid: result.vmrequestid || null});
+    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, vmrequestid: result.vmrequestid || null });
   } catch (error) {
     console.error("Error saving scenario learner:", error.message);
     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
@@ -51,7 +51,6 @@ const updateSessionStatus = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
   }
 };
-
 const getSessionStatus = ({ dao, db, validation }) => async (req, res, next) => {
   try {
     const session_uuid = req.params.session_uuid;
@@ -65,7 +64,6 @@ const getSessionStatus = ({ dao, db, validation }) => async (req, res, next) => 
     return res.status(500).json({ statusCode: 500, message: validation.messages.SESSION_STATUS_ERROR });
   }
 };
-
 const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
   try {
     const { scenariolearnerid } = req.body;
@@ -78,7 +76,6 @@ const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, error: "An error occurred while fetching messages." });
   }
 };
-
 const sendMessage = ({ dao, db, validation }) => async (req, res) => {
   try {
     let body = req.body;
@@ -91,7 +88,6 @@ const sendMessage = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, error: "An error occurred while sending the message." });
   }
 };
-
 const markMessagesSeen = ({ dao, db, validation }) => async (req, res) => {
   try {
     const viewer_type = req.learneruser ? 'learner' : 'instructor';
@@ -104,7 +100,6 @@ const markMessagesSeen = ({ dao, db, validation }) => async (req, res) => {
     res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
   }
 };
-
 const getLogs = ({ dao, db, validation }) => async (req, res) => {
   try {
     const learner_id = req.learneruser.learner_id;
@@ -116,8 +111,6 @@ const getLogs = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).send({ statusCode: 500, message: validation.messages.LOGS_FETCH_ERROR });
   }
 };
-
-
 const getTabList = ({ dao, db, validation }) => async (req, res) => {
   try {
     const result = await dao.getTabList({ db })(null);
@@ -143,9 +136,6 @@ const getTabList = ({ dao, db, validation }) => async (req, res) => {
     });
   }
 };
-
-
-
 const getPaused = ({ dao, db, validation }) => async (req, res) => {
   try {
     const learner_id = req.learneruser.learner_id;
@@ -167,7 +157,9 @@ const getPaused = ({ dao, db, validation }) => async (req, res) => {
 const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
-    const result = await dao.canResumeScenario({ db, validation })(body);
+    const user_count_limit = req.learneruser.user_count_limit;
+    console.log("uuuuuuuuuuuuu",user_count_limit)
+    const result = await dao.canResumeScenario({ db, validation })(body,user_count_limit);
 
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,

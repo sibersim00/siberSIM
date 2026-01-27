@@ -16,12 +16,14 @@ const getAll = ({ dao, db, validation }) => async (req, res) => {
 
 const startEvent = ({ dao, db, validation }) => async (req, res) => {
   try {
-    const body = { ...req.body,
+    const body = {
+      ...req.body,
       learner_id: req.learneruser.learner_id,
       instructor_id: req.learneruser.instructor_id,
-    };
+      user_count_limit: req.learneruser.user_count_limit,
+    }
     const result = await dao.startEvent({ db, validation })(body);
-    res.status(result.statusCode).json({ statusCode: result.statusCode, message: result.message, eventlearnerid: result.eventlearnerid,vmrequestid:result.vmrequestid });
+    res.status(result.statusCode).json({ statusCode: result.statusCode, message: result.message, eventlearnerid: result.eventlearnerid, vmrequestid: result.vmrequestid });
   } catch (err) {
     console.error(err);
     res.status(500).json({ statusCode: 500, message: validation.messages.server_error });
@@ -31,7 +33,7 @@ const startEvent = ({ dao, db, validation }) => async (req, res) => {
 const updateEventLearnerStatus = ({ dao, db, validation }) => async (req, res) => {
   try {
     const result = await dao.updateEventLearnerStatus({ db, validation })(req.body);
-    res.status(result.statusCode).json({ statusCode: result.statusCode, message: result.message});
+    res.status(result.statusCode).json({ statusCode: result.statusCode, message: result.message });
   } catch (err) {
     console.error(err);
     res.status(500).json({ statusCode: 500, message: validation.messages.server_error });
@@ -64,7 +66,9 @@ const getLogs = ({ dao, db, validation }) => async (req, res) => {
 const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
-    const result = await dao.canResumeScenario({ db, validation })(body);
+      const user_count_limit = req.learneruser.user_count_limit;
+      console.log("tttttttttttttttttttt",user_count_limit)
+    const result = await dao.canResumeScenario({ db, validation })(body,user_count_limit);
 
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,

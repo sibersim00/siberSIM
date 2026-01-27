@@ -445,6 +445,7 @@ const ManageScenarios = () => {
             d.scenarioidentification?.toLowerCase().includes(val) ||
             // d.instructor_name?.toLowerCase().includes(val) ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
+            d.vm_status?.toLowerCase().includes(val) ||
             d.scenariotitle?.toLowerCase().includes(val) ||
             d.scenariolevel?.toLowerCase().includes(val) ||
             (typeof d.duration === "number" &&
@@ -452,6 +453,7 @@ const ManageScenarios = () => {
             d.name?.toLowerCase().includes(val) ||
             d.scenariocategory?.toLowerCase().includes(val) ||
             d.scenariosubcategory?.toLowerCase().includes(val) ||
+
             !val
           );
         });
@@ -473,6 +475,7 @@ const ManageScenarios = () => {
             d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
             // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
+            (d.vm_status?.toLowerCase() || "").includes(val) ||
             d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
             (typeof d.duration === "number" &&
               d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
@@ -505,6 +508,7 @@ const ManageScenarios = () => {
             d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
             // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
             (d.instructor_name?.toLowerCase() || "").includes(val) ||
+            (d.vm_status?.toLowerCase() || "").includes(val) ||
             d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
             (typeof d.duration === "number" &&
               d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
@@ -596,20 +600,9 @@ const ManageScenarios = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -617,6 +610,17 @@ const ManageScenarios = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
 
       handleOneClick(false);
       dispatch(clearHasError());
@@ -1010,9 +1014,9 @@ const ManageScenarios = () => {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
-                        //  overlayNoRowsTemplate={
-                        //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
-                        // }
+                      //  overlayNoRowsTemplate={
+                      //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
+                      // }
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -1033,13 +1037,12 @@ const ManageScenarios = () => {
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${
-                          item.scenariostatus === "Publish"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                             ? "shadow-publish"
                             : item.scenariostatus === "Draft"
-                            ? "shadow-draft"
-                            : ""
-                        }`}
+                              ? "shadow-draft"
+                              : ""
+                          }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
                           {item.requestedby_role === "Admin" &&
@@ -1099,9 +1102,9 @@ const ManageScenarios = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -1172,7 +1175,7 @@ const ManageScenarios = () => {
                               </OverlayTrigger>
                             </div>
                             {/* Expport */}
-                            {/* <div
+                            <div
                               className="btn btn-sm ripple bg-info text-dark rounded-circle"
                               // onClick={() => handleExport(item.scenarioid)}
                               onClick={() => handleScenarioExport(item.scenarioid)}
@@ -1183,7 +1186,7 @@ const ManageScenarios = () => {
                               >
                                 <i className="fa fa-file-excel-o"></i>
                               </OverlayTrigger>
-                            </div> */}
+                            </div>
                             {/* Instruction File Download */}
                             <div
                               className="btn btn-sm ripple bg-success-transparent rounded-circle"
@@ -1207,18 +1210,18 @@ const ManageScenarios = () => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                              <div
-                                className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                onClick={() => handleEdit(item)}
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>Update</Tooltip>}
+                                <div
+                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                                  onClick={() => handleEdit(item)}
                                 >
-                                  <i className="fe fe-edit"></i>
-                                </OverlayTrigger>
-                              </div>
-                            )}
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>Update</Tooltip>}
+                                  >
+                                    <i className="fe fe-edit"></i>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
 
                             {/* View Button */}
                             <div
@@ -1294,23 +1297,23 @@ const ManageScenarios = () => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                              <div className="btn btn-sm ripple me-1">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>Change Status</Tooltip>}
-                                >
-                                  <label className="custom-switch mb-0">
-                                    <input
-                                      type="checkbox"
-                                      className="custom-switch-input"
-                                      checked={item?.status === "true"}
-                                      onChange={() => handleStatusSwitch(item)}
-                                    />
-                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                  </label>
-                                </OverlayTrigger>
-                              </div>
-                            )}
+                                <div className="btn btn-sm ripple me-1">
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>Change Status</Tooltip>}
+                                  >
+                                    <label className="custom-switch mb-0">
+                                      <input
+                                        type="checkbox"
+                                        className="custom-switch-input"
+                                        checked={item?.status === "true"}
+                                        onChange={() => handleStatusSwitch(item)}
+                                      />
+                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                    </label>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
                           </div>
                         </Card.Body>
                       </Card>
@@ -1448,9 +1451,9 @@ const ManageScenarios = () => {
                 { value: "all", label: "Select All Scenarios" },
                 ...(Array.isArray(hasGetScenarioListSucc)
                   ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
+                    value: s.scenarioid,
+                    label: s.scenariotitle,
+                  }))
                   : []),
               ]}
               value={selectedScenarios}

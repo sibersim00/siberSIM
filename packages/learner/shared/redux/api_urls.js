@@ -128,6 +128,7 @@ const api = {
 
 
 can_resume: "/scenarios/can-resume",
+event_can_resume: "/events/can-resume",
 
 
 

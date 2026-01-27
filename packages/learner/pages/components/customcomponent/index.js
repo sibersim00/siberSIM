@@ -27,7 +27,6 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
 import { ToggleButton } from "@mui/material";
-
 import "../../../shared/utils/i18n";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
@@ -62,9 +61,6 @@ const ManageCustomComponent = () => {
     componentname: "",
     ComponentIdentificationVMName: "",
   });
-
-  console.log("rowData", rowData);
-  console.log("gridData", gridData);
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
   const viewType = router.query.view || "card";
@@ -95,7 +91,6 @@ const ManageCustomComponent = () => {
       errorData: state && state.customComponent && state.customComponent.error,
     };
   });
-  console.log("hasGetComponentListSucc", hasGetComponentListSucc);
 
   const columnDefs = [
     {
@@ -453,7 +448,6 @@ const ManageCustomComponent = () => {
     },
     vmidWithImageRenderer: function (props) {
       const { data } = props;
-      console.log("data", data);
       const imageUrl = data?.componentimage
         ? `${process.env.API_URL_FILEMANAGER}${data.componentimage}`
         : dummy_network;

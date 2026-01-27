@@ -5,10 +5,7 @@ const setScenarioLearnerConfigSchema = Joi.object({
     "number.base": `Scenario ID must be a number.`,
     "any.required": `scenarioid is required.`,
   }),
-  learnerid: Joi.number().required().messages({
-    "number.base": `SIMUser ID must be a number.`,
-    "any.required": `learnerid is required.`,
-  }),
+
   vmrequestid: Joi.number().required().messages({
     "number.base": `Session ID must be a number.`,
     "any.required": `vmrequestid is required.`,
