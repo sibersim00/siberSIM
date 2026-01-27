@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Row, Col, Card, ProgressBar ,Dropdown } from "react-bootstrap";
-import ReactApexChart from 'react-apexcharts';
+// import ReactApexChart from 'react-apexcharts';
 import { useDispatch, useSelector } from "react-redux";
 import { getLicenseDashboardData } from "../../../shared/redux/slices/licenseDashboard/licenseDashbaordManage";
 
@@ -307,12 +307,12 @@ const LicenseDashboard = () => {
                 </Dropdown>
               </div>
 
-              <ReactApexChart
+              {/* <ReactApexChart
                 options={usageChartOptions}
                 series={usageChartSeries}
                 type="line"
                 height={280}
-              />
+              /> */}
 
               <div className="mt-3 text-muted small">
                 Avg Usage / Day:{" "}
