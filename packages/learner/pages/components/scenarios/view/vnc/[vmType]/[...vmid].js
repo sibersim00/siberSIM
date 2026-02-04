@@ -18,6 +18,7 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
+  clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
@@ -789,6 +790,7 @@ export default function ProxmoxConsole() {
           Swal.fire("Success", "Component created successfully", "success");
           setShowConvertDrawer(false);
           dispatch(clearCustomComponent());
+          dispatch(clearSaveComponent());
           formik.resetForm();
           return;
         }
@@ -838,6 +840,7 @@ export default function ProxmoxConsole() {
 
         setShowConvertDrawer(false);
         dispatch(clearCustomComponent());
+        dispatch(clearSaveComponent());
         formik.resetForm();
       } catch (err) {
         console.error("Unexpected error:", err);

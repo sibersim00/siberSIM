@@ -7,123 +7,34 @@ const ProxMoxService = require("../../services/proxmox/ProxMoxService");
 const { v4: uuidv4 } = require("uuid");
 const generateUUID = () => uuidv4();
 
-// const getAll =
-//   ({ db }) =>
-//   async (session_userid, usertype) => {
-//     if (usertype == "Admin") {
-//       let [res] = await db.sequelize
-//         .query(`select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile 
-//       END AS mobile,t.email,t.profile,t.username,
-//         DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-//         DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,      
-//        CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status from learners t WHERE 
-//   t.deletedon IS NULL ORDER by t.firstname ASC`);
-//       return res;
-//     } else {
-//       let res = await db.sequelize.query(
-//         `select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile 
-//       END AS mobile,t.email,t.profile,t.username,
-//        DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-//       DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,   
-//       CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status
-//         from learners t  
-//         inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid 
-       
-//         group by t.learner_id
-//         ORDER by t.firstname ASC`,
-//         {
-//           replacements: {
-//             _userid: session_userid,
-//           },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-//       return res;
-//     }
-//   };
-
 const getAll =
   ({ db }) =>
-  async (session_userid, usertype, page = 1, limit = 50) => {
-    const offset = (page - 1) * limit;
-
-    // ---------------- ADMIN ----------------
-    if (usertype === "Admin") {
-      const rows = await db.sequelize.query(
-        `
-        SELECT 
-          t.learner_id,
-          t.learner_uuid,
-          t.firstname,
-          t.lastname,
-          t.isverified,
-          CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile,
-          t.email,
-          t.profile,
-          t.username,
-          DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-          DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-          CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status
-        FROM learners t
-        WHERE t.deletedon IS NULL
-        ORDER BY t.firstname ASC
-        LIMIT :limit OFFSET :offset
-        `,
+  async (session_userid, usertype) => {
+    if (usertype == "Admin") {
+      let [res] = await db.sequelize
+        .query(`SELECT  t.learner_id, t.learner_uuid, t.firstname, t.lastname, t.isverified, CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile, t.email, t.profile, t.username, DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status FROM learners t WHERE t.deletedon IS NULL ORDER BY t.firstname ASC`);
+      return res;
+    } else {
+      let res = await db.sequelize.query(
+        `select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile
+      END AS mobile,t.email,t.profile,t.username,
+       DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
+      DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,  
+      CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status
+        from learners t  
+        inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid
+       
+        group by t.learner_id
+        ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`,
         {
-          replacements: { limit, offset },
+          replacements: {
+            _userid: session_userid,
+          },
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
-      const [[{ total }]] = await db.sequelize.query(
-        `SELECT COUNT(*) AS total FROM learners WHERE deletedon IS NULL`
-      );
-
-      return {
-        data: Array.isArray(rows) ? rows : [],
-        hasMore: offset + rows.length < total,
-      };
+      return res;
     }
-
-    // ---------------- INSTRUCTOR ----------------
-    const rows = await db.sequelize.query(
-      `
-      SELECT 
-        t.learner_id,
-        t.learner_uuid,
-        t.firstname,
-        t.lastname,
-        t.isverified,
-        CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile,
-        t.email,
-        t.profile,
-        t.username,
-        DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-        CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status
-      FROM learners t
-      INNER JOIN learner_instructor_map lim 
-        ON lim.learner_id = t.learner_id
-        AND lim.deletedon IS NULL
-        AND lim.instructor_id = :_userid
-      GROUP BY t.learner_id
-      ORDER BY t.firstname ASC
-      LIMIT :limit OFFSET :offset
-      `,
-      {
-        replacements: {
-          _userid: session_userid,
-          limit,
-          offset,
-        },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    );
-
-    return {
-      data: Array.isArray(rows) ? rows : [],
-      hasMore: rows.length === limit,
-    };
   };
   
 const statusChange =

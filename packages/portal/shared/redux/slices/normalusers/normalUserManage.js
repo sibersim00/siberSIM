@@ -32,21 +32,10 @@ const slice = createSlice({
     stopLoading(state) {
       state.isLoading = false;
     },
-    // hasgetNormalusersListSucc(state, action) {
-    //   state.isLoading = false;
-    //   state.getNormalusersData = action.payload;
-    // },
     hasgetNormalusersListSucc(state, action) {
-  state.isLoading = false;
-  const { users, hasMore, page } = action.payload;
-  if (page === 1) {
-    state.getNormalusersData = users;
-  } else {
-    state.getNormalusersData = [...(state.getNormalusersData || []), ...users];
-  }
-  state.hasMore = hasMore;
-},
-
+      state.isLoading = false;
+      state.getNormalusersData = action.payload;
+    },
     hasNormaluserstatusSucc(state, action) {
       state.isLoading = false;
       state.statusChangeNormaluser = action.payload;
@@ -98,32 +87,12 @@ export default slice.reducer;
 
 // ----------------------------------------------------------------------
 
-// export function getNormalusersManageList() {
-//   return async () => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.get(api?.normalusers_get);
-//       dispatch(slice.actions.hasgetNormalusersListSucc(response.data));
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
-
-export function getNormalusersManageList({ page = 1, limit = 50} = {}) {
-  return async (dispatch) => {
+export function getNormalusersManageList() {
+  return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.get(api.normalusers_get, {
-        params: { page, limit },
-      });
-      dispatch(
-        slice.actions.hasgetNormalusersListSucc({
-          users: response.data.data.data,
-          hasMore: response.data.data.hasMore,
-          page,
-        })
-      );
+      const response = await axios.get(api?.normalusers_get);
+      dispatch(slice.actions.hasgetNormalusersListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

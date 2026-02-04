@@ -2320,7 +2320,6 @@ const save =
         let upid = cloneResult?.data?.data;
         while (true) {
           const logResponse = await proxmoxService.getTaskLog(upid);
-          console.log("LXCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", logResponse);
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }
@@ -2368,13 +2367,12 @@ const save =
       }
       /** ---------- QEMU ---------- **/
       if (vmType === "qemu") {
-        cloneResult = await proxmoxService.cloneQEMU(sourceVmid, newVmid);
+        cloneResult = await proxmoxService.cloneQEMU(sourceVmid, newVmid,payload.componentname);
         if (cloneResult?.status !== 200) {
           return await markComponentRejected({
             db,
             customComponentId,
             modifiedBy: payload.createdby,
-            // reason: "QEMU clone failed",
             reason:
               "This request is automatically rejected due to a Proxmox service issue.",
           });
@@ -2382,7 +2380,6 @@ const save =
         let upid = cloneResult?.data?.data;
         while (true) {
           const logResponse = await proxmoxService.getTaskLog(upid);
-          console.log("QQQQQQQQQQQQQQQQQQQQQQQQQQQ", logResponse);
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }

@@ -224,8 +224,8 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  right: -50,
-                  top: `${offsetPercent}%`,
+                  right: -60,
+                  top: `60%`,
                   transform: "translateY(-50%)",
                 };
                 break;
@@ -252,8 +252,8 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  left: -50,
-                  top: `${offsetPercent}%`,
+                  left: -60,
+                  top: `60%`,
                   transform: "translateY(-50%)",
                 };
                 break;

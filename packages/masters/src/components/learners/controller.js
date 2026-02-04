@@ -13,13 +13,7 @@ const getAll = ({ dao, db, validation }) => async (req, res) => {
   try {
     let session_userid = req.user.userid;
     let usertype = req.user.usertype;
-
-    // Get page & limit from query params (default to 1 and 12)
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-
-    const result = await dao.getAll({ db })(session_userid, usertype, page, limit);
-
+    const result = await dao.getAll({ db })(session_userid, usertype);
     res.status(200).send({
       statusCode: 200,
       message: validation.messages.student_list,

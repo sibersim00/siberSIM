@@ -907,31 +907,25 @@ export function saveComponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(
-        api.custom_component_save_learner,
-        payload
-      );
-
+      const response = await axios.post( api.custom_component_save_learner, payload);
       dispatch(slice.actions.hasGetSaveComponentSucc(response.data));
-
-
-      return {
-        success: true,
-        data: response.data,
-      };
-
+      return {success: true, data: response.data,};
     } catch (error) {
-      const errData = error?.response?.data || {
-        message: error.message,
-      };
-
+      const errData = error?.response?.data || { message: error.message, };
       dispatch(slice.actions.hasError(errData));
-
-
-      return {
-        success: false,
-        error: errData,
+      return {success: false,error: errData,
       };
+    }
+  };
+}
+
+export function clearSaveComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveComponentSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
     }
   };
 }
@@ -960,6 +954,7 @@ export function rejectStoppedVm(payload) {
     }
   };
 }
+
 
 
 export function clearHasError() {

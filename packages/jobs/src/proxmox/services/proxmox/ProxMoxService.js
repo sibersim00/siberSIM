@@ -1507,31 +1507,9 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       console.error("Error in templateLXC:", errorMessage);
       return null;
     }
-    // catch (error) {
-    //   console.error("AXIOS ERROR RAW:", {
-    //     message: error.message,
-    //     code: error.code,
-    //     errno: error.errno,
-    //     syscall: error.syscall,
-    //     address: error.address,
-    //     port: error.port,
-    //     config: error.config,
-    //     stack: error.stack
-    //   });
-
-    //   if (error.response) {
-    //     console.error("RESPONSE STATUS:", error.response.status);
-    //     console.error("RESPONSE DATA:", error.response.data);
-    //   } else if (error.request) {
-    //     console.error("REQUEST SENT BUT NO RESPONSE");
-    //   } else {
-    //     console.error("REQUEST NOT SENT");
-    //   }
-
-    //   return null;
-    // }
   }
-  //   async function templateLXC(vmid) {
+
+  // async function cloneQEMU(vmid, newid) {
   //   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
   //     throw new Error("Access info not initialized. Call generateAccessTicket first.");
   //   }
@@ -1539,74 +1517,66 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   //   const start = Date.now();
   //   const request_datetime = new Date();
 
-  //   const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/template`;
+  //   const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
+
+  //   const body = new URLSearchParams({ newid }).toString();
 
   //   const config = {
   //     method: "post",
   //     url,
   //     headers: {
-  //       // IMPORTANT: Cookie must be key=value
-  //       Cookie: `PVEAuthCookie=${accessInfo.cookie}`,
-  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+  //       Cookie: accessInfo.cookie,
   //       "Content-Type": "application/x-www-form-urlencoded",
+  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
   //     },
-
-  //     // IMPORTANT: Proxmox expects a body, even if empty
-  //     data: "",
-
-  //     timeout: 15000, // ⬅️ very important for Proxmox
+  //     data: body,
   //     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-  //     validateStatus: () => true, // prevent axios from throwing on 4xx/5xx
   //   };
 
   //   try {
-  //     const response = await axios(config);
+  //     const response = await axios.request(config);
 
   //     await logApiRequestData(
-  //       start,
-  //       request_datetime,
-  //       config,
+  //       start, request_datetime, config,
   //       response.status.toString(),
-  //       response.data,
-  //       null,
-  //       constants.VM_PROCESSES.TEMPLATE_LXC
+  //       response.data, null,
+  //       constants.VM_PROCESSES.CLONE_QEMU
   //     );
 
-  //     console.log("Template LXC response:", response.data);
-  //     return response.data;
-
+  //     return response;
   //   } catch (error) {
   //     const errorCode = error?.response?.status?.toString() || "ERR";
-  //     const errorMessage = error?.response?.data || error.message;
+  //     const errorMessage = error?.response?.data || error.toString();
 
   //     await logApiRequestData(
-  //       start,
-  //       request_datetime,
-  //       config,
-  //       errorCode,
-  //       errorMessage,
-  //       error,
-  //       constants.VM_PROCESSES.TEMPLATE_LXC
+  //       start, request_datetime, config,
+  //       errorCode, errorMessage, error,
+  //       constants.VM_PROCESSES.CLONE_QEMU
   //     );
 
-  //     console.error("Error in templateLXC:", errorMessage);
+  //     console.error("Error in cloneQEMU:", errorMessage);
   //     return null;
   //   }
   // }
 
-
-  async function cloneQEMU(vmid, newid) {
+    async function cloneQEMU(vmid, newid, name = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
-
+ 
     const start = Date.now();
     const request_datetime = new Date();
-
+ 
     const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
-
-    const body = new URLSearchParams({ newid }).toString();
-
+ 
+    // ADD name ONLY if provided
+    const params = new URLSearchParams({ newid });
+    if (name) {
+      params.append("name", name);
+    }
+ 
     const config = {
       method: "post",
       url,
@@ -1615,35 +1585,43 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         "Content-Type": "application/x-www-form-urlencoded",
         CSRFPreventionToken: accessInfo.CSRFPreventionToken,
       },
-      data: body,
+      data: params.toString(),
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-
+ 
     try {
       const response = await axios.request(config);
-
+ 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.CLONE_QEMU
+        response.data,
+        null,
+        constants.VM_PROCESSES.CLONE_QEMU,
       );
-
+ 
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
-
+ 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorMessage, error,
-        constants.VM_PROCESSES.CLONE_QEMU
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.CLONE_QEMU,
       );
-
+ 
       console.error("Error in cloneQEMU:", errorMessage);
       return null;
     }
   }
+ 
 
   async function templateQEMU(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
