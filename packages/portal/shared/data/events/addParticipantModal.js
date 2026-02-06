@@ -128,40 +128,51 @@ const AddParticipantModal = (props) => {
     }
   }, [hasGetStudentListSucc]);
 
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
-      ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-          ? "#00d683"
-          : styles.borderColor,
-      },
-    }),
-  };
   const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-          ...customStyles,
-          control: (styles) => ({
-            ...styles,
-            borderColor: "#EB5757",
-            boxShadow: "0 0 0 0.001rem #EB5757",
-          }),
-        }
-      : customStyles;
-  };
+      const error =
+        !formValidation.values[fieldName] &&
+        formValidation.errors[fieldName] &&
+        formValidation.touched[fieldName];
+  
+      return {
+        ...customStyles,
+        control: (styles, state) => ({
+          ...styles,
+          borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+          boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+          backgroundColor: "var(--dark-bg-color)", // dark background
+        }),
+        singleValue: (provided) => ({
+          ...provided,
+          color: "var(--light-text-color)", // selected value text
+        }),
+        input: (provided) => ({
+          ...provided,
+          color: "var(--light-text-color)", // text while typing
+        }),
+      };
+    };
+  
+    const customStyles = {
+      control: (styles, { isFocused, isDisabled }) => ({
+        ...styles,
+        borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+        boxShadow: isDisabled
+          ? null
+          : isFocused
+            ? "0 0 0 0.001rem #00d683"
+            : null,
+        "&:hover": {
+          borderColor: isDisabled
+            ? "#e8e8f7"
+            : isFocused
+              ? "#00d683"
+              : styles.borderColor,
+        },
+      }),
+    };
+  
+  
   const noEmojiTest = (value) => {
     if (typeof value !== "string") return true;
     return !emojiRegex.test(value);

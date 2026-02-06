@@ -51,8 +51,8 @@ const saveScenarioQuizQuesAnsData = ({ db, validation }) => async (body) => {
       );
       const totalQuestions = webSettings?.max_questions || 25;
     try {
-     const insertQuizQuery = `INSERT INTO scenario_learner_quiz (scenarioid, scenariolearnerid, learner_id, startedon, endedon, status, timer, total_questions, total_answers, total_correct_answers) VALUES (?, ?, ?, ?, now(), ?, ?, ?, ?, ?)`;
-      const quizReplacements = [body.scenarioid || 0, body.scenariolearnerid || 0, body.learner_id || 0, body.startedon || new Date(), body.status || "Pending", body.timer, totalQuestions, body.total_answers || 0, body.total_correct_answers || 0];
+     const insertQuizQuery = `INSERT INTO scenario_learner_quiz (scenarioid, learner_id, startedon, endedon, status, timer, total_questions, total_answers, total_correct_answers) VALUES (?, ?, ?, now(), ?, ?, ?, ?, ?)`;
+      const quizReplacements = [body.scenarioid || 0, body.learner_id || 0, body.startedon || new Date(), body.status || "Pending", body.timer, body.total_questions, body.total_answers || 0, body.total_correct_answers || 0];
       const [quizResult] = await db.sequelize.query(insertQuizQuery, {
         replacements: quizReplacements,
         type: db.sequelize.QueryTypes.INSERT,
@@ -86,7 +86,7 @@ const saveScenarioQuizQuesAnsData = ({ db, validation }) => async (body) => {
 
 const getAllLearnerQuiz = ({ db }) => async (scenariouuid, learner_sessionid) => {
     try {
-      const query = `SELECT slq.scenariolearnarquizid, slq.scenariolearnerid, slq.scenarioid, slq.learner_id, slq.startedon, slq.endedon, slq.status, slq.timer, slq.total_questions, COALESCE(la.total_answers, 0) AS total_answers, slq.total_correct_answers FROM scenario_learner_quiz slq INNER JOIN scenarios s ON slq.scenarioid = s.scenarioid LEFT JOIN (SELECT scenariolearnarquizid, COUNT(*) AS total_answers FROM scenario_learner_quiz_data WHERE learneranswerids IS NOT NULL AND learneranswerids != '' GROUP BY scenariolearnarquizid) la ON slq.scenariolearnarquizid = la.scenariolearnarquizid WHERE s.scenariouuid = :scenariouuid AND slq.learner_id = :learner_sessionid ORDER BY slq.startedon DESC`;
+      const query = `SELECT slq.scenariolearnarquizid, slq.scenarioid, slq.learner_id, slq.startedon, slq.endedon, slq.status, slq.timer, slq.total_questions, COALESCE(la.total_answers, 0) AS total_answers, slq.total_correct_answers FROM scenario_learner_quiz slq INNER JOIN scenarios s ON slq.scenarioid = s.scenarioid LEFT JOIN (SELECT scenariolearnarquizid, COUNT(*) AS total_answers FROM scenario_learner_quiz_data WHERE learneranswerids IS NOT NULL AND learneranswerids != '' GROUP BY scenariolearnarquizid) la ON slq.scenariolearnarquizid = la.scenariolearnarquizid WHERE s.scenariouuid = :scenariouuid AND slq.learner_id = :learner_sessionid ORDER BY slq.startedon DESC`;
       const results = await db.sequelize.query(query, {
         replacements: { scenariouuid, learner_sessionid },
         type: db.sequelize.QueryTypes.SELECT,

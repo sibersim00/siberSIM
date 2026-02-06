@@ -26,7 +26,8 @@ async MailTemplate(){
         'instructor_welcome_mail': "instructor_welcome_mail",
         'learner_reset_password': "learner_reset_password",
         'learner_account_confirmation_success':"learner_account_confirmation_success",
-        'proxmox_down_alert':"proxmox_down_alert"
+        'proxmox_down_alert':"proxmox_down_alert",
+        'customer_license_mail': "customer_license_mail"
     };
     
     return obj[field];

@@ -21,6 +21,7 @@ import {
   clearHasError
 } from "../shared/redux/slices/auth/auth";
 
+import { d_mmm_y } from"../shared/data/helperFunctions/dateCustom";
 
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -68,8 +69,7 @@ const Home = () => {
   const errorData = useSelector((state) => state?.authData?.error);
 
   useEffect(() => {
-      const domain = window.location;
-        dispatch(getCompanyList({domain_url : domain?.hostname}));
+        dispatch(getCompanyList());
   }, [dispatch]);
 
   useEffect(() => {
@@ -134,7 +134,6 @@ const Home = () => {
   useEffect(() => {
     if (loginSuccData?.statusCode === 200) {
       localStorage.setItem("accessTokenLearner", JSON.stringify(loginSuccData?.data?.accessToken));
-      
       localStorage.setItem("menusLearner", JSON.stringify(loginSuccData?.data?.menus));
       localStorage.setItem("userLearner", JSON.stringify(loginSuccData?.data?.user));
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
@@ -254,10 +253,16 @@ const Home = () => {
   };
 
   useEffect(() => {
-    if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
-        navigate.replace("/503");
-    }
-  }, [getCompanySettingsData]);
+         if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+             navigate.replace("/503");
+         }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+           let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+           if(!licenseStatus.isStart){
+             let startDate = d_mmm_y(licenseStatus.start_date)
+             navigate.replace(`/503?startDate=${startDate}`);
+           }
+         }
+     }, [getCompanySettingsData]);
 
   useEffect(() => {
     if (directLoginData?.statusCode === 200) {

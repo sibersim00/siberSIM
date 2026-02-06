@@ -4,8 +4,7 @@ module.exports = function (iocContainer) {
         controller,
         validation,
         validator,
-    } = iocContainer; 
-    const { authJwt } = require("../../middleware");
+    } = iocContainer;
 
     const router = express.Router();
     router.get('/get', controller.getAll(iocContainer));

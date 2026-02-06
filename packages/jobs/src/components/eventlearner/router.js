@@ -30,5 +30,19 @@ module.exports = function (iocContainer) {
     controller.generateProxmoxAccessToken(iocContainer)
   );
 
+      router.post(
+  "/pause-scenario-learner",
+  controller.pauseScenarioLearner(iocContainer)
+);
+  router.post(
+  "/resume-scenario-learner",
+  controller.resumeScenarioLearner(iocContainer)
+);
+
+  router.post(
+    "/delete-scenario-learner",
+    controller.deleteScenarioLearner(iocContainer)
+  );
+
   return router;
 };

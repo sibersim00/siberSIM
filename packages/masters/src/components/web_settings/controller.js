@@ -110,8 +110,26 @@ const uploadLogo = ({ dao, db,validation}) => async (req, res) => {
   } catch (error) {
     console.error("Error on save data:", error.message);
     return res.status(500).json({ error: "An error occurred. Please try again later." });
+  } 
+};
+
+const validateCustomerLicense = ({ dao, db }) => async (req, res, next) => {
+  try {
+    const hostname = req?.hostname;
+    const license_key = req?.body?.license_key;
+    const userid = req.user.userid;
+    console.log("license_key=========>",hostname,license_key);
+    const result = await dao.validateCustomerLicense({ db })(hostname,license_key,userid);
+    if (result.status) {
+      return res.status(200).send({ statusCode: 200, message: result.message, new : result.new });
+    }else{
+      return res.status(400).send({ statusCode: 400, message: result?.message });
+    }
+  } catch (err) {
+    console.error("validateCustomerLicense err==>>", err);
+    next(err);
   }
-}; 
+};
 module.exports = {
   getWebSettings,
   getWebFooter,
@@ -120,5 +138,6 @@ module.exports = {
   addWebFooter,
   updateWebFooter,
   changeStatusWebFooter,
-  uploadLogo
+  uploadLogo,
+  validateCustomerLicense
 }

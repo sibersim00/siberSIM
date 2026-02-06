@@ -34,6 +34,7 @@ import {
 import {
   getCompanyList
 } from "../../shared/redux/slices/authentication/Auth";
+import { d_mmm_y } from"../../shared/data/helperFunctions/dateCustom";
 
 const Forgetpassword = () => {
   const dispatch = useDispatch();
@@ -80,14 +81,20 @@ const Forgetpassword = () => {
 
   const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
 
-   useEffect(() => {
-        if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
-            navigate.replace("/503");
-        }
-      }, [getCompanySettingsData]);
+    useEffect(() => {
+         if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+             navigate.replace("/503");
+         }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+           let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+           if(!licenseStatus.isStart){
+             let startDate = d_mmm_y(licenseStatus.start_date)
+             navigate.replace(`/503?startDate=${startDate}`);
+           }
+         }
+     }, [getCompanySettingsData]);
 
   useEffect(() => {
-    dispatch(getCompanyList());
+      dispatch(getCompanyList());
   }, [dispatch]);
 
   const timeOutCallback = useCallback(

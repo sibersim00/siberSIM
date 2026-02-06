@@ -20,7 +20,8 @@ const VM_PROCESSES = {
   START_VM: "Start VM",
   STOP_VM: "Stop VM",
   DESTROY_VM: "Destroy VM",
-  NETWORK_INFO:"VM Networks"
+  NETWORK_INFO:"VM Networks",
+  TAKE_BACKUP:"VM Backup"
 };
 
 module.exports = {

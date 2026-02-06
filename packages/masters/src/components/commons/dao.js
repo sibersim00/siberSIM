@@ -337,7 +337,7 @@ const scenariolist = ({ db }) => async (session_userid, usertype) => {
       where s.status='Active' and s.deletedon is null 
       ORDER by s.scenariotitle ASC`);
       return res;
-    } else {
+    } else {  
       let res = await db.sequelize.query(
         `select s.scenarioid,s.scenariotitle,s.scenarioidentification
         from scenarios s  
@@ -403,7 +403,7 @@ const faqlist = ({ db }) => async (usertype) => {
 const eventScenarioList = ({ db }) => async () => {
   try {
     const result = await db.sequelize.query(
-      `SELECT scenarioid,scenariotitle FROM scenarios WHERE status = 'Active' AND scenariostatus = 'Publish' order by scenariotitle ASC`,
+      `SELECT scenarioid,scenariotitle FROM scenarios WHERE status = 'Active' AND scenariostatus = 'Publish' AND deletedon is NULL order by scenariotitle ASC`,
       {
         type: db.sequelize.QueryTypes.SELECT,
       }

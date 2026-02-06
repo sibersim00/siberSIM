@@ -8,12 +8,14 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import EditableEdge from '../../../../shared/data/scenarios/EditableEdge';
+import { useDispatch,  } from "react-redux";
+import { qemuconfig ,vmStartScenario } from "../../../../shared/redux/slices/scenarios/scenarios";
 const resolveImageUrl = (url) => {
   if (!url) return '';
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
+const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible, scenarioStatus }) => {
   const networkPorts = data.networkport || [];
   const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
   const totalPorts = portKeys.length;
@@ -23,20 +25,69 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible }) => {
   const baseSize = 90;
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const dispatch = useDispatch();
+
+
+
+  // const handleClick = (dataobj) => {
+  //   if (scenarioStatus === "Pause") return;
+  //   if (!isTimerVisible) return;
+  //   const vmid = dataobj?.vmid;
+  //   const vmType = dataobj?.vmType;
+  //   console.log("vmidvmType", vmid, vmType)
+  //   if (!vmid || !vmType) return;
+  //   if (vmid && vmType) {
+  //     const payload = {
+  //       vmid: Number(vmid),
+  //       vmType,
+  //     };
+  //     const res = dispatch(qemuconfig(payload));
+  //     console.log("res",res)
+  //   }
+
+  //   const rawLabel = dataobj?.label || "";
+  //   const namePart = rawLabel.split("-")[1]?.trim() || "";
+  //   const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+  //   window.open(
+  //     `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+  //     "_blank"
+  //   );
+  // };
+
 const handleClick = (dataobj) => {
+  if (scenarioStatus === "Pause") return;
   if (!isTimerVisible) return;
+
   const vmid = dataobj?.vmid;
   const vmType = dataobj?.vmType;
+
   if (!vmid || !vmType) return;
 
-  const rawLabel = dataobj?.label || "";
-  const namePart = rawLabel.split("-")[1]?.trim() || "";
-  const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
-  window.open(
-    `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
-    "_blank"
-  );
+  const payload = {
+    vmid: Number(vmid),
+    vmType,
+  };
+
+  dispatch(qemuconfig(payload)).then((res) => {
+    // const res = action?.payload;
+
+    console.log("qemuconfig response", res);
+
+    // if (res?.mustStopVM === true) {
+    //   dispatch(vmStartScenario({ vmid, vmType }));
+    // }
+
+    const rawLabel = dataobj?.label || "";
+    const namePart = rawLabel.split("-")[1]?.trim() || "";
+    const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+
+    window.open(
+      `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+      "_blank"
+    );
+  });
 };
+
 
 
   return (
@@ -115,7 +166,7 @@ const handleClick = (dataobj) => {
               break;
             case 'Right':
               handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, right: -60, top: `60%`, transform: 'translateY(-50%)' };
               break;
             case 'Bottom':
               handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
@@ -123,7 +174,7 @@ const handleClick = (dataobj) => {
               break;
             case 'Left':
               handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, left: -60, top: `60%`, transform: 'translateY(-50%)' };
               break;
             default:
               break;
@@ -189,9 +240,9 @@ const handleClick = (dataobj) => {
 };
 
 
-const ScenarioDiagram = ({ scenariodiagram, isTimerVisible }) => {
-  console.log("scenariodiagram",scenariodiagram);
-  
+const ScenarioDiagram = ({ scenariodiagram, isTimerVisible, scenarioStatus }) => {
+  console.log("scenariodiagram", scenariodiagram);
+
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
@@ -201,11 +252,11 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible }) => {
 
     try {
       const cleanData = scenariodiagram.replace('flowchartData ', '');
-      console.log("cleanDatacleanDatacleanData",cleanData);
-      
+      console.log("cleanDatacleanDatacleanData", cleanData);
+
       const parsedData = JSON.parse(cleanData);
-      console.log("parsedDataparsedDataparsedData",parsedData);
-      
+      console.log("parsedDataparsedDataparsedData", parsedData);
+
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
 
       const updatedNodes = parsedData.nodes.map(node => ({
@@ -219,6 +270,8 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible }) => {
               : node.data.image,
         },
       }));
+      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
+      
 
       setElements({ nodes: updatedNodes, edges: parsedData.edges });
     } catch (err) {
@@ -235,37 +288,37 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible }) => {
   //   }
   // }, [elements]);
   // Center graph after nodes are rendered
-useEffect(() => {
-  if (!flowRef.current || elements.nodes.length === 0) return;
+  useEffect(() => {
+    if (!flowRef.current || elements.nodes.length === 0) return;
 
-  // Wait for the next paint to ensure nodes are mounted
-  const id = requestAnimationFrame(() => {
-    flowRef.current.fitView({ padding: 0.3 });
-  });
+    // Wait for the next paint to ensure nodes are mounted
+    const id = requestAnimationFrame(() => {
+      flowRef.current.fitView({ padding: 0.3 });
+    });
 
-  return () => cancelAnimationFrame(id);
-}, [elements.nodes]); // Only run when nodes change
+    return () => cancelAnimationFrame(id);
+  }, [elements.nodes]); // Only run when nodes change
 
 
   const nodeTypes = {
-    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} />,
+    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} scenarioStatus={scenarioStatus} />,
   };
-    const EditableEdgeWrapper = (edgeProps) => {
-      const { getEdges, setEdges } = useReactFlow();
-  
-      // You can also pull labelMap or other shared state from context/store here
-      const edges = getEdges(); // all current edges
-      console.log("fffffffffffffffffffffffffff",edges);
-      
-  
-      return (
-        <EditableEdge
-          {...edgeProps}
-          allEdges={edges}
-          setEdges={setEdges}
-        />
-      );
-    };
+  const EditableEdgeWrapper = (edgeProps) => {
+    const { getEdges, setEdges } = useReactFlow();
+
+    // You can also pull labelMap or other shared state from context/store here
+    const edges = getEdges(); // all current edges
+    console.log("fffffffffffffffffffffffffff", edges);
+
+
+    return (
+      <EditableEdge
+        {...edgeProps}
+        allEdges={edges}
+        setEdges={setEdges}
+      />
+    );
+  };
   const edgeTypes = { custom: EditableEdgeWrapper };
 
   return (

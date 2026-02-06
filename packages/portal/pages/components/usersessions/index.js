@@ -8,6 +8,7 @@ import {
   Button,
   OverlayTrigger,
   Tooltip,
+  Badge,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
@@ -20,7 +21,11 @@ import {
   clearSentNotification,
   clearTerminateScenario,
   clearTerminateScenarioByAdInst,
+  deletescenario
 } from "../../../shared/redux/slices/usersession/usersessionManage";
+// import {
+//   deletescenario
+// } from "../../../shared/redux/slices/scenariostart/scenariostartmanage";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import CustomToggleButton from "@mui/material/ToggleButton";
@@ -30,7 +35,6 @@ import ChatBox from "./chatbox"; // Import the ChatBox component
 // import { color } from "@mui/system";
 import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 
-
 const UserSession = () => {
   const dispatch = useDispatch();
   const [view, setView] = useState("card");
@@ -39,14 +43,15 @@ const UserSession = () => {
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
   const [showChat, setShowChat] = useState(false);
-    const [scenType, setScenType] = useState("Public"); // Public/Private
-  
+  const [scenType, setScenType] = useState("All"); // Public/Private
+
   const [selectedSession, setSelectedSession] = useState(null); // State to manage chat visibility
   const { push } = useRouter();
   const {
     hasGetUserSessionListSucc,
     hasSendNotificationSucc,
     hasGetTerminationSucc,
+    hasGetDeleteSucc,
     hasGetTerminationByAdInstSucc,
   } = useSelector((state) => {
     return {
@@ -54,9 +59,16 @@ const UserSession = () => {
         state.usersessionManage.getUserSessionListData?.data,
       hasSendNotificationSucc: state.usersessionManage.sendNotification,
       hasGetTerminationSucc: state.usersessionManage.saveTermination,
+      hasGetDeleteSucc: state.usersessionManage.hasdeletescenarioSuccData,
       hasGetTerminationByAdInstSucc: state.usersessionManage.sendTermination,
     };
   });
+
+  console.log(
+    "hasGetUserSessionListSucc",
+    hasGetUserSessionListSucc
+  );
+
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
@@ -67,7 +79,7 @@ const UserSession = () => {
       field: "",
       cellRenderer: "srNoRender",
       maxWidth: 80,
-      sortable: false
+      sortable: false,
     },
     {
       headerName: "Scenario",
@@ -77,12 +89,30 @@ const UserSession = () => {
       minWidth: 240,
     },
     {
+      headerName: "Status",
+      field: "scenario_status",
+      filter: true,
+      floatingFilter: true,
+      minWidth: 240,
+      cellRenderer: "vmStatusRenderer"
+    },
+    {
       headerName: "SIMUser",
-      field: "learner_name",
       filter: true,
       floatingFilter: true,
       minWidth: 180,
+      valueGetter: (params) =>
+        params.data?.learner_name || params.data?.user_name || "",
     },
+    {
+      headerName: "SIMUser Type",
+      field: "requestedby_role",
+      filter: true,
+      floatingFilter: true,
+      minWidth: 180,
+
+    },
+
     {
       headerName: "Start Time",
       field: "startedon",
@@ -127,24 +157,26 @@ const UserSession = () => {
       hasGetUserSessionListSucc &&
       hasGetUserSessionListSucc.filter((d) => {
         const formattedStartedOn = d.startedon
-          ? new Date(d.startedon).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
-            hour12: true,
-          }).toLowerCase()
-          : '';
+          ? new Date(d.startedon)
+            .toLocaleString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric",
+              hour12: true,
+            })
+            .toLowerCase()
+          : "";
 
         return (
           (d.scenario_learner_status &&
             d.scenario_learner_status.toLowerCase().includes(val)) ||
-          (d.scenariotitle &&
-            d.scenariotitle.toLowerCase().includes(val)) ||
-          (d.learner_name &&
-            d.learner_name.toLowerCase().includes(val)) ||
+          (d.scenariotitle && d.scenariotitle.toLowerCase().includes(val)) ||
+          (d.learner_name && d.learner_name.toLowerCase().includes(val)) ||
+          (d.requestedby_role && d.requestedby_role.toLowerCase().includes(val)) ||
+          (d.scenario_status && d.scenario_status.toLowerCase().includes(val)) ||
           formattedStartedOn.includes(val) ||
           !val // show all if search box is empty
         );
@@ -153,8 +185,6 @@ const UserSession = () => {
     setGridData(filtered);
     setRowData(filtered);
   };
-
-
 
   useEffect(() => {
     if (hasGetUserSessionListSucc) {
@@ -177,11 +207,25 @@ const UserSession = () => {
       );
       dispatch(getUserSessionList());
       dispatch(clearSentNotification());
-
     }
   }, [hasSendNotificationSucc]);
 
-  // termination
+  // useEffect(() => {
+  //   if (hasGetTerminationByAdInstSucc.statusCode === 200) {
+  //     toast.success(
+  //       <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+  //         {hasGetTerminationByAdInstSucc?.message}
+  //       </p>,
+  //       {
+  //         position: toast.POSITION.TOP_RIGHT,
+  //         hideProgressBar: false,
+  //         theme: "colored",
+  //       }
+  //     );
+  //     dispatch(getUserSessionList());
+  //     dispatch(clearTerminateScenarioByAdInst());
+  //   }
+  // }, [hasGetTerminationByAdInstSucc]);
   useEffect(() => {
     if (hasGetTerminationSucc.statusCode === 200) {
       toast.success(
@@ -195,29 +239,9 @@ const UserSession = () => {
         }
       );
       dispatch(getUserSessionList());
-      dispatch(clearTerminateScenario());
-
+      dispatch(clearTerminateScenarioByAdInst());
     }
   }, [hasGetTerminationSucc]);
-
-  // termination by Admin or Instructor
-  useEffect(() => {
-    if (hasGetTerminationByAdInstSucc.statusCode === 200) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {hasGetTerminationByAdInstSucc?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        }
-      );
-      dispatch(getUserSessionList());
-      dispatch(clearTerminateScenarioByAdInst());
-
-    }
-  }, [hasGetTerminationByAdInstSucc]);
 
   useEffect(() => {
     dispatch(getUserSessionList());
@@ -261,9 +285,8 @@ const UserSession = () => {
       if (result.isConfirmed) {
         const payload = {
           scenarioid: data?.scenarioid,
-          scenariolearnersessionid: data?.currentsession_id,
-          scenariolearnerid: data?.scenariolearnerid,
           learner_id: data?.learner_id,
+          vmrequestid: data?.vmrequestid
         };
 
         dispatch(sentNotification(payload, data?.scenarioid));
@@ -271,6 +294,7 @@ const UserSession = () => {
       }
     });
   };
+
 
   const handleToTerminate = (data) => {
     Swal.fire({
@@ -282,40 +306,57 @@ const UserSession = () => {
       cancelButtonColor: "var(--secondary)",
       confirmButtonText: "Yes!",
       allowOutsideClick: false,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const scenariolearnersessionid = data?.currentsession_id;
-        const type = getUserDataFromLocal?.usertype;
+      showLoaderOnConfirm: true,
 
-        const firstPayload = {
-          scenariolearnersessionid,
-          type,
-        };
-
-        // Call first API
-        dispatch(terminateScenarioByAdInst(firstPayload))
-          .then((res1) => {
-            // Optional: check res1 for success before calling the second API
-            const secondPayload = {
-              scenariolearnersessionid,
-              type,
-              status: "Terminated",
-            };
-
-            // Call second API
-            dispatch(terminateScenario(secondPayload));
-            dispatch(clearTerminateScenario());
-          })
-          .catch((err) => {
-            console.error("First API failed:", err);
-            // Optionally show an error message
+      preConfirm: async () => {
+        try {
+          // 🔄 Update modal → hide Yes button
+          Swal.update({
+            title: "Please wait...",
+            text: "Your scenario is being terminated. This may take a few moments.",
+            icon: "info",
+            showCancelButton: false,
+            showConfirmButton: false, // ✅ THIS is the key
           });
-      }
+
+          const vmrequestid = data?.vmrequestid;
+          const type = getUserDataFromLocal?.usertype;
+          const sessionStatus = data?.scenario_status;
+
+          const basePayload = { vmrequestid, type };
+
+          if (sessionStatus === "Pause") {
+            await dispatch(terminateScenarioByAdInst(basePayload));
+            await dispatch(
+              deletescenario({ ...basePayload, status: "Terminated" })
+            );
+            await dispatch(getUserSessionList());
+            dispatch(clearTerminateScenario());
+            return true;
+          }
+
+          await dispatch(terminateScenarioByAdInst(basePayload));
+          await dispatch(
+            terminateScenario({ ...basePayload, status: "Terminated" })
+          );
+
+          dispatch(clearTerminateScenario());
+          return true;
+        } catch (err) {
+          console.error("Terminate failed:", err);
+
+          Swal.showValidationMessage(
+            "Failed to terminate the scenario. Please try again."
+          );
+          return false;
+        }
+      },
     });
   };
 
+
+
   const handleToSentRaiserequest = (sessionData) => {
-    console.log("sessionData==============", sessionData);
     setSelectedSession(sessionData); // set the session data for the chatbox
     setShowChat(true); // open the chatbox
   };
@@ -324,7 +365,34 @@ const UserSession = () => {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
     },
+    vmStatusRenderer: (props) => {
+      const status = props.value;
+
+      const bg =
+        status === "Running"
+          ? "green"
+          : status === "Pause"
+            ? "orange" // yellow
+            : "#6c757d"; // grey default
+
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: bg,
+            color: "white",
+            fontSize: "12px",
+            padding: "5px 10px",
+            borderRadius: "12px",
+          }}
+        >
+          {status}
+        </span>
+      );
+    },
+
     actionButtonRenderer: function (props) {
+      console.log("propspropspropspropsprops", props)
       return (
         <ActionButtonRenderer
           handleEditView={handleReturnView}
@@ -334,7 +402,7 @@ const UserSession = () => {
           terminateStudent={handleToTerminate}
           handleShowTerminateStudent={true}
           raiseRequest={handleToSentRaiserequest} // Open chat on raiseRequest
-          handleShowRaiseRequest={true} // Open chat on raiseRequest
+          handleShowRaiseRequest={props?.data?.requestedby_role !== "Admin" && props?.data?.requestedby_role !== "Instructor" && props?.data?.requestedby_role !== "Event"} // Open chat on raiseRequest
           propsVal={props}
         />
       );
@@ -363,25 +431,32 @@ const UserSession = () => {
     setGridData(hasGetUserSessionListSucc);
   };
   useEffect(() => {
-      if (hasGetUserSessionListSucc) {
-        let filtered = [...hasGetUserSessionListSucc];
-  
-        // if (scenStatus !== "") {
-        //   filtered = filtered.filter((d) => d.status.toString() === scenStatus);
-        // }
-  
-        if (scenType !== "") {
-          filtered = filtered.filter((d) => d.scenario_type === scenType);
-        }
-  
-        setRowData(filtered);
-        setGridData(filtered);
+    if (hasGetUserSessionListSucc) {
+      let filtered = [...hasGetUserSessionListSucc];
+
+      if (scenType === "Resume") {
+        // Running = Resume + Start
+        filtered = filtered.filter(
+          (d) =>
+            d.scenario_status === "Resume" ||
+            d.scenario_status === "Start"
+        );
+      } else if (scenType === "Pause") {
+        filtered = filtered.filter(
+          (d) => d.scenario_status === "Pause"
+        );
       }
-    }, [hasGetUserSessionListSucc, scenType]);
+      // All → no filter
+
+      setRowData(filtered);
+      setGridData(filtered);
+    }
+  }, [hasGetUserSessionListSucc, scenType]);
+
 
   return (
     <>
-      <Seo title="User Session" />
+      <Seo title="SiberSIM Session" />
       <ToastContainer />
       <Row className="row-sm">
         {view != "Form" && (
@@ -390,7 +465,7 @@ const UserSession = () => {
               <Card.Body className="p-3">
                 <Col md={12}>
                   <div className="d-flex justify-content-between align-items-center">
-                    <h5>User Session</h5>
+                    <h5>SiberSIM Session</h5>
                     <div className="d-flex align-items-center">
                       {view === "card" && (
                         <>
@@ -436,23 +511,26 @@ const UserSession = () => {
                         <i className="fe fe-list"></i>
                       </Button>
                       &nbsp;
-                       <ToggleButtonGroup
-                                               color="success"
-                                               value={scenType}
-                                               size="small"
-                                               exclusive
-                                               onChange={(e) => {
-                                                 setScenType(e.target.value);
-                                               }}
-                                             >
-                                               <CustomToggleButton value="Public">
-                                                 Public
-                                               </CustomToggleButton>
-                                               <CustomToggleButton value="Private">
-                                                 Private
-                                               </CustomToggleButton>
-                                             </ToggleButtonGroup>
-                                           &nbsp;
+                      <ToggleButtonGroup
+                        color="success"
+                        value={scenType}
+                        size="small"
+                        exclusive
+                        onChange={(e) => {
+                          setScenType(e.target.value);
+                        }}
+                      >
+                        <CustomToggleButton value="All">
+                          All
+                        </CustomToggleButton>
+                        <CustomToggleButton value="Resume">
+                          Running
+                        </CustomToggleButton>
+                        <CustomToggleButton value="Pause">
+                          Pause
+                        </CustomToggleButton>
+                      </ToggleButtonGroup>
+                      &nbsp;
                       <input
                         className="form-control bd bd-2 ms-2 w-auto"
                         value={quickFilter}
@@ -496,12 +574,22 @@ const UserSession = () => {
           {view === "card" ? (
             <>
               {gridData && gridData.length > 0 ? (
-                <Row className="g-3">
+                <Row className="g-3 mb-3" >
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
+                      {
+                        console.log("itemitemitemitemitem", item)
+                      }
                       <Card
-                        className="card custom-card our-team h-100 shadow-sm"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenario_status === "Resume"
+                          ? "shadow-publish"
+                           : item.scenario_status === "Start"
+                            ? "shadow-publish"
+                          : item.scenario_status === "Pause"
+                            ? "shadow-draft"
+                            : ""
+                          }`}
                         style={{
                           // backgroundColor: "#f8f9fc",
                           transition:
@@ -511,33 +599,68 @@ const UserSession = () => {
                               ? "2px solid rgba(240, 151, 151, 0.7)"
                               : "none",
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(-4px)";
-                          e.currentTarget.style.boxShadow =
-                            "0 10px 20px rgba(0,0,0,0.08)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow =
-                            "0 4px 12px rgba(0,0,0,0.04)";
-                        }}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
+                          {/* <span
+                            className="position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill text-white"
+                            style={{
+                              fontSize: "12px",
+                              backgroundColor:
+                                item.requestedby_role === "Admin"
+                                  ? "green"
+                                  : item.requestedby_role === "Instructor"
+                                     ? "green"
+                                    : item.requestedby_role === "Learner"
+                                  ? "orange" :item.requestedby_role === "Event" ? "orange" : ""
+                            }}
+                          >
+                            {item.requestedby_role}
+                          </span> */}
+                          <Badge
+                            pill
+                            bg="dark"
+                            className="position-absolute top-0 start-0 m-2"
+                            style={{ fontSize: "12px" }}
+                          >
+                            {item.requestedby_role}
+                          </Badge>
+                          <span
+                            className="position-absolute top-0 end-0 m-2 px-2 py-1 rounded-pill text-white"
+                            style={{
+                              fontSize: "12px",
+                              backgroundColor:
+                                item.scenario_status === "Resume" ||
+                                  item.scenario_status === "Start"
+                                  ? "green"
+                                  : item.scenario_status === "Pause"
+                                    ? "orange"
+                                    : "",
+                            }}
+                          >
+
+                            {(item.scenario_status === "Resume" ||
+                              item.scenario_status === "Start")
+                              ? "Running"
+                              : item.scenario_status}
+                          </span>
                           {/* Card Content */}
                           <div className="">
                             <div className="picture avatar-lg online text-center">
                               <div
                                 className="rounded-circle pointer"
                                 style={{
-                                  width: "100px",        // fixed width
-                                  height: "100px",       // fixed height
-                                  overflow: "hidden",    // crop the overflow
-                                  display: "inline-block"
+                                  width: "100px", // fixed width
+                                  height: "100px", // fixed height
+                                  overflow: "hidden", // crop the overflow
+                                  display: "inline-block",
                                 }}
                               >
                                 <img
                                   alt="avatar"
-                                  onError={(e) => { e.target.onerror = null; e.target.src = dummy_profile.src }}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = dummy_profile.src;
+                                  }}
                                   src={
                                     item?.profile
                                       ? `${process.env.API_URL_FILEMANAGER}${item?.profile}`
@@ -546,14 +669,14 @@ const UserSession = () => {
                                   style={{
                                     width: "100%",
                                     height: "100%",
-                                    objectFit: "cover"    // keeps aspect ratio and fills circle
+                                    objectFit: "cover", // keeps aspect ratio and fills circle
                                   }}
                                 />
                               </div>
                             </div>
                             {/* Learner Name */}
                             <p className="text-success mt-4 mb-1">
-                              {item.learner_name}
+                              {item.learner_name || item.user_name}
                             </p>
                             {/* Scenario Title */}
                             <h5 className="text-dark  mb-1 fs-5 pointer">
@@ -594,75 +717,76 @@ const UserSession = () => {
                             </p>
 
                             <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap ">
-                              <div
-                                className="btn btn-sm ripple rounded-circle"
-                                style={{
-                                  backgroundColor:
-                                    item.isnotitermination === "Yes"
-                                      ? "rgba(220, 53, 69, 0.2)" // bg-danger-transparent
-                                      : "rgba(255, 193, 7, 0.2)", // bg-warning-transparent
-                                  color:
-                                    item.isnotitermination === "Yes"
-                                      ? "rgb(220, 53, 69)" // text-danger
-                                      : "rgb(255, 193, 7)", // text-warning
-                                  transition:
-                                    "background-color 0.3s ease, color 0.3s ease",
-                                }}
-                                onClick={() =>
-                                  handleSentTerminationNotification(item)
-                                }
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={
-                                    <Tooltip>
-                                      Sent Termination Notification
-                                    </Tooltip>
+                              {item.requestedby_role !== "Event" && (
+                                <div
+                                  className="btn btn-sm ripple rounded-circle"
+                                  style={{
+                                    backgroundColor:
+                                      item.isnotitermination === "Yes"
+                                        ? "rgba(220, 53, 69, 0.2)" // bg-danger-transparent
+                                        : "rgba(255, 193, 7, 0.2)", // bg-warning-transparent
+                                    color:
+                                      item.isnotitermination === "Yes"
+                                        ? "rgb(220, 53, 69)" // text-danger
+                                        : "rgb(255, 193, 7)", // text-warning
+                                    transition:
+                                      "background-color 0.3s ease, color 0.3s ease",
+                                  }}
+                                  onClick={() =>
+                                    handleSentTerminationNotification(item)
                                   }
                                 >
-                                  <i className="fa fa-bell"></i>
-                                </OverlayTrigger>
-                              </div>
-
-                              {/* chat Button */}
-
-                              <div
-                                className="btn btn-sm ripple bg-success-transparent text-success rounded-circle position-relative"
-                                onClick={() => {
-                                  setSelectedSession(item);
-                                  setShowChat(true);
-                                }}
-                                style={{ overflow: "visible" }}
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>ChatBox</Tooltip>}
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={
+                                      <Tooltip>
+                                        Sent Termination Notification
+                                      </Tooltip>
+                                    }
+                                  >
+                                    <i className="fa fa-bell"></i>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
+                              {item.requestedby_role !== "Admin" && item.requestedby_role !== "Instructor" && item.requestedby_role !== "Event" && (
+                                <div
+                                  className="btn btn-sm ripple bg-success-transparent text-success rounded-circle position-relative"
+                                  onClick={() => {
+                                    setSelectedSession(item);
+                                    setShowChat(true);
+                                  }}
+                                  style={{ overflow: "visible" }}
                                 >
-                                  {/* Icon wrapper must be position-relative for correct badge placement */}
-                                  <span className="d-inline-block position-relative">
-                                    <i className="fas fa-comments fs-6"></i>
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>ChatBox</Tooltip>}
+                                  >
+                                    {/* Icon wrapper must be position-relative for correct badge placement */}
+                                    <span className="d-inline-block position-relative">
+                                      <i className="fas fa-comments fs-6"></i>
 
-                                    {item.unseen_message_count > 0 && (
-                                      <span
-                                        className="position-absolute top-0 start-100 translate-middle-y bg-danger badge rounded-pill text-white 
-             px-1 py-0 small"
-                                        style={{
-                                          transform: "translate(30%, -40%)",
-                                          zIndex: 1,
-                                        }}
-                                      >
-                                        {item.unseen_message_count > 99
-                                          ? "99+"
-                                          : item.unseen_message_count}
+                                      {item.unseen_message_count > 0 && (
+                                        <span
+                                          className="position-absolute top-0 start-100 translate-middle-y bg-danger badge rounded-pill text-white 
+  px-1 py-0 small"
+                                          style={{
+                                            transform: "translate(30%, -40%)",
+                                            zIndex: 1,
+                                          }}
+                                        >
+                                          {item.unseen_message_count > 99
+                                            ? "99+"
+                                            : item.unseen_message_count}
 
-                                        <span className="visually-hidden">
-                                          unread messages
+                                          <span className="visually-hidden">
+                                            unread messages
+                                          </span>
                                         </span>
-                                      </span>
-                                    )}
-                                  </span>
-                                </OverlayTrigger>
-                              </div>
+                                      )}
+                                    </span>
+                                  </OverlayTrigger>
+                                </div>
+                              )}
 
                               <div
                                 className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
@@ -680,7 +804,7 @@ const UserSession = () => {
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                 onClick={() =>
                                   push(
-                                    `/usersession_view/${item?.scenariolearneruuid}`
+                                    `/usersession_view/${item?.vmrequestuuid}`
                                   )
                                 }
                               >
@@ -703,10 +827,7 @@ const UserSession = () => {
                   <Col sm={12}>
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
-                        <Row
-                          className="text-center"
-                          style={{ height: "70vh" }}
-                        >
+                        <Row className="text-center" style={{ height: "70vh" }}>
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{

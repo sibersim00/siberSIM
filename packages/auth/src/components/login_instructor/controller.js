@@ -1,4 +1,4 @@
-const { generateAccessToken, clearToken } = require("../../middleware/authJwt");
+const { generateAccessToken } = require("../../middleware/authJwt");
 const organizationList =
   ({ dao, db }) =>
   async (req, res, next) => {
@@ -6,13 +6,11 @@ const organizationList =
     await dao
       .organizationList({ db })(id)
       .then((result) => {
-        return res
-          .status(200)
-          .send({
-            statusCode: 200,
-            data: result,
-            message: "Fetech successfully",
-          });
+        return res.status(200).send({
+          statusCode: 200,
+          data: result,
+          message: "Fetech successfully",
+        });
       })
       .catch((err) => {
         return res.status(500).send({ statusCode: 500, message: err.message });
@@ -26,21 +24,17 @@ const getCompanySettingController =
       const settings = await dao.getCompanyWebSetting({ db })();
 
       if (!settings) {
-        return res
-          .status(404)
-          .send({
-            statusCode: 404,
-            message: "Settings not found for the given company.",
-          });
+        return res.status(404).send({
+          statusCode: 404,
+          message: "Settings not found for the given company.",
+        });
       }
 
-      return res
-        .status(200)
-        .send({
-          statusCode: 200,
-          data: settings,
-          message: "Company settings fetched successfully",
-        });
+      return res.status(200).send({
+        statusCode: 200,
+        data: settings,
+        message: "Company settings fetched successfully",
+      });
     } catch (err) {
       console.error("getCompanySettingController err==>>", err);
       next(err);
@@ -57,13 +51,11 @@ const checklogin =
         orgid: orgid,
       });
       if (user.statusCode == 200) {
-        return res
-          .status(200)
-          .send({
-            statusCode: 200,
-            data: crypto.cryptoEncrypt(user),
-            message: "OTP has been sent successfully",
-          });
+        return res.status(200).send({
+          statusCode: 200,
+          data: crypto.cryptoEncrypt(user),
+          message: "OTP has been sent successfully",
+        });
       } else {
         return res.status(400).send({ statusCode: 400, message: user.message });
       }
@@ -85,13 +77,45 @@ const verifylogin =
       });
 
       if (user.statusCode == 200) {
-        const accessToken = await generateAccessToken(user.user); // Now in controller
+        const hostname = req?.hostname;
+        console.log("req=========>", hostname);
+        const accessToken = await generateAccessToken(hostname, user.user); // Now in controller
         let menus = [
           {
             menutitle: "DASHBOARD",
             Items: await dao.userrolemenu({ db })({ userid: user.user.userid }),
           },
         ];
+        if (
+          !menus ||
+          !Array.isArray(menus) ||
+          menus.length === 0 ||
+          !menus.some(
+            (menu) =>
+              Array.isArray(menu.Items) &&
+              menu.Items.some(
+                (item) =>
+                  item?.menuid &&
+                  item.menuid !== 0 &&
+                  ((typeof item.source === "string" &&
+                    item.source.trim() !== "") ||
+                    (Array.isArray(item.children) &&
+                      item.children.some(
+                        (child) =>
+                          child?.menuid &&
+                          child.menuid !== 0 &&
+                          typeof child.source === "string" &&
+                          child.source.trim() !== ""
+                      )))
+              )
+          )
+        ) {
+          return res.status(403).send({
+            statusCode: 403,
+            message:
+              "You do not have permission to access the system. Please contact your administrator.",
+          });
+        }
         return res.send({
           statusCode: 200,
           message: "Login successfully",
@@ -108,24 +132,56 @@ const verifylogin =
     }
   };
 const verifyDirectLogin =
-  ({ dao, db, keys, crypto }) =>
+  ({ dao, db, keys, crypto, validation }) =>
   async (req, res, next) => {
     try {
       const { loginid, password, orgid } = req.body;
-      let user = await dao.verifyDirectLogin({ db, keys })({
+      let user = await dao.verifyDirectLogin({ db, keys, validation })({
         loginid,
         password,
         orgid,
       });
 
       if (user.statusCode == 200) {
-        const accessToken = await generateAccessToken(user.user); // Now in controller
+        const hostname = req?.hostname;
+        console.log("req=========>", hostname);
+        const accessToken = await generateAccessToken(hostname, user.user); // Now in controller
         let menus = [
           {
             menutitle: "DASHBOARD",
             Items: await dao.userrolemenu({ db })({ userid: user.user.userid }),
           },
         ];
+        if (
+          !menus ||
+          !Array.isArray(menus) ||
+          menus.length === 0 ||
+          !menus.some(
+            (menu) =>
+              Array.isArray(menu.Items) &&
+              menu.Items.some(
+                (item) =>
+                  item?.menuid &&
+                  item.menuid !== 0 &&
+                  ((typeof item.source === "string" &&
+                    item.source.trim() !== "") ||
+                    (Array.isArray(item.children) &&
+                      item.children.some(
+                        (child) =>
+                          child?.menuid &&
+                          child.menuid !== 0 &&
+                          typeof child.source === "string" &&
+                          child.source.trim() !== ""
+                      )))
+              )
+          )
+        ) {
+          return res.status(403).send({
+            statusCode: 403,
+            message:
+              "You do not have permission to access the system. Please contact your administrator.",
+          });
+        }
         return res.send({
           statusCode: 200,
           message: "Login successfully",
@@ -134,7 +190,10 @@ const verifyDirectLogin =
       } else {
         return res
           .status(400)
-          .send({ statusCode: 400, message: "Invalid Credentials" });
+          .send({
+            statusCode: 400,
+            message: user.message || "Invalid Credentials",
+          });
       }
     } catch (err) {
       console.log("verifyDirectLogin err==>>", err);
@@ -163,13 +222,11 @@ const checkforgot =
         orgid: orgid,
       });
       if (user) {
-        return res
-          .status(200)
-          .send({
-            statusCode: 200,
-            data: crypto.cryptoEncrypt(user),
-            message: "OTP has been sent successfully",
-          });
+        return res.status(200).send({
+          statusCode: 200,
+          data: crypto.cryptoEncrypt(user),
+          message: "OTP has been sent successfully",
+        });
       } else {
         return res
           .status(400)
@@ -213,21 +270,17 @@ const register =
     try {
       const body = req.body;
       const result = await dao.register({ db, validation, keys })(body);
-      return res
-        .status(result.statusCode)
-        .send({
-          statusCode: result.statusCode,
-          message: result.message,
-          errors: result.errors,
-        });
+      return res.status(result.statusCode).send({
+        statusCode: result.statusCode,
+        message: result.message,
+        errors: result.errors,
+      });
     } catch (error) {
       console.error("Error on save data:", error.message);
-      return res
-        .status(500)
-        .json({
-          statusCode: 500,
-          error: "An error occurred. Please try again later.",
-        });
+      return res.status(500).json({
+        statusCode: 500,
+        error: "An error occurred. Please try again later.",
+      });
     }
   };
 

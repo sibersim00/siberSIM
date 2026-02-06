@@ -1,13 +1,6 @@
 import React, { Fragment, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import {
-  Modal,
-  Button,
-  Row,
-  Col,
-  Form,
-  Spinner,
-} from "react-bootstrap";
+import { Modal, Button, Row, Col, Form, Spinner } from "react-bootstrap";
 import { Formik } from "formik";
 import * as yup from "yup";
 import { addLicenseDetails } from "../../../redux/slices/customers/customer.js";
@@ -15,7 +8,14 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const CustomerLicenseAdd = (props) => {
-  const { openFlag, handleFormModal, rowValues, oneClick, handleOneClick, licenseData } = props;
+  const {
+    openFlag,
+    handleFormModal,
+    rowValues,
+    oneClick,
+    handleOneClick,
+    licenseData,
+  } = props;
 
   const dispatch = useDispatch();
 
@@ -25,16 +25,19 @@ const CustomerLicenseAdd = (props) => {
     }
   }, [openFlag]);
 
-  const y_m_d = (date) => {
-    const selectedDate = new Date(date);
-    const formattedDate = selectedDate.getFullYear() + "-" + ("0" + (selectedDate.getMonth() + 1)).slice(-2) + "-" + ("0" + selectedDate.getDate()).slice(-2);
-    return formattedDate;
-  }
+const y_m_d = (date) => {
+  const d = new Date(date);
+  return (
+    d.getFullYear() +
+    "-" +
+    ("0" + (d.getMonth() + 1)).slice(-2) +
+    "-" +
+    ("0" + d.getDate()).slice(-2)
+  );
+};
 
   const schema = yup.object().shape({
     sim_user_count: yup.number().required("Required"),
-    sim_mst_count: yup.number().required("Required"),
-    sim_investor_count: yup.number().required("Required"),
     start_date: yup.date().required("Required"),
     expiry_date: yup.date().required("Required"),
     domain_url: yup.string().required("Required"),
@@ -42,19 +45,20 @@ const CustomerLicenseAdd = (props) => {
 
   const initialValues = {
     sim_user_count: "",
-    sim_mst_count: "",
-    sim_investor_count: "",
-    start_date: licenseData && licenseData.length > 0 ? (() => {
-        const maxDate = new Date(
-          Math.max(
-            ...licenseData
-              .filter(r => r.expiry_date)
-              .map(r => new Date(r.expiry_date))
-          )
-        );
-        maxDate.setDate(maxDate.getDate() + 1); // add +1 day
-        return maxDate;
-      })() : new Date(),
+    start_date:
+      licenseData && licenseData.length > 0
+        ? (() => {
+            const maxDate = new Date(
+              Math.max(
+                ...licenseData
+                  .filter((r) => r.expiry_date)
+                  .map((r) => new Date(r.expiry_date))
+              )
+            );
+            maxDate.setDate(maxDate.getDate() + 1); // add +1 day
+            return maxDate;
+          })()
+        : new Date(),
     expiry_date: "",
     domain_url: "",
   };
@@ -63,14 +67,8 @@ const CustomerLicenseAdd = (props) => {
     const payload = {
       customer_id: rowValues?.customer_id,
       sim_user_count: Number(data.sim_user_count),
-      sim_mst_count: Number(data.sim_mst_count),
-      sim_investor_count: Number(data.sim_investor_count),
-      start_date: data.start_date
-        ? y_m_d(data.start_date)
-        : null,
-      expiry_date: data.expiry_date
-        ? y_m_d(data.expiry_date)
-        : null,
+      start_date: data.start_date ? y_m_d(data.start_date) : null,
+      expiry_date: data.expiry_date ? y_m_d(data.expiry_date) : null,
       domain_url: data.domain_url.trim(),
     };
     handleOneClick(true);
@@ -79,7 +77,7 @@ const CustomerLicenseAdd = (props) => {
 
   return (
     <Fragment>
-      <Modal show={openFlag} backdrop="static" size="lg">
+      <Modal show={openFlag} backdrop="static" size="md">
         <Formik
           initialValues={initialValues}
           validationSchema={schema}
@@ -102,7 +100,7 @@ const CustomerLicenseAdd = (props) => {
               <Modal.Body>
                 <Row>
                   {/* START DATE */}
-                  <Form.Group as={Col} md="6" className="mb-3">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       Start Date <span className="text-danger">*</span>
                     </Form.Label>
@@ -111,14 +109,28 @@ const CustomerLicenseAdd = (props) => {
                       selected={
                         values.start_date ? new Date(values.start_date) : null
                       }
-                      onChange={() => { }}
-                      disabled
-                      className={`form-control ${touched.start_date && errors.start_date
-                        ? "is-invalid"
-                        : ""
-                        }`}
-                      dateFormat="yyyy-MM-dd"
+                      onChange={(date) => {
+                        setFieldValue("start_date", date);
+                        setFieldValue("expiry_date", ""); // reset end date on change
+                      }}
+                      className={`form-control ${
+                        touched.start_date && errors.start_date
+                          ? "is-invalid"
+                          : ""
+                      }`}
+                      dateFormat="dd-MM-yyyy"
+                      placeholderText="Select start date"
+                      onKeyDown={(e) => e.preventDefault()}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
                     />
+
+                    {touched.start_date && errors.start_date && (
+                      <div className="invalid-feedback d-block">
+                        {errors.start_date}
+                      </div>
+                    )}
 
                     {touched.start_date && errors.start_date && (
                       <div className="invalid-feedback d-block">
@@ -128,7 +140,7 @@ const CustomerLicenseAdd = (props) => {
                   </Form.Group>
 
                   {/* END DATE */}
-                  <Form.Group as={Col} md="6" className="mb-3">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       End Date <span className="text-danger">*</span>
                     </Form.Label>
@@ -140,12 +152,16 @@ const CustomerLicenseAdd = (props) => {
                         setFieldValue("expiry_date", date);
                       }}
                       onKeyDown={(e) => e.preventDefault()}
-                      className={`form-control ${touched.expiry_date && errors.expiry_date
-                        ? "is-invalid"
-                        : ""
-                        }`}
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      className={`form-control ${
+                        touched.expiry_date && errors.expiry_date
+                          ? "is-invalid"
+                          : ""
+                      }`}
                       placeholderText="Select end date"
-                      dateFormat="yyyy-MM-dd"
+                      dateFormat="dd-MM-yyyy"
                       minDate={
                         values.start_date ? new Date(values.start_date) : null
                       }
@@ -156,10 +172,11 @@ const CustomerLicenseAdd = (props) => {
                         {errors.expiry_date}
                       </div>
                     )}
+
                   </Form.Group>
 
                   {/* Domain URL */}
-                  <Form.Group as={Col} md="12" className="mb-3">
+                  <Form.Group as={Col} md="12" className="mb-4">
                     <Form.Label>
                       Domain URL <span className="text-danger">*</span>
                     </Form.Label>
@@ -177,12 +194,14 @@ const CustomerLicenseAdd = (props) => {
                   </Form.Group>
 
                   {/* Counts */}
-                  <Form.Group as={Col} md="4" className="mb-3">
-                    <Form.Label>SIMUser <span className="text-danger">*</span></Form.Label>
+                  <Form.Group as={Col} md="12" className="mb-4">
+                    <Form.Label>
+                      User Scenario Limit <span className="text-danger">*</span>
+                    </Form.Label>
                     <Form.Control
                       type="number"
                       name="sim_user_count"
-                      placeholder="Enter SIMUser Count"
+                      placeholder="Enter User Scenario Limit"
                       value={values.sim_user_count}
                       onChange={handleChange}
                       isInvalid={
@@ -194,37 +213,6 @@ const CustomerLicenseAdd = (props) => {
                     </Form.Control.Feedback>
                   </Form.Group>
 
-                  <Form.Group as={Col} md="4" className="mb-3">
-                    <Form.Label>SIMMaster <span className="text-danger">*</span></Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="sim_mst_count"
-                      placeholder="Enter SIMMaster Count"
-                      value={values.sim_mst_count}
-                      onChange={handleChange}
-                      isInvalid={touched.sim_mst_count && errors.sim_mst_count}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.sim_mst_count}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-
-                  <Form.Group as={Col} md="4" className="mb-3">
-                    <Form.Label>SIMManager <span className="text-danger">*</span></Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="sim_investor_count"
-                      placeholder="Enter SIMManager Count"
-                      value={values.sim_investor_count}
-                      onChange={handleChange}
-                      isInvalid={
-                        touched.sim_investor_count && errors.sim_investor_count
-                      }
-                    />
-                     <Form.Control.Feedback type="invalid">
-                      {errors.sim_investor_count}
-                    </Form.Control.Feedback>
-                  </Form.Group>
                 </Row>
               </Modal.Body>
 

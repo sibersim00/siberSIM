@@ -1,8 +1,6 @@
 const getDashboardStats = ({ db }) => async ({ userid, usertype }) => {
   try {
     // 1. LEARNER STATS
-
-
     let learnerQuery = `
   SELECT
     COUNT(*) AS totalaccounts,
@@ -120,19 +118,20 @@ WHERE usertype = 'Admin'
 
     const learnerListQuery = `
       SELECT 
-        l.learner_id, 
-        CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-        l.email, 
-        l.profile,
-        l.createdon,
-        l.status
-      FROM learners l
-      LEFT JOIN scenario_learner_session sls 
-        ON sls.learner_id = l.learner_id
-      WHERE l.deletedon IS NULL
-        AND l.instructor_id = :userid
-      ORDER BY l.createdon DESC 
-      LIMIT 5`;
+    l.learner_id, 
+    CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
+    l.email, 
+    l.profile,
+    l.createdon,
+    l.status
+  FROM learners l
+  LEFT JOIN vm_request vr
+    ON vr.requestedby_id = l.learner_id
+    AND vr.requestedby_role = 'Learner'
+  WHERE l.deletedon IS NULL
+    AND l.instructor_id = :userid
+  ORDER BY l.createdon DESC 
+  LIMIT 5`;
     const latestLearners = await db.sequelize.query(learnerListQuery, {
       replacements: { userid },
       type: db.sequelize.QueryTypes.SELECT,
@@ -173,59 +172,138 @@ WHERE deletedon IS NULL`;
     //   type: db.sequelize.QueryTypes.SELECT,
     // });
 
+    // let sessionQuery = `
+    //   SELECT 
+    //     sls.scenarioid, 
+    //     COUNT(*) AS running_sessions 
+    //   FROM scenario_learner_session sls
+    //   INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
+    //   WHERE sls.vm_steps = 'Running'
+    //     AND s.deletedon IS NULL`;
+    // if (usertype === 'Instructor') {
+    //   sessionQuery += ` AND instructor_id = :userid`;
+    // }
+    // sessionQuery += ` GROUP BY sls.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
+   
     let sessionQuery = `
-      SELECT 
-        sls.scenarioid, 
-        COUNT(*) AS running_sessions 
-      FROM scenario_learner_session sls
-      INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
-      WHERE sls.vm_steps = 'Running'
-        AND s.deletedon IS NULL`;
+  SELECT 
+    vr.scenarioid, 
+    COUNT(*) AS running_sessions 
+  FROM vm_request vr
+  INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
+  WHERE vr.vm_steps = 'Running'
+    AND vr.requestedby_role = 'Learner'
+    AND s.deletedon IS NULL`;
+
     if (usertype === 'Instructor') {
-      sessionQuery += ` AND instructor_id = :userid`;
+      sessionQuery += ` AND s.createdby = :userid`;
     }
-    sessionQuery += ` GROUP BY sls.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
+
+    sessionQuery += ` GROUP BY vr.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
+
     const runningSessions = await db.sequelize.query(sessionQuery, {
       replacements: { userid },
       type: db.sequelize.QueryTypes.SELECT,
     });
 
     // 11. RUNNING SESSION DETAILS
+    // let runningSessionDetailsQuery = `
+    //   SELECT 
+    //     s.scenariotitle,
+    //     CONCAT(l.firstname, ' ', l.lastname) AS learnername,
+    //     sl.status AS scenario_status,
+    //     sls.startedon
+    //   FROM scenario_learner_session sls
+    //   INNER JOIN scenario_learner sl ON sls.scenariolearnerid = sl.scenariolearnerid
+    //   INNER JOIN scenarios s ON sl.scenarioid = s.scenarioid
+    //   INNER JOIN learners l ON sl.learner_id = l.learner_id
+    //   WHERE sls.status = 'Start'
+    //     AND s.deletedon IS NULL`;
+    // if (usertype === 'Instructor') {
+    //   runningSessionDetailsQuery += ` AND s.createdby = :userid`;
+    // }
+    // runningSessionDetailsQuery += ` ORDER BY sls.startedon DESC LIMIT 5`;
+    // const runningSessionDetails = await db.sequelize.query(runningSessionDetailsQuery, {
+    //   replacements: { userid },
+    //   type: db.sequelize.QueryTypes.SELECT,
+    // });
     let runningSessionDetailsQuery = `
-      SELECT 
-        s.scenariotitle,
-        CONCAT(l.firstname, ' ', l.lastname) AS learnername,
-        sl.status AS scenario_status,
-        sls.startedon
-      FROM scenario_learner_session sls
-      INNER JOIN scenario_learner sl ON sls.scenariolearnerid = sl.scenariolearnerid
-      INNER JOIN scenarios s ON sl.scenarioid = s.scenarioid
-      INNER JOIN learners l ON sl.learner_id = l.learner_id
-      WHERE sls.status = 'Start'
-        AND s.deletedon IS NULL`;
+  SELECT 
+    s.scenariotitle,
+    CONCAT(l.firstname, ' ', l.lastname) AS learnername,
+    vr.status AS scenario_status,
+    vr.startedon
+  FROM vm_request vr
+  INNER JOIN scenarios s 
+    ON s.scenarioid = vr.scenarioid
+  INNER JOIN learners l 
+    ON vr.requestedby_id = l.learner_id
+  WHERE 
+    vr.requestedby_role IN ('Learner','Admin','Instructor')
+    AND vr.status IN ('Start', 'Resume')
+    AND s.deletedon IS NULL
+`;
+
     if (usertype === 'Instructor') {
       runningSessionDetailsQuery += ` AND s.createdby = :userid`;
     }
-    runningSessionDetailsQuery += ` ORDER BY sls.startedon DESC LIMIT 5`;
-    const runningSessionDetails = await db.sequelize.query(runningSessionDetailsQuery, {
-      replacements: { userid },
-      type: db.sequelize.QueryTypes.SELECT,
-    });
 
-    // 12. SESSION STATS
-    const [sessionStats = { total_sessions: 0, running_sessions: 0 }] = await db.sequelize.query(
-      `SELECT 
-         COUNT(*) AS total_sessions,
-         SUM(CASE WHEN sls.status = 'Start' AND sls.vm_steps = 'Running' THEN 1 ELSE 0 END) AS running_sessions
-       FROM scenario_learner_session sls
-       INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
-       WHERE s.deletedon IS NULL
-       ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
+    runningSessionDetailsQuery += `
+  ORDER BY vr.startedon DESC
+  LIMIT 5
+`;
+
+    const runningSessionDetails = await db.sequelize.query(
+      runningSessionDetailsQuery,
       {
         replacements: { userid },
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
+
+
+    // 12. SESSION STATS
+    // const [sessionStats = { total_sessions: 0, running_sessions: 0 }] = await db.sequelize.query(
+    //   `SELECT 
+    //      COUNT(*) AS total_sessions,
+    //      SUM(CASE WHEN sls.status = 'Start' AND sls.vm_steps = 'Running' THEN 1 ELSE 0 END) AS running_sessions
+    //    FROM scenario_learner_session sls
+    //    INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
+    //    WHERE s.deletedon IS NULL
+    //    ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
+    //   {
+    //     replacements: { userid },
+    //     type: db.sequelize.QueryTypes.SELECT,
+    //   }
+    // );
+    const [sessionStats = { total_sessions: 0, pause_resume_count: 0, running_sessions: 0 }] =
+      await db.sequelize.query(
+        `SELECT 
+       COUNT(*) AS total_sessions,
+         SUM(
+    CASE 
+      WHEN vr.status IN ('Pause', 'Resume','Start')
+           AND vr.vm_steps = 'Running'
+      THEN 1 ELSE 0
+    END
+  ) AS pause_resume_count,
+       SUM(
+         CASE 
+           WHEN vr.status IN ('Resume','Start') AND vr.vm_steps = 'Running' 
+           THEN 1 ELSE 0 
+         END
+       ) AS running_sessions
+     FROM vm_request vr
+     INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
+     WHERE vr.requestedby_role IN ('Learner','Instructor','Admin','Event')
+       AND s.deletedon IS NULL
+       ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
+        {
+          replacements: { userid },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
 
     // 13. LATEST INSTRUCTORS
     let latestInstructors = [];
@@ -259,8 +337,8 @@ WHERE deletedon IS NULL`;
         vc.status,
         SUM(c.cores) AS total_cores,
         SUM(c.memory) AS total_memory,
-        SUM(CAST(c.storage AS UNSIGNED)) AS total_storage
-      FROM vm_configuration vc
+        SUM(CAST(REPLACE(c.storage, 'G', '') AS UNSIGNED)) AS total_storage
+      FROM vm_config vc
       INNER JOIN components c ON vc.componentid = c.componentid
       WHERE vc.status = "Running" AND c.deletedon IS NULL`;
     if (usertype === 'Instructor') {
@@ -275,21 +353,53 @@ WHERE deletedon IS NULL`;
     // 15. Widgets
     let widgets = [];
     try {
+      // const [completedStats, quizStats, nonCompletedCountStats] =
+      //   await Promise.all([
+      //     db.sequelize.query(
+      //       `SELECT SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed, COUNT(*) AS total FROM scenario_learner_session WHERE learner_id = :userid`,
+      //       { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
+      //     ),
+      //     db.sequelize.query(
+      //       `SELECT SUM(total_questions) AS total_questions, SUM(total_correct_answers) AS total_correct_answers FROM scenario_learner_quiz WHERE learner_id = :userid AND status = 'Completed'`,
+      //       { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
+      //     ),
+      //     db.sequelize.query(
+      //       `SELECT COUNT(*) AS count FROM scenario_learner_session WHERE learner_id = :userid AND status IN ('Initializing', 'Failed', 'Start', 'Pause', 'Resume', 'Terminated')`,
+      //       { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
+      //     ),
+      //   ]);
       const [completedStats, quizStats, nonCompletedCountStats] =
         await Promise.all([
           db.sequelize.query(
-            `SELECT SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed, COUNT(*) AS total FROM scenario_learner_session WHERE learner_id = :userid`,
+            `SELECT 
+         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+         COUNT(*) AS total
+       FROM vm_request
+       WHERE requestedby_id = :userid
+         AND requestedby_role = 'Learner'`,
             { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
           ),
+
           db.sequelize.query(
-            `SELECT SUM(total_questions) AS total_questions, SUM(total_correct_answers) AS total_correct_answers FROM scenario_learner_quiz WHERE learner_id = :userid AND status = 'Completed'`,
+            `SELECT 
+         SUM(total_questions) AS total_questions,
+         SUM(total_correct_answers) AS total_correct_answers
+       FROM scenario_learner_quiz
+       WHERE learner_id = :userid
+         AND status = 'Completed'`,
             { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
           ),
+
           db.sequelize.query(
-            `SELECT COUNT(*) AS count FROM scenario_learner_session WHERE learner_id = :userid AND status IN ('Initializing', 'Failed', 'Start', 'Pause', 'Resume', 'Terminated')`,
+            `SELECT COUNT(*) AS count
+       FROM vm_request
+       WHERE requestedby_id = :userid
+         AND requestedby_role = 'Learner'
+         AND status IN ('Initializing', 'Failed', 'Start', 'Pause', 'Resume', 'Terminated')`,
             { replacements: { userid }, type: db.sequelize.QueryTypes.SELECT }
           ),
         ]);
+
 
       const completedData = completedStats[0];
       const quizData = quizStats[0];

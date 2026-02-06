@@ -1,6 +1,6 @@
 const MailTemplate = require('../../utils/mailUtility')
 const bcrypt = require('bcryptjs');
-const {generateDecryptedString } = require('../../middleware/customer_license');
+const serialLicense = require("../../middleware/serialLicense");
 
 const organizationList = ({ db }) => async (id) => {
   const [result] = await db.sequelize.query(`SELECT getOrganizations(${id}) as data`, { type: db.sequelize.QueryTypes.SELECT });
@@ -11,29 +11,74 @@ const organizationList = ({ db }) => async (id) => {
   return data;
 }
 
-// const getCompanyWebSetting = ({ db }) => async (body) => {
-//   const [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${body.domain_url}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
-
-//   let generatedString = {};
+// const getCompanyWebSetting = ({ db }) => async (hostname) => {
+//   let [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
 //   if(result?.license_key){
-//     generatedString = generateDecryptedString({str : result?.license_key});
-//   }
-
-//   if(result?.license_key && new Date(generatedString.expiry_date) < new Date() ){
-//     // Key Expired generate new key
-//     return {status : true, message : "", data : result, redirect : true}
-//   }else if(result?.license_key && new Date(generatedString.expiry_date) > new Date()){
-//     // Key Valid
-//     return {status : true, message : "", data : result}
+//     let licenseStatus = serialLicense.checkValidate(hostname,result?.license_key);
+//     console.log("licenseStatus===============>",licenseStatus);
+//     if(licenseStatus.isKeyValid && licenseStatus.isHost && licenseStatus.isStart && !licenseStatus.isExp){
+//       result.licenseStatus=licenseStatus;
+//       return {status : true, message : "", data : result, redirect : false}
+//     } else if(licenseStatus.isKeyValid && licenseStatus.isHost && !licenseStatus.isStart && !licenseStatus.isExp){
+//       return {status : true, message : "", data : {licenseStatus:licenseStatus}, redirect : false}
+//     } else {
+//       return {status : true, message : "", data : licenseStatus, redirect : true}
+//     }
 //   }else{
 //     return {status : true, message : "", data : null, redirect : true}
 //   }
 // };
 
-const getCompanyWebSetting = ({ db }) => async (body) => {
-  const [result] = await db.sequelize.query(`SELECT * FROM web_settings LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
-  return {status : true, message : "", data : result}
+const getCompanyWebSetting = ({ db }) => async (hostname) => {
+  let [result] = await db.sequelize.query(
+    `SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`,
+    { type: db.sequelize.QueryTypes.SELECT }
+  );
+  if (result?.license_key) {
+    let oldLicenseKey = result.license_key; 
+    let licenseStatus = serialLicense.checkValidate(hostname, result?.license_key);
+  if (licenseStatus.isExp) {
+      const [latestLicense] = await db.sequelize.query(
+        `SELECT license_key FROM license_logs WHERE status = 'New' ORDER BY createdon DESC LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+      console.log("latestLicenselatestLicenselatestLicense",latestLicense ?.license_key)
+      let newLicenseKey = latestLicense ?.license_key;
+     if (latestLicense?.license_key) {
+        await db.sequelize.query(`UPDATE license_logs SET status = 'Expired' WHERE license_key = :oldKey`,
+          { replacements: { oldKey: oldLicenseKey } }
+        );
+        await db.sequelize.query(`UPDATE license_logs SET status = 'Active'  WHERE license_key = :newKey`,
+          { replacements: { newKey: newLicenseKey } }
+        );
+        await db.sequelize.query(
+          `UPDATE web_settings SET license_key = :license_key, modifiedon = NOW() WHERE id = :id`,
+          {
+            replacements: { license_key: latestLicense.license_key, id: result.id }
+          }
+        );
+        result.license_key = latestLicense.license_key;
+        licenseStatus = serialLicense.checkValidate( hostname, latestLicense.license_key );
+      }
+    }
+ // ⬇EXISTING LOGIC (UNCHANGED)
+    if (licenseStatus.isKeyValid && licenseStatus.isHost && licenseStatus.isStart && !licenseStatus.isExp) {
+      result.licenseStatus = licenseStatus;
+      return { status: true, message: "", data: result, redirect: false };
+    }
+    else if (licenseStatus.isKeyValid && licenseStatus.isHost && !licenseStatus.isStart && !licenseStatus.isExp) {
+      return { status: true, message: "", data: { licenseStatus }, redirect: false };
+    }
+    else {
+      return { status: true, message: "", data: licenseStatus, redirect: true };
+    }
+  }
+  else {
+    return { status: true, message: "", data: null, redirect: false };
+  }
 };
+
+
 
 const checklogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
   try {
@@ -137,7 +182,7 @@ const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
 }
 
 const userrolemenu = ({ db }) => async ({ userid }) => {
-  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype from ad_menus m where m.status = 'Active' order by m.orderno asc `);
+  const [menus] = await db.sequelize.query(`select m.menuid,m.parentmenuid,m.displaymenuname as title,m.singularmenuname as subtitle,m.icon,m.menupath as path,m.submenupath as sub_path,m.source,'false' as active,'false' as selected,case when menutype = 'Tree Menu' then 'sub' else 'link' end as type,m.menutype,m.orderno from ad_menus m where m.status = 'Active' order by m.orderno asc `);
   const [rolemenu] = await db.sequelize.query(`select ar.menuid from ad_userrolemap au inner join ad_rolemenumap ar on ar.roleid =au.roleid where au.userid=${userid} group by ar.menuid`);
   const menuHierarchy = buildMenuHierarchy(menus, rolemenu);
   return menuHierarchy;

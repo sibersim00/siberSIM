@@ -14,5 +14,11 @@ module.exports = function (iocContainer) {
     "/list",
     controller.getTabList(iocContainer)
   );
+  router.post(
+  "/can-resume",
+  controller.canResumeScenario(iocContainer)
+);
+  router.get("/get-paused", controller.getPaused(iocContainer));
+
   return router;
 };

@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@azure/msal-node": "^3.6.2",
+    "archiver": "^7.0.1",
     "aws-sdk": "^2.1440.0",
     "bcryptjs": "^3.0.2",
     "bluebird": "^3.7.2",

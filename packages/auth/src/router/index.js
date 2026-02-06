@@ -2,7 +2,6 @@ const loginRouter = require("../components/login")
 const loginLearnerRouter = require("../components/login_learner")
 const loginInstructorRouter = require("../components/login_instructor")
 const loginEventRouter = require("../components/login_event")
-const customerLicenseRouter = require("../components/customer_license")
 
 module.exports = function (iocContainer) {
     const { express } = iocContainer;
@@ -11,6 +10,5 @@ module.exports = function (iocContainer) {
     router.use('/learner', loginLearnerRouter(iocContainer))
     router.use('/instructor', loginInstructorRouter(iocContainer))
     router.use('/event',loginEventRouter(iocContainer))
-    router.use('/customer-license',customerLicenseRouter(iocContainer))
     return router;
 }

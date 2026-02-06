@@ -12,7 +12,8 @@ const initialState = {
   cmpSettingData:[],
   addDataResp: [],
   updateDataResp:[],
-  uploadLogoResp : []
+  uploadLogoResp : [],
+  addLicenseKeyResp: []
 };
 
 const slice = createSlice({
@@ -43,6 +44,10 @@ const slice = createSlice({
     hasError(state, action) {
       state.isLoading = false;
       state.error = action.payload;
+    },
+    hasAddLicenseKeySucc(state, action) {
+      state.isLoading = false;
+      state.addLicenseKeyResp = action.payload;
     },
   },
 });
@@ -142,6 +147,30 @@ export function clearHasError() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasError([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function addLicenseKey(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api?.add_license_key, payload);
+      dispatch(slice.actions.hasAddLicenseKeySucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearAddLicenseKey() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasAddLicenseKeySucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

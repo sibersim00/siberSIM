@@ -27,6 +27,7 @@ const initialState = {
   getScenarioSubCategorycustom : [],
   getScenarioSubCategorycustomId : [],
   getFaqData:[],
+  getUserTypeWiseListData: [],
   theme:"",
 };
 
@@ -117,6 +118,11 @@ const slice = createSlice({
     state.isLoading = false,
     state.theme = action.payload;
   }, 
+  hasGetUserTypeWiseListSucc(state, action) {
+  state.isLoading = false;
+  state.getUserTypeWiseListData = action.payload;
+},
+
     // HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -403,6 +409,21 @@ export function getOrSetTheme(theme) {
       console.log("responseresponseresponseresponseresponse",response);
       
       dispatch(slice.actions.hasGetThemeSucc(response.data.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getUserTypeWiseList(usertype) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(
+        `${api.usertype_wise_list}?usertype=${usertype}`
+      );
+
+      dispatch(slice.actions.hasGetUserTypeWiseListSucc(response.data.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

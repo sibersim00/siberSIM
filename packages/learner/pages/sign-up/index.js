@@ -25,6 +25,7 @@ import {
   getCompanyList,
 } from "../../shared/redux/slices/auth/auth";
 
+import { d_mmm_y } from"../../shared/data/helperFunctions/dateCustom";
 import { Formik } from "formik";
 import * as yup from "yup";
 import {
@@ -122,6 +123,7 @@ const Signup = () => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
+   let navigate = useRouter();
 
   const { hasSignupSuccess, errorData } = useSelector((state) => ({
     hasSignupSuccess:
@@ -129,6 +131,19 @@ const Signup = () => {
     errorData: state && state.authData && state.authData.error,
   }));
 
+const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
+
+useEffect(() => {
+       if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+           navigate.replace("/503");
+       }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+         let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+         if(!licenseStatus.isStart){
+           let startDate = d_mmm_y(licenseStatus.start_date)
+           navigate.replace(`/503?startDate=${startDate}`);
+         }
+       }
+   }, [getCompanySettingsData]);
 
   useEffect(() => {
     if (errorData?.statusCode) {
@@ -161,7 +176,7 @@ const Signup = () => {
     }
   }, [errorData]);
   useEffect(() => {
-    dispatch(getCompanyList());
+        dispatch(getCompanyList());
   }, [dispatch]);
 
   useEffect(() => {

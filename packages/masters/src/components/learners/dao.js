@@ -12,25 +12,20 @@ const getAll =
   async (session_userid, usertype) => {
     if (usertype == "Admin") {
       let [res] = await db.sequelize
-        .query(`select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile 
-      END AS mobile,t.email,t.profile,t.username,
-        DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,      
-       CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status from learners t WHERE 
-  t.deletedon IS NULL ORDER by t.firstname ASC`);
+        .query(`SELECT  t.learner_id, t.learner_uuid, t.firstname, t.lastname, t.isverified, CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile, t.email, t.profile, t.username, DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status FROM learners t WHERE t.deletedon IS NULL ORDER BY t.firstname ASC`);
       return res;
     } else {
       let res = await db.sequelize.query(
-        `select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile 
+        `select t.learner_id,t.learner_uuid,t.firstname,t.lastname,t.isverified,CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile
       END AS mobile,t.email,t.profile,t.username,
        DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-      DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,   
+      DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,  
       CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status
         from learners t  
-        inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid 
+        inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid
        
         group by t.learner_id
-        ORDER by t.firstname ASC`,
+        ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`,
         {
           replacements: {
             _userid: session_userid,
@@ -41,8 +36,6 @@ const getAll =
       return res;
     }
   };
-
-
   
 const statusChange =
   ({ db, validation }) =>
@@ -643,11 +636,20 @@ FROM learners l
 LEFT JOIN ad_users au ON l.instructor_id = au.userid
 
 -- Join with scenario_learner for session end
+// LEFT JOIN (
+//     SELECT learner_id, MAX(modifiedon) AS last_session_end
+//     FROM scenario_learner
+//     GROUP BY learner_id
+// ) sl ON sl.learner_id = l.learner_id
+
 LEFT JOIN (
-    SELECT learner_id, MAX(modifiedon) AS last_session_end
-    FROM scenario_learner
-    GROUP BY learner_id
+    SELECT requestedby_id AS learner_id,
+           MAX(modifiedon) AS last_session_end
+    FROM vm_request
+    WHERE requestedby_role = 'Learner'
+    GROUP BY requestedby_id
 ) sl ON sl.learner_id = l.learner_id
+
 
 -- Join with event_learners for event completion
 LEFT JOIN (
@@ -695,59 +697,123 @@ LIMIT 1;
     ),
 
     // Sessions
+    // db.sequelize.query(
+    //   `SELECT
+    //     sls.scenariolearnersessionid,
+    //     s.scenariotitle AS scenario_title,
+    //     sls.timer,
+    //     sls.vm_steps,
+    //     sls.status,
+    //     sls.startedon,
+    //     sls.completedon,
+    //     sls.terminatedon
+    //   FROM scenario_learner_session sls
+    //   INNER JOIN scenario_learner sl ON sl.scenariolearnerid = sls.scenariolearnerid
+    //   INNER JOIN learners l ON l.learner_id = sl.learner_id
+    //   INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
+    //   WHERE l.learner_uuid = :_id
+    //     AND sls.status IN ('Completed', 'Terminated')
+    //   ORDER BY sls.startedon DESC`,
+    //   {
+    //     replacements: { _id: learner_uuid },
+    //     type: db.sequelize.QueryTypes.SELECT,
+    //   }
+    // ),
     db.sequelize.query(
-      `SELECT
-        sls.scenariolearnersessionid,
-        s.scenariotitle AS scenario_title,
-        sls.timer,
-        sls.vm_steps,
-        sls.status,
-        sls.startedon,
-        sls.completedon,
-        sls.terminatedon
-      FROM scenario_learner_session sls
-      INNER JOIN scenario_learner sl ON sl.scenariolearnerid = sls.scenariolearnerid
-      INNER JOIN learners l ON l.learner_id = sl.learner_id
-      INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
-      WHERE l.learner_uuid = :_id
-        AND sls.status IN ('Completed', 'Terminated')
-      ORDER BY sls.startedon DESC`,
-      {
-        replacements: { _id: learner_uuid },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    ),
+  `
+  SELECT
+    vr.vmrequestid,
+    s.scenariotitle AS scenario_title,
+    vr.timer,
+    vr.vm_steps,
+    vr.status,
+    vr.startedon,
+    vr.completedon,
+    vr.terminatedon
+  FROM vm_request vr
+  INNER JOIN learners l 
+    ON l.learner_id = vr.requestedby_id
+  INNER JOIN scenarios s 
+    ON s.scenarioid = vr.scenarioid
+  WHERE l.learner_uuid = :_id
+    AND vr.requestedby_role = 'Learner'
+    AND vr.status IN ('Completed', 'Terminated')
+  ORDER BY vr.startedon DESC
+  `,
+  {
+    replacements: { _id: learner_uuid },
+    type: db.sequelize.QueryTypes.SELECT,
+  }
+),
+
 
     // Current Scenario
-    db.sequelize.query(
-      `SELECT
-        s.scenariotitle AS title,
-        sls.vm_steps,
-        sls.startedon
-      FROM scenario_learner sl
-      INNER JOIN scenario_learner_session sls ON sl.currentsession_id = sls.scenariolearnersessionid
-      INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
-      INNER JOIN learners l ON l.learner_id = sl.learner_id
-      WHERE l.learner_uuid = :_id
-      LIMIT 1`,
-      {
-        replacements: { _id: learner_uuid },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    ),
+    // db.sequelize.query(
+    //   `SELECT
+    //     s.scenariotitle AS title,
+    //     sls.vm_steps,
+    //     sls.startedon
+    //   FROM scenario_learner sl
+    //   INNER JOIN scenario_learner_session sls ON sl.currentsession_id = sls.scenariolearnersessionid
+    //   INNER JOIN scenarios s ON sls.scenarioid = s.scenarioid
+    //   INNER JOIN learners l ON l.learner_id = sl.learner_id
+    //   WHERE l.learner_uuid = :_id
+    //   LIMIT 1`,
+    //   {
+    //     replacements: { _id: learner_uuid },
+    //     type: db.sequelize.QueryTypes.SELECT,
+    //   }
+    // ),
+db.sequelize.query(
+  `
+  SELECT
+    s.scenariotitle AS title,
+    vr.vm_steps,
+    vr.startedon
+  FROM vm_request vr
+  INNER JOIN learners l 
+    ON l.learner_id = vr.requestedby_id
+  INNER JOIN scenarios s 
+    ON s.scenarioid = vr.scenarioid
+  WHERE l.learner_uuid = :_id
+    AND vr.requestedby_role = 'Learner'
+    AND vr.status IN ('Start', 'Running', 'Resume')
+  ORDER BY vr.startedon DESC
+  LIMIT 1
+  `,
+  {
+    replacements: { _id: learner_uuid },
+    type: db.sequelize.QueryTypes.SELECT,
+  }
+),
 
     // Total Scenarios
+    // db.sequelize.query(
+    //   `SELECT COUNT(DISTINCT scenarioid) AS total_scenarios
+    //    FROM scenario_learner
+    //    WHERE learner_id = (
+    //      SELECT learner_id FROM learners WHERE learner_uuid = :_id
+    //    )`,
+    //   {
+    //     replacements: { _id: learner_uuid },
+    //     type: db.sequelize.QueryTypes.SELECT,
+    //   }
+    // ),
     db.sequelize.query(
-      `SELECT COUNT(DISTINCT scenarioid) AS total_scenarios
-       FROM scenario_learner
-       WHERE learner_id = (
-         SELECT learner_id FROM learners WHERE learner_uuid = :_id
-       )`,
-      {
-        replacements: { _id: learner_uuid },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    ),
+  `
+  SELECT COUNT(DISTINCT vr.scenarioid) AS total_scenarios
+  FROM vm_request vr
+  INNER JOIN learners l 
+    ON l.learner_id = vr.requestedby_id
+  WHERE l.learner_uuid = :_id
+    AND vr.requestedby_role = 'Learner'
+  `,
+  {
+    replacements: { _id: learner_uuid },
+    type: db.sequelize.QueryTypes.SELECT,
+  }
+),
+
 
     // Total Events
     db.sequelize.query(

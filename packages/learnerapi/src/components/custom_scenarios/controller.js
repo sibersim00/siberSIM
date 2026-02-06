@@ -19,6 +19,17 @@ const list =
         .json({ error: "An error occurred. Please try again later." });
     }
   };
+  const getApproved = ({ dao, db, validation }) => async (req, res) => {
+    try {
+      const learner_id = req.learneruser.learner_id;
+      const result = await dao.getApproved({ db })(learner_id);
+      return res.status(200).send({ statusCode: 200, message: validation.messages.GET_ALL_SUCCESS, data: result });
+    } catch (err) {
+      console.error("Error in getAll:", err.message);
+      return res.status(500).send({ statusCode: 500, message: validation.messages.GET_ALL_ERROR });
+    }
+  };
+  
 
 const getById =
   ({ dao, db }) =>
@@ -84,61 +95,6 @@ const update =
       return res
         .status(500)
         .json({ error: "An error occurred. Please try again later." });
-    }
-  };
-
-const changeStatus =
-  ({ dao, db, validation }) =>
-  async (req, res) => {
-    try {
-      let body = req.body;
-      const session_userid = req.user.userid;
-      const result = await dao.changeStatus({ db, validation })(
-        body,
-        session_userid
-      );
-      res.status(result.statusCode).send({
-        statusCode: result.statusCode,
-        message: result.message,
-        data: result.data,
-      });
-    } catch (error) {
-      console.error("Error fetching data:", error.message);
-      res
-        .status(500)
-        .json({ error: "An error occurred. Please try again later." });
-    }
-  };
-
-const deleteById =
-  ({ dao, db }) =>
-  async (req, res) => {
-    try {
-      const body = req.body;
-      const session_userid = req.user.userid;
-
-      const result = await dao.deleteById({ db })(body, session_userid);
-
-      // Check DAO response
-      if (!result.status) {
-        // Scenario cannot be deleted (running)
-        return res.status(400).send({
-          statusCode: 400,
-          message: result.message, // Pass DAO message directly
-        });
-      }
-
-      // Success response
-      res.status(200).send({
-        statusCode: 200,
-        message: "Scenario Deleted Successfully",
-        data: result,
-      });
-    } catch (error) {
-      console.error("Error Deleting Scenario:", error.message);
-      res.status(500).json({
-        error: "An error occurred. Please try again later.",
-      });
     }
   };
 
@@ -211,11 +167,10 @@ const saveComponentconfiguration =
 
 module.exports = {
   list,
+  getApproved,
   getById,
   create,
   update,
-  deleteById,
-  changeStatus,
   saveDiagram,
   scenariodigramlist,
   saveComponentconfiguration,

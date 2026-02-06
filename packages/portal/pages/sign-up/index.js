@@ -23,6 +23,7 @@ import {
   SignupInstructor,
   clearDispatchFromSignup,
   clearHasError,
+  getCompanyList,
 } from "../../shared/redux/slices/authentication/Auth";
 import { Formik } from "formik";
 import * as yup from "yup";
@@ -33,6 +34,7 @@ import {
   usernamemessage,
   passwordmessage,
 } from "../../shared/utils/regex";
+import { d_mmm_y } from"../../shared/data/helperFunctions/dateCustom";
 const emojiRegex =
   /[\u{1F600}-\u{1F64F}]|[\u{2702}-\u{27B0}]|[\u{1F680}-\u{1F6FF}]|[\u{1F300}-\u{1F5FF}]|[\u{1F1E6}-\u{1F1FF}]/u;
 
@@ -140,7 +142,7 @@ const Signup = () => {
   const dispatch = useDispatch();
   const { push } = useRouter();
   const { t } = useTranslation();
-
+  let navigate = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
@@ -150,6 +152,23 @@ const Signup = () => {
       state && state.authData && state.authData.SignupSuccessData,
     errorData: state && state.authData && state.authData.error,
   }));
+ const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
+
+   useEffect(() => {
+          dispatch(getCompanyList());
+    }, [dispatch]);
+
+  useEffect(() => {
+       if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+           navigate.replace("/503");
+       }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+         let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+         if(!licenseStatus.isStart){
+           let startDate = d_mmm_y(licenseStatus.start_date)
+           navigate.replace(`/503?startDate=${startDate}`);
+         }
+       }
+   }, [getCompanySettingsData]);
 
   useEffect(() => {
     if (errorData?.statusCode) {

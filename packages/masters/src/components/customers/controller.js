@@ -167,6 +167,55 @@ const updateLicense = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
+const dashboardData =
+  ({ dao, validation, db }) =>
+    async (req, res) => {
+      try {
+        const result = await dao.dashboardData({ db })();
+
+        return res.status(200).json({
+          statusCode: 200,
+          message:
+            validation.messages.get_success ||
+            "Dashboard data fetched successfully.",
+          data: result,
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error.message);
+        return res.status(500).json({
+          statusCode: 500,
+          message:
+            validation.messages.server_error || "Internal Server Error.",
+        });
+      }
+    };
+
+const resendLicenseEmail = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const { customer_license_id } = req.body;
+
+    const result = await dao.resendLicenseEmail({ db })(customer_license_id);
+
+    if (!result) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: validation.messages.data_not_found || "License not found.",
+      });
+    }
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: validation.messages.license_email_sent || "License email resent successfully.",
+    });
+  } catch (error) {
+    console.error("Error resending license email:", error.message);
+    return res.status(500).json({
+      statusCode: 500,
+      message: validation.messages.server_error || "Internal server error.",
+    });
+  }
+};
+
 module.exports = {
   customerList,
   getById,
@@ -176,4 +225,6 @@ module.exports = {
   getLicenseByCustomerId,
   saveLicense,
   updateLicense,
+  dashboardData,
+  resendLicenseEmail
 }

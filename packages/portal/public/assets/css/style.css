@@ -14143,7 +14143,8 @@ body.dark-theme {
 }
 
 .dark-theme .filepond--drop-label {
-    background-color: var(--dark-theme) !important;
+    border-radius: 5px;
+    background-color: #24243E !important;
 }
 
 .dark-theme .react-datepicker__header {
@@ -78038,7 +78039,7 @@ pre {
     display: flex;
     width: 100%;
     padding-top: 2px;
-    align-items: start;
+    align-items: flex-start;
 }
 
 .shoutbox .fig {

@@ -177,8 +177,12 @@ const api = {
   save_component_config: "/scenario/savecomponentconfiguration",
   // custom config
   save_component_custom_config: "/custom_scenarios/savecomponentconfiguration",
-  scenario_export_zip: "/scenario/export_selected_scenarios",
+  // scenario_export_zip: "/scenario/export_selected_scenarios",
   scenario_import_zip: "/scenario/import_scenario_zip",
+
+  scenario_export_zip: "/vmconfig/exports",
+  create_export_zip: "/scenario/create-export",
+  export_list: "/scenario/exportlist",
 
   // --- Scenario sub  Categories -----
 
@@ -279,7 +283,7 @@ const api = {
   assign_scenario: "/assign_scenario/save",
   assign_scenario_get: "/assign_scenario/list",
   assign_scenario_getbyId: "/assign_scenario/get",
- 
+
   // dark theme 
   user_theme: "/commons/theme",
 
@@ -296,8 +300,9 @@ const api = {
   get_logs: "/usersession/get-logs",
   termination_Failed_Scenario: "/vmconfig/cleanup-operation-failed",
   termination_Failed_Logs: "/vmconfig/get-operation-failed-logs",
-   termination_Failed_Events: "/vmconfig/cleanup-operation-failed-events",
-   termination_Failed_Events_logs: "/vmconfig/get-event-operation-failed-logs",
+  termination_Failed_Events: "/vmconfig/cleanup-operation-failed-events",
+  termination_Failed_Events_logs: "/vmconfig/get-event-operation-failed-logs",
+  terminate_scenario :"/vmconfig/delete-scenario-usersession",
   //----------chatbox for instructor
   chatmessage_get: "/chatbox/getMessages",
   chat_save: "/chatbox/send",
@@ -378,25 +383,62 @@ const api = {
 
   // start and restart
   vm_start_scenario: "/usersession/start-scenario-learner",
-	vm_restart_scenario: "/usersession/restart-scenario-learner",
+  vm_restart_scenario: "/usersession/restart-scenario-learner",
+  
 
   //scenario tabs
   scenario_tab_list: "/scenarios_tabs/list",
   scenario_tab_save: "/scenarios_tabs/save",
   scenario_tab_widget: "/scenarios_tabs/widgetlist",
-
- // customers
+  scenario_import: "/scenario_import/get",
+  // customers
   customer_api_list: "/customers/get",
   customer_change_status: "/customers/change-status",
-  customer_save : "/customers/save",
+  customer_save: "/customers/save",
   customer_update: "/customers/update",
   // customer license
   customer_license_get: "customers/get-license",
-  customer_license_save : "/customers/license-save",
+  customer_license_save: "/customers/license-save",
   customer_license_update: "/customers/license-update",
-  add_license_key: "customer-license/validate-license",
+  add_license_key: "/web-settings/validate-license",
+  customer_dashboard_data: "customers/customer-dashboard",
+  customer_license_resend: "/customers/license-resend",
+  // Labs
+  lab_sessions_get: "/lab_sessions/get",
+  usertype_wise_list: "/commons/getusertypewiselist",
+  lab_session_save: "/lab_sessions/save",
+  lab_session_update: "/lab_sessions/update",
+  lab_session_delete: "/lab_sessions/delete",
+  lab_change_status: "/lab_sessions/change-status",
+
+  // custom component
+  custom_component_get: "/custom_component/get",
+  custom_componentby_id: "/custom_component/getbyid",
+  custom_component_status: "/custom_component/status-update",
+  // custom_component_save: "/custom_component/save",
+  custom_component_save: "/vmconfig/save",
+  custon_component_subcategory_list: "/custom_component/get-vms",
 
 
+  // admin-instructor start-stop
+  admin_start_scenario:"/vmstart/set-scenario-start-config",
+  admin_complete_scenario:"/vmstart/update-complete-terminate",
+  scenarios_save_start: "/vm_scenario_start/start-scenario",
+  get_session_status: "/vm_scenario_start/get-session-status",
+  scenarios_single: "/vm_scenario_start/get",
+  pause_scenario: "/vmstart/pause-vm-scenario",
+  resume_scenario: "/vmstart/resume-vm-scenario",
+  delete_scenario: "/vmstart/delete-scenario-learner",
+  scenario_status_update: "/vm_scenario_start/update-session-status",
+
+
+// tab list
+  tab_status: "/scenario/tablist",
+  can_resume_admin:"/vm_scenario_start/can-resume",
+//----------license dashboard ----------
+get_license_dashboard_stats : "/licensedashboard/licensedashboardstats",
+//-- running componet list----------
+get_running_component : "/running_component/get"
 };
 
 

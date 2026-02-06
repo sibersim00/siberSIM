@@ -13,13 +13,10 @@ import {
   getsceanriotabwidget,
   clearHasError,
 } from "../../../../shared/redux/slices/scenariotabs/scenariotabsManage";
-
 const ScenarioTabs = () => {
   const dispatch = useDispatch();
   const [oneClick, setOneClick] = useState(false);
   const [dynamicTabs, setDynamicTabs] = useState([]);
-  const [abortController, setAbortController] = useState(null);
-
   const {
     hasGetscenariotabsListSucc,
     hasGetSavescenariotabSucc,
@@ -33,43 +30,47 @@ const ScenarioTabs = () => {
     hasGetSavescenariotabSucc: state.scenarioTabs?.savescenariotab,
     errorData: state.scenarioTabs?.error,
   }));
-  const customStyles = () => {
+  const getSelectStyles = (fieldName) => {
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
+
     return {
-      control: (styles) => ({
+      ...customStyles,
+      control: (styles, state) => ({
         ...styles,
+        borderColor: error ? "#EB5757" : styles.borderColor,
+        boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
         backgroundColor: "var(--dark-bg-color)",
-        borderColor: "#333435ff",
-        // minHeight: "38px",
       }),
-      multiValue: (styles) => ({
-        ...styles,
-        backgroundColor: "var(--primary-bg-color)",
+      singleValue: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)",
       }),
-      multiValueLabel: (styles) => ({
-        ...styles,
-        // color: "#fff",
-      }),
-      multiValueRemove: (styles) => ({
-        ...styles,
-        // color: "#fff",
-        ":hover": {
-          // backgroundColor: "#EB5757",
-          // color: "white",
-        },
-      }),
-      input: (styles) => ({
-        ...styles,
-        // color: "var(--light-text-color)",
-      }),
-      singleValue: (styles) => ({
-        ...styles,
-        // color: "var(--light-text-color)",
-      }),
-      placeholder: (styles) => ({
-        ...styles,
-        // color: "#aaa",
+      input: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)",
       }),
     };
+  };
+  const customStyles = {
+    control: (styles, { isFocused, isDisabled }) => ({
+      ...styles,
+      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+      boxShadow: isDisabled
+        ? null
+        : isFocused
+        ? "0 0 0 0.001rem #00d683"
+        : null,
+      "&:hover": {
+        borderColor: isDisabled
+          ? "#e8e8f7"
+          : isFocused
+          ? "#00d683"
+          : styles.borderColor,
+      },
+    }),
   };
 
   useEffect(() => {
@@ -81,87 +82,76 @@ const ScenarioTabs = () => {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    setAbortController(controller);
-    dispatch(getsceanriotabList({ signal: controller.signal }));
-
-    return () => {
-      controller.abort();
-    };
-  }, [dispatch]);
-
-  useEffect(() => {
     if (
-      hasGetscenariotabsListSucc &&
-      Array.isArray(hasGetscenariotabsListSucc) &&
-      hasGetscenariotabsListSucc.length > 0
+      !Array.isArray(hasGetscenariotabsListSucc) ||
+      hasGetscenariotabsListSucc.length === 0
     ) {
-      const fixedTabs = hasGetscenariotabsListSucc.filter(
-        (tab) => tab.tab_type === "Fixed"
-      );
-      const flexibleTabs = hasGetscenariotabsListSucc.filter(
-        (tab) => tab.tab_type === "Flexible"
-      );
-
-      const fixedValues = {};
-      fixedTabs.forEach((tab, index) => {
-        fixedValues[`fixed_tab_${index + 1}`] = tab.tab_name || "";
-        fixedValues[`fixed_toggle_${index + 1}`] = tab.tab_status === "True";
-        fixedValues[`fixed_order_${index + 1}`] = tab.tab_ordering || "";
-        fixedValues[`fixed_id_${index + 1}`] = tab.scenariotabid || "";
-      });
-      formValidation.setValues((prevValues) => {
-        const isSame =
-          JSON.stringify(prevValues) === JSON.stringify(fixedValues);
-        return isSame ? prevValues : fixedValues;
-      });
-
-      setDynamicTabs((prevTabs) => {
-        const newTabs = flexibleTabs.map((tab) => ({
-          scenariotabid: tab.scenariotabid,
-          name: tab.tab_name,
-          enabled: tab.tab_status === "True",
-          order: tab.tab_ordering || "",
-          type: tab.tab_type,
-          widget_url: tab.widget_url || "",
-        }));
-
-        const isSame = JSON.stringify(prevTabs) === JSON.stringify(newTabs);
-        return isSame ? prevTabs : newTabs;
-      });
+      return;
     }
+    const fixedTabs = hasGetscenariotabsListSucc.filter(
+      (t) => t.tab_type === "Fixed"
+    );
+    const flexibleTabs = hasGetscenariotabsListSucc.filter(
+      (t) => t.tab_type === "Flexible"
+    );
+
+    // Build fixed tab form values
+    const fixedValues = fixedTabs.reduce((acc, tab, idx) => {
+      const i = idx + 1;
+      acc[`fixed_event_${i}`] = tab.event_status === "True";
+      acc[`fixed_tab_${i}`] = tab.tab_name || "";
+      acc[`fixed_toggle_${i}`] = tab.tab_status === "True";
+      acc[`fixed_order_${i}`] = tab.tab_ordering || "";
+      acc[`fixed_id_${i}`] = tab.scenariotabid || "";
+      return acc;
+    }, {});
+
+    // Update form only if changed
+    formValidation.setValues((prev) =>
+      JSON.stringify(prev) === JSON.stringify(fixedValues) ? prev : fixedValues
+    );
+
+    // Build dynamic tabs
+    const newDynamicTabs = flexibleTabs.map((tab) => ({
+      scenariotabid: tab.scenariotabid,
+      name: tab.tab_name,
+      enabled: tab.tab_status === "True",
+      event_status: tab.event_status === "True",
+      order: tab.tab_ordering || "",
+      type: tab.tab_type,
+      widget_url: tab.widget_url || "",
+    }));
+
+    // Update dynamic tabs only if changed
+    setDynamicTabs((prev) =>
+      JSON.stringify(prev) === JSON.stringify(newDynamicTabs)
+        ? prev
+        : newDynamicTabs
+    );
   }, [hasGetscenariotabsListSucc]);
 
-  // Error Toast
   useEffect(() => {
     if (errorData?.statusCode) {
-      errorData.errors && errorData.errors.length > 0
-        ? errorData.errors.map((data) => {
-          toast.error(
-            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
-            </p>,
-            {
-              position: toast.POSITION.TOP_RIGHT,
-              hideProgressBar: true,
-              theme: "colored",
-            }
-          );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
-      // handleOneClick(false);
+      let message = "";
+
+      if (errorData.errors && errorData.errors.length > 0) {
+        const uniqueErrors = [...new Set(errorData.errors)];
+        message = uniqueErrors.join(", ");
+      } else {
+        message = errorData?.message || "Something went wrong";
+      }
+      toast.error(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0">{message}</p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: true,
+          theme: "colored",
+        }
+      );
       dispatch(clearHasError());
     }
   }, [errorData]);
+
   useEffect(() => {
     if (hasGetSavescenariotabSucc?.statusCode === 200) {
       toast.success(
@@ -174,6 +164,7 @@ const ScenarioTabs = () => {
           theme: "colored",
         }
       );
+      setOneClick(false);
       dispatch(clearsavescenariotab());
     }
   }, [hasGetSavescenariotabSucc]);
@@ -184,42 +175,72 @@ const ScenarioTabs = () => {
     setDynamicTabs(updated);
   };
 
-  const handleRemoveDynamic = (index) => {
-    setDynamicTabs(dynamicTabs.filter((_, i) => i !== index));
-  };
-
   const formValidation = useFormik({
     enableReinitialize: true,
     initialValues: {},
-    validationSchema: yup.object().shape({}),
+    validationSchema: yup.object().shape({
+      fixed_order_1: yup
+        .number()
+        .typeError("Order is required")
+        .min(1, "Order must be at least 1")
+        .max(50, "Order cannot exceed 50")
+        .required("Order is required"),
+      fixed_order_2: yup
+        .number()
+        .typeError("Order is required")
+        .min(1, "Order must be at least 1")
+        .max(50, "Order cannot exceed 50")
+        .required("Order is required"),
+      fixed_order_3: yup
+        .number()
+        .typeError("Order is required")
+        .min(1, "Order must be at least 1")
+        .max(50, "Order cannot exceed 50")
+        .required("Order is required"),
+      fixed_order_4: yup
+        .number()
+        .typeError("Order is required")
+        .min(1, "Order must be at least 1")
+        .max(50, "Order cannot exceed 50")
+        .required("Order is required"),
+      fixed_order_5: yup
+        .number()
+        .typeError("Order is required")
+        .min(1, "Order must be at least 1")
+        .max(50, "Order cannot exceed 50")
+        .required("Order is required"),
+    }),
+
     onSubmit: async (data) => {
       setOneClick(true);
-
       const fixedPayloads = Object.keys(data)
         .filter((key) => key.startsWith("fixed_tab_"))
         .map((key, i) => ({
           scenariotabid: data[`fixed_id_${i + 1}`] || 0,
           tab_name: data[key],
           tab_status: data[`fixed_toggle_${i + 1}`] ? "True" : "False",
+          // event_status: data[`fixed_event_${i + 1}`] ? "True" : "False",
+          event_status:
+            i + 1 === 4
+              ? "False"
+              : data[`fixed_event_${i + 1}`]
+              ? "True"
+              : "False",
+
           tab_type: "Fixed",
           widget_url: null,
           tab_ordering: data[`fixed_order_${i + 1}`] || i + 1,
         }));
-
       const dynamicPayloads = dynamicTabs.map((tab) => ({
         scenariotabid: tab.scenariotabid || 0,
         tab_name: tab.name,
         tab_status: tab.enabled ? "True" : "False",
+        event_status: tab.event_status ? "True" : "False",
         tab_type: tab.type || "Flexible",
         widget_url: tab.widget_url || null,
         tab_ordering: tab.order || null,
       }));
-
       const allPayloads = [...fixedPayloads, ...dynamicPayloads];
-      console.log(
-        "Final payload before sending:",
-        JSON.stringify(allPayloads, null, 2)
-      );
       await dispatch(savescenariotab(allPayloads));
     },
   });
@@ -237,7 +258,6 @@ const ScenarioTabs = () => {
               <div></div>
             </div>
           </Col>
-
           <Form onSubmit={formValidation.handleSubmit}>
             {/* Fixed Tabs */}
             <h6 className="text-info mb-3">Fixed Tabs</h6>
@@ -245,14 +265,31 @@ const ScenarioTabs = () => {
               {[1, 2, 3, 4, 5].map((i) => (
                 <Col md={6} key={i}>
                   <div className="d-flex align-items-center gap-2 p-2 border rounded ">
-                    <Form.Control
-                      type="text"
-                      placeholder={`Tab ${i} Name`}
-                      name={`fixed_tab_${i}`}
-                      value={formValidation.values[`fixed_tab_${i}`] || ""}
-                      disabled
-                      onChange={formValidation.handleChange}
-                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1,
+                      }}
+                    >
+                      <Form.Control
+                        type="text"
+                        placeholder={`Tab ${i} Name`}
+                        name={`fixed_tab_${i}`}
+                        value={formValidation.values[`fixed_tab_${i}`] || ""}
+                        disabled
+                        onChange={formValidation.handleChange}
+                      />
+                      {formValidation.touched[`fixed_order_${i}`] &&
+                        formValidation.errors[`fixed_order_${i}`] && (
+                          <div
+                            className="text-danger mt-1"
+                            style={{ fontSize: "12px" }}
+                          >
+                            {formValidation.errors[`fixed_order_${i}`]}
+                          </div>
+                        )}
+                    </div>
                     <label className="custom-switch mb-0">
                       <input
                         type="checkbox"
@@ -275,37 +312,41 @@ const ScenarioTabs = () => {
                       name={`fixed_order_${i}`}
                       value={formValidation.values[`fixed_order_${i}`] || ""}
                       onChange={formValidation.handleChange}
+                      onBlur={formValidation.handleBlur}
+                      onWheel={(e) => e.target.blur()}
+                      isInvalid={
+                        formValidation.touched[`fixed_order_${i}`] &&
+                        !!formValidation.errors[`fixed_order_${i}`]
+                      }
                       style={{ width: "90px" }}
-                    // disabled={!formValidation.values[`fixed_toggle_${i}`]} 
                     />
+                    {/* Event Status Checkbox (skip for 4th tab) */}
+                    {i !== 4 && (
+                      <div className="ms-2 d-flex align-items-center">
+                        <input
+                          type="checkbox"
+                          className="green-checkbox"
+                          checked={
+                            formValidation.values[`fixed_event_${i}`] || false
+                          }
+                          onChange={(e) =>
+                            formValidation.setFieldValue(
+                              `fixed_event_${i}`,
+                              e.target.checked
+                            )
+                          }
+                        />
+                        <span className="ms-1">Event</span>
+                      </div>
+                    )}
                   </div>
                 </Col>
               ))}
             </Row>
-
             {/* Dynamic Tabs */}
             <h6 className="text-info mt-4 mb-3 d-flex justify-content-between">
               Dynamic Tab
-              {/* <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() =>
-                  setDynamicTabs([
-                    ...dynamicTabs,
-                    {
-                      name: "",
-                      enabled: false,
-                      order: "",
-                      type: "Flexible",
-                      widget_url: "",
-                    },
-                  ])
-                }
-              >
-                + Add Tab
-              </Button> */}
             </h6>
-
             <Row className="g-3">
               {dynamicTabs.map((tab, index) => (
                 <>
@@ -318,7 +359,7 @@ const ScenarioTabs = () => {
                         onChange={(e) =>
                           handleDynamicChange(index, "name", e.target.value)
                         }
-                        disabled={!tab.enabled} // 👈 disable input when toggle is false
+                        disabled={!tab.enabled}
                       />
                       <label className="custom-switch mb-0">
                         <input
@@ -340,11 +381,26 @@ const ScenarioTabs = () => {
                         placeholder="Order"
                         value={tab.order}
                         style={{ width: "90px" }}
+                        onWheel={(e) => e.target.blur()}
                         onChange={(e) =>
                           handleDynamicChange(index, "order", e.target.value)
                         }
-                      // disabled={!tab.enabled}
                       />
+                      <div className="ms-2 d-flex align-items-center">
+                        <input
+                          type="checkbox"
+                          className="green-checkbox"
+                          checked={tab.event_status}
+                          onChange={(e) =>
+                            handleDynamicChange(
+                              index,
+                              "event_status",
+                              e.target.checked
+                            )
+                          }
+                        />
+                        <span className="ms-1">Event</span>
+                      </div>
                     </div>
                   </Col>
                   <Col md={6}>
@@ -358,8 +414,8 @@ const ScenarioTabs = () => {
                             primary: "var(--primary-bg-color)",
                           },
                         })}
+                        styles={getSelectStyles("widget_url")}
                         name={`widget_${index}`}
-                        styles={customStyles()}
                         value={
                           hasGetscenariotabswidgetSucc
                             ?.map((item) => ({
@@ -389,14 +445,18 @@ const ScenarioTabs = () => {
                       />
                     </div>
                   </Col>
-                  {/* </div> */}
                 </>
               ))}
             </Row>
-
             <div className="text-end mt-3">
-              <Button type="submit" variant="primary">
-                save
+              <Button type="submit" variant="primary" disabled={oneClick}>
+                {oneClick ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Saving...
+                  </>
+                ) : (
+                  "Save"
+                )}
               </Button>
             </div>
           </Form>

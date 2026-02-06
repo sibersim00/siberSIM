@@ -2,7 +2,8 @@ const jwt = require("jsonwebtoken");
 const keys = require("../keys");
 const db = require("../db").db;
 const crypto = require("./crypto");
-const generateAccessToken = async (userData) => {
+const serialLicense = require("./serialLicense");
+const generateAccessToken = async (hostname,userData) => {
   try {
     // Step 1: Encrypt payload for access_token
     const jwtObj = {
@@ -21,6 +22,12 @@ const generateAccessToken = async (userData) => {
     const access_token = jwt.sign(jwtObj, keys.JWT_SECURITY_KEY, {
       expiresIn: keys.JWT_EXPIRES_IN,
     });
+    //USER LICENSE KEY LOGIC
+    userData.license_key = null;
+    let [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
+    if(result?.license_key){
+      userData.license_key = result.license_key
+    }
     await db.sequelize.query(
   `INSERT INTO ad_user_refresh_tokens (
       userid,
@@ -43,7 +50,101 @@ const generateAccessToken = async (userData) => {
     throw error;
   }
 };
-const authenticateToken = async (req, res, next) => {
+
+// Make authenticateToken accept a route slug
+const authenticateToken = (routeslug) => {
+  return async (req, res, next) => {
+    const authorizationToken = req.headers["authorization"];
+    if (!authorizationToken) {
+      return res.status(403).send({
+        statusCode: 403,
+        message: "You are not authorized to access this application.",
+      });
+    }
+
+    const tokenParts = authorizationToken.split(" ");
+    const access_token = tokenParts[1];
+
+    try {
+      const results = await db.sequelize.query(
+        `SELECT * FROM ad_user_refresh_tokens 
+         WHERE access_token = :access_token AND is_valid = 1`,
+        {
+          replacements: { access_token },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (results.length == 0) {
+        return res.status(403).send({
+          statusCode: 403,
+          message: "You are not authorized to access this application.",
+        });
+      }
+
+      const tokenRow = results[0];
+
+      jwt.verify(access_token, keys.JWT_SECURITY_KEY, (err) => {
+        if (err) {
+          return res.status(401).send({
+            statusCode: 401,
+            message: "Session Terminated",
+          });
+        }
+        const userData = JSON.parse(tokenRow.token_json || "{}");
+        // License check
+        if (userData.license_key) {
+          const hostname = req.hostname;
+          const licenseStatus = serialLicense.validateJWTLicense(
+            hostname,
+            userData.license_key
+          );
+
+          if (!licenseStatus) {
+            return res.status(503).send({
+              statusCode: 503,
+              message:
+                userData.usertype == "Admin"
+                  ? "Access denied: Your license seems expired or not registered. Please update your license to continue."
+                  : "Your access has expired or is not activated. Please contact your administrator for assistance.",
+            });
+
+          }
+          userData.user_count_limit  = Number(licenseStatus.user_count)
+        }
+console.log("eeeeeeeeeeeeeee",userData.user_count_limit );
+
+        if (routeslug && userData.menus) {
+          let allowed = false;
+          if (typeof routeslug === "string") {allowed = userData.menus.includes(routeslug);}
+          else if (Array.isArray(routeslug)) { 
+            if (routeslug.some(slug => slug.trim() == "")) {
+              allowed = true;
+            } else {
+              allowed = routeslug.some(slug => userData.menus.includes(slug));
+            }}
+          if (!allowed) {
+            return res.status(404).send({
+              statusCode: 404,
+              message:"You do not have the necessary permissions to perform this action.",
+              status: "Not Found",
+            });
+          }
+        }
+        req.user = userData;
+        next();
+      });
+    } catch (error) {
+      console.error("Master Middleware Error:", error);
+      return res.status(500).send({
+        statusCode: 500,
+        message: "Internal Server Error",
+      });
+    }
+  };
+};
+
+const authenticateTokenold = async (req, res, next) => {
   const authorizationToken = req.headers["authorization"];
   if (!authorizationToken) {
     return res.status(403).send({
@@ -63,7 +164,7 @@ const authenticateToken = async (req, res, next) => {
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
-
+    console.log("results===========>",results);
     if (results.length === 0) {
       return res.status(403).send({
         statusCode: 403,
@@ -71,7 +172,68 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    const tokenRow = results[0]; // ✅ fix here
+    const tokenRow = results[0];
+
+    jwt.verify(access_token, keys.JWT_SECURITY_KEY, (err) => {
+      if (err) {
+        return res.status(401).send({
+          statusCode: 401,
+          message: "Session Terminated",
+        });
+      }
+
+      const userData = JSON.parse(tokenRow.token_json || "{}");
+      if(userData.license_key){
+        let hostname = req.hostname;
+        const licenseStatus = serialLicense.validateJWTLicense(hostname,userData.license_key);
+        if (!licenseStatus) { 
+          return res.status(503).send({
+          statusCode: 503,
+          message: userData.usertype =='Admin' ? "Access denied: Your license seems expired or not registered. Please update your license to continue." : "Your access has expired or is not activated. Please contact your administrator for assistance.",
+        });
+        }
+      }
+      req.user = userData;
+      next();
+    });
+  } catch (error) {
+    console.error("Master Middleware Error:", error);
+    return res.status(500).send({
+      statusCode: 500,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const validateLicenseToken = async (req, res, next) => {
+  const authorizationToken = req.headers["authorization"];
+  if (!authorizationToken) {
+    return res.status(403).send({
+      statusCode: 403,
+      message: "You are not authorized to access this application.",
+    });
+  }
+
+  const tokenParts = authorizationToken.split(" ");
+  const access_token = tokenParts[1];
+
+  try {
+    const results = await db.sequelize.query(
+      `SELECT * FROM ad_user_refresh_tokens WHERE access_token = :access_token AND is_valid = 1`,
+      {
+        replacements: { access_token },
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+    console.log("results===========>",results);
+    if (results.length === 0) {
+      return res.status(403).send({
+        statusCode: 403,
+        message: "You are not authorized to access this application.",
+      });
+    }
+
+    const tokenRow = results[0];
 
     jwt.verify(access_token, keys.JWT_SECURITY_KEY, (err) => {
       if (err) {
@@ -129,8 +291,9 @@ const refreshToken = async (req, res, next) => {
 
         let userData = JSON.parse(validatedToken[0].token_json);
         userData.date = new Date();
-
-        let new_access_token = await generateAccessToken(userData);
+        const hostname = req?.hostname;
+        console.log("req=========>",hostname);
+        let new_access_token = await generateAccessToken(hostname,userData);
 
         return res.status(200).send({
           statusCode: 200,
@@ -227,8 +390,10 @@ const logout =
 module.exports = {
   authenticateToken,
   generateAccessToken,
+  validateLicenseToken,
   refreshToken,
   clearToken,
-  logout
+  logout,
+  authenticateTokenold
 };
 

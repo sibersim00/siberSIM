@@ -44,6 +44,9 @@ const ManageComponent = () => {
   const [rowData, setRowData] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
+    const [scenType, setScenType] = useState("Public"); // Public/Private
+    const [scenStatus, setscenStatus] = useState("true");
+  
   const [viewCatModal, setviewCatModal] = useState(false);
   const [quickFilter, setQuickFilter] = useState("");
   const [formModal, setformModal] = useState(false);
@@ -382,15 +385,38 @@ const ManageComponent = () => {
     }
   }, [gridApi]);
 
+
+    useEffect(() => {
+      if (hasGetComponentListSucc) {
+        if (scenStatus === "") {
+          setRowData(hasGetComponentListSucc);
+          setGridData(hasGetComponentListSucc);
+        } else if (scenStatus === "true") {
+          const filteredData = hasGetComponentListSucc.filter(
+            (data) => data.status.toString() === "true"
+          );
+          setRowData(filteredData);
+          setGridData(filteredData);
+        } else if (scenStatus === "false") {
+          const filteredData = hasGetComponentListSucc.filter(
+            (data) => data.status.toString() === "false"
+          );
+          setRowData(filteredData);
+          setGridData(filteredData);
+        }
+      }
+    }, [hasGetComponentListSucc, scenStatus]);
+  
+
   const handleChangeView = (thisView) => {
     setQuickFilter("");
     setView(thisView);
     setBackView(thisView);
     router.push(`/components?view=${thisView || "list"}`);
-    if (compStatus == "") {
+    if (compStatus == "" && scenStatus == "") {
       setRowData(hasGetComponentListSucc);
       setGridData(hasGetComponentListSucc);
-    } else if (compStatus == "true") {
+    } else if (compStatus == "true" && scenStatus == "true") {
       const filteredData =
         hasGetComponentListSucc.length > 0 &&
         hasGetComponentListSucc.filter(
@@ -398,7 +424,7 @@ const ManageComponent = () => {
         );
       setRowData(filteredData);
       setGridData(filteredData);
-    } else if (compStatus == "false") {
+    } else if (compStatus == "false" && scenStatus == "false") {
       const filteredData =
         hasGetComponentListSucc.length > 0 &&
         hasGetComponentListSucc.filter(
@@ -456,6 +482,25 @@ const ManageComponent = () => {
       dispatch(clearComponentChangeStatus());
     }
   }, [statusChangeComponentRes]);
+
+
+  useEffect(() => {
+    if (hasGetComponentListSucc) {
+      let filtered = [...hasGetComponentListSucc];
+
+      if (scenStatus !== "") {
+        filtered = filtered.filter((d) => d.status.toString() === scenStatus);
+      }
+
+      if (scenType !== "") {
+        filtered = filtered.filter((d) => d.component_status === scenType);
+      }
+
+      setRowData(filtered);
+      setGridData(filtered);
+    }
+  }, [hasGetComponentListSucc, scenStatus, scenType]);
+
 
   useEffect(() => {
     if (deleteComponentRes?.statusCode === 200) {
@@ -743,6 +788,8 @@ const ManageComponent = () => {
                         exclusive
                         onChange={(e) => {
                           setCompStatus(e.target.value);
+                          setscenStatus(e.target.value);
+
                           dispatch(
                             getComponentList({ status: e.target.value })
                           );
@@ -758,6 +805,23 @@ const ManageComponent = () => {
                         </CustomToggleButton>
                       </ToggleButtonGroup>
                       &nbsp;&nbsp; &nbsp;
+                      <ToggleButtonGroup
+                                              color="success"
+                                              value={scenType}
+                                              size="small"
+                                              exclusive
+                                              onChange={(e) => {
+                                                setScenType(e.target.value);
+                                              }}
+                                            >
+                                              <CustomToggleButton value="Public">
+                                                Public
+                                              </CustomToggleButton>
+                                              <CustomToggleButton value="Private">
+                                                Private
+                                              </CustomToggleButton>
+                                            </ToggleButtonGroup>
+                                            &nbsp; &nbsp;
                       <Button
                         type="button"
                         variant="outline-info"

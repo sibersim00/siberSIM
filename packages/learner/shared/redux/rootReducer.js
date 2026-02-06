@@ -16,6 +16,7 @@ import events from "./slices/events/events";
 import eventLogin from "./slices/eventLogin/eventLogin"
 import eventChatboxManage from "./slices/eventchatbox/eventChatboxManage";
 import noticonfigs from "./slices/noticonfigs/noticonfigs";
+import customComponent from "./slices/customcomponent/customcomponentManage";
 
 const rootPersistConfig = {
   key: "root",
@@ -45,6 +46,7 @@ const rootReducer = (state, action) => {
     eventLogin: eventLogin,
     eventChatboxManage: eventChatboxManage,
     customScenario: customScenario,
+    customComponent:customComponent
 
   })(state, action);
 };

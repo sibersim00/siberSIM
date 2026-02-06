@@ -9,6 +9,7 @@ const initialState = {
   isLoading: false,
   error: null,
   getScenariosListData: [],
+  getScenariospauseListData: [],
   singleScenarios: [],
   saveScenarios: [],
   getChatMessagesListData: [],
@@ -23,11 +24,21 @@ const initialState = {
   getToken: [],
   getvmStartScenario: [],
   getvmRestartScenario: [],
+  hasdeletescenarioSuccData: [],
   getVncProxyConsole: [],
   saveSnapshot: [],
   getSnapshot: [],
   deleteSnapshot: [],
+  pausescenarioData: [],
+  saveComponent: [],
+  resumescenarioData: [],
+  getresume: [],
+  hasgetqemuconfig: [],
+  stopVmResponse: [],
   getrestoresnapshot: [],
+  getVMdetail: [],
+  saveCustomComponent: [],
+    rejectStopVm: [],
 };
 
 
@@ -44,6 +55,10 @@ const slice = createSlice({
       state.isLoading = false,
         state.getScenariosListData = action.payload;
     },
+    hasGetScenariospauseListData(state, action) {
+      state.isLoading = false,
+        state.getScenariospauseListData = action.payload;
+    },
 
     hasGetSingleScenariosSucc(state, action) {
       state.isLoading = false,
@@ -54,6 +69,10 @@ const slice = createSlice({
       state.isLoading = false,
         state.saveScenarios = action.payload;
 
+    },
+    hasGetSaveComponentSucc(state, action) {
+      state.isLoading = false;
+      state.saveComponent = action.payload;   // will now contain proper json
     },
 
     hasGetGetChatMessagesSucc(state, action) {
@@ -102,7 +121,18 @@ const slice = createSlice({
       state.isLoading = false,
         state.updateCompletedTerminatedData = action.payload;
     },
-
+    hasdeletescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.hasdeletescenarioSuccData = action.payload;
+    },
+    haspausescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.pausescenarioData = action.payload;
+    },
+    hasresumescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.resumescenarioData = action.payload;
+    },
     hasGetLogsListData(state, action) {
       state.isLoading = false,
         state.getLogsData = action.payload;
@@ -128,14 +158,40 @@ const slice = createSlice({
       state.isLoading = false,
         state.getSnapshot = action.payload;
     },
+    hasGetresume(state, action) {
+      state.isLoading = false,
+        state.getresume = action.payload;
+    },
     hasDeleteSnapshot(state, action) {
       state.isLoading = false,
         state.deleteSnapshot = action.payload;
+    },
+    hasqemuconfig(state, action) {
+      state.isLoading = false,
+        state.hasgetqemuconfig = action.payload;
+    },
+    hasStopVm(state, action) {
+      state.isLoading = false;
+      state.stopVmResponse = action.payload;
     },
     hasGetrestoresnapshot(state, action) {
       state.isLoading = false,
         state.getrestoresnapshot = action.payload;
     },
+    hasGetSingleVMDetailSucc(state, action) {
+      state.isLoading = false,
+        state.getVMdetail = action.payload;
+    },
+    hasGetSaveCustomComponentSucc(state, action) {
+      state.isLoading = false,
+        state.saveCustomComponent = action.payload;
+
+    },
+ hasGetRejectStopVm(state, action) {
+      state.isLoading = false,
+        state.rejectStopVm = action.payload;
+    },
+
     // HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -153,8 +209,6 @@ export default slice.reducer;
 export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
-
-
 export function getScenariosList() {
 
   return async (dispatch) => {
@@ -163,6 +217,18 @@ export function getScenariosList() {
 
       const response = await axios.get(`${api.scenarios_get}`);
       dispatch(slice.actions.hasGetScenariosListData(response.data));
+    } catch (error) {
+
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function getScenariosPauseList() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.scenarios_get_Pause}`);
+      dispatch(slice.actions.hasGetScenariospauseListData(response.data));
     } catch (error) {
 
       dispatch(slice.actions.hasError(error));
@@ -262,6 +328,72 @@ export function updateCompletedTerminated(payload) {
     }
   };
 }
+export function deletescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_scenario}`, payload);
+      dispatch(slice.actions.hasdeletescenarioSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function cleardeletescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletescenarioSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function pausescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.pause_scenario}`, payload);
+      dispatch(slice.actions.haspausescenarioSucc(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearpausescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.haspausescenarioSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function resumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.resume_scenario}`, payload);
+      dispatch(slice.actions.hasresumescenarioSucc(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearresumescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletescenarioSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
 
 export function clearUpdateCompletedTerminated() {
@@ -299,18 +431,30 @@ export function saveScenarios(payload) {
   };
 }
 
+// export function updateSessionStatus(payload) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+//     try {
+//       const response = await axios.post(`${api.scenario_status_update}`, payload);
+//       dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response.data));
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
 export function updateSessionStatus(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.scenario_status_update}`, payload);
       dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response.data));
+      return response.data;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
+      throw error;
     }
   };
 }
-
 
 export function getSessionStatusList(id) {
 
@@ -543,6 +687,28 @@ export function getSnapshot(payload) {
     }
   };
 }
+export function canresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.can_resume}`, payload);
+      dispatch(slice.actions.hasGetresume(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearcanresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetresume([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
 export function clearGetSnapshot() {
   return async (dispatch) => {
@@ -580,7 +746,75 @@ export function deleteSnapshot(payload) {
     }
   };
 }
+export function qemuconfig(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.vm_config}`, payload);
+      console.log("responseresponse", response)
+      dispatch(slice.actions.hasqemuconfig(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      return null;
+    }
+  };
+}
 
+export function clearqemuconfig() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasqemuconfig([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// export function stopVm(payload) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+//     try {
+//       const response = await axios.post(`${api.stop_vm}`, payload);
+//       dispatch(slice.actions.hasStopVm(response.data));
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+
+export function stopVm(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.stop_vm}`, payload);
+
+      dispatch(slice.actions.hasStopVm(response.data));
+
+      // ✅ IMPORTANT: return response
+      return response.data;
+
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+
+      // ✅ Return error response so UI can handle it
+      return error?.response?.data || { statusCode: 500 };
+    }
+  };
+}
+
+
+export function clearStopVm() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasStopVm([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
 export function cleardeleteSnapshot() {
   return async (dispatch) => {
@@ -613,6 +847,114 @@ export function restoresnapshot(payload) {
     }
   };
 }
+
+export function getSingleVMDetail(id) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.get_details}/${id}`);
+      dispatch(slice.actions.hasGetSingleVMDetailSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// export function saveCustomComponent(payload) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+//     try {
+//       const response = await axios.post(`${api.save_vmDetails}`, payload);
+//       console.log("responseeeeeeeeeeeeeeeeeeeeeeeeeerrrrrrrrrrrrreee", response)
+//       dispatch(slice.actions.hasGetSaveCustomComponentSucc(response.data));
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+
+export function saveCustomComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.save_vmDetails, payload);
+
+      dispatch(
+        slice.actions.hasGetSaveCustomComponentSucc(response.data)
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+
+    } catch (error) {
+      const errData = error?.response?.data || {
+        message: error.message,
+      };
+
+      dispatch(slice.actions.hasError(errData));
+
+      return {
+        success: false,
+        error: errData,
+      };
+    }
+  };
+}
+
+export function saveComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post( api.custom_component_save_learner, payload);
+      dispatch(slice.actions.hasGetSaveComponentSucc(response.data));
+      return {success: true, data: response.data,};
+    } catch (error) {
+      const errData = error?.response?.data || { message: error.message, };
+      dispatch(slice.actions.hasError(errData));
+      return {success: false,error: errData,
+      };
+    }
+  };
+}
+
+export function clearSaveComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveComponentSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function clearCustomComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetSaveCustomComponentSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function rejectStoppedVm(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.reject_stopped_vm, payload);
+      dispatch(slice.actions.hasGetRejectStopVm(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
 
 
 export function clearHasError() {

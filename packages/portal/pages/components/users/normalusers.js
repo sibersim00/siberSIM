@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   Row,
@@ -47,18 +53,21 @@ import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 
 const Normaluser = () => {
   const dispatch = useDispatch();
-  const { push } = useRouter()
-
+  const { push } = useRouter();
   const { t } = useTranslation();
   const [openImportModal, setOpenImportModal] = useState(false);
   const [compStatus, setCompStatus] = useState("true");
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
-  const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
   const [formModal, setformModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50);
+  const [gridData, setGridData] = useState([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [mapInstructors, setMapInstructors] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(50);
   const [rowValues, setRowValues] = useState({
     title: "Add",
     componentcategoryid: 0,
@@ -79,7 +88,6 @@ const Normaluser = () => {
     haschangePasswordSucc,
     getUserDataFromLocal,
     hasconfirmationlearnerData,
-
   } = useSelector((state) => {
     return {
       listUserData:
@@ -87,7 +95,6 @@ const Normaluser = () => {
         state.normalUSerData &&
         state.normalUSerData.getNormalusersData &&
         state.normalUSerData.getNormalusersData.data,
-
       addUserData:
         state &&
         state.normalUSerData &&
@@ -97,23 +104,19 @@ const Normaluser = () => {
         state &&
         state.normalUSerData &&
         state.normalUSerData.updateNormaluserResp,
-
       editStatusUserResData:
         state &&
         state.normalUSerData &&
         state.normalUSerData.statusChangeNormaluser,
-
       deleteNormalUserRes:
         state &&
         state.normalUSerData &&
         state.normalUSerData.deleteNormalUser &&
         state.normalUSerData.deleteNormalUser,
-
       saveMappedInstructorRes:
         state &&
         state.normalUSerData &&
         state.normalUSerData.saveMappedInstructorRes,
-
       haschangePasswordSucc:
         state &&
         state.normalUSerData &&
@@ -122,23 +125,17 @@ const Normaluser = () => {
         state &&
         state.normalUSerData &&
         state.normalUSerData.confirmationlearnerData,
-
       getUserDataFromLocal:
         state && state.localData && state.localData.getLocalData,
-
-
       errorData: state && state.normalUSerData && state.normalUSerData.error,
     };
   });
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"));
     }
   }, []);
-
   const [userType, setUserType] = useState("");
-
   useEffect(() => {
     if (getUserDataFromLocal && getUserDataFromLocal.usertype) {
       setUserType(getUserDataFromLocal.usertype);
@@ -154,7 +151,7 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(cleardeleteNormalUser());
@@ -298,8 +295,6 @@ const Normaluser = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
-
-
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
@@ -307,15 +302,17 @@ const Normaluser = () => {
     let filteredList = listUserData ?? [];
 
     if (compStatus === "true") {
-      filteredList = filteredList.filter((d) => d?.status?.toString() === "true");
+      filteredList = filteredList.filter(
+        (d) => d?.status?.toString() === "true",
+      );
     } else if (compStatus === "false") {
-      filteredList = filteredList.filter((d) => d?.status?.toString() === "false");
+      filteredList = filteredList.filter(
+        (d) => d?.status?.toString() === "false",
+      );
     }
 
-
-
     const temp = filteredList.filter((d) => {
-      const fullName = `${(d.firstname ?? "")} ${(d.lastname ?? "")}`.toLowerCase();
+      const fullName = `${d.firstname ?? ""} ${d.lastname ?? ""}`.toLowerCase();
       const firstName = d.firstname?.toLowerCase() ?? "";
       const lastName = d.lastname?.toLowerCase() ?? "";
 
@@ -325,12 +322,17 @@ const Normaluser = () => {
 
       return (
         fullName.includes(val) || // match combined full name
-        (typeof d.username === "string" && d.username.toLowerCase().includes(val)) ||
-        (typeof d.firstname === "string" && d.firstname.toLowerCase().includes(val)) ||
-        (typeof d.lastname === "string" && d.lastname.toLowerCase().includes(val)) ||
+        (typeof d.username === "string" &&
+          d.username.toLowerCase().includes(val)) ||
+        (typeof d.firstname === "string" &&
+          d.firstname.toLowerCase().includes(val)) ||
+        (typeof d.lastname === "string" &&
+          d.lastname.toLowerCase().includes(val)) ||
         (typeof d.email === "string" && d.email.toLowerCase().includes(val)) ||
-        (typeof d.address === "string" && d.address.toLowerCase().includes(val)) ||
-        (typeof d.organization === "string" && d.organization.toLowerCase().includes(val)) ||
+        (typeof d.address === "string" &&
+          d.address.toLowerCase().includes(val)) ||
+        (typeof d.organization === "string" &&
+          d.organization.toLowerCase().includes(val)) ||
         ((typeof d.mobile === "number" || typeof d.mobile === "string") &&
           String(d.mobile).toLowerCase().includes(val)) ||
         !val
@@ -340,31 +342,9 @@ const Normaluser = () => {
     setGridData(temp);
     setRowData(temp);
   };
-
-  useEffect(() => {
-    if (listUserData) {
-      if (compStatus === "") {
-        setRowData(listUserData);
-        setGridData(listUserData);
-      } else if (compStatus === "true") {
-        const filteredData = listUserData.filter(
-          (data) => data.status.toString() === "true"
-        );
-        setRowData(filteredData);
-        setGridData(filteredData);
-      } else if (compStatus === "false") {
-        const filteredData = listUserData.filter(
-          (data) => data.status.toString() === "false"
-        );
-        setRowData(filteredData);
-        setGridData(filteredData);
-      }
-    }
-  }, [listUserData, compStatus]);
-
   useEffect(() => {
     dispatch(getNormalusersManageList());
-    return () => { };
+    return () => {};
   }, []);
 
   useEffect(() => {
@@ -398,24 +378,6 @@ const Normaluser = () => {
   };
 
   useEffect(() => {
-    if (listUserData && listUserData != undefined) {
-      if (compStatus === "") {
-        setRowData(listUserData);
-      } else if (compStatus === "true") {
-        const filteredData = listUserData.filter(
-          (data) => data.status.toString() === "true"
-        );
-        setRowData(filteredData);
-      } else if (compStatus === "false") {
-        const filteredData = listUserData.filter(
-          (data) => data.status.toString() === "false"
-        );
-        setRowData(filteredData);
-      }
-    }
-  }, [listUserData, compStatus]);
-
-  useEffect(() => {
     setOpenImportModal(false);
   }, []);
 
@@ -423,27 +385,27 @@ const Normaluser = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              },
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -460,7 +422,7 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(clearRegisterNormaluser());
@@ -477,7 +439,7 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(clearSaveMappedInstructor());
@@ -494,7 +456,7 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(clearChangePasswor());
@@ -513,13 +475,12 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(cleareditUserData());
     }
   }, [editUserData]);
-
   useEffect(() => {
     if (editStatusUserResData?.statusCode) {
       toast.success(
@@ -530,13 +491,12 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(clearSaveNormalusersChangeStatus());
     }
   }, [editStatusUserResData]);
-
   useEffect(() => {
     if (hasconfirmationlearnerData?.statusCode) {
       toast.success(
@@ -547,7 +507,7 @@ const Normaluser = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getNormalusersManageList());
       dispatch(clearconfirmationlearnerData());
@@ -625,7 +585,6 @@ const Normaluser = () => {
     });
   };
 
-
   const verifyAccount = (data) => {
     Swal.fire({
       title: "Are you sure?",
@@ -640,13 +599,11 @@ const Normaluser = () => {
       if (result.isConfirmed) {
         const learner_uuid = data?.learner_uuid;
         const baseurl = process.env.LEARNER_BASE_PATH;
-        window.open(`${baseurl}/users-verification/${learner_uuid}`, '_blank');
+        window.open(`${baseurl}/users-verification/${learner_uuid}`, "_blank");
         dispatch(verifylearnerData({ learner_uuid }));
       }
     });
   };
-
-
   const resetPswd = (data) => {
     Swal.fire({
       title: "Are you sure?",
@@ -677,7 +634,6 @@ const Normaluser = () => {
       setMapInstructors(true);
     }
   };
-
   const handleReturnView = (props) => {
     push(`/normalusers_view/${props?.learner_uuid}`);
   };
@@ -720,7 +676,6 @@ const Normaluser = () => {
         />
       );
     },
-
     actionSwitchRenderer: function (props) {
       return (
         <ToggleButton
@@ -735,7 +690,6 @@ const Normaluser = () => {
     setRowValues(undefined);
     setformModal(flag);
   };
-
   const [columnsPerRow, setColumnsPerRow] = useState(4); // Default value
   const colarray = [6, 4, 3, 2];
   const zoomIn = () => {
@@ -750,6 +704,48 @@ const Normaluser = () => {
       setColumnsPerRow(colarray[currentIndex + 1]);
     }
   };
+  useEffect(() => {
+    if (!listUserData) return;
+    let filtered = listUserData;
+    if (compStatus === "true") {
+      filtered = listUserData.filter((d) => d.status?.toString() === "true");
+    } else if (compStatus === "false") {
+      filtered = listUserData.filter((d) => d.status?.toString() === "false");
+    }
+
+    setRowData(filtered);
+    setGridData(filtered.slice(0, 50));
+    setVisibleCount(50);
+  }, [listUserData, compStatus]);
+
+  const handleLoadMore = () => {
+    if (isLoadingMore) return;
+    if (!rowData?.length) return;
+    if (visibleCount >= rowData.length) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => {
+        const next = Math.min(prev + 50, rowData.length);
+        setGridData(rowData.slice(0, next));
+        return next;
+      });
+      setIsLoadingMore(false);
+    }, 100);
+  };
+
+  const observerRef = useCallback(
+    (node) => {
+      if (!node) return;
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      });
+      observer.observe(node);
+      return () => observer.disconnect();
+    },
+    [handleLoadMore],
+  );
   return (
     <>
       <Seo title="SIMUser" />
@@ -810,7 +806,7 @@ const Normaluser = () => {
                       onChange={(e) => {
                         setCompStatus(e.target.value);
                         dispatch(
-                          getNormalusersManageList({ status: e.target.value })
+                          getNormalusersManageList({ status: e.target.value }),
                         );
                       }}
                       aria-label="Platform"
@@ -823,8 +819,7 @@ const Normaluser = () => {
                         Inactive
                       </CustomToggleButton>
                     </ToggleButtonGroup>
-                    &nbsp;&nbsp;
-                    &nbsp;
+                    &nbsp;&nbsp; &nbsp;
                     <Button
                       type="button"
                       variant="outline-info"
@@ -882,197 +877,224 @@ const Normaluser = () => {
           {view == "card" ? (
             <>
               {gridData && gridData.length > 0 ? (
-                <Row className="row-sm">
-                  {gridData.map((item, index) => {
-                    const isValidMobile =
-                      item?.mobile &&
-                      String(item.mobile).trim() !== "" &&
-                      String(item.mobile).trim() !== "0" &&
-                      String(item.mobile).trim().toLowerCase() !== "null";
+                <>
+                  <Row className="row-sm">
+                    {gridData.map((item, index) => {
+                      const isValidMobile =
+                        item?.mobile &&
+                        String(item.mobile).trim() !== "" &&
+                        String(item.mobile).trim() !== "0" &&
+                        String(item.mobile).trim().toLowerCase() !== "null";
 
-                    const mobileDisplay = isValidMobile ? item.mobile : "NA";
+                      const mobileDisplay = isValidMobile ? item.mobile : "NA";
 
-                    return (
-                      <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team">
-                          <Card.Body>
-                            <div className="picture avatar-lg online text-center">
-                              <div
-                                className="rounded-circle pointer"
-                                style={{
-                                  width: "100px",      
-                                  height: "100px",     
-                                  overflow: "hidden", 
-                                  display: "inline-block"
-                                }}
-                              >
-                                <img
-                                  alt="avatar"
-                                  onError={(e) => { e.target.onerror = null; e.target.src = dummy_profile.src }}
-                                  src={
-                                    item?.profile
-                                      ? `${process.env.API_URL_FILEMANAGER}${item?.profile}`
-                                      : dummy_profile.src
-                                  }
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover"    // keeps aspect ratio and fills circle
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="text-center mt-3">
-                              <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
-                                <a>
-                                  {item.firstname} {item.lastname}
-                                </a>
-                              </h5>
-                              <p className="pro-user-desc text-success mb-1 mt-1">
-                                {item.username}
-                              </p>
-                            </div>
-                            <div className="contact-info mb-0 text-center">
-                              <div className="btn btn-sm ripple bg-primary-transparent text-primary rounded-circle mx-1">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>{mobileDisplay}</Tooltip>}
-                                >
-                                  <i className="fe fe-phone-call"></i>
-                                </OverlayTrigger>
-                              </div>
-
-                              {/* Email Button */}
-                              <div className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle mx-1">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>{item.email}</Tooltip>}
-                                >
-                                  <i className="fe fe-mail"></i>
-                                </OverlayTrigger>
-                              </div>
-
-                              {/* Edit Button */}
-                              <div
-                                className="btn btn-sm ripple bg-info-transparent text-info rounded-circle mx-1"
-                                onClick={() => handleEdit(item)}
-                              >
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>Update</Tooltip>}
-                                >
-                                  <i className="fe fe-edit"></i>
-                                </OverlayTrigger>
-                              </div>
-                              {item?.isverified === "No" && (
+                      return (
+                        <Col
+                          key={index}
+                          md={12 / columnsPerRow}
+                          className="p-0"
+                        >
+                          <Card className="card custom-card our-team">
+                            <Card.Body>
+                              <div className="picture avatar-lg online text-center">
                                 <div
-                                  className="btn btn-sm ripple bg-dark-transparent text-dark rounded-circle mx-1"
-                                  onClick={() => verifyAccount(item)}
+                                  className="rounded-circle pointer"
+                                  style={{
+                                    width: "100px",
+                                    height: "100px",
+                                    overflow: "hidden",
+                                    display: "inline-block",
+                                  }}
+                                >
+                                  <img
+                                    alt="avatar"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = dummy_profile.src;
+                                    }}
+                                    src={
+                                      item?.profile
+                                        ? `${process.env.API_URL_FILEMANAGER}${item?.profile}`
+                                        : dummy_profile.src
+                                    }
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover", // keeps aspect ratio and fills circle
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="text-center mt-3">
+                                <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
+                                  <a>
+                                    {item.firstname} {item.lastname}
+                                  </a>
+                                </h5>
+                                <p className="pro-user-desc text-success mb-1 mt-1">
+                                  {item.username}
+                                </p>
+                              </div>
+                              <div className="contact-info mb-0 text-center">
+                                <div className="btn btn-sm ripple bg-primary-transparent text-primary rounded-circle mx-1">
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>{mobileDisplay}</Tooltip>}
+                                  >
+                                    <i className="fe fe-phone-call"></i>
+                                  </OverlayTrigger>
+                                </div>
+
+                                {/* Email Button */}
+                                <div className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle mx-1">
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>{item.email}</Tooltip>}
+                                  >
+                                    <i className="fe fe-mail"></i>
+                                  </OverlayTrigger>
+                                </div>
+
+                                {/* Edit Button */}
+                                <div
+                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle mx-1"
+                                  onClick={() => handleEdit(item)}
                                 >
                                   <OverlayTrigger
                                     placement="bottom"
-                                    overlay={
-                                      <Tooltip>Send Verification</Tooltip>
+                                    overlay={<Tooltip>Update</Tooltip>}
+                                  >
+                                    <i className="fe fe-edit"></i>
+                                  </OverlayTrigger>
+                                </div>
+                                {item?.isverified === "No" && (
+                                  <div
+                                    className="btn btn-sm ripple bg-dark-transparent text-dark rounded-circle mx-1"
+                                    onClick={() => verifyAccount(item)}
+                                  >
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={
+                                        <Tooltip>Send Verification</Tooltip>
+                                      }
+                                    >
+                                      <i className="fa fa-check"></i>
+                                    </OverlayTrigger>
+                                  </div>
+                                )}
+
+                                {item?.isverified === "Yes" && (
+                                  <div
+                                    className="btn btn-sm ripple bg-secondary-transparent text-secondary rounded-circle mx-1"
+                                    onClick={() => resetPswd(item)}
+                                  >
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={
+                                        <Tooltip>Reset Password</Tooltip>
+                                      }
+                                    >
+                                      <i className="fa fa-refresh"></i>
+                                    </OverlayTrigger>
+                                  </div>
+                                )}
+                                {userType !== "Instructor" && (
+                                  <div
+                                    className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle mx-1"
+                                    onClick={() =>
+                                      handleMapInstructorModal(item)
                                     }
                                   >
-                                    <i className="fa fa-check"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={
+                                        <Tooltip>Map Instructor</Tooltip>
+                                      }
+                                    >
+                                      <i className="fa fa-map-o"></i>
+                                    </OverlayTrigger>
+                                  </div>
+                                )}
 
-                              {item?.isverified === "Yes" && (
-                                <div
-                                  className="btn btn-sm ripple bg-secondary-transparent text-secondary rounded-circle mx-1"
-                                  onClick={() => resetPswd(item)}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Reset Password</Tooltip>}
+                                {/* Status Toggle */}
+                                <div>
+                                  <div
+                                    className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
+                                    onClick={() =>
+                                      push(
+                                        `/normalusers_view/${item?.learner_uuid}`,
+                                      )
+                                    }
                                   >
-                                    <i className="fa fa-refresh"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
-                              {userType !== "Instructor" && (
-                                <div
-                                  className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle mx-1"
-                                  onClick={() => handleMapInstructorModal(item)}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Map Instructor</Tooltip>}
-                                  >
-                                    <i className="fa fa-map-o"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={<Tooltip>View</Tooltip>}
+                                    >
+                                      <i className="fe fe-eye"></i>
+                                    </OverlayTrigger>
+                                  </div>
 
-                              {/* Status Toggle */}
-                              <div>
-                                <div
-                                  className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-                                  onClick={() =>
-                                    push(
-                                      `/normalusers_view/${item?.learner_uuid}`
-                                    )
-                                  }
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>View</Tooltip>}
+                                  <div
+                                    className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle mx-1"
+                                    onClick={() => handleDeletecard(item)}
                                   >
-                                    <i className="fe fe-eye"></i>
-                                  </OverlayTrigger>
-                                </div>
-
-                                <div
-                                  className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle mx-1"
-                                  onClick={() => handleDeletecard(item)}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Delete</Tooltip>}
-                                  >
-                                    <i className="fe fe-trash-2"></i>
-                                  </OverlayTrigger>
-                                </div>
-                                <div className="btn btn-sm ripple ">
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Change Status</Tooltip>}
-                                  >
-                                    <label className="custom-switch mb-0">
-                                      <input
-                                        type="checkbox"
-                                        name="custom-switch-checkbox1"
-                                        className="custom-switch-input"
-                                        checked={item?.status === "true"}
-                                        onChange={() =>
-                                          handleStatusSwitch(item)
-                                        }
-                                      />
-                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                    </label>
-                                  </OverlayTrigger>
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={<Tooltip>Delete</Tooltip>}
+                                    >
+                                      <i className="fe fe-trash-2"></i>
+                                    </OverlayTrigger>
+                                  </div>
+                                  <div className="btn btn-sm ripple ">
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={<Tooltip>Change Status</Tooltip>}
+                                    >
+                                      <label className="custom-switch mb-0">
+                                        <input
+                                          type="checkbox"
+                                          name="custom-switch-checkbox1"
+                                          className="custom-switch-input"
+                                          checked={item?.status === "true"}
+                                          onChange={() =>
+                                            handleStatusSwitch(item)
+                                          }
+                                        />
+                                        <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                      </label>
+                                    </OverlayTrigger>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                  {visibleCount < rowData.length && (
+                    <div
+                      ref={observerRef}
+                      className="d-flex justify-content-center my-4"
+                      style={{ height: "40px" }}
+                    >
+                      {isLoadingMore && (
+                        <div className="vertical-bounce-loader">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <Row>
                   <Col sm={12}>
                     <Card className="custom-card">
                       <Card.Body className="overflow-auto pd-t-10">
-                        <Row
-                          className="text-center"
-                          style={{ height: "70vh" }}
-                        >
+                        <Row className="text-center" style={{ height: "70vh" }}>
                           <Col md={10} className="mx-auto">
                             <Card
                               style={{
@@ -1133,10 +1155,3 @@ const Normaluser = () => {
 
 Normaluser.layout = "Contentlayout";
 export default Normaluser;
-
-
-
-
-
-
-

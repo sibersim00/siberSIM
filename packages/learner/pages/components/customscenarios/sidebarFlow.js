@@ -12,6 +12,12 @@ import {
   getSinglecustomScenarios,
   clearSingleScenarios,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
+
+const normalizeImageUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  return `${process.env.API_URL_FILEMANAGER}${url}`;
+};
 const SidebarFlow = ({
   setDraggedNode,
   scenarioId,
@@ -53,8 +59,13 @@ const {
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
-  const theme = "dark";
-  const isDark = theme === "dark";
+    const [isDark, setIsDark] = useState(false);
+  // const theme = localStorage.getItem("theme_preference") || "light";
+  // const isDark = theme === "dark";
+    useEffect(() => {
+    const theme = localStorage.getItem("theme_preference") || "light";
+    setIsDark(theme === "dark");
+  }, []);
   useEffect(() => {
     dispatch(getCategoriesList());
     dispatch(getSenarioDigramList());
@@ -101,7 +112,6 @@ const {
       setRowValues(getScenarioFlowchart);
     }
   }, [getScenarioFlowchart])
-  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -230,26 +240,31 @@ const {
       setcopyModal(true);
     }
   };
-console.log("imageNodeDataimageNodeData",imageNodeData);
-
-  useEffect(() => {
-  if (imageNodeData && imageNodeData.length > 0) {
-    const updated = imageNodeData.map((node) => {
-      if (node.imageUrl && !node.imageUrl.startsWith("http")) {
-        return {
-          ...node,
-          imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl}`,
-        };
-      }
-      return node;
-    });
-    const changed = JSON.stringify(updated) !== JSON.stringify(imageNodeData);
-    if (changed) {
-      console.log("Fixed missing image URLs after render");
-      setImageNodeData(updated);
-    }
+useEffect(() => {
+  if (!getScenarioFlowchart?.components) {
+    setImageNodeData([]);
+    return;
   }
-}, [imageNodeData]);
+  let parsedComponents = [];
+  try {
+    const parsed = JSON.parse(getScenarioFlowchart.components);
+    parsedComponents = Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("Invalid components JSON", err);
+    parsedComponents = [];
+  }
+  const normalizedComponents = parsedComponents.map((node) => ({
+    ...node,
+    componentid: node.componentid || node.componentId || node.id,
+    imageUrl: normalizeImageUrl(
+      node.imageUrl || node.subcategoryimage
+    ),
+  }));
+  setImageNodeData(normalizedComponents);
+}, [getScenarioFlowchart]);
+
+
+
 useEffect(() => {
   if (!imageNodeData || imageNodeData.length === 0) return;
   setNodes((prevNodes) => {

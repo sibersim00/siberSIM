@@ -42,7 +42,7 @@ import {
 import {
   getCompanyList
 } from "../shared/redux/slices/authentication/Auth";
-
+import { d_mmm_y } from"../shared/data/helperFunctions/dateCustom";
 const Home = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
@@ -63,7 +63,7 @@ const Home = () => {
   let navigate = useRouter();
   const [userInfo, setUserInfo] = useState({});
 
-   const otpSuccessData = useSelector((state) => state?.instLoginData?.otpSuccessData);
+  const otpSuccessData = useSelector((state) => state?.instLoginData?.otpSuccessData);
   const getCompanyListData = useSelector((state) => state?.authData?.getCompanyListData?.data);
   const getCompanySettingsData = useSelector((state) => state?.authData?.getCompanyListData);
   const loginSuccData = useSelector((state) => state?.instLoginData?.loginSuccessData);
@@ -72,9 +72,7 @@ const Home = () => {
 
   useEffect(() => {
     dispatch(clearDispatchFromForget());
-     const domain = window.location;
-        dispatch(getCompanyList({domain_url : domain?.hostname}));
-
+    dispatch(getCompanyList());
   }, [dispatch]);
 
   useEffect(() => {
@@ -136,10 +134,6 @@ const Home = () => {
 
   useEffect(() => {
     if (otpSuccessData?.statusCode === 200) {
-      // setCookie("auth", {
-      //   username: data.username.toLowerCase(),
-      //   org: data.orgid,
-      // });
       let userData = otpSuccessData?.data;
       const lastDigitMobile = String(userData.mobile).slice(-4);
       let newuserData = {
@@ -274,11 +268,19 @@ const Home = () => {
       }
     }
   };
+
   useEffect(() => {
       if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
           navigate.replace("/503");
+      }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+        let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+        if(!licenseStatus.isStart){
+          let startDate = d_mmm_y(licenseStatus.start_date)
+          navigate.replace(`/503?startDate=${startDate}`);
+        }
       }
-    }, [getCompanySettingsData]);
+  }, [getCompanySettingsData]);
+
   useEffect(() => {
     if (directLoginData?.statusCode == 200) {
       localStorage.setItem(

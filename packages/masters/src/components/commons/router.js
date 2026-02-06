@@ -1,7 +1,5 @@
 module.exports = (iocContainer) => {
   const { express, controller, validation, validator } = iocContainer;
-
-  const { authJwt } = require("../../middleware");
   const router = express.Router();
 
   router.post("/json", controller.getJson(iocContainer));

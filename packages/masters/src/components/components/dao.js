@@ -19,6 +19,7 @@ const getAll =
           c.duration,
           c.memory,
           c.cores,
+          c.component_status,
           c.storage,
           c.network_ports,
           mcc.categoryname,

@@ -16,9 +16,10 @@ import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import "../../shared/utils/i18n"; // Initialize i18next
-// import logo_dark from "../../public/assets/img/brand/logo-dark.png";
 import defaultLogo from "../../public/assets/img/brand/logo-dark.png";
 import defaultFavicon from "../../public/assets/img/brand/favicon.png";
+
+import { d_mmm_y } from"../../shared/data/helperFunctions/dateCustom";
 
 import {
   getCompanyList,
@@ -32,6 +33,10 @@ import {
   getorgData,
   clearHasError,
 } from "../../shared/redux/slices/authentication/Auth";
+
+const setLicenseExpiryFlag = (value) => {
+  localStorage.setItem('is_license_expiry', value.toString());
+};
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -62,10 +67,7 @@ const Home = () => {
   
   useEffect(() => {
     dispatch(clearDispatchFromForget());
-    const domain = window.location;
-    console.log("domain=====>",domain?.hostname);
-    dispatch(getCompanyList({domain_url : domain?.hostname}));
-
+    dispatch(getCompanyList());
   }, [dispatch]);
   
 
@@ -158,18 +160,24 @@ const Home = () => {
 
   useEffect(() => {
     if (loginSuccData?.statusCode == 200) {
-      localStorage.setItem(
-        "accessToken",
-        JSON.stringify(loginSuccData?.data?.accessToken)
-      );
+      localStorage.setItem("accessToken",JSON.stringify(loginSuccData?.data?.accessToken));
       localStorage.setItem("menus", JSON.stringify(loginSuccData?.data?.menus));
       localStorage.setItem("user", JSON.stringify(loginSuccData?.data?.user));
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       localStorage.setItem("apps", JSON.stringify([]));
+      setLicenseExpiryFlag(true);
       dispatch(clearDispatchFromLogin());
       setTimeout(() => {
-        navigate.replace("/dashboard", "", { shallow: true });
-        //window.location.href = '/dashboard';
+        if (getCompanySettingsData?.redirect == true) {
+          navigate.replace("/activate-account");
+        } else {
+          console.log("wwwwwwwwwwwwwwwwwwwwItems",loginSuccData?.data?.menus[0]?.Items);
+          
+          const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+          
+          const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+          navigate.replace(source, "", { shallow: true });
+        }
       }, 1500);
     }
   }, [loginSuccData]);
@@ -270,26 +278,36 @@ const Home = () => {
 
   useEffect(() => {
     if (directLoginData?.statusCode == 200) {
-      localStorage.setItem(
-        "accessToken",
-        JSON.stringify(directLoginData?.data?.accessToken)
-      );
+      localStorage.setItem("accessToken",JSON.stringify(directLoginData?.data?.accessToken));
       localStorage.setItem("menus", JSON.stringify(directLoginData?.data?.menus));
       localStorage.setItem("user", JSON.stringify(directLoginData?.data?.user));
       localStorage.setItem("apps", JSON.stringify([]));
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
+      setLicenseExpiryFlag(true);
       dispatch(clearDispatchDirectLogin());
-       setTimeout(() => {
-      if (getCompanySettingsData?.redirect == true) {
-      
-        navigate.replace("/checklicense");
-      } else {
-       
-        navigate.replace("/dashboard", "", { shallow: true });
-      }
+      setTimeout(() => {
+        if (getCompanySettingsData?.redirect == true) {
+          navigate.replace("/activate-account");
+        } else {
+          console.log("wwwwwwwwwwwwwwwwwwwwItems",directLoginData?.data?.menus[0]?.Items);
+
+          const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+          const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+          navigate.replace(source, "", { shallow: true });
+        }
       }, 1500);
     }
   }, [directLoginData]);
+
+  useEffect(() => {
+      if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+        let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+        if(!licenseStatus.isStart){
+          let startDate = d_mmm_y(licenseStatus.start_date)
+          navigate.replace(`/503?startDate=${startDate}`);
+        }
+      }
+  }, [getCompanySettingsData]);
 
   const handleKeyPress = (event) => {
     if (event.key === "Enter") {

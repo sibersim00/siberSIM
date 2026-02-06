@@ -42,7 +42,14 @@ const FormScenarioSubCategory = (props) => {
   const [modalTitle, setModalTitle] = useState("Add");
   const [catDropDownData, setCatDropDownData] = useState([]);
   const { t } = useTranslation();
-
+      const [isDark, setIsDark] = useState(false);
+    
+      useEffect(() => {
+      const theme = localStorage.getItem("theme_preference") || "light";
+      setIsDark(theme === "dark");
+    }, []);
+//  const theme = localStorage.getItem("theme_preference") || "light";
+//   const isDark = theme === "dark";
   const { saveSubCategoriesData, errorData, hasgetCatListSucc } = useSelector(
     (state) => ({
       saveSubCategoriesData: state?.scenariosubcategories?.saveSubCategories,
@@ -69,7 +76,49 @@ const FormScenarioSubCategory = (props) => {
         }
       ),
   });
+  const getSelectStyles = (fieldName) => {
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
 
+    return {
+      ...customStyles,
+      control: (styles, state) => ({
+        ...styles,
+        borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+        boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+        backgroundColor: "var(--dark-bg-color)", // dark background
+      }),
+      singleValue: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // selected value text
+      }),
+      input: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // text while typing
+      }),
+    };
+  };
+
+  const customStyles = {
+    control: (styles, { isFocused, isDisabled }) => ({
+      ...styles,
+      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+      boxShadow: isDisabled
+        ? null
+        : isFocused
+        ? "0 0 0 0.001rem #00d683"
+        : null,
+      "&:hover": {
+        borderColor: isDisabled
+          ? "#e8e8f7"
+          : isFocused
+          ? "#00d683"
+          : styles.borderColor,
+      },
+    }),
+  };
   const formValidation = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -214,6 +263,9 @@ const FormScenarioSubCategory = (props) => {
                       primary: "var(--primary-bg-color)",
                     },
                   })}
+                  styles={getSelectStyles(
+                                                      "scenariocategoryids"
+                                                    )}
                   getOptionLabel={(x) => x.label}
                   getOptionValue={(x) => x.value}
                   placeholder="Select Scenario Category"
@@ -281,7 +333,7 @@ const FormScenarioSubCategory = (props) => {
                             top: "2px",
                             right: "5px",
                             cursor: "pointer",
-                            color: "#212122ff",
+                                 color: isDark ? "#f1a139ff" : "#212122ff",
                           }}
                         ></i>
                       </OverlayTrigger>

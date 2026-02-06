@@ -78,18 +78,6 @@ export function importMastersAction(formData) {
   };
 }
 
-// export function clearimportMastersAction() {
-//   return async () => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       dispatch(slice.actions.hasImportSucc([]));
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
-
-
 export function clearimportMastersAction() {
   return (dispatch) => {
     dispatch(slice.actions.hasImportSucc(null));

@@ -14,9 +14,13 @@ const initialState = {
   updateSessionStatus: [],
   getSessionStatusListData: [],
   getConfigurationsData: [],
+  getresume: [],
+   pausescenarioData: [],
+  resumescenarioData: [],
   updateCompletedTerminatedData: [],
   getLogsData: [],
   getToken: [],
+  hasdeletescenarioSuccData: [],
   eventRestart: [],
 };
 
@@ -38,6 +42,18 @@ const slice = createSlice({
     hasGetSaveScenariosSucc(state, action) {
       (state.isLoading = false), (state.saveEvents = action.payload);
     },
+    hasGetresume(state, action) {
+      state.isLoading = false,
+        state.getresume = action.payload;
+    },
+     haspausescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.pausescenarioData = action.payload;
+    },
+    hasresumescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.resumescenarioData = action.payload;
+    },
 
     hasGetGetChatMessagesSucc(state, action) {
       (state.isLoading = false),
@@ -56,6 +72,10 @@ const slice = createSlice({
     },
     hasGetUpdateSessionStatusSucc(state, action) {
       (state.isLoading = false), (state.updateSessionStatus = action.payload);
+    },
+    hasdeletescenarioSucc(state, action) {
+      state.isLoading = false,
+        state.hasdeletescenarioSuccData = action.payload;
     },
     hasGetSessionStatusListData(state, action) {
       (state.isLoading = false),
@@ -90,6 +110,8 @@ export function getEventList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.events_get}`);
+      console.log("responseresponseresponse",response);
+      
       dispatch(slice.actions.hasGetEventSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -158,6 +180,18 @@ export function eventRestart(payload) {
     } catch (error) {
       dispatch(slice.actions.hasGetEventRestartSucc(error));
       // dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function canresumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.event_can_resume}`, payload);
+      dispatch(slice.actions.hasGetresume(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
     }
   };
 }
@@ -314,6 +348,56 @@ export function getAccessToken() {
     }
   };
 }
+
+//Pause and resume
+
+export function pausescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.event_pause}`, payload);
+      dispatch(slice.actions.haspausescenarioSucc(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function resumescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.event_resume}`, payload);
+      dispatch(slice.actions.hasresumescenarioSucc(response.data));
+      return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function deletescenario(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_scenario}`, payload);
+      dispatch(slice.actions.hasdeletescenarioSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function cleardeletescenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletescenarioSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
 
 export function clearHasError() {
   return async (dispatch) => {

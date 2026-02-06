@@ -13,8 +13,7 @@ const resolveImageUrl = (url) => {
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-
-const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
+const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible,scenarioStatus }) => {
   const networkPorts = data.networkport || [];
   const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
   const totalPorts = portKeys.length;
@@ -25,12 +24,32 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
 
-  const handleClick = (dataobj) => {
-    const vmid = dataobj?.vmid;
-    const vmType = dataobj?.vmType;
-    if (!vmid) return;
-    window.open(`${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}`, "_blank");
-  };
+
+
+const handleClick = (dataobj) => {
+  console.log("dataobjdataobjdataobj",dataobj);
+  
+    if (scenarioStatus === "Pause") return; 
+  // if (!isTimerVisible) return;
+  const vmid = dataobj?.vmid;
+  const vmType = dataobj?.vmType;
+  if (!vmid || !vmType) return;
+  console.log("Inside vmc");
+
+  const rawLabel = dataobj?.label || "";
+  const namePart = rawLabel.split("-")[1]?.trim() || "";
+  const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+  
+  window.open(
+    `${process.env.BASE_PATH}vnc_event_view/${vmType}/${vmid}/${cleanName}`,
+    "_blank"
+  );
+};
+
+// const handleClick = (dataobj) => {
+//   console.log("CLICKED NODE DATA", dataobj);
+// };
+
   return (
     <div
       style={{
@@ -48,7 +67,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           position: 'relative',
           borderRadius: '8px',
           border: '2px solid #ccc',
-          background: '#fff',
+          // background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -91,7 +110,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           const labelStyle = {
             position: 'absolute',
             fontSize: 6,
-            background: '#fff',
+            // background: '#fff',
             padding: '1px 3px',
             whiteSpace: 'nowrap',
             zIndex: 5,
@@ -151,7 +170,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           width: '100%',
           zIndex: 10,
           position: 'relative',
-          background: '#fff',
+          // background: '#fff',
           padding: '0 1px',
         }}
       >
@@ -180,88 +199,108 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
   );
 };
 
-const ScenarioDiagram = ({ scenariodiagram }) => {
-  const [elements, setelements] = useState({ nodes: [], edges: [] });
+
+const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) => {
+  console.log("scenariodiagram",scenariodiagram);
+  
+  const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const reactFlowWrapper = useRef(null);
+  const flowRef = useRef(null);
 
   useEffect(() => {
-    if (scenariodiagram && scenariodiagram !== '') {
-      try {
-        const cleanData = scenariodiagram.replace('flowchartData ', '');
-        const parsedData = JSON.parse(cleanData);
-        const backendBaseUrl = process.env.API_URL_FILEMANAGER;
-        const updatedNodes = parsedData.nodes.map(node => {
-          const imageUrl = node.data.image;
-          if (imageUrl && imageUrl.startsWith('/uploads')) {
-            node.data.image = `${backendBaseUrl}${imageUrl}`;
-          }
-          return node;
-        });
-        setelements({
-          nodes: updatedNodes,
-          edges: parsedData.edges,
-        });
-      } catch (err) {
-        console.error('Failed to parse scenariodiagram:', err);
-      }
+    if (!scenariodiagram) return;
+
+    try {
+      const cleanData = scenariodiagram.replace('flowchartData ', '');
+      console.log("cleanDatacleanDatacleanData",cleanData);
+      
+      const parsedData = JSON.parse(cleanData);
+      console.log("parsedDataparsedDataparsedData",parsedData);
+      
+      const backendBaseUrl = process.env.API_URL_FILEMANAGER;
+
+      const updatedNodes = parsedData.nodes.map(node => ({
+        ...node,
+        position: node.position || { x: 0, y: 0 }, // Ensure position exists
+        data: {
+          ...node.data,
+          image:
+            node.data.image && node.data.image.startsWith('/uploads')
+              ? `${backendBaseUrl}${node.data.image}`
+              : node.data.image,
+        },
+      }));
+      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
+
+
+      setElements({ nodes: updatedNodes, edges: parsedData.edges });
+    } catch (err) {
+      console.error('Failed to parse scenariodiagram:', err);
     }
   }, [scenariodiagram]);
 
-  const FlowViewportController = ({ nodes }) => null;
-  const reactFlowWrapper = useRef(null);
-  const EditableEdgeWrapper = (edgeProps) => {
-    const { getEdges, setEdges } = useReactFlow();
-    const edges = getEdges();
-    return (
-      <EditableEdge
-        {...edgeProps}
-        allEdges={edges}
-        setEdges={setEdges}
-      />
-    );
-  };
+  // Center graph after nodes are rendered
+  // useEffect(() => {
+  //   if (flowRef.current && elements.nodes.length > 0) {
+  //     requestAnimationFrame(() => {
+  //       flowRef.current.fitView({ padding: 0.3 });
+  //     });
+  //   }
+  // }, [elements]);
+  // Center graph after nodes are rendered
+useEffect(() => {
+  if (!flowRef.current || elements.nodes.length === 0) return;
+
+  // Wait for the next paint to ensure nodes are mounted
+  const id = requestAnimationFrame(() => {
+    flowRef.current.fitView({ padding: 0.3 });
+  });
+
+  return () => cancelAnimationFrame(id);
+}, [elements.nodes]); // Only run when nodes change
+
+
   const nodeTypes = {
-    imageNode: (props) => <ImageNode {...props}/>
+    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} scenarioStatus={scenarioStatus} />,
   };
+    const EditableEdgeWrapper = (edgeProps) => {
+      const { getEdges, setEdges } = useReactFlow();
+  
+      // You can also pull labelMap or other shared state from context/store here
+      const edges = getEdges(); // all current edges
+      console.log("fffffffffffffffffffffffffff",edges);
+      
+  
+      return (
+        <EditableEdge
+          {...edgeProps}
+          allEdges={edges}
+          setEdges={setEdges}
+        />
+      );
+    };
   const edgeTypes = { custom: EditableEdgeWrapper };
+
   return (
-    <>
-      <style>
-        {`
-          .react-flow__container{
-            top : -75px;
-            left: 115px;
-          }
-        `}
-      </style>
-      <div
-        className="reactflow-wrapper"
-        ref={reactFlowWrapper}
-        style={{
-          width: '100%',
-          height: '80vh',
-          borderRadius: '8px',
-        }}
-      >
-        {elements.nodes.length > 0 && elements.edges.length > 0 && (
-          <ReactFlow
-            nodes={elements.nodes}
-            edges={elements.edges}
-            nodeTypes={nodeTypes}
-            onInit={(reactFlowInstance) => {
-              setTimeout(() => {
-                reactFlowInstance.fitView();
-              }, 100);
-            }}
-            zoomOnDoubleClick={false}
-            edgeTypes={edgeTypes}
-          >
-            <FlowViewportController nodes={elements.nodes} />
-            <Background />
-          </ReactFlow>
-        )}
-      </div>
-    </>
+    <div
+      ref={reactFlowWrapper}
+      style={{ width: '100%', height: '80vh', borderRadius: 8 }}
+    >
+      {elements.nodes.length > 0 && (
+        <ReactFlow
+          nodes={elements.nodes}
+          edges={elements.edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          zoomOnDoubleClick={false}
+          onInit={(instance) => (flowRef.current = instance)}
+        >
+          <Background />
+        </ReactFlow>
+      )}
+    </div>
   );
 };
+
 ScenarioDiagram.layout = "Contentlayout";
 export default ScenarioDiagram;

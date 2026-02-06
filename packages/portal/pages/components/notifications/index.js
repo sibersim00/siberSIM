@@ -55,19 +55,20 @@ const NotiConfigs = () => {
       errorData: state && state.noticonfigs && state.noticonfigs.error,
     };
   });
-  console.log("------")
 	const columnDefs = [
 		{
       headerName: t("noti_config.column_defs.template_name"),
       field: "template_name",
       filter: true,
+      tooltipValueGetter: (params) => `${params.value}`,
       floatingFilter: true,
 			flex : 1
     },
 		{
       headerName: t("noti_config.column_defs.template_action"),
       field: "template_action",
-      filter: true,
+      filter: true,    
+      tooltipValueGetter: (params) => `${params.value}`,
       floatingFilter: true,
 			flex : 1
     },
@@ -75,12 +76,14 @@ const NotiConfigs = () => {
       headerName: t("noti_config.column_defs.status"),
       field: "status",
       cellRenderer: "actionStatusChange",
+      tooltipValueGetter: (params) => `${params.value}`,
 			width : 150,
     },
 		{
       headerName: t("noti_config.column_defs.action"),
       field: "action",
 			cellRenderer: "actionButtonRenderer",
+      tooltipValueGetter: (params) => `${params.value}`,
 			pinned : "right",
 			width : 150
 

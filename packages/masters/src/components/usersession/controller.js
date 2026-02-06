@@ -35,12 +35,13 @@ const getUserSessionById =
   ({ dao, db }) =>
   async (req, res) => {
     try {
-      const scenariolearneruuid = req.params.scenariolearneruuid;
-      if (!scenariolearneruuid) {
+      const vmrequestuuid = req.params.vmrequestuuid;
+      
+      if (!vmrequestuuid) {
         return result.status(400).json({ error: "Scenario ID is required." });
       }
       const scenario = await dao.getUserSessionById({ db })(
-        scenariolearneruuid
+        vmrequestuuid
       );
       if (!scenario || scenario.length === 0) {
         return res.status(404).json({ error: "Scenario not found." });
@@ -58,6 +59,8 @@ const notitermination =
   async (req, res) => {
     try {
       const body = req.body;
+      console.log("bodybodybodybodybodybody",body);
+      
       const session_userid = req.user.userid;
       // Call the DAO function, not the controller itself
       const result = await dao.notitermination({ db, validation })(
@@ -159,19 +162,20 @@ const markMessagesSeen =
 const terminateScenario =
   ({ db, dao }) =>
   async (req, res) => {
-    const { scenariolearnersessionid, remark, type } = req.body;
+    const { vmrequestid, remark, type } = req.body;
     const usertype = req.user.usertype;
     const session_userid = req.user.userid;
+console.log("vmrequestidvmrequestidvmrequestid",vmrequestid);
 
-    if (!scenariolearnersessionid || !usertype) {
+    if (!vmrequestid || !usertype) {
       return res
         .status(400)
-        .json({ error: "scenariolearnersessionid and type are required." });
+        .json({ error: "vmrequestid and type are required." });
     }
 
     try {
       const result = await dao.terminateScenario({ db })(
-        scenariolearnersessionid,
+        vmrequestid,
         usertype,
         remark,
         type,
@@ -191,9 +195,9 @@ const getLogs =
   async (req, res, next) => {
     try {
       const session_userid = req.user.userid;
-      const scenariolearneruuid = req.body.scenariolearneruuid;
+      const vmrequestid = req.body.vmrequestid;
       const result = await dao.getLogs({ db })(
-        scenariolearneruuid,
+        vmrequestid,
         session_userid
       );
       return res.status(200).send({ statusCode: 200, data: result });

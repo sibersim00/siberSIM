@@ -1,9 +1,12 @@
 import React, { Fragment } from 'react'
 import Seo from '../shared/layout-components/seo/seo'
 import { Col, Container, } from "react-bootstrap";
-import Link from 'next/link';
 import defaultLogo from "../public/assets/img/brand/logo-dark.png";
+import { useRouter } from "next/router";
 const Custom503 = () => {
+    const { query } = useRouter();
+     const startDate = query?.startDate;
+     console.log("startDate===>",startDate);
     return (
     <div>
       <Seo title="Website Under Construction" />
@@ -71,7 +74,7 @@ const Custom503 = () => {
 
                 <div style={{ marginTop: "20px", lineHeight: "1.6rem" }}>
                   <p>✨ New features and improvements are coming soon.</p>
-                  <p>📅 Estimated Launch: Very Soon</p>
+                  <p>📅 Estimated Launch: {startDate ? startDate : 'Very Soon'}</p>
                   <p>🔧 Thank you for your patience and support.</p>
                 </div>
 

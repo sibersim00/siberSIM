@@ -14,6 +14,8 @@ const initialState = {
   customerLicenseResp: [],
   addLicenseResp: [],
   editLicenseResp: [],
+  getCustomerDashboardResp:[],
+  resendLicenseResp: [],
 
 };
 
@@ -56,6 +58,14 @@ const slice = createSlice({
     hasEditLicenseSucc(state, action) {
       state.isLoading = false;
       state.editLicenseResp = action.payload;
+    },
+    hasGetCustomerDashboard(state, action) {
+      state.isLoading = false;
+      state.getCustomerDashboardResp = action.payload;
+    },
+    hasResendLicenseSucc(state, action) {
+      state.isLoading = false;
+      state.resendLicenseResp = action.payload;
     },
     hasError(state, action) {
       state.isLoading = false;
@@ -206,6 +216,40 @@ export function clearEditLicenseData() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasEditLicenseSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getCustomerDashboard() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(api?.customer_dashboard_data);
+      dispatch(slice.actions.hasGetCustomerDashboard(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function resendLicenseEmail(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api?.customer_license_resend, payload);
+      dispatch(slice.actions.hasResendLicenseSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearResendLicenseData() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasResendLicenseSucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

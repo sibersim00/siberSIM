@@ -7,8 +7,11 @@ const updateCompleteTerminate =
   require("../src/components/eventlearner/dao").updateCompleteTerminate;
 const updateCompleteTerminatelearner =
   require("../src/components/vmconfigs/dao").updateCompleteTerminatelearner;
-const  autoTerminateFailedScenarios  =
+const autoTerminateFailedScenarios =
   require("../src/components/vmconfigs/dao").autoTerminateFailedScenarios;
+
+const checkBackupStatus =
+  require("../src/components/vmconfigs/dao").checkBackupStatus;
 
 class initJob {
   constructor() {
@@ -53,7 +56,7 @@ class initJob {
   }
 
   async terminateFailedScenarios({ db }) {
-    const ipAddress = "127.0.0.1"; // local IP
+    const ipAddress = "127.0.0.1";
     const job = autoTerminateFailedScenarios({
       db,
       ipAddress,
@@ -62,7 +65,17 @@ class initJob {
     const result = await job();
     console.log("🕛 Operation Failed Scenario Cleanup Result:", result.message);
   }
+  async checkbackupstatus({ db }) {
+    const ipAddress = "127.0.0.1";
+    const job = checkBackupStatus({
+      db,
+      ipAddress
+    });
+    const result = await job();
+    console.log("🕛 Operation Failed for Check backup status:", result);
+  }
 }
+
 
 const commonCronConfig = {
   scheduled: true,
@@ -73,10 +86,9 @@ const startJob = async ({ db }) => {
   const jobs = new initJob();
 
   // Process notifications every 10 sec
-  cron.schedule(
-    "* * * * * *",
+  cron.schedule("*/30 * * * * *",
     () => {
-      console.log("PROCESS NOTIFICATION IN EVERY 10 SEC.");
+      console.log("PROCESS NOTIFICATION IN EVERY 30 SEC.");
       jobs.notirun({ db }).catch((e) => {
         console.log(e);
       });
@@ -85,8 +97,8 @@ const startJob = async ({ db }) => {
   );
 
   // Send queued mails every 10 sec (uncomment if needed)
-  cron.schedule('*/10 * * * * *', () => {
-    console.log("SEND QUEUED MAILS EVERY 10 SEC.");
+  cron.schedule('*/30 * * * * *', () => {
+    console.log("SEND QUEUED MAILS EVERY 30 SEC.");
     jobs.mailrun({ db }).catch(e => {
       console.log(e);
       jobs.isEmailJobRunning = false;
@@ -94,8 +106,7 @@ const startJob = async ({ db }) => {
   }, commonCronConfig);
 
   // 🕛 Run auto-terminate job every midnight
-  cron.schedule(
-    "0 0 * * *",
+  cron.schedule("0 0 * * *",
     () => {
       console.log("Running midnight auto-terminate job...");
       jobs.terminateExpiredEvents({ db }).catch((e) => {
@@ -104,8 +115,7 @@ const startJob = async ({ db }) => {
     },
     commonCronConfig
   );
-  cron.schedule(
-    "0 0 * * *", // every day at midnight
+  cron.schedule("0 0 * * *", // every day at midnight
     () => {
       console.log(
         "🔁 Running auto-cleanup for Operation Failed scenario sessions..."
@@ -116,6 +126,17 @@ const startJob = async ({ db }) => {
     },
     commonCronConfig
   );
+
+  cron.schedule("*/30 * * * * *",   // Every 30 seconds
+    () => {
+      console.log("Checking backup status for all UPIDs...");
+      jobs.checkbackupstatus({ db }).catch(err =>
+        console.error("Backup status cron failed:", err)
+      );
+    },
+    commonCronConfig
+  );
 };
+
 
 module.exports = startJob;

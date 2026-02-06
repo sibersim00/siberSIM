@@ -242,8 +242,8 @@ const Instructors = () => {
       compStatus === ""
         ? "Instructor_All"
         : compStatus === "true"
-        ? "Instructor_Active"
-        : "Instructor_Inactive";
+          ? "Instructor_Active"
+          : "Instructor_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -255,44 +255,44 @@ const Instructors = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
- 
-
-const onFilterChanged = (data) => {
-  setQuickFilter(data);
-  const val = data.toLowerCase();
-
-  let filteredList = hasGetinstructorSucc ?? [];
-
-  // Apply status filter based on compStatus
-  if (compStatus === "true") {
-    filteredList = filteredList.filter((d) => d?.status?.toString() === "true");
-  } else if (compStatus === "false") {
-    filteredList = filteredList.filter((d) => d?.status?.toString() === "false");
-  }
-
-  const temp = filteredList.filter((d) => {
-    const fullName = `${(d.firstname ?? "")} ${(d.lastname ?? "")}`.toLowerCase();
-
-    return (
-      fullName.includes(val) || // match combined full name
-      (typeof d.loginid === "string" && d.loginid.toLowerCase().includes(val)) ||
-      (typeof d.firstname === "string" && d.firstname.toLowerCase().includes(val)) ||
-      (typeof d.lastname === "string" && d.lastname.toLowerCase().includes(val)) ||
-      (typeof d.email === "string" && d.email.toLowerCase().includes(val)) ||
-      (typeof d.address === "string" && d.address.toLowerCase().includes(val)) ||
-      (typeof d.organization === "string" && d.organization.toLowerCase().includes(val)) ||
-      ((typeof d.mobile === "number" || typeof d.mobile === "string") &&
-        String(d.mobile).toLowerCase().includes(val)) ||
-      !val
-    );
-  });
-
-  setGridData(temp);
-  setRowData(temp);
-};
 
 
- 
+  const onFilterChanged = (data) => {
+    setQuickFilter(data);
+    const val = data.toLowerCase();
+
+    let filteredList = hasGetinstructorSucc ?? [];
+
+    // Apply status filter based on compStatus
+    if (compStatus === "true") {
+      filteredList = filteredList.filter((d) => d?.status?.toString() === "true");
+    } else if (compStatus === "false") {
+      filteredList = filteredList.filter((d) => d?.status?.toString() === "false");
+    }
+
+    const temp = filteredList.filter((d) => {
+      const fullName = `${(d.firstname ?? "")} ${(d.lastname ?? "")}`.toLowerCase();
+
+      return (
+        fullName.includes(val) || // match combined full name
+        (typeof d.loginid === "string" && d.loginid.toLowerCase().includes(val)) ||
+        (typeof d.firstname === "string" && d.firstname.toLowerCase().includes(val)) ||
+        (typeof d.lastname === "string" && d.lastname.toLowerCase().includes(val)) ||
+        (typeof d.email === "string" && d.email.toLowerCase().includes(val)) ||
+        (typeof d.address === "string" && d.address.toLowerCase().includes(val)) ||
+        (typeof d.organization === "string" && d.organization.toLowerCase().includes(val)) ||
+        ((typeof d.mobile === "number" || typeof d.mobile === "string") &&
+          String(d.mobile).toLowerCase().includes(val)) ||
+        !val
+      );
+    });
+
+    setGridData(temp);
+    setRowData(temp);
+  };
+
+
+
   useEffect(() => {
     if (hasGetinstructorSucc) {
       if (compStatus === "") {
@@ -387,7 +387,7 @@ const onFilterChanged = (data) => {
 
   useEffect(() => {
     dispatch(getListOfinstructor());
-    return () => {};
+    return () => { };
   }, []);
 
 
@@ -396,20 +396,9 @@ const onFilterChanged = (data) => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -417,6 +406,17 @@ const onFilterChanged = (data) => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -577,7 +577,7 @@ const onFilterChanged = (data) => {
     }).then((result) => {
       if (result.isConfirmed) {
         const instructor_useruuid = data?.instructor_uuid;
-        window.open(`/instructor-verification/${instructor_useruuid}`, '_blank');
+        window.open(`${process.env.BASE_PATH}instructor-verification/${instructor_useruuid}`, '_blank');
 
         dispatch(verifyInstructorData({ instructor_useruuid }));
       }

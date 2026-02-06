@@ -23,6 +23,15 @@ const FormComponentCategory = (props) => {
   const category_path = FilePath.component_categories;
   const ismulti = false;
 
+    const [isDark, setIsDark] = useState(false);
+  
+    useEffect(() => {
+    const theme = localStorage.getItem("theme_preference") || "light";
+    setIsDark(theme === "dark");
+  }, []);
+
+  // const theme = localStorage.getItem("theme_preference") || "light";
+  // const isDark = theme === "dark";
   const { t, i18n } = useTranslation();
   const noEmojiTest = (value) => {
     if (typeof value !== "string") return true;
@@ -196,7 +205,7 @@ const FormComponentCategory = (props) => {
                                   top: "2px",
                                   right: "5px",
                                   cursor: "pointer",
-                                  color: "#212122ff",
+                                  color: isDark ? "#f1a139ff" : "#212122ff",  // icon color changes too
                                 }}
                               ></i>
                             </OverlayTrigger>

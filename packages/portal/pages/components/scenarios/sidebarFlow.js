@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Row, Col, Card, Button, Form } from "react-bootstrap";
+import {Button } from "react-bootstrap";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -9,9 +9,13 @@ import {
 import {
   getSenarioDigramList,
   getSingleScenarios,
-  clearSingleScenarios,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 import CopyScenarioModal from "../../../shared/data/scenarios/copyScenarioModal";
+const normalizeImageUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  return `${process.env.API_URL_FILEMANAGER}${url}`;
+};
 
 const sidebarFlow = ({
   setDraggedNode,
@@ -261,28 +265,46 @@ const sidebarFlow = ({
       setcopyModal(true);
     }
   };
-console.log("imageNodeDataimageNodeData",imageNodeData);
 
-  useEffect(() => {
-  if (imageNodeData && imageNodeData.length > 0) {
-    const updated = imageNodeData.map((node) => {
-      if (node.imageUrl && !node.imageUrl.startsWith("http")) {
-        return {
-          ...node,
-          imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl}`,
-        };
-      }
-      return node;
-    });
+// useEffect(() => {
+//   if (!getScenarioFlowchart) return;
 
-    // Only update if there’s a change (to prevent infinite loops)
-    const changed = JSON.stringify(updated) !== JSON.stringify(imageNodeData);
-    if (changed) {
-      console.log("Fixed missing image URLs after render");
-      setImageNodeData(updated);
-    }
+//   const parsedComponents = JSON.parse(getScenarioFlowchart.components);
+
+//   const normalizedComponents = parsedComponents.map((node) => ({
+//     ...node,
+//     componentid: node.componentid || node.componentId || node.id,
+//     imageUrl: normalizeImageUrl(
+//       node.imageUrl || node.subcategoryimage
+//     ),
+//   }));
+
+//   setImageNodeData(normalizedComponents);
+// }, [getScenarioFlowchart]);
+useEffect(() => {
+  if (!getScenarioFlowchart?.components) {
+    setImageNodeData([]);
+    return;
   }
-}, [imageNodeData]);
+  let parsedComponents = [];
+  try {
+    const parsed = JSON.parse(getScenarioFlowchart.components);
+    parsedComponents = Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("Invalid components JSON", err);
+    parsedComponents = [];
+  }
+  const normalizedComponents = parsedComponents.map((node) => ({
+    ...node,
+    componentid: node.componentid || node.componentId || node.id,
+    imageUrl: normalizeImageUrl(
+      node.imageUrl || node.subcategoryimage
+    ),
+  }));
+  setImageNodeData(normalizedComponents);
+}, [getScenarioFlowchart]);
+
+
 
 useEffect(() => {
   if (!imageNodeData || imageNodeData.length === 0) return;
@@ -373,7 +395,6 @@ useEffect(() => {
           />
         </div>
       </div>
-      {/* Row 2: Second Select (full width) */}
       <div className="mb-3">
         <Select
           name="component"
@@ -415,7 +436,6 @@ useEffect(() => {
         />
       </div>
 
-      {/* Row 3+: Image Nodes Grid */}
       <div
         style={{
           display: "grid",
@@ -462,6 +482,8 @@ useEffect(() => {
           </div>
         ))}
       </div>
+
+      
       <CopyScenarioModal
         openFlag={copyModal}
         setcopyModal={setcopyModal}

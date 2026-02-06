@@ -2,10 +2,10 @@ const joi = require('joi');
 
 const schema = joi.object({
   identification: joi.string().trim().strict().required().min(3).max(30).messages({
-    "any.required": `Identification is a required.`,
-    "string.empty": `Identification cannot be empty`,
-    "string.min": `Identification must be at least 3 characters long.`, // Custom min length message
-    "string.max": `Identification cannot exceed 30 characters.` // Custom max length message
+    "any.required": `Identification No is a required.`,
+    "string.empty": `Identification No cannot be empty`,
+    "string.min": `Identification No must be at least 3 characters long.`, // Custom min length message
+    "string.max": `Identification No cannot exceed 30 characters.` // Custom max length message
   }),
 
   title: joi.string().trim().strict().required().messages({
@@ -50,8 +50,8 @@ const schema = joi.object({
 
 const updateSchema = joi.object({
   identification: joi.string().trim().strict().required().max(30).messages({
-    "any.required": `Identification is a required.`,
-    "string.empty": `Identification cannot be empty`,
+    "any.required": `Identification No is a required.`,
+    "string.empty": `Identification No cannot be empty`,
   }),
   title: joi.string().trim().strict().required().messages({
     "any.required": `Title is a required.`,

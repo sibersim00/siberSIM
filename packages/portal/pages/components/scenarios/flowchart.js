@@ -237,8 +237,8 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  right: -50,
-                  top: `${offsetPercent}%`,
+                  right: -60,
+                  top: `60%`,
                   transform: "translateY(-50%)",
                 };
                 break;
@@ -265,8 +265,8 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  left: -50,
-                  top: `${offsetPercent}%`,
+                  left: -60,
+                  top: `60%`,
                   transform: "translateY(-50%)",
                 };
                 break;
@@ -384,7 +384,7 @@ const DnDFlow = ({
           {
             ...params,
             type: "custom",
-            isAttacked: "Yes",
+            isAttacked: "No",
             data: {
               label: "",
               source: params.source,
@@ -651,8 +651,8 @@ const DnDFlow = ({
         </div>
       </div>
       <div className="justify-content-end d-flex">
-        <div class="pull-left">
-          <small class="text-warning d-block mt-2">
+        <div className="pull-left">
+          <small className="text-warning d-block mt-2">
             Note: After saving the diagram, ensure the components order is
             reinitialized or reset to maintain consistency.
           </small>

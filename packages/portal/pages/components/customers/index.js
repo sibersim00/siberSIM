@@ -7,6 +7,7 @@ import {
   OverlayTrigger,
   Tooltip,
   Offcanvas,
+  Popover,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,12 +27,39 @@ import {
   getCustomerLicense,
   clearAddLicenseData,
   clearHasError,
+  resendLicenseEmail,
+  clearResendLicenseData,
 } from "../../../shared/redux/slices/customers/customer";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import CustomerModal from "../../../shared/data/admin/modals/CustomerModal";
 import LicenseModal from "../../../shared/data/admin/modals/LicenseModal";
+// const copyToClipboard = (text) => {
+//   navigator.clipboard.writeText(text);
+// };
+
+const copyToClipboard = async (text) => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for HTTP / older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+  } catch (err) {
+    console.error("Copy failed", err);
+  }
+};
+
 
 const Customers = () => {
   const dispatch = useDispatch();
@@ -43,6 +71,7 @@ const Customers = () => {
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [formModal, setformModal] = useState(false);
+  const [openTooltip, setOpenTooltip] = useState({ gridId: null, rowIndex: null });
   const [rowValues, setRowValues] = useState({
     title: "Add",
     orgcode: "",
@@ -58,6 +87,7 @@ const Customers = () => {
   const [licenseSearch, setLicenseSearch] = useState("");
   const [originalLicenseData, setOriginalLicenseData] = useState([]);
   const [hideCanvasForModal, setHideCanvasForModal] = useState(false);
+  
 
   const handleOpenCanvas = (data) => {
     setCanvasData(data);
@@ -77,6 +107,7 @@ const Customers = () => {
     addLisenceData,
     editCustomerData,
     getCustomerLicenseData,
+    resendEmailSucc,
     errorData,
   } = useSelector((state) => {
     return {
@@ -100,7 +131,10 @@ const Customers = () => {
 
       getCustomerLicenseData:
         state && state.customerData && state.customerData.customerLicenseResp,
-
+      resendEmailSucc:
+        state &&
+        state.customerData &&
+        state.customerData.resendLicenseResp,
       errorData: state && state.customerData && state.customerData.error,
     };
   });
@@ -215,15 +249,16 @@ const Customers = () => {
   }, [getCustomerLicenseData]);
 
   const y_m_d = (date) => {
-    const selectedDate = new Date(date);
-    const formattedDate =
-      selectedDate.getFullYear() +
-      "-" +
-      ("0" + (selectedDate.getMonth() + 1)).slice(-2) +
-      "-" +
-      ("0" + selectedDate.getDate()).slice(-2);
-    return formattedDate;
-  };
+  const d = new Date(date);
+  return (
+    ("0" + d.getDate()).slice(-2) +
+    "-" +
+    ("0" + (d.getMonth() + 1)).slice(-2) +
+    "-" +
+    d.getFullYear()
+  );
+};
+
   const handleLicenseSearch = (val) => {
     setLicenseSearch(val);
     val = val.toLowerCase();
@@ -245,21 +280,40 @@ const Customers = () => {
     setLicenseData(filtered);
   };
 
+  const handleCopy = (licenseKey, gridId, rowIndex) => {
+    navigator.clipboard.writeText(licenseKey);
+    
+    // Show copied state briefly, then close
+    setOpenTooltip({ gridId, rowIndex, copied: true });
+    
+    setTimeout(() => {
+      setOpenTooltip({ gridId: null, rowIndex: null });
+    }, 1500);
+  };
+
   const licenseColumnDefs = [
     {
       headerName: "Sr No.",
       valueGetter: "node.rowIndex + 1",
-      width: 90,
-      maxWidth: 90,
-      minWidth: 90,
+      width: 80,
+      maxWidth: 80,
+      minWidth: 80,
       floatingFilter: true,
     },
-
+   {
+      headerName: "Domain URL",
+      field: "domain_url",
+      filter: true,
+      width: 420,
+      minWidth: 420,
+      floatingFilter: true,
+      tooltipField: "domain_url",
+    },
     {
       headerName: "Start Date",
       field: "start_date",
       filter: true,
-      width: 150,
+      width: 200,
       floatingFilter: true,
       valueFormatter: (params) => (params.value ? y_m_d(params.value) : ""),
       tooltipValueGetter: (params) => (params.value ? y_m_d(params.value) : ""),
@@ -269,57 +323,46 @@ const Customers = () => {
       headerName: "End Date",
       field: "expiry_date",
       filter: true,
-      width: 150,
+      width: 200,
       floatingFilter: true,
       valueFormatter: (params) => (params.value ? y_m_d(params.value) : ""),
       tooltipValueGetter: (params) => (params.value ? y_m_d(params.value) : ""),
     },
 
     {
-      headerName: "Domain URL",
-      field: "domain_url",
-      filter: true,
-      width: 200,
-      floatingFilter: true,
-      tooltipField: "domain_url",
-    },
-
-    {
-      headerName: "License Key",
-      field: "license_key",
-      filter: true,
-      width: 210,
-      flex: 1,
-      floatingFilter: true,
-      tooltipField: "license_key",
-    },
-
-    {
-      headerName: "SIMUser",
+      headerName: "User Scenario Limit",
       field: "sim_user_count",
       filter: true,
-      width: 150,
+      width: 170,
+      minWidth: 170,
       floatingFilter: true,
       tooltipField: "sim_user_count",
     },
 
-    {
-      headerName: "SIMMaster",
-      field: "sim_mst_count",
-      filter: true,
-      width: 150,
-      floatingFilter: true,
-      tooltipField: "sim_mst_count",
+      {
+      headerName: "License Key",
+      field: "license_key",
+      sortable: false,
+      cellRenderer: "viewLicenseButtonRenderer",
+      maxWidth: 120,
+      pinned: "right",
+
+      cellStyle: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
     },
 
-    {
-      headerName: "SIMManager",
-      field: "sim_investor_count",
-      filter: true,
-      width: 150,
-      floatingFilter: true,
-      tooltipField: "sim_investor_count",
-    },
+  {
+  headerName: "Resend Email",
+  field: "",
+  sortable: false,
+  maxWidth: 120,
+  pinned: "right",
+  cellRenderer: "resendLicenseButtonRenderer",
+}
+
   ];
 
   const onFilterChanged = (data) => {
@@ -420,6 +463,97 @@ const Customers = () => {
       </div>
     );
   },
+viewLicenseButtonRenderer: function (props) {
+  const licenseKey = props.data.license_key;
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    copyToClipboard(licenseKey);
+    setCopied(true);
+
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  const popover = (
+    <Popover id="license-popover" style={{ minWidth: "220px" }}>
+      <Popover.Header as="h3">License Key</Popover.Header>
+      <Popover.Body>
+        <div
+          className="d-flex justify-content-between align-items-center"
+          style={{ fontSize: "14px" }}
+        >
+          <span>{licenseKey}</span>
+
+          {/* COPY or TICK ICON */}
+          {!copied ? (
+            <i
+              className="mdi mdi-content-copy"
+              style={{ cursor: "pointer", fontSize: "18px" }}
+              title="Copy"
+              onClick={handleCopy}
+            ></i>
+          ) : (
+            <i
+              className="mdi mdi-check"
+              style={{ cursor: "pointer", fontSize: "18px", color: "green", fontWeight: "bold" }}
+            ></i>
+          )}
+        </div>
+      </Popover.Body>
+    </Popover>
+  );
+
+  return (
+    <OverlayTrigger trigger="click" placement="left" overlay={popover} rootClose>
+      <div
+        className="btn btn-sm ripple bg-secondary-transparent text-secondary rounded-circle"
+        style={{ cursor: "pointer" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <i className="fe fe-eye"></i>
+      </div>
+    </OverlayTrigger>
+  );
+},
+
+resendLicenseButtonRenderer: function (props) {
+  const dispatch = useDispatch();
+
+  const handleResend = () => {
+    Swal.fire({
+      title: "Resend Email?",
+      text: "Do you want to resend this license email?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: "Yes, resend",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(
+          resendLicenseEmail({
+             customer_license_id: props.data.customer_license_id,
+              // customer_id: props.data.customer_id  
+          })
+        );
+      }
+    });
+  };
+
+  return (
+    <div className="text-center">
+      <Button
+        size="sm"
+        className="btn btn-success"
+        onClick={handleResend}
+      >
+        <i className="fe fe-send"></i>
+      </Button>
+    </div>
+  );
+},
 
   };
 
@@ -501,6 +635,23 @@ const Customers = () => {
       dispatch(cleareditStatusCustomerData());
     }
   }, [editStatusCustomerData]);
+
+    useEffect(() => {
+    if (resendEmailSucc?.statusCode) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {resendEmailSucc?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+      // dispatch(getCustomerList());
+      dispatch(clearResendLicenseData());
+    }
+  }, [resendEmailSucc]);
 
   const handleChangeView = (thisView) => {
     setQuickFilter("");
@@ -643,23 +794,20 @@ const Customers = () => {
     if (!licenseData || licenseData.length === 0) return;
 
     const exportData = licenseData.map((row) => [
+      row.domain_url,
       y_m_d(row.start_date),
       y_m_d(row.expiry_date),
-      row.domain_url,
-      row.license_key,
       row.sim_user_count,
-      row.sim_mst_count,
-      row.sim_investor_count,
+      row.license_key,
+    
     ]);
 
     const header = [
+      "Domain URL",
       "Start Date",
       "End Date",
-      "Domain URL",
+      "User Scenario Limit",
       "License Key",
-      "SIM User",
-      "SIM Master",
-      "SIM Manager",
     ];
 
     const ws = XLSX.utils.aoa_to_sheet([header, ...exportData]);
@@ -1007,16 +1155,26 @@ const Customers = () => {
                 
                   <Card.Body className="p-2">
                     <Row className="align-items-center">
-                      <div className="d-flex gap-3">
-                        <span className="fw-bold">
+                      <div className="d-flex gap-1">
+                       <div className="btn btn-sm ripple bg-info-transparent text-info rounded-circle">
+                        <i className="fe fe-user"></i></div>
+                        <span className="fw-bold me-4 pt-1">
                           {canvasData?.firstname || "-"} {canvasData?.lastname}
                         </span>
 
-                        <span className="fw-bold">
-                          {canvasData?.mobile || "-"}
-                        </span>
-
-                        <span className="fw-bold">
+                    {canvasData?.mobile && (
+        <>
+          <div className="btn btn-sm ripple bg-primary-transparent text-primary rounded-circle">
+            <i className="fe fe-phone-call"></i>
+          </div>
+          <span className="fw-bold me-4 pt-1">
+            {canvasData.mobile}
+          </span>
+        </>
+      )}
+                      <div className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle">
+                        <i className="fe fe-mail"></i></div>
+                        <span className="fw-bold me-4 pt-1">
                           {canvasData?.email || "-"}
                         </span>
                       </div>
@@ -1030,7 +1188,7 @@ const Customers = () => {
                   style={{ height: "80vh", width: "100%" }}
                 >
                   <AgGridReact
-                    id="cat_grid"
+                    id="license_grid"
                     className="ag-theme-alpine"
                     headerHeight={35}
                     rowHeight={40}
@@ -1040,7 +1198,8 @@ const Customers = () => {
                     pagination={true}
                     paginationPageSize={10}
                     defaultColDef={defaultColDef}
-                    onGridReady={onGridReady}
+                    components={frameworkComponents}
+                    context={{ gridId: 'license_grid' }}
                   />
                 </div>
               </Card.Body>

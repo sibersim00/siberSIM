@@ -28,9 +28,11 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     body.learner_id = req.learneruser.learner_id;
+    console.log("req.learneruser", req.learneruser)
     body.instructor_id = req.learneruser.instructor_id;
-    const result = await dao.startScenario({ db, validation })(body);
-    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, scenariolearnerid: result.scenariolearnerid || null, scenariolearnersessionid: result.scenariolearnersessionid || null, scenariolearnersessionuuid: result.scenariolearnersessionuuid || null });
+    const user_count_limit = req.learneruser.user_count_limit;
+    const result = await dao.startScenario({ db, validation })(body, user_count_limit);
+    return res.status(result.statusCode).send({ statusCode: result.statusCode, message: result.message, vmrequestid: result.vmrequestid || null });
   } catch (error) {
     console.error("Error saving scenario learner:", error.message);
     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
@@ -49,7 +51,6 @@ const updateSessionStatus = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
   }
 };
-
 const getSessionStatus = ({ dao, db, validation }) => async (req, res, next) => {
   try {
     const session_uuid = req.params.session_uuid;
@@ -63,7 +64,6 @@ const getSessionStatus = ({ dao, db, validation }) => async (req, res, next) => 
     return res.status(500).json({ statusCode: 500, message: validation.messages.SESSION_STATUS_ERROR });
   }
 };
-
 const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
   try {
     const { scenariolearnerid } = req.body;
@@ -76,7 +76,6 @@ const getMessagesByScenario = ({ dao, db }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, error: "An error occurred while fetching messages." });
   }
 };
-
 const sendMessage = ({ dao, db, validation }) => async (req, res) => {
   try {
     let body = req.body;
@@ -89,7 +88,6 @@ const sendMessage = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).json({ statusCode: 500, error: "An error occurred while sending the message." });
   }
 };
-
 const markMessagesSeen = ({ dao, db, validation }) => async (req, res) => {
   try {
     const viewer_type = req.learneruser ? 'learner' : 'instructor';
@@ -102,7 +100,6 @@ const markMessagesSeen = ({ dao, db, validation }) => async (req, res) => {
     res.status(500).json({ statusCode: 500, message: validation.messages.SERVER_ERROR });
   }
 };
-
 const getLogs = ({ dao, db, validation }) => async (req, res) => {
   try {
     const learner_id = req.learneruser.learner_id;
@@ -114,8 +111,6 @@ const getLogs = ({ dao, db, validation }) => async (req, res) => {
     return res.status(500).send({ statusCode: 500, message: validation.messages.LOGS_FETCH_ERROR });
   }
 };
-
-
 const getTabList = ({ dao, db, validation }) => async (req, res) => {
   try {
     const result = await dao.getTabList({ db })(null);
@@ -141,6 +136,45 @@ const getTabList = ({ dao, db, validation }) => async (req, res) => {
     });
   }
 };
+const getPaused = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const learner_id = req.learneruser.learner_id;
+    const result = await dao.getPaused({ db })(learner_id);
+    return res.status(200).send({
+      statusCode: 200,
+      // message: validation.messages.GET_ALL_SUCCESS,
+      data: result
+    });
+  } catch (err) {
+    console.error("Error in Paused:", err.message);
+    return res.status(500).send({
+      statusCode: 500,
+      message: validation.messages.GET_ALL_ERROR
+    });
+  }
+};
+
+const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const body = req.body;
+    const user_count_limit = req.learneruser.user_count_limit;
+    console.log("uuuuuuuuuuuuu",user_count_limit)
+    const result = await dao.canResumeScenario({ db, validation })(body,user_count_limit);
+
+    return res.status(result.statusCode).send({
+      statusCode: result.statusCode,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error("Error in canResumeScenario:", error.message);
+    return res.status(500).json({
+      statusCode: 500,
+      error: "An error occurred while checking scenario resume status.",
+    });
+  }
+};
+
+
 
 module.exports = {
   getAll,
@@ -152,5 +186,7 @@ module.exports = {
   updateSessionStatus,
   getSessionStatus,
   getLogs,
-  getTabList
+  getTabList,
+  getPaused,
+  canResumeScenario
 };

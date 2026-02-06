@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const keys = require("../keys");
 const db = require("../db").db;
 const crypto = require("./crypto");
-const generateAccessToken = async (userData) => {
+const generateAccessToken = async (hostname,userData) => {
   try {
     // Step 1: Encrypt payload for access_token
     const jwtObj = {
@@ -17,6 +17,14 @@ const generateAccessToken = async (userData) => {
     const refresh_token = jwt.sign(userData, keys.JWT_REFRESH_SECRET, {expiresIn: keys.JWT_REFRESH_EXPIRES_IN});
 
     const access_token = jwt.sign(jwtObj, keys.JWT_SECURITY_KEY, {expiresIn: keys.JWT_EXPIRES_IN,});
+    
+    //USER LICENSE KEY LOGIC
+    userData.license_key = null;
+    let [result] = await db.sequelize.query(`SELECT * FROM web_settings WHERE domain_url = '${hostname}' LIMIT 1`, { type: db.sequelize.QueryTypes.SELECT });
+    if(result?.license_key){
+      userData.license_key = result.license_key
+    }
+
     await db.sequelize.query(
       `INSERT INTO ad_user_refresh_tokens (userid,access_token,refresh_token,token_json, is_valid,logged_in,createdon) VALUES (?, ?, ?, ?, ?,CURRENT_TIMESTAMP, NOW())`,
       {
@@ -81,6 +89,17 @@ const authenticateToken = (routeslug = "") => {
         const menuSlugArray = userData.menuslugs || [];
 
         if (routeslug === "" || menuSlugArray.includes(routeslug)) {
+          if(userData.license_key){
+            let hostname = req.hostname;
+            const licenseStatus = serialLicense.validateJWTLicense(hostname,userData.license_key);
+            console.log("licenseStatus==========>",userData.license_key,"=====>",licenseStatus);
+            if (!licenseStatus) {
+              return res.status(503).send({
+              statusCode: 503,
+              message: userData.usertype =='Admin' ? "Access denied: Your license seems expired or not registered. Please update your license to continue." : "Your access has expired or is not activated. Please contact your administrator for assistance.",
+            });
+            }
+          }
           req.user = userData;
           next();
         } else {
@@ -143,7 +162,9 @@ const refreshToken = async (req, res, next) => {
         userData.date = new Date(); // update login time or activity
 
         // Generate a new access token
-        const new_access_token = await generateAccessToken(userData);
+        const hostname = req?.hostname;
+        console.log("req=========>",hostname);
+        const new_access_token = await generateAccessToken(hostname,userData);
 
         const responseData = {
           statusCode: 200,

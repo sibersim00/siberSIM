@@ -17,7 +17,8 @@ module.exports = function (iocContainer) {
     router.post('/get-license', controller.getLicenseByCustomerId(iocContainer));
     router.post("/license-save",validator(validation.licenseAddSchema, "body"), controller.saveLicense(iocContainer));
     router.post("/license-update",validator(validation.licenseUpdateSchema, "body"),controller.updateLicense(iocContainer));
-
+    router.get('/customer-dashboard', controller.dashboardData(iocContainer));
+    router.post("/license-resend",validator(validation.licenseResendSchema, "body"),controller.resendLicenseEmail(iocContainer));
 
     return router;
 }

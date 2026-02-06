@@ -53,7 +53,7 @@ axiosInstance.interceptors.response.use(
           if (result.isConfirmed) {
             axiosInstance.get(`/auth/refreshToken`).finally(() => { });
           } else {
-            axiosInstance.post(`/auth/logout`).finally(() => { isSwalOpen401=false; localStorage.clear(); Router.push('/'); });
+            axiosInstance.post(`/auth/logout`).finally(() => { isSwalOpen401=false;  document.body.classList.remove("dark-theme"); localStorage.clear(); Router.push('/'); });
           }
         });
       }
@@ -70,9 +70,24 @@ axiosInstance.interceptors.response.use(
           timer: 5000,
           timerProgressBar: true,
           didClose: () => {
-            axiosInstance.post(`/auth/logout`).finally(() => { isSwalOpen403=false; Router.push('/'); localStorage.clear();  });
+            axiosInstance.post(`/auth/logout`).finally(() => { isSwalOpen403=false;  document.body.classList.remove("dark-theme"); Router.push('/');  localStorage.clear();  });
           }
         })
+      }
+    } else if (error?.response?.status === 503) {
+      if(!isSwalOpen403){
+        isSwalOpen403 = true;
+        Swal.fire({
+          title: '',
+          text: error?.response?.data.message,
+          icon: 'warning',
+          confirmButtonText: 'Ok',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+           axiosInstance.post(`/auth/logout`).finally(() => { isSwalOpen403=false;  document.body.classList.remove("dark-theme"); Router.push('/'); localStorage.clear();  });
+          } 
+        });
       }
     } else if (error?.response?.status === 404) {
       //Requested Resource Not Found OR Server Side Wrror
@@ -91,7 +106,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'400px',
+            width:'330px',
           }
         });
       }else{
@@ -104,7 +119,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'400px',
+            width:'330px',
           }
         });
       }

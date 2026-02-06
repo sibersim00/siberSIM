@@ -204,7 +204,7 @@ const ScenarioForm = (props) => {
   }, []);
   useEffect(() => {
     if (rowValues) {
-      setScenarioId(rowValues?.scenarioid);
+      setScenarioId(rowValues?.scenariouuid);
       setIsChecked(rowValues?.status);
       setInitialHtml(rowValues?.scenariodescription);
     }
@@ -304,6 +304,7 @@ const ScenarioForm = (props) => {
   const [userId, setUserId] = useState("");
   const [scenarioId, setScenarioId] = useState("");
   console.log("usertype", getUserDataFromLocal.usertype);
+  console.log("scenarioId", scenarioId);
 
   useEffect(() => {
     if (
@@ -340,7 +341,7 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
-
+  console.log("saveScenariosData", saveScenariosData);
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
       toast.success(
@@ -499,7 +500,7 @@ const ScenarioForm = (props) => {
       };
       handleOneClick(true);
 
-      if (rowValues?.scenarioid) {
+      if (rowValues?.scenariouuid) {
         dispatch(updateScenarios(payload));
       } else {
         dispatch(saveScenarios(payload));

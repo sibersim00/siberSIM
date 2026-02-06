@@ -41,7 +41,14 @@ const FormScenarioCategory = (props) => {
   const ismulti = false;
   const [modalTitle, setModalTitle] = useState("Add");
   const { t } = useTranslation();
-
+      const [isDark, setIsDark] = useState(false);
+    
+      useEffect(() => {
+      const theme = localStorage.getItem("theme_preference") || "light";
+      setIsDark(theme === "dark");
+    }, []);
+//  const theme = localStorage.getItem("theme_preference") || "light";
+//   const isDark = theme === "dark";
   const { saveSubCategoriesData, errorData } = useSelector((state) => ({
     saveSubCategoriesData: state?.scenariocategories?.saveSubCategories,
     errorData: state?.scenariocategories?.error,
@@ -237,7 +244,7 @@ const FormScenarioCategory = (props) => {
                             top: "2px",
                             right: "5px",
                             cursor: "pointer",
-                            color: "#212122ff",
+                             color: isDark ? "#f1a139ff" : "#212122ff",
                           }}
                         ></i>
                       </OverlayTrigger>

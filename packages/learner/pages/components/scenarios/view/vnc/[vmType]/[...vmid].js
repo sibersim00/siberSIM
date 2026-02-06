@@ -1,10 +1,25 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { Modal, Button, OverlayTrigger, Tooltip } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  OverlayTrigger,
+  Tooltip,
+  Offcanvas,
+  Form,
+  Table,
+  Row,
+  Col,
+  Spinner,
+} from "react-bootstrap";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import Select from "react-select";
 import {
+  saveComponent,
+  clearSaveComponent,
+  saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
   saveSnapshot,
@@ -12,10 +27,27 @@ import {
   getSnapshot,
   deleteSnapshot,
   restoresnapshot,
+  getSingleVMDetail,
+  clearCustomComponent,
+  qemuconfig,
+  stopVm,
+  rejectStoppedVm,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
 import snapicon from "../../../../../../public/assets/img/pngs/snap.png";
+import { getCategoriesList } from "../../../../../../shared/redux/slices/commons/commons";
+import dynamic from "next/dynamic";
+const FileUploader = dynamic(
+  () => {
+    return import("../../../../../../shared/data/common/fileuploads/fileuploader");
+  },
+  { ssr: false },
+);
+import { FilePath } from "../../../../../../shared/data/common/fileuploads/filepath";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
@@ -24,7 +56,6 @@ export default function ProxmoxConsole() {
   const router = useRouter();
   const [backend] = useState(`${process.env.VNC_PROXY_URL}`);
   const { vmid, vmType } = router.query;
-
   const [status, setStatus] = useState("Click Connect to start.");
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -37,21 +68,42 @@ export default function ProxmoxConsole() {
   const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [catDropDownData, setCatDropDownData] = useState([]);
+  const updateStatus = (msg) => setStatus(msg);
+  const [isSaving, setIsSaving] = useState(false);
+  const ismulti = false;
+  const category_path = FilePath.component_image;
   const snapshotApiData = useSelector(
-    (state) => state.scenarios?.getSnapshot?.data?.snapshots || []
+    (state) => state.scenarios?.getSnapshot?.data?.snapshots || [],
   );
   const snapshotApiData1 = useSelector(
-    (state) => state.scenarios?.getSnapshot?.data || []
+    (state) => state.scenarios?.getSnapshot?.data || [],
   );
-  const rollSnapdata = useSelector(
-    (state) => state.scenarios?.getrestoresnapshot || []
+  const saveCustomComponent1 = useSelector(
+    (state) => state.scenarios?.saveCustomComponent || {},
+  );
+  const hasgetqemuconfig = useSelector(
+    (state) => state.scenarios?.hasgetqemuconfig || {},
   );
   const handleSelectSnapshot = (snapshotId) => {
     setSelectedSnapshotId(snapshotId);
   };
+  const { getVMdetail } = useSelector((state) => state.scenarios);
+  const catListData = useSelector(
+    (state) => state.commonsdata?.getMasterCatListData?.data || [],
+  );
 
-  const updateStatus = (msg) => setStatus(msg);
+  const customcomponentid = saveCustomComponent1?.customcomponentid;
+  const vmStatus = getVMdetail?.data?.vm_status;
+  const customRequestStatus = getVMdetail?.data?.custom_request_status;
+  const qemuConfigRef = useRef({});
+  useEffect(() => {
+    if (hasgetqemuconfig && Object.keys(hasgetqemuconfig).length > 0) {
+      qemuConfigRef.current = hasgetqemuconfig;
+    }
+  }, [hasgetqemuconfig]);
   useEffect(() => {
     const token = localStorage.getItem("accessTokenLearner");
     if (!token) router.replace("/404");
@@ -65,13 +117,100 @@ export default function ProxmoxConsole() {
     realVmid = vmid || "";
   }
 
+  useEffect(() => {
+    if (realVmid) {
+      dispatch(getSingleVMDetail(realVmid));
+    }
+  }, [dispatch, realVmid]);
+
+  const handleConnectClick = async () => {
+    if (vmStatus === "Stopped" && customRequestStatus) {
+      const result = await Swal.fire({
+        title: "Virtual Machine is Stopped",
+        text: "This VM is currently stopped. If you force start it, your request against this VM may be automatically rejected. Do you want to continue?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Start VM",
+        cancelButtonText: "No, Cancel",
+      });
+
+      if (!result.isConfirmed) {
+        // ❌ User clicked NO
+        return;
+      }
+
+      try {
+        // User clicked YES → Start VM
+        setOverlayLoading(true);
+        updateStatus("Processing request...");
+        await dispatch(
+          rejectStoppedVm({
+            vmid: realVmid,
+          }),
+        );
+        updateStatus("Starting virtual machine...");
+
+        await dispatch(
+          vmStartScenario({
+            vmid: realVmid,
+            vmType,
+          }),
+        );
+
+        // Optional small delay to allow VM to boot
+        setTimeout(() => {
+          setOverlayLoading(false);
+          connect(); // 🚀 Continue normal VNC flow
+        }, 3000);
+      } catch (err) {
+        setOverlayLoading(false);
+        Swal.fire(
+          "Failed",
+          "Unable to start the virtual machine. Please try again later.",
+          "error",
+        );
+      }
+
+      return;
+    }
+    if (vmStatus === "Stopped" && !customRequestStatus) {
+      try {
+        setOverlayLoading(true);
+        updateStatus("Starting virtual machine...");
+
+        await dispatch(
+          vmStartScenario({
+            vmid: realVmid,
+            vmType,
+          }),
+        );
+
+        setTimeout(() => {
+          setOverlayLoading(false);
+          connect();
+        }, 3000);
+      } catch (err) {
+        setOverlayLoading(false);
+        Swal.fire(
+          "Failed",
+          "Unable to start the virtual machine. Please try again later.",
+          "error",
+        );
+      }
+
+      return;
+    }
+
+    //  VM is not stopped → connect directly
+    connect();
+  };
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
         `/ticket?vmid=${encodeURIComponent(
-          realVmid
+          realVmid,
         )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
-          cleanName
+          cleanName,
         )}`,
       {
         method: "GET",
@@ -79,22 +218,20 @@ export default function ProxmoxConsole() {
           Authorization: `Bearer ${localStorage.getItem("accessTokenLearner")}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     const data = await res.json();
     if (!data.ticket) throw new Error("Failed to get VNC ticket");
     return data.ticket;
   };
-
   const intentionalDisconnect = useRef(false);
-
   const connect = async (reconnecting = false) => {
     try {
       setLoading(true);
       updateStatus("Requesting ticket...");
       intentionalDisconnect.current = false;
-
+      // await dispatch(vmStartScenario({ vmid, vmType }));
       const { default: RFB } = await import("@novnc/novnc/core/rfb");
 
       if (rfbRef.current) {
@@ -107,9 +244,9 @@ export default function ProxmoxConsole() {
       const ticket = await fetchVNCTicket();
       const wsUrl = `${backend.replace(
         /\/$/,
-        ""
+        "",
       )}/vnc?vmid=${encodeURIComponent(vmid)}&vmType=${encodeURIComponent(
-        vmType
+        vmType,
       )}`;
 
       updateStatus("Connecting to VNC...");
@@ -164,6 +301,24 @@ export default function ProxmoxConsole() {
 
   const sendCtrlAltDel = () => rfbRef.current?.sendCtrlAltDel();
 
+  const closeVNC = () => {
+    intentionalDisconnect.current = true;
+
+    if (rfbRef.current) {
+      try {
+        rfbRef.current.disconnect();
+      } catch (e) {
+        console.error("VNC disconnect error:", e);
+      }
+      rfbRef.current = null;
+    }
+
+    setConnected(false);
+    setSidebarOpen(false);
+    setStatus(
+      "The VM is currently stopped Please click on the component again to start the VM and connect to the console.",
+    );
+  };
   const wrapperRef = useRef(null);
   const toggleFullscreen = () => {
     if (wrapperRef.current) {
@@ -171,7 +326,7 @@ export default function ProxmoxConsole() {
         wrapperRef.current
           .requestFullscreen()
           .catch((err) =>
-            console.error(`Error attempting fullscreen: ${err.message}`)
+            console.error(`Error attempting fullscreen: ${err.message}`),
           );
       } else {
         document.exitFullscreen();
@@ -233,7 +388,7 @@ export default function ProxmoxConsole() {
         updateStatus("Starting VM...");
 
         try {
-          await dispatch(vmStartScenario({ vmid, vmType }));
+          await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
         } catch (err) {
           updateStatus(err.message);
         } finally {
@@ -265,7 +420,7 @@ export default function ProxmoxConsole() {
         updateStatus("Resetting VM...");
 
         try {
-          await dispatch(vmRestartScenario({ vmid, vmType }));
+          await dispatch(vmRestartScenario({ vmid: Number(realVmid), vmType }));
         } catch (err) {
           updateStatus(err.message);
         } finally {
@@ -325,19 +480,13 @@ export default function ProxmoxConsole() {
       setShowWarning(false);
     }
   };
-  console.log("showWarning",showWarning);
-  
+  console.log("showWarning", showWarning);
+
   useEffect(() => {
     if (realVmid && vmType) {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
     }
   }, [realVmid, vmType]);
-
-  // useEffect(() => {
-  //   if (snapshotList.length > 0 && !selectedSnapshotId) {
-  //     setSelectedSnapshotId(snapshotList[0].snapshotid); // Auto-select first card
-  //   }
-  // }, [snapshotList, selectedSnapshotId]);
 
   const confirmRollback = async (payload) => {
     const confirm = await Swal.fire({
@@ -410,7 +559,7 @@ export default function ProxmoxConsole() {
           "Snapshot deleted successfully.",
       });
       setSnapshotList((prev) =>
-        prev.filter((s) => s.snapshot_name !== snapName)
+        prev.filter((s) => s.snapshot_name !== snapName),
       );
     } catch (err) {
       Swal.fire({
@@ -427,6 +576,283 @@ export default function ProxmoxConsole() {
       setShowRollbackModal(false);
     }
   };
+
+  const [showConvertDrawer, setShowConvertDrawer] = useState(false);
+  const [vmDetails, setVmDetails] = useState({
+    memory: "",
+    cpu: "",
+    ports: [],
+    storage: "",
+  });
+
+  // const handleOpenDrawer = () => setShowConvertDrawer(true);
+  const handleOpenDrawer = async () => {
+    setShowConvertDrawer(true); // open drawer immediately
+
+    const payload = {
+      vmid: Number(realVmid),
+      vmType: getVMdetail?.data?.componenttype,
+    };
+    console.log("payloadpayloadpayloadpayload", payload);
+
+    const result = await dispatch(qemuconfig(payload));
+    console.log("resultresultresult", result);
+  };
+
+  const handleCloseDrawer = () => {
+    setShowConvertDrawer(false);
+    formik.resetForm();
+  };
+  useEffect(() => {
+    if (getVMdetail?.data) {
+      const details = getVMdetail.data;
+      setVmDetails({
+        memory: details.memory || "N/A",
+        cpu: details.cores || "N/A",
+        ports: details.network_ports ? details.network_ports.split("\n") : [],
+        storage: details.storage || "N/A",
+      });
+    }
+  }, [getVMdetail]);
+
+  useEffect(() => {
+    dispatch(getCategoriesList());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (Array.isArray(catListData) && catListData.length > 0) {
+      const formatted = catListData.map((item) => ({
+        label: item.componentcategory,
+        value: item.componentcategoryid,
+      }));
+      setCatDropDownData(formatted);
+    }
+  }, [catListData]);
+
+  const handleUpload = (name = "", files = "", flag = "") => {
+    formik.setFieldValue("flag", flag); // Set remove or update
+    if (ismulti) {
+      let selectedFiles = [];
+      files.filter((f) => {
+        selectedFiles.push(f.file);
+      });
+      let filesStr = selectedFiles.join(",");
+      formik.setFieldValue(name, filesStr ? filesStr : "");
+      setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
+    } else {
+      formik.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
+      setUploadedFile(
+        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
+      );
+    }
+  };
+  console.log("getVMdetail", getVMdetail);
+
+  const formik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      // componentName: "",
+      componentName: getVMdetail?.data?.componentname
+        ? `${getVMdetail.data.componentname}.NEW`
+        : "",
+      componentcategoryid: "",
+      duration: "", // <-- added
+      componentimage: "",
+    },
+    validationSchema: Yup.object({
+      // componentName: Yup.string().required("Component name is required"),
+      componentName: Yup.string()
+        .required("Component name is required")
+        .test(
+          "no-leading-trailing-spaces",
+          "Component name must not have spaces at the beginning or end",
+          (value) => value === value?.trim(),
+        ),
+      // .matches(/\.NEW$/, "Component name must end with .NEW"),
+      componentcategoryid: Yup.string().required(
+        "Component category is required",
+      ),
+      duration: Yup.number().nullable(), // optional field
+      componentimage: Yup.string().nullable(),
+    }),
+
+    onSubmit: async (values) => {
+      try {
+        setIsSaving(true);
+        setOverlayLoading(true);
+        const approvalFlag = qemuConfigRef?.current?.approvalFlag;
+        const stopMessage = qemuConfigRef?.current?.stopMessage;
+        const mustStopVM = qemuConfigRef?.current?.mustStopVM;
+
+        console.log("approvalFlag", approvalFlag);
+        if (mustStopVM === true) {
+          const stopConfirm = await Swal.fire({
+            title: "Stop Virtual Machine?",
+            text:
+              stopMessage ||
+              "This action requires stopping the virtual machine. Do you want to continue?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Stop it",
+            cancelButtonText: "No, Cancel",
+          });
+
+          //  User clicked NO → STOP submission completely
+          if (!stopConfirm.isConfirmed) {
+            setIsSaving(false);
+            return;
+          }
+          const stopRes = await dispatch(
+            stopVm({
+              vmid: realVmid,
+              vmType: getVMdetail?.data?.componenttype,
+            }),
+          );
+          console.log("stopRes", stopRes);
+          if (stopRes?.statusCode === 200) {
+            closeVNC();
+            Swal.fire(
+              "Success",
+              stopRes?.message || "Successfully stopped VM",
+              "success",
+            );
+          } else {
+            await Swal.fire(
+              "Error",
+              stopRes?.message || "Failed to stop VM",
+              "error",
+            );
+            setShowConvertDrawer(false);
+            return;
+          }
+        }
+
+        /************** AUTO APPROVAL *****************/
+        if (approvalFlag === true) {
+          // 1️⃣ SAVE CUSTOM COMPONENT FIRST
+          const payload1 = {
+            componentname: values.componentName,
+            componentcategoryid: values.componentcategoryid,
+            scenarioid: getVMdetail?.data?.scenarioid,
+            componenttype: getVMdetail?.data?.componenttype,
+            learner_id: getVMdetail?.data?.learner_id,
+            clone_vmid: realVmid,
+            duration: values.duration || null,
+            componentimage: values.componentimage || "",
+          };
+
+          const saveRes = await dispatch(saveCustomComponent(payload1));
+          console.log("saveRes", saveRes?.data?.customcomponentid);
+          if (!saveRes?.success) {
+            setIsSaving(false);
+            setOverlayLoading(false);
+            await Swal.fire(
+              "Error",
+              saveRes?.error?.error ||
+                saveRes?.error?.message ||
+                "Failed to save component",
+              "error",
+            );
+            setShowConvertDrawer(false);
+            return;
+          }
+
+          // 2️⃣ THEN CREATE ACTUAL COMPONENT
+          const payload = {
+            componentname: values.componentName,
+            componentcategoryid: values.componentcategoryid,
+            subcategoryTypeid: getVMdetail?.data?.componenttype,
+            scenarioid: getVMdetail?.data?.scenarioid,
+            learner_id: getVMdetail?.data?.learner_id,
+            vmid: realVmid,
+            vmid_name: getVMdetail?.data?.vmid_name,
+            duration: values.duration || null,
+            componentimage: values.componentimage || "",
+            customcomponentid: saveRes?.data?.customcomponentid,
+          };
+          console.log("payload", payload);
+          const res = await dispatch(saveComponent(payload));
+
+          if (!res?.success) {
+            setOverlayLoading(false);
+            setIsSaving(false);
+            await Swal.fire(
+              "Error",
+              res?.error?.error ||
+                res?.error?.message ||
+                "Failed to Save component",
+              "error",
+            );
+            setShowConvertDrawer(false);
+            return;
+          }
+
+          Swal.fire("Success", "Component created successfully", "success");
+          setShowConvertDrawer(false);
+          dispatch(clearCustomComponent());
+          dispatch(clearSaveComponent());
+          formik.resetForm();
+          return;
+        }
+
+        /************** MANUAL APPROVAL CONFIRMATION *****************/
+        const confirmResult = await Swal.fire({
+          title: "Are you sure?",
+          text: stopMessage || "Do you want to proceed?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, proceed",
+          cancelButtonText: "Cancel",
+        });
+
+        if (!confirmResult.isConfirmed) return;
+        /************** SAVE CUSTOM COMPONENT (MANUAL APPROVAL) *****************/
+        const payload1 = {
+          componentname: values.componentName,
+          componentcategoryid: values.componentcategoryid,
+          scenarioid: getVMdetail?.data?.scenarioid,
+          componenttype: getVMdetail?.data?.componenttype,
+          learner_id: getVMdetail?.data?.learner_id,
+          clone_vmid: realVmid,
+          duration: values.duration || 0,
+          componentimage: values.componentimage || "",
+        };
+
+        const saveRes = await dispatch(saveCustomComponent(payload1));
+
+        if (!saveRes?.success) {
+          await Swal.fire(
+            "Error",
+            saveRes?.error?.error ||
+              saveRes?.error?.message ||
+              "Failed to save component",
+            "error",
+          );
+          setShowConvertDrawer(false);
+          return;
+        }
+
+        Swal.fire(
+          "Success",
+          "Component creation request submitted successfully. Approval may take some time.",
+          "success",
+        );
+
+        setShowConvertDrawer(false);
+        dispatch(clearCustomComponent());
+        dispatch(clearSaveComponent());
+        formik.resetForm();
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        Swal.fire("Error", "Something went wrong", "error");
+        // setShowConvertDrawer(false);
+      } finally {
+        // await dispatch(vmStartScenario({ vmid: realVmid, vmType }));
+        setOverlayLoading(false);
+        setIsSaving(false); // stop loading
+      }
+    },
+  });
   return (
     <>
       <Seo title={`${cleanName}`} />
@@ -743,7 +1169,7 @@ export default function ProxmoxConsole() {
               }}
               onClick={() => {
                 const selected = snapshotList.find(
-                  (s) => s.snapshotid === selectedSnapshotId
+                  (s) => s.snapshotid === selectedSnapshotId,
                 );
                 if (!selected) {
                   setShowWarning(true);
@@ -751,7 +1177,7 @@ export default function ProxmoxConsole() {
                 }
                 handleDeleteSnapshott(
                   selected.snapshot_name,
-                  selected.snapshotid
+                  selected.snapshotid,
                 );
               }}
             >
@@ -827,13 +1253,6 @@ export default function ProxmoxConsole() {
                   >
                     ⌨️
                   </button>
-                  <button
-                    onClick={toggleFullscreen}
-                    title="Fullscreen"
-                    style={buttonStyle}
-                  >
-                    ⛶
-                  </button>
                   <div style={{ position: "relative" }}>
                     <button
                       onClick={() => setPowerMenuOpen(!powerMenuOpen)}
@@ -842,6 +1261,7 @@ export default function ProxmoxConsole() {
                     >
                       ⏻
                     </button>
+
                     {powerMenuOpen && (
                       <div
                         style={{
@@ -861,17 +1281,53 @@ export default function ProxmoxConsole() {
                         <button
                           onClick={handleStartClick}
                           style={subButtonStyle}
-                          title="Start VM"
                         >
                           Start
                         </button>
+
                         <button
                           onClick={handleRestartClick}
                           style={subButtonStyle}
-                          title="Hard Reset VM"
                         >
                           Hard Reset
                         </button>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={toggleFullscreen}
+                    title="Fullscreen"
+                    style={buttonStyle}
+                  >
+                    ⛶
+                  </button>
+                  
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+                      title="Settings"
+                      style={buttonStyle}
+                    >
+                      ⚙️
+                    </button>
+
+                    {settingsMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "110%",
+                          transform: "translateY(-50%)",
+                          background: "rgba(17,17,17,0.95)",
+                          borderRadius: "6px",
+                          padding: "8px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          zIndex: 9999,
+                        }}
+                      >
+                        {/* Snapshot Rollback */}
                         <button
                           onClick={handleCreateSnapshot}
                           style={subButtonStyle}
@@ -879,38 +1335,35 @@ export default function ProxmoxConsole() {
                         >
                           Snapshot
                         </button>
-
-                        {/* <Button
-                          onClick={() => {
-                            dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
-                            setShowRollbackModal(true);
-                          }}
-                          style={subButtonStyle}
-                        >
-                          Rollback
-                        </Button> */}
                         <Button
-                          disabled={snapshotApiData.length === 0} // <<✔ disable when no snapshots
+                          disabled={snapshotApiData.length === 0}
                           onClick={() => {
                             if (snapshotApiData.length > 0) {
-                              // ✔ only open modal if snapshots exist
                               dispatch(
-                                getSnapshot({ vmid: Number(realVmid), vmType })
+                                getSnapshot({ vmid: Number(realVmid), vmType }),
                               );
                               setShowRollbackModal(true);
                             }
                           }}
                           style={{
                             ...subButtonStyle,
-                            opacity: snapshotApiData.length === 0 ? 0.5 : 1, // UI feedback
+                            opacity: snapshotApiData.length === 0 ? 0.5 : 1,
                             cursor:
                               snapshotApiData.length === 0
                                 ? "not-allowed"
                                 : "pointer",
                           }}
                         >
-                          Rollback
+                          Rollback Snapshot
                         </Button>
+
+                        {/* Convert Component */}
+                        <button
+                          onClick={handleOpenDrawer}
+                          style={subButtonStyle}
+                        >
+                          Convert Component
+                        </button>
                       </div>
                     )}
                   </div>
@@ -957,7 +1410,8 @@ export default function ProxmoxConsole() {
               <span style={{ color: "#D21F3C" }}>SIM</span> Console
             </h2>
             <button
-              onClick={connect}
+              // onClick={connect}
+              onClick={handleConnectClick}
               disabled={loading}
               style={{
                 padding: "12px 28px",
@@ -1010,7 +1464,7 @@ export default function ProxmoxConsole() {
               fontWeight: "bold",
             }}
           >
-            Connecting...
+            Please Wait...
             <div
               style={{
                 marginTop: "20px",
@@ -1024,6 +1478,309 @@ export default function ProxmoxConsole() {
             />
           </div>
         )}
+        {overlayLoading && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 10000,
+              color: "#fff",
+              fontSize: "24px",
+              fontWeight: "bold",
+            }}
+          >
+            Please Wait...
+            <div
+              style={{
+                marginTop: "20px",
+                border: "6px solid rgba(255,255,255,0.3)",
+                borderTop: "6px solid #2a62f2",
+                borderRadius: "50%",
+                width: "50px",
+                height: "50px",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Convert Component Drawer */}
+        <Offcanvas
+          show={showConvertDrawer}
+          onHide={handleCloseDrawer}
+          placement="end"
+          backdrop="static"
+          className=" text-light"
+          style={{ width: "900px", background: "#24243E" }}
+        >
+          <Offcanvas.Header
+            closeButton
+            closeVariant="white"
+            className="d-flex align-items-center justify-content-between mt-2"
+            style={{ position: "relative" }}
+          >
+            <Offcanvas.Title
+              className="fw-semibold"
+              style={{ marginBottom: "0" }}
+            >
+              Convert to Component
+            </Offcanvas.Title>
+          </Offcanvas.Header>
+          <hr
+            style={{
+              borderColor: "white",
+              marginTop: "2px",
+              marginBottom: "12px",
+            }}
+          />
+          {hasgetqemuconfig?.mustStopVM && hasgetqemuconfig?.stopMessage && (
+            <div
+              className="p-2 mb-3 rounded-3"
+              style={{
+                background: "#401010",
+                border: "1px solid #FF4D4D",
+                color: "#FF4D4D",
+                fontSize: "12px",
+                fontWeight: "500",
+                margin: "10px 25px",
+              }}
+            >
+              {hasgetqemuconfig.stopMessage}
+            </div>
+          )}
+
+          <Offcanvas.Body style={{ maxHeight: "90vh", overflowY: "auto" }}>
+            <Form onSubmit={formik.handleSubmit} className="px-2">
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-4" controlId="componentName">
+                    <Form.Label className="fw-semibold text-white mb-1">
+                      Component Name
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="componentName"
+                      placeholder="Enter component name"
+                      value={formik.values.componentName}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="custom-input"
+                    />
+                    {formik.touched.componentName &&
+                      formik.errors.componentName && (
+                        <div className="text-danger small mt-1">
+                          {formik.errors.componentName}
+                        </div>
+                      )}
+                  </Form.Group>
+                </Col>
+
+                <Col md={6}>
+                  <Form.Group className="mb-4" controlId="componentcategoryid">
+                    <Form.Label className="fw-semibold mb-1 text-white">
+                      Component Category
+                    </Form.Label>
+                    <Form.Select
+                      name="componentcategoryid"
+                      value={formik.values.componentcategoryid}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="custom-input"
+                      theme={(theme) => ({
+                        ...theme,
+                        colors: {
+                          ...theme.colors,
+                          primary25: "var(--primary-bg-color)",
+                          primary: "var(--primary-bg-color)",
+                        },
+                      })}
+                    >
+                      <option value="">-- Select Category --</option>
+                      {catDropDownData.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    {formik.touched.componentcategoryid &&
+                      formik.errors.componentcategoryid && (
+                        <div className="text-danger small mt-1">
+                          {formik.errors.componentcategoryid}
+                        </div>
+                      )}
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-4" controlId="duration">
+                    <Form.Label className="fw-semibold text-white mb-1">
+                      Configuration Delay (Seconds)
+                    </Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="duration"
+                      placeholder="Enter duration"
+                      value={formik.values.duration}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="custom-input"
+                    />
+                  </Form.Group>
+                </Col>
+
+                <Col md={6}>
+                  <Form.Group className="mb-4" controlId="componentimage">
+                    <Form.Label className="fw-semibold text-white mb-1">
+                      Upload Component Image
+                    </Form.Label>
+
+                    <FileUploader
+                      className="file-uploader-container"
+                      folderpath={category_path}
+                      ismulti={false}
+                      name="componentimage"
+                      acceptedFileTypes={["image/png", "image/jpeg"]}
+                      handleUpload={handleUpload}
+                      fetchfiles={
+                        formik.values.componentimage
+                          ? [formik.values.componentimage]
+                          : []
+                      }
+                    />
+                    {formik.values.componentimage && (
+                      <div className="picture avatar-lg online text-center mt-2">
+                        <img
+                          alt="Component Preview"
+                          src={`${process.env.API_URL_FILEMANAGER}${formik.values.componentimage}`}
+                          style={{
+                            objectFit: "cover",
+                            width: "100%",
+                            height: "100%",
+                          }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = dummy_network.src;
+                          }}
+                        />
+                      </div>
+                    )}
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <div
+                className="rounded-4 p-3 mb-4"
+                style={{
+                  background: "#0E0E23",
+                  boxShadow: "0 0 10px rgba(0,0,0,0.4)",
+                  overflow: "hidden",
+                }}
+              >
+                <h6
+                  className="fw-semibold mb-3"
+                  style={{ letterSpacing: "0.4px" }}
+                >
+                  VM Details
+                </h6>
+
+                <Table
+                  bordered
+                  responsive
+                  size="sm"
+                  className="mb-0 text-light vm-table "
+                  style={{
+                    borderColor: "#000000ff", // or #0E0E23 for invisible border
+                  }}
+                >
+                  <thead>
+                    <tr style={{ background: "#0E0E23" }}>
+                      <th className="text-center" style={{ color: "#fff" }}>
+                        PROPERTY
+                      </th>
+                      <th className="text-center" style={{ color: "#fff" }}>
+                        VALUE
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody style={{ background: "#0E0E23" }}>
+                    <tr>
+                      <td>Virtual Memory</td>
+                      <td>
+                        {vmDetails?.memory ? `${vmDetails.memory} M ` : "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Virtual CPU</td>
+                      <td>
+                        {vmDetails?.cpu ? `${vmDetails.cpu} cores` : "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Network Ports</td>
+                      {/* <td style={{ whiteSpace: "pre-wrap" }}>{vmDetails.ports}</td> */}
+                      <td>
+                        {vmDetails.ports?.length > 0
+                          ? vmDetails.ports.map((p, i) => (
+                              <div key={i}>{p}</div>
+                            ))
+                          : "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Storage Size</td>
+                      <td>
+                        {vmDetails?.storage ? `${vmDetails.storage} GB` : "N/A"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </div>
+
+              <div className="d-flex justify-content-end gap-3 mt-3">
+                <Button
+                  variant="outline-light"
+                  onClick={handleCloseDrawer}
+                  className="px-4 rounded-4"
+                  disabled={isSaving}
+                >
+                  Close
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 rounded-4"
+                  style={{ background: "#19B159", borderColor: "#19B159" }}
+                >
+                  {isSaving ? (
+                    <>
+                      <Spinner
+                        as="span"
+                        animation="grow"
+                        size="sm"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Loading...
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
+                </Button>
+              </div>
+            </Form>
+          </Offcanvas.Body>
+        </Offcanvas>
 
         <style jsx>{`
           @keyframes spin {

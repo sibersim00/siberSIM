@@ -20,7 +20,6 @@ import {
 
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
-import { useTranslation } from "react-i18next";
 import ScenarioDiagram from "./scenariodiagram";
 import ChatBox from "../chatbox"; // Import the ChatBox component
 
@@ -33,7 +32,6 @@ const UserSessionView = () => {
   const [rowId, setRowId] = useState("");
   const [selectedSession, setSelectedSession] = useState(null); // State to manage chat visibility
   const [showChat, setShowChat] = useState(false);
-
   const {
     hasGetSingleUserSessionSucc,
     hasGetLogsListData,
@@ -51,11 +49,9 @@ const UserSessionView = () => {
 
     errorData: state?.scenarios?.error,
   }));
-
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
-
   const statusBadgeMap = {
     Start: "primary-transparent",
     Pause: "warning-transparent",
@@ -83,7 +79,6 @@ const UserSessionView = () => {
     "dark-transparent": "text-dark",
     "light-transparent": "text-dark", // light bg needs dark text
   };
-
   useEffect(() => {
     if (query.slug) {
       setRowId(query.slug[0]);
@@ -91,24 +86,21 @@ const UserSessionView = () => {
       dispatch(getSingleUserSession(query.slug[0]));
     }
   }, [query.slug]);
-
-  // Update state when user session data is received
   useEffect(() => {
     if (hasGetSingleUserSessionSucc && hasGetSingleUserSessionSucc.length > 0) {
       setRowValues(hasGetSingleUserSessionSucc[0]); // Get the first (and probably only) item
     }
   }, [hasGetSingleUserSessionSucc]);
-
   useEffect(() => {
     if (activeTab === "logs") {
       const payload = {
-        scenariolearneruuid: rowValues?.scenariolearneruuid,
+        vmrequestid: rowValues?.vmrequestid,
       };
       dispatch(getLogs(payload));
     }
-  }, [activeTab, rowValues?.scenariolearneruuid]);
+  }, [activeTab, rowValues?.vmrequestuuid]);
 
-  const scenariolearneruuid = rowValues?.scenariolearneruuid;
+  const vmrequestid = rowValues?.vmrequestuuid;
 
   useEffect(() => {
     if (hasSendNotificationSucc.statusCode === 200) {
@@ -122,7 +114,9 @@ const UserSessionView = () => {
           theme: "colored",
         }
       );
-      dispatch(getSingleUserSession(scenariolearneruuid));
+      // dispatch(getSingleUserSession(vmrequestid));
+      dispatch(getSingleUserSession(query.slug[0]));
+
       dispatch(clearSentNotification());
     }
   }, [hasSendNotificationSucc]);
@@ -139,7 +133,8 @@ const UserSessionView = () => {
           theme: "colored",
         }
       );
-      dispatch(getSingleUserSession(scenariolearneruuid));
+      dispatch(getSingleUserSession(query.slug[0]));
+
       dispatch(clearTerminateScenario());
     }
   }, [hasGetTerminationSucc]);
@@ -156,7 +151,7 @@ const UserSessionView = () => {
           theme: "colored",
         }
       );
-      dispatch(getSingleUserSession(scenariolearneruuid));
+      dispatch(getSingleUserSession(query.slug[0]));
       dispatch(clearTerminateScenarioByAdInst());
     }
   }, [hasGetTerminationByAdInstSucc]);
@@ -187,7 +182,6 @@ const UserSessionView = () => {
               theme: "colored",
             }
           );
-      // handleOneClick(false);
       dispatch(clearHasError());
     }
   }, [errorData]);
@@ -205,22 +199,17 @@ const UserSessionView = () => {
     : null;
 
   const handleSentTerminationNotification = (data) => {
-
-    // Check if termination notification is already sent
     const isTerminationSent = data?.isnotitermination === "Yes";
-
     // Set dynamic message and confirm button text
     const swalText = isTerminationSent
       ? "Do you really want to remove the Termination Notification?"
       : "Do you really want to send the Termination Notification?";
-
     const swalTitle = isTerminationSent
       ? "Remove Notification?"
       : "Send Notification?";
     const confirmBtnText = isTerminationSent
       ? "Yes, remove it!"
       : "Yes, send it!";
-
     Swal.fire({
       title: swalTitle,
       text: swalText,
@@ -234,11 +223,10 @@ const UserSessionView = () => {
       if (result.isConfirmed) {
         const payload = {
           scenarioid: data?.scenarioid,
-          scenariolearnersessionid: data?.scenariolearnersessionid,
-          scenariolearnerid: data?.scenariolearnerid,
+          vmrequestid: data?.vmrequestid,
+          vmrequestuuid: data?.vmrequestuuid,
           learner_id: data?.learner_id,
         };
-
         dispatch(sentNotification(payload, data?.scenarioid));
         dispatch(clearSentNotification());
       } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -251,7 +239,6 @@ const UserSessionView = () => {
       }
     });
   };
-
   const handleToTerminate = (data) => {
     Swal.fire({
       title: "Are you sure?",
@@ -266,12 +253,10 @@ const UserSessionView = () => {
       if (result.isConfirmed) {
         const scenariolearnersessionid = data?.scenariolearnersessionid;
         const type = getUserDataFromLocal?.usertype;
-
         const firstPayload = {
           scenariolearnersessionid,
           type,
         };
-
         // Call first API
         dispatch(terminateScenarioByAdInst(firstPayload))
           .then((res1) => {
@@ -281,8 +266,6 @@ const UserSessionView = () => {
               type,
               status: "Terminated",
             };
-
-            // Call second API
             dispatch(terminateScenario(secondPayload));
             dispatch(clearTerminateScenario());
           })
@@ -293,16 +276,13 @@ const UserSessionView = () => {
       }
     });
   };
-
   const handleToSentRaiserequest = (sessionData) => {
     setSelectedSession(sessionData); // set the session data for the chatbox
     setShowChat(true); // open the chatbox
   };
-
   return (
     <>
       <Seo title="User Session" />
-
       <ToastContainer />
       <Row className="view-component-row-sm">
         <Col md={12}>
@@ -347,8 +327,6 @@ const UserSessionView = () => {
                           ));
                         })()}
                       </div>
-
-                      {/* Scenario ID and Title */}
                       <span
                         className="fw-semibold"
                         style={{ fontSize: "18px" }}
@@ -357,8 +335,6 @@ const UserSessionView = () => {
                         {rowValues?.scenariotitle || "—"}
                       </span>
                     </div>
-
-                    {/* Right side: Buttons group + Back button */}
                     <div className="d-flex align-items-center">
                       {/* Buttons group */}
                       <div className="d-flex gap-2 me-2">

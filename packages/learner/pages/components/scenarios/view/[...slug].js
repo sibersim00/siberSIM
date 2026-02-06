@@ -12,6 +12,7 @@ import {
   Badge,
 } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
 import { useRouter } from "next/router";
 import {
@@ -27,7 +28,12 @@ import {
   getLogs,
   clearGetSessionStatusList,
   clearUpdateCompletedTerminated,
+  deletescenario,
+  cleardeletescenario,
   getTabList,
+  pausescenario,
+  resumescenario,
+  canresumescenario,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
@@ -71,6 +77,9 @@ const ScenariosView = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfNotFound, setPdfNotFound] = useState(false);
   const [dynamicTab, setDynamicTab] = useState("Basic Information");
+  const [isAnyScenarioRunning, setIsAnyScenarioRunning] = useState(false);
+  // const [actionLoading, setActionLoading] = useState(false);
+
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
     useState(false);
   const vmStepsOrder = [
@@ -116,8 +125,10 @@ const ScenariosView = () => {
     hasGetLogsListData,
     hasUpdateCompletedTerminatedSucc,
     tabListSucc,
+    hasdeletescenarioSucc,
+    haspausescenarioSucc,
+    hasresumescenarioSucc,
     errorData,
-
   } = useSelector((state) => ({
     getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
     saveScenariosData: state?.scenarios?.saveScenarios,
@@ -127,18 +138,21 @@ const ScenariosView = () => {
     hasGetLogsListData: state?.scenarios?.getLogsData?.data,
     hasUpdateCompletedTerminatedSucc:
       state?.scenarios?.updateCompletedTerminatedData?.data,
+    hasdeletescenarioSucc: state?.scenarios?.hasdeletescenarioSuccData?.data,
     tabListSucc: state?.scenarios?.getTabListData?.data,
+    haspausescenarioSucc: state?.scenarios?.pausescenarioData,
+    hasresumescenarioSucc: state?.scenarios?.resumescenarioData,
+
     errorData: state?.scenarios?.error,
   }));
-
-  console.log("tabListSucc", tabListSucc)
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
+const learnerId = getUserDataFromLocal?.learner_id;
 
   useEffect(() => {
-    dispatch(getTabList())
-  }, [dispatch])
+    dispatch(getTabList());
+  }, [dispatch]);
 
   const formatEventKey = (name) =>
     name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
@@ -163,40 +177,46 @@ const ScenariosView = () => {
       }
     }
   }, [tabListSucc]);
-
-  console.log("activeTab", activeTab)
+  console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
+  
+  const activeScenarioIdRef = useRef(null);
   useEffect(() => {
-    if (getSingleScenariosSucc && getSingleScenariosSucc.length > 0) {
-      const scenario = getSingleScenariosSucc[0];
-      setRowValues(scenario);
-      setScenarioStatus(scenario.status);
+    if (!getSingleScenariosSucc?.length || !query.slug?.[0]) return;
 
-      if (scenario.calculated_timer) {
-        const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
-        const totalSeconds = h * 3600 + m * 60 + s;
-        setElapsedSeconds(totalSeconds);
+    const scenario = getSingleScenariosSucc[0];
 
-        if (scenario.status === "Start" || scenario.status === "Resume") {
-          setTimerActive(true);
-          setTimerPaused(false);
-        }
+    if (String(scenario.scenariouuid) !== String(query.slug[0])) {
+      return;
+    }
+
+    activeScenarioIdRef.current = scenario.scenariouuid;
+
+    setRowValues(scenario);
+    setScenarioStatus(scenario.status);
+
+    if (scenario.calculated_timer) {
+      const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
+      const totalSeconds = h * 3600 + m * 60 + s;
+      setElapsedSeconds(totalSeconds);
+
+      if (scenario.status === "Start" || scenario.status === "Resume") {
+        setTimerActive(true);
+        setTimerPaused(false);
       }
     }
-  }, [getSingleScenariosSucc]);
-
+  }, [getSingleScenariosSucc, query.slug?.[0]]);
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       setActionLoading(false); //  Reset loading for Start action
       setIsTerminatingOrCompleting(false); // Reset loading for Start action
       dispatch(getSingleScenarios(query.slug[0]));
 
-      handleClone(saveScenariosData?.scenariolearnersessionuuid);
+      handleClone(saveScenariosData?.vmrequestid);
       const payload = {
         scenarioid: rowValues?.scenarioid,
-        learnerid: getUserDataFromLocal?.learner_id,
-        scenariolearnersessionid: saveScenariosData?.scenariolearnersessionid,
+        requestedby_id: getUserDataFromLocal?.learner_id,
+        vmrequestid: saveScenariosData?.vmrequestid,
       };
-      console.log("getConfigurationspayload",payload)
       dispatch(getConfigurations(payload));
       setShowCloneModal(true);
       dispatch(clearSaveScenarios());
@@ -228,6 +248,29 @@ const ScenariosView = () => {
       dispatch(getSingleScenarios(query.slug[0]));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
+  
+  useEffect(() => {
+    if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
+      if (hasdeletescenarioSucc?.statusCode === 200) {
+        toast.success(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+            {hasdeletescenarioSucc?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: false,
+            theme: "colored",
+          }
+        );
+        setScenarioStatus(
+          confirmAction === "terminate" ? "Terminated" : "Completed"
+        );
+      }
+      setActionLoading(false); // Remove loading
+      dispatch(cleardeletescenario());
+      dispatch(getSingleScenarios(query.slug[0]));
+    }
+  }, [hasdeletescenarioSucc, errorData]);
 
   useEffect(() => {
     if (activeTab === "Logs") {
@@ -243,9 +286,20 @@ const ScenariosView = () => {
       setIsScenarioError400(true);
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              }
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -253,17 +307,6 @@ const ScenariosView = () => {
               theme: "colored",
             }
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
       dispatch(clearHasError());
     }
   }, [errorData]);
@@ -302,20 +345,31 @@ const ScenariosView = () => {
     setTimerPaused(true);
     setTimerActive(false);
   };
-
+  const handleDelete = () => {
+    setIsTerminatingOrCompleting(true);
+    setConfirmAction("delete");
+    setShowConfirm(true);
+    setTimerPaused(true);
+    setTimerActive(false);
+  };
   const handleConfirmAction = async () => {
     try {
       setActionLoading(true);
+
       const scenarioData = getSingleScenariosSucc?.[0];
       const mappedStatus = {
         start: "Start",
         terminate: "Terminated",
         complete: "Completed",
+        delete: "Terminated",
         initializing: "Initializing",
       };
 
-      // ⏸ Pause timer ONLY when confirmed terminate/complete
-      if (confirmAction === "terminate" || confirmAction === "complete") {
+      if (
+        confirmAction === "terminate" ||
+        confirmAction === "complete" ||
+        confirmAction === "delete"
+      ) {
         setTimerPaused(true);
         setTimerActive(false);
       }
@@ -323,17 +377,15 @@ const ScenariosView = () => {
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
-        instructor_id: scenarioData?.instructor_id,
         status: mappedStatus[confirmAction],
         timer:
           confirmAction === "initializing"
             ? "00:00:00"
             : formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
-        type: "learner",
+        vmrequestid: scenarioData?.vmrequestid,
+        type: "Learner",
       };
-      console.log("payload", payload)
+
       if (confirmAction === "initializing") {
         dispatch(saveScenarios(payload));
       } else if (
@@ -342,6 +394,11 @@ const ScenariosView = () => {
       ) {
         dispatch(updateSessionStatus(payload));
         dispatch(updateCompletedTerminated(payload));
+      }
+      // 🔥 THE NEW DELETE API
+      else if (confirmAction === "delete") {
+        dispatch(updateSessionStatus(payload));
+        dispatch(deletescenario(payload));
       }
 
       setShowConfirm(false);
@@ -375,11 +432,10 @@ const ScenariosView = () => {
       alert("Something went wrong while confirming the action.");
     }
   };
-
   const handlePause = async () => {
     try {
-      setTimerPaused(true);
-      setTimerActive(false);
+      setConfirmAction("pause");
+      setActionLoading(true);
 
       const scenarioData = getSingleScenariosSucc?.[0];
       const payload = {
@@ -388,22 +444,48 @@ const ScenariosView = () => {
         instructor_id: scenarioData?.instructor_id,
         status: "Pause",
         timer: formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+        vmrequestid: scenarioData?.vmrequestid,
+        // scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
       };
 
-      dispatch(updateSessionStatus(payload));
+      // 🔹 Step 1: pause first
+      const resPause = await dispatch(pausescenario(payload));
+      const pauseOk =
+        resPause?.payload?.statusCode === 200 || resPause?.statusCode === 200;
+
+      if (!pauseOk) {
+        console.error("Failed to pause scenario.");
+        return;
+      }
+
+      // 🔹 Step 2: pause success → update session status
+      const resUpdate = await dispatch(updateSessionStatus(payload));
+
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Paused Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+
       setScenarioStatus("Pause");
+      dispatch(getSingleScenarios(query.slug[0]));
     } catch (err) {
-      alert("Failed to pause scenario.");
+      toast.error("Failed to pause scenario.");
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
     }
   };
 
   const handleResume = async () => {
     try {
-      setTimerPaused(false);
-      setTimerActive(true);
-
+      setConfirmAction("resume");
+      setActionLoading(true);
       const scenarioData = getSingleScenariosSucc?.[0];
       const payload = {
         scenarioid: scenarioData?.scenarioid,
@@ -411,17 +493,61 @@ const ScenariosView = () => {
         instructor_id: scenarioData?.instructor_id,
         status: "Resume",
         timer: formatTime(elapsedSeconds),
-        scenariolearnerid: scenarioData?.scenariolearnerid,
-        scenariolearnersessionid: scenarioData?.scenariolearnersessionid,
+        vmrequestid: scenarioData?.vmrequestid,
       };
 
-      dispatch(updateSessionStatus(payload));
+      //Step 1: Validate with backend
+      const canResumeRes = await dispatch(canresumescenario(payload));
+
+      const canResumeOk = canResumeRes?.statusCode === 200;
+
+      if (!canResumeOk) {
+        return;
+      }
+
+      // Step 2: Call Proxmox resume API
+      const resResume = await dispatch(resumescenario(payload));
+      const resumeOk =
+        resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
+
+      if (!resumeOk) {
+        return;
+      }
+
+      // 🔹 Step 3: Update session status in DB
+      await dispatch(updateSessionStatus(payload));
+
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Resumed Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
 
       setScenarioStatus("Resume");
+      dispatch(getSingleScenarios(query.slug[0]));
     } catch (err) {
-      alert("Failed to resume scenario.");
+      console.error("Resume failed:", err);
+      toast.error("An error occurred while resuming the scenario.");
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
     }
   };
+
+  useEffect(() => {
+    if (scenarioStatus === "Pause") {
+      setTimerActive(false);
+      setTimerPaused(true);
+    } else if (scenarioStatus === "Resume" || scenarioStatus === "Running") {
+      setTimerActive(true);
+      setTimerPaused(false);
+    }
+  }, [scenarioStatus]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600)
@@ -460,9 +586,8 @@ const ScenariosView = () => {
 
   useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
-    console.log("step",step)
     setVmStep(step);
-    if (step === "Running") {
+    if (step === "Running" || step === "Pause") {
       setCountdown(10);
       setCountdownActive(true);
       clearInterval(pollingRef.current);
@@ -543,12 +668,11 @@ const ScenariosView = () => {
       scenarioStatus
     )
   );
-  console.log("rowValuesrowValuesrowValuesrowValues", rowValues);
+console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
 
   return (
     <>
       <Seo title="View Scenario" />
-
       <ToastContainer />
       <Row className="view-component-row-sm">
         <Col md={12}>
@@ -565,26 +689,27 @@ const ScenariosView = () => {
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                                ? 2
-                                : level === "Hard"
-                                  ? 3
-                                  : 0;
+                              ? 2
+                              : level === "Hard"
+                              ? 3
+                              : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                                ? "text-warning"
-                                : level === "Hard"
-                                  ? "text-danger"
-                                  : "text-muted";
+                              ? "text-warning"
+                              : level === "Hard"
+                              ? "text-danger"
+                              : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
                               key={star}
-                              className={`me-1 ${star <= filledStars
-                                ? `fas fa-star ${colorClass}`
-                                : "far fa-star text-muted"
-                                }`}
+                              className={`me-1 ${
+                                star <= filledStars
+                                  ? `fas fa-star ${colorClass}`
+                                  : "far fa-star text-muted"
+                              }`}
                               style={{ fontSize: "18px" }}
                             ></i>
                           ));
@@ -618,14 +743,26 @@ const ScenariosView = () => {
                       <Button
                         variant="outline-secondary"
                         onClick={() => {
+                          const { from, fromTab } = router.query;
+                          if (fromTab === "Approve") {
+                            router.push("/customscenarios");
+                            return;
+                          }
+                          if (from === "pause") {
+                            router.push("/scenarios");
+                            dispatch(clearSingleScenarios());
+                            return;
+                          }
                           if (categoryId && subcategoryName) {
                             router.push(
-                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${backView || "list"
+                              `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
+                                backView || "list"
                               }`
                             );
                           } else if (categoryId) {
                             router.push(
-                              `/scenarios?categoryId=${categoryId}&view=${backView || "list"
+                              `/scenarios?categoryId=${categoryId}&view=${
+                                backView || "list"
                               }`
                             );
                           } else {
@@ -633,6 +770,7 @@ const ScenariosView = () => {
                               `/scenarios?view=${backView || "list"}`
                             );
                           }
+
                           dispatch(clearSingleScenarios());
                         }}
                       >
@@ -647,9 +785,9 @@ const ScenariosView = () => {
                   className="d-flex justify-content-between align-items-center my-3"
                 >
                   {isScenarioError400 ||
-                    ["Terminated", "Completed", "Pending", "Failed"].includes(
-                      scenarioStatus
-                    ) ? (
+                  ["Terminated", "Completed", "Pending", "Failed"].includes(
+                    scenarioStatus
+                  ) ? (
                     <div style={{ display: "flex", gap: "10px" }}>
                       <Button variant="success" size="sm" onClick={handleStart}>
                         <i className="fe fe-play"></i> Start
@@ -702,94 +840,134 @@ const ScenariosView = () => {
                       >
                         <>
                           {scenarioStatus === "Pause" ? (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={handleResume}
-                              disabled={actionLoading} // Disable when Terminate/Complete is in progress
-                            >
-                              Resume
-                            </Button>
+                            // ➤ Resume is visible → Show Delete button
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={handleResume}
+                                disabled={actionLoading}
+                              >
+                                {actionLoading && confirmAction === "resume" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Resuming...
+                                  </>
+                                ) : (
+                                  "Resume"
+                                )}
+                              </Button>
+
+                              {/* DELETE BUTTON BECAUSE RESUME IS PRESENT */}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleDelete}
+                                disabled={actionLoading}
+                              >
+                                {actionLoading && confirmAction === "delete" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Deleting...
+                                  </>
+                                ) : (
+                                  "Delete"
+                                )}
+                              </Button>
+                            </>
                           ) : (
-                            <Button
-                              variant="warning"
-                              size="sm"
-                              onClick={handlePause}
-                              disabled={actionLoading} // Disable when Terminate/Complete is in progress
-                            >
-                              Pause
-                            </Button>
+                            // ➤ Pause is visible → Show Terminate + Complete
+                            <>
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={handlePause}
+                                disabled={actionLoading}
+                              >
+                                {actionLoading && confirmAction === "pause" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Pausing...
+                                  </>
+                                ) : (
+                                  "Pause"
+                                )}
+                              </Button>
+
+                              {/* TERMINATE BUTTON */}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleTerminate}
+                                disabled={actionLoading}
+                              >
+                                {actionLoading &&
+                                confirmAction === "terminate" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Terminating...
+                                  </>
+                                ) : (
+                                  "Terminate"
+                                )}
+                              </Button>
+
+                              {/* COMPLETE BUTTON */}
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={handleComplete}
+                                disabled={actionLoading}
+                              >
+                                {actionLoading &&
+                                confirmAction === "complete" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Completing...
+                                  </>
+                                ) : (
+                                  "Complete"
+                                )}
+                              </Button>
+                            </>
                           )}
-
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={handleTerminate}
-                            disabled={actionLoading}
-                          >
-                            {actionLoading && confirmAction === "terminate" ? (
-                              <>
-                                <i className="fas fa-spinner fa-spin"></i>{" "}
-                                Terminating...
-                              </>
-                            ) : (
-                              "Terminate"
-                            )}
-                          </Button>
-
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={handleComplete}
-                            disabled={actionLoading}
-                          >
-                            {actionLoading && confirmAction === "complete" ? (
-                              <>
-                                <i className="fas fa-spinner fa-spin"></i>{" "}
-                                Completing...
-                              </>
-                            ) : (
-                              "Complete"
-                            )}
-                          </Button>
-
-                          <Button
-                            variant={
-                              isNotified && !replyReceived ? "danger" : "info"
-                            }
-                            size="sm"
-                            onClick={() => {
-                              setShowChat(true);
-                              setSelectedSession(rowValues);
-                              if (isNotified) setReplyReceived(false);
-                            }}
-                            disabled={isTerminatingOrCompleting}
-                            className="position-relative"
-                          >
-                            <i className="fa fa-hand-paper text-white me-1"></i>{" "}
-                            Raise Request
-                            {rowValues.unseen_instructor_admin_message_count >
-                              0 && (
-                                <span
-                                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                  style={{
-                                    fontSize: "0.6rem",
-                                    minWidth: "18px",
-                                    height: "18px",
-                                    padding: " 5px",
-                                  }}
-                                >
-                                  {rowValues.unseen_instructor_admin_message_count >
-                                    99
-                                    ? "99+"
-                                    : rowValues.unseen_instructor_admin_message_count}
-                                  <span className="visually-hidden">
-                                    unread messages
-                                  </span>
-                                </span>
-                              )}
-                          </Button>
                         </>
+                        <Button
+                          variant={
+                            isNotified && !replyReceived ? "danger" : "info"
+                          }
+                          size="sm"
+                          onClick={() => {
+                            setShowChat(true);
+                            setSelectedSession(rowValues);
+                            if (isNotified) setReplyReceived(false);
+                          }}
+                          disabled={isTerminatingOrCompleting}
+                          className="position-relative"
+                        >
+                          <i className="fa fa-hand-paper text-white me-1"></i>{" "}
+                          Raise Request
+                          {rowValues.unseen_instructor_admin_message_count >
+                            0 && (
+                            <span
+                              className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style={{
+                                fontSize: "0.6rem",
+                                minWidth: "18px",
+                                height: "18px",
+                                padding: " 5px",
+                              }}
+                            >
+                              {rowValues.unseen_instructor_admin_message_count >
+                              99
+                                ? "99+"
+                                : rowValues.unseen_instructor_admin_message_count}
+                              <span className="visually-hidden">
+                                unread messages
+                              </span>
+                            </span>
+                          )}
+                        </Button>
                       </div>
                     </>
                   )}
@@ -881,8 +1059,14 @@ const ScenariosView = () => {
                                     eventKey={tab.tab_name}
                                     className="masterlist"
                                     style={{
-                                      color: activeTab === tab.tab_name ? "#007bff" : "gray",
-                                      fontWeight: activeTab === tab.tab_name ? "bold" : "normal",
+                                      color:
+                                        activeTab === tab.tab_name
+                                          ? "#007bff"
+                                          : "gray",
+                                      fontWeight:
+                                        activeTab === tab.tab_name
+                                          ? "bold"
+                                          : "normal",
                                     }}
                                   >
                                     {tab.tab_name}
@@ -897,9 +1081,14 @@ const ScenariosView = () => {
                             <Tab.Content>
                               {tabListSucc
                                 ?.filter((tab) => tab.tab_status === "True")
-                                ?.sort((a, b) => a.tab_ordering - b.tab_ordering)
+                                ?.sort(
+                                  (a, b) => a.tab_ordering - b.tab_ordering
+                                )
                                 ?.map((tab) => (
-                                  <Tab.Pane eventKey={tab.tab_name} key={tab.scenariotabid}>
+                                  <Tab.Pane
+                                    eventKey={tab.tab_name}
+                                    key={tab.scenariotabid}
+                                  >
                                     {/* 👇 Conditional rendering per tab name */}
                                     {tab.tab_name === "Basic Information" && (
                                       <Row className="gy-4">
@@ -954,7 +1143,8 @@ const ScenariosView = () => {
                                             <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
                                             <div>
                                               <div className="fw-semibold text-dark mb-1">
-                                                {rowValues?.scenariolevel || "—"}
+                                                {rowValues?.scenariolevel ||
+                                                  "—"}
                                               </div>
                                               <small className="text-muted">
                                                 Level
@@ -1056,9 +1246,10 @@ const ScenariosView = () => {
                                       <ScenarioDiagram
                                         scenarioId={rowId}
                                         isTimerVisible={isTimerVisible}
+                                        scenarioStatus={scenarioStatus}
                                         scenariodiagram={
-                                          rowValues?.scenariodiagram &&
-                                            rowValues.scenariodiagram.trim() !== ""
+                                          rowValues?.scenariodiagram?.trim() !==
+                                          ""
                                             ? rowValues.scenariodiagram
                                             : ""
                                         }
@@ -1066,7 +1257,12 @@ const ScenariosView = () => {
                                     )}
 
                                     {tab.tab_name === "Quiz" && (
-                                      <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+                                      <div
+                                        style={{
+                                          maxHeight: "600px",
+                                          overflowY: "auto",
+                                        }}
+                                      >
                                         <ScenarioQuiz />
                                       </div>
                                     )}
@@ -1093,30 +1289,52 @@ const ScenariosView = () => {
                                                 </tr>
                                               </thead>
                                               <tbody>
-                                                {hasGetLogsListData.map((log, index) => (
-                                                  <tr key={index}>
-                                                    <td>
-                                                      {log.startedon
-                                                        ? new Date(log.startedon).toLocaleString()
-                                                        : "-"}
-                                                    </td>
-                                                    <td>{log.type}</td>
-                                                    <td>{log.status}</td>
-                                                    <td>
-                                                      {new Date(log.createdon).toLocaleString()}
-                                                    </td>
-                                                    <td>{log.remark}</td>
-                                                  </tr>
-                                                ))}
+                                                {hasGetLogsListData.map(
+                                                  (log, index) => (
+                                                    <tr key={index}>
+                                                      <td>
+                                                        {log.startedon
+                                                          ? new Date(
+                                                              log.startedon
+                                                            ).toLocaleString()
+                                                          : "-"}
+                                                      </td>
+                                                      <td>{log.type}</td>
+                                                      <td>{log.status}</td>
+                                                      <td>
+                                                        {new Date(
+                                                          log.createdon
+                                                        ).toLocaleString()}
+                                                      </td>
+                                                      <td>{log.remark}</td>
+                                                    </tr>
+                                                  )
+                                                )}
                                               </tbody>
                                             </table>
                                           </div>
                                         ) : (
-                                          <div className="text-center py-4">No logs available</div>
+                                          <div className="text-center py-4">
+                                            No logs available
+                                          </div>
                                         )}
                                       </div>
                                     )}
 
+                                    {/* 👇 Flexible / Custom tab support */}
+                                    {/* {tab.tab_type === "Flexible" &&
+                                      tab.widget_url && (
+                                        <iframe
+                                          src={tab.widget_url}
+                                          title={tab.tab_name}
+                                          style={{
+                                            width: "100%",
+                                            height: "600px",
+                                            border: "none",
+                                            borderRadius: "8px",
+                                          }}
+                                        ></iframe>
+                                      )} */}
                                     {/* 👇 Flexible / Custom tab support */}
                                     {tab.tab_type === "Flexible" &&
                                       tab.widget_url && (
@@ -1228,7 +1446,6 @@ const ScenariosView = () => {
                           </Col>
                         </Row>
                       </Tab.Container>
-
                     </div>
                   </div>
                 </div>
@@ -1238,7 +1455,7 @@ const ScenariosView = () => {
 
           <Modal
             show={showCloneModal}
-            onHide={() => { }}
+            onHide={() => {}}
             backdrop="static"
             keyboard={false}
             size="md"
@@ -1312,8 +1529,8 @@ const ScenariosView = () => {
                               {getStepClass(item.step).includes(
                                 "text-warning"
                               ) && (
-                                  <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
-                                )}
+                                <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
+                              )}
                             </li>
                           );
                         })}
@@ -1348,6 +1565,9 @@ const ScenariosView = () => {
               )}
               {confirmAction === "complete" && (
                 <p>Are you sure you want to complete the scenario?</p>
+              )}
+              {confirmAction === "delete" && (
+                <p>Are you sure you want to delete this scenario?</p>
               )}
             </Modal.Body>
             <Modal.Footer>
@@ -1390,6 +1610,7 @@ const ScenariosView = () => {
         setShowChat={setShowChat}
         scenarioTitle={rowValues?.scenariotitle}
         rowValues={rowValues}
+        learner_id={getUserDataFromLocal?.learner_id}
       />
     </>
   );
@@ -1397,35 +1618,3 @@ const ScenariosView = () => {
 
 ScenariosView.layout = "Contentlayout";
 export default ScenariosView;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

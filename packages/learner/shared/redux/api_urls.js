@@ -37,13 +37,18 @@ const api = {
 
   // scenarios
   scenarios_get: "/scenarios/get",
+  scenarios_get_Pause: "/scenarios/get-paused",
   scenarios_single: "/scenarios/get",
   scenarios_save: "/scenarios/start-scenario",
   scenario_custom_update: "/custom_scenarios/update",
+  scenario_custom_getapproved: "/custom_scenarios/getapproved",
   scenario_status_update: "/scenarios/update-session-status",
   get_session_status: "/scenarios/get-session-status",
   get_configurations: "/vmconfigs/set-scenario-learner-config",
   update_completed_terminated: "/vmconfigs/update-complete-terminate",
+  pause_scenario: "/vmconfigs/pause-scenario-learner",
+  delete_scenario: "/vmconfigs/delete-scenario-learner",
+  resume_scenario: "/vmconfigs/resume-scenario-learner",
   vm_start_scenario: "/vmconfigs/start-scenario-learner",
   vm_restart_scenario: "/vmconfigs/restart-scenario-learner",
   custom_scenario_save: "/custom_scenarios/save",
@@ -86,6 +91,8 @@ const api = {
   event_chat_refresh: "/eventchatbox/refresh",
   event_get_logs: "/events/get-logs",
   event_restart: "/eventlearner/restart-event-learner",
+  event_pause: "/eventlearner/pause-scenario-learner",
+  event_resume: "/eventlearner/resume-scenario-learner",
   learners_Account_verify: "/learner/verification-success",
 
   // Notification
@@ -106,5 +113,24 @@ const api = {
   scenario_flowchart_save: "/custom_scenarios/save_diagram",
   master_component_cat_get: "/commons/componentcategorylist",
   scenario_component_by_catId: "/commons/scenariocomponentlist",
+
+  get_details: "/vmconfigs/get",
+  save_vmDetails: "vmconfigs/save",
+  vm_config: "vmconfigs/vm-config",
+  stop_vm: "vmconfigs/stop-vm",
+  custom_component_save_learner: "/vmconfigs/savecomponent",
+  reject_stopped_vm:"vmconfigs/reject-stopped-vm",
+
+
+  custom_component_get: "/custom_component/get",
+  custom_componentby_id: "/custom_component/getbyid",
+
+
+
+can_resume: "/scenarios/can-resume",
+event_can_resume: "/events/can-resume",
+
+
+
 };
 export default api;

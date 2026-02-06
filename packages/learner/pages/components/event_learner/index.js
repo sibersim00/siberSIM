@@ -29,7 +29,7 @@ import {
   clearHasError
 } from "../../../shared/redux/slices/eventLogin/eventLogin";
 
-
+import { d_mmm_y } from"../../../shared/data/helperFunctions/dateCustom";
 import ReCAPTCHA from "react-google-recaptcha";
 
 const Home = () => {
@@ -111,10 +111,23 @@ const Home = () => {
   const directLoginData = useSelector((state) => state?.eventLogin?.directLoginData);
   const eventListData = useSelector((state) => state?.eventLogin?.getEventListData?.data);
   const errorData = useSelector((state) => state?.eventLogin?.error);
+  const getCompanySettingsData = useSelector((state) => state?.eventLogin?.getCompanyListData);
 
   useEffect(() => {
     dispatch(getCompanyList());
   }, [dispatch]);
+
+  useEffect(() => {
+         if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+             navigate.replace("/503");
+         }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
+           let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+           if(!licenseStatus.isStart){
+             let startDate = d_mmm_y(licenseStatus.start_date)
+             navigate.replace(`/503?startDate=${startDate}`);
+           }
+         }
+     }, [getCompanySettingsData]);
 
   useEffect(() => {
     dispatch(getEventList());
@@ -198,7 +211,7 @@ const Home = () => {
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearVerifyLogin());
       setTimeout(() => {
-        navigate.replace("events/dashboard", "", { shallow: true });
+        navigate.replace("/event-dashboard", "", { shallow: true });
       }, 1500);
       if (captchaRef.current) {
         captchaRef.current.value = ""; // Reset the value of the input element
@@ -331,7 +344,7 @@ const Home = () => {
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchDirectLogin());
       setTimeout(() => {
-        navigate.replace("events/dashboard", "", { shallow: true });
+        navigate.replace("/event-dashboard", "", { shallow: true });
         //window.location.href = '/dashboard';
       }, 1500);
       if (captchaRef.current) {

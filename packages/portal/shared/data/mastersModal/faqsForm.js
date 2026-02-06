@@ -44,9 +44,11 @@ const FormFaqs = (props) => {
     type: yup
       .string()
       .required(error.required)
-      .oneOf(["User", "Instructor", "Admin"], "Type must be SIMUser, SIMManager, or Admin"),
+      .oneOf(
+        ["User", "Instructor", "Admin"],
+        "Type must be SIMUser, SIMManager, or Admin"
+      ),
   });
-
 
   const initialValues = {
     question: rowValues?.question || "",
@@ -55,34 +57,44 @@ const FormFaqs = (props) => {
     type: rowValues?.type || "User",
   };
 
-  const getSelectStyles = (fieldName, formik) => {
-    const error =
-      !formik.values[fieldName] &&
-      formik.errors[fieldName] &&
-      formik.touched[fieldName];
+  const getSelectStyles = (fieldName) => {
 
-    return error
-      ? {
-        ...customStyles,
-        control: (styles) => ({
-          ...styles,
-          borderColor: "#EB5757",
-          boxShadow: "0 0 0 0.001rem #EB5757",
-        }),
-      }
-      : customStyles;
+
+    return {
+      ...customStyles,
+      control: (styles, state) => ({
+        ...styles,
+        borderColor:styles.borderColor,
+        boxShadow: styles.boxShadow,
+        backgroundColor: "var(--dark-bg-color)",
+      }),
+      singleValue: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)",
+      }),
+      input: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)",
+      }),
+    };
   };
 
-  // Custom select styles (can be reused)
   const customStyles = {
-    control: (provided) => ({
-      ...provided,
-      minHeight: "38px",
-      fontSize: "0.875rem",
-    }),
-    menu: (provided) => ({
-      ...provided,
-      zIndex: 9999,
+    control: (styles, { isFocused, isDisabled }) => ({
+      ...styles,
+      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
+      boxShadow: isDisabled
+        ? null
+        : isFocused
+        ? "0 0 0 0.001rem #00d683"
+        : null,
+      "&:hover": {
+        borderColor: isDisabled
+          ? "#e8e8f7"
+          : isFocused
+          ? "#00d683"
+          : styles.borderColor,
+      },
     }),
   };
 
@@ -120,13 +132,21 @@ const FormFaqs = (props) => {
 
   return (
     <Fragment>
-      <Modal show={openFlag} backdrop="static" size="lg" >
+      <Modal show={openFlag} backdrop="static" size="lg">
         <Formik
           validationSchema={schema}
           onSubmit={handleSubmit}
           initialValues={initialValues}
         >
-          {({ handleSubmit, handleChange, values, touched, errors, setFieldValue, setFieldTouched }) => (
+          {({
+            handleSubmit,
+            handleChange,
+            values,
+            touched,
+            errors,
+            setFieldValue,
+            setFieldTouched,
+          }) => (
             <Form noValidate onSubmit={handleSubmit}>
               <Modal.Header>
                 <Modal.Title>{modalTitle} FAQs</Modal.Title>
@@ -174,7 +194,7 @@ const FormFaqs = (props) => {
                       isInvalid={touched.answer && errors.answer}
                       placeholder="Enter description"
                       maxLength={500}
-                      style={{ height: '150px' }}
+                      style={{ height: "150px" }}
                     />
                     <Form.Control.Feedback type="invalid">
                       {errors.answer}
@@ -212,18 +232,15 @@ const FormFaqs = (props) => {
                         { label: "Instructor", value: "Instructor" },
                         { label: "Admin", value: "Admin" },
                       ]}
-                      value={values.type ? { label: values.type, value: values.type } : null}
-                      onChange={(option) => setFieldValue("type", option?.value)}
+                      value={
+                        values.type
+                          ? { label: values.type, value: values.type }
+                          : null
+                      }
+                      onChange={(option) =>
+                        setFieldValue("type", option?.value)
+                      }
                       onBlur={() => setFieldTouched("type", true)}
-                      // styles={getSelectStyles("type", { values, errors, touched })}
-                      // theme={(theme) => ({
-                      //   ...theme,
-                      //   colors: {
-                      //     ...theme.colors,
-                      //     primary25: "var(--primary-bg-color)",
-                      //     primary: "var(--primary-bg-color)",
-                      //   },
-                      // })}
                       theme={(theme) => ({
                         ...theme,
                         colors: {
@@ -232,19 +249,19 @@ const FormFaqs = (props) => {
                           primary: "var(--primary-bg-color)",
                         },
                       })}
+                      styles={getSelectStyles("type")}
                       placeholder="Select Type"
                       menuPosition="fixed"
                     />
                     {touched.type && errors.type && (
-                      <div className="text-danger mt-1" style={{ fontSize: "0.875rem" }}>
+                      <div
+                        className="text-danger mt-1"
+                        style={{ fontSize: "0.875rem" }}
+                      >
                         {errors.type}
                       </div>
                     )}
                   </Form.Group>
-
-
-
-
                 </Row>
               </Modal.Body>
 

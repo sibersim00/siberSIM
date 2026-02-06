@@ -128,10 +128,7 @@ const ScenarioForm = (props) => {
         state && state.localData && state.localData.getLocalData,
     };
   });
-
-  const theme = "dark" || "light";
-  const isDark = theme === "dark";
-
+  const [isDark, setIsDark] = useState(false);
   const level = [
     { id: "1", name: "Easy" },
     { id: "2", name: "Medium" },
@@ -161,6 +158,10 @@ const ScenarioForm = (props) => {
       }),
     };
   };
+  useEffect(() => {
+    const theme = localStorage.getItem("theme_preference") || "light";
+    setIsDark(theme === "dark");
+  }, []);
 
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
@@ -242,10 +243,8 @@ const ScenarioForm = (props) => {
       const selectedsubcategory = temp.find(
         (obj) => obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
       );
-      // formValidation.setFieldValue("scenariosubcategoryid", selectedsubcategory);
     }
   }, [hasubCatByIdRes]);
-
   useEffect(() => {
     if (hasgetCatListSucc && hasgetCatListSucc.length > 0) {
       let temp = hasgetCatListSucc.map((cat) => ({
@@ -260,7 +259,6 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("scenariocategoryid", selectedcategory);
     }
   }, [hasgetCatListSucc]);
-
   useEffect(() => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
@@ -301,7 +299,6 @@ const ScenarioForm = (props) => {
   const [userType, setUserType] = useState("");
   const [userId, setUserId] = useState("");
   const [scenarioId, setScenarioId] = useState("");
-
   useEffect(() => {
     if (
       getUserDataFromLocal &&
@@ -337,7 +334,6 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
-console.log("jjjjjjjjjjj",saveScenariosData);
 
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
@@ -520,8 +516,6 @@ console.log("jjjjjjjjjjj",saveScenariosData);
       action.setSubmitting(false);
     },
   });
-  console.log("rowValuesrowValues", rowValues);
-
   const handelGetSubCat = (catId) => {
     setSubCatDropDownData([]);
     const payload = {
@@ -533,7 +527,6 @@ console.log("jjjjjjjjjjj",saveScenariosData);
   return (
     <>
       <Seo title="Custom Scenario" />
-      {/* <ToastContainer /> */}
       <Row className="row-sm">
         <Col md={12}>
           <Row className="mg-b-10 text-wrap">

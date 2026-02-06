@@ -12,7 +12,7 @@ module.exports = (iocContainer) => {
   
   // Get Active oranizations || single organization by id
   router.get('/orglist/:id?', controller.organizationList(iocContainer));
-  router.post('/company_setting', crypto.cryptoDecrypt(), controller.getCompanySettingController(iocContainer));
+  router.get('/company_setting', crypto.cryptoDecrypt(), controller.getCompanySettingController(iocContainer));
   router.post('/checklogin',limiter, crypto.cryptoDecrypt(), controller.checklogin(iocContainer));
   router.post('/verifylogin',limiter, crypto.cryptoDecrypt(), controller.verifylogin(iocContainer));
   router.post('/verifydirectlogin', crypto.cryptoDecrypt(), controller.verifyDirectLogin(iocContainer));

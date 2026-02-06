@@ -90,19 +90,21 @@ const licenseAddSchema =  joi.object({
     "number.empty": `SIMuser cannot be empty`,
     "any.required": `SIMuser is required.`,
   }),
-  sim_mst_count: joi.number().required().messages({
-    "number.base": `SIMMaster should be a integer`,
-    "number.empty": `SIMMaster cannot be empty`,
-    "any.required": `SIMMaster is required.`,
+  start_date: joi.date().required().messages({
+    "date.base": "Start date must be a valid date",
+    "any.required": "Start date is required",
   }),
-  sim_investor_count: joi.number().required().messages({
-    "number.base": `SIMInvestor should be a integer`,
-    "number.empty": `SIMInvestor cannot be empty`,
-    "any.required": `SIMInvestor is required.`,
+
+  expiry_date: joi.date().required().messages({
+    "date.base": "Expiry date must be a valid date",
+    "any.required": "Expiry date is required",
   }),
-  start_date: joi.date().allow(null),
-  expiry_date: joi.date().allow(null),
-  domain_url: joi.string().allow(null, ''),
+
+  domain_url: joi.string().required().messages({
+    "string.base": "Domain URL must be a string",
+    "string.empty": "Domain URL cannot be empty",
+    "any.required": "Domain URL is required",
+  }),
 });
 
 const licenseUpdateSchema = joi.object({
@@ -127,9 +129,27 @@ const licenseUpdateSchema = joi.object({
     "number.empty": `SIMInvestor cannot be empty`,
     "any.required": `SIMInvestor is required.`,
   }),
-  start_date: joi.date().allow(null),
-  expiry_date: joi.date().allow(null),
-  domain_url: joi.string().allow(null, ''),
+  start_date: joi.date().required().messages({
+    "date.base": "Start date must be a valid date",
+    "any.required": "Start date is required",
+  }),
+
+  expiry_date: joi.date().required().messages({
+    "date.base": "Expiry date must be a valid date",
+    "any.required": "Expiry date is required",
+  }),
+
+  domain_url: joi.string().required().messages({
+    "string.base": "Domain URL must be a string",
+    "string.empty": "Domain URL cannot be empty",
+    "any.required": "Domain URL is required",
+  }),
+});
+
+const licenseResendSchema= joi.object({
+  // customer_license_id: joi.string().uuid().required().messages({
+  //   "any.required": "License ID is required",
+  // }),
 });
 
 const messages = {
@@ -138,6 +158,8 @@ const messages = {
     mobile_duplicate: "Mobile number already exists.",
     update_success: "Customer updated successfully.",
     status_change: "Customer status updated successfully.",
+    add_license: "License added successfully.",
+    update_license: "License updated successfully.",
 };
 
 const idSchema = joi.required().empty(null).messages({
@@ -152,4 +174,5 @@ module.exports = {
   licenseUpdateSchema,
   messages,
   idSchema,
+  licenseResendSchema
 };

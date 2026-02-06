@@ -81,11 +81,11 @@ export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
 
-export function getCompanyList(data) {
+export function getCompanyList() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(api?.company_list,data);
+      const response = await axios.get(api?.company_list);
       dispatch(slice.actions.hasGetCompanyList(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

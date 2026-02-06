@@ -13,22 +13,8 @@ const Contentlayout = ({ children }) => {
   const currentPath = navigate.pathname;
   const dispatch = useDispatch();
   const [isUserValid, setIsUserValid] = useState(false);
-  // const Add = () => {
-  //   document.querySelector("body").classList.remove("error-1");
-  //   document
-  //     .querySelector("body")
-  //     .classList.remove(
-  //       "app",
-  //       "sidebar-mini",
-  //       "ltr",
-  //       "landing-page",
-  //       "horizontalmenu"
-  //     );
-  //   document.querySelector("body").classList.add("main-body", "leftmenu");
-  //   document.body.classList.add("ltr", "main-body", "leftmenu","main-sidebar-hide");
-  // };
 
-    const Add = () => {
+  const Add = () => {
   const body = document.body;
 
   // Remove unwanted classes
@@ -154,11 +140,13 @@ const Contentlayout = ({ children }) => {
         dispatch({ type: 'LOGOUT' });
       }
     }
-  }, []);
-  
+  }, [currentPath]);
+
   const checkPath = (path, tabs) => {
     return tabs.some(tab => {
-      if (tab.path === path) {
+      if (tab.path === path || path == "/components/profile") {
+        return true;
+      }else if(tab.sub_path && tab.sub_path.includes(path)){
         return true;
       }
       // Recursively check the children if they exist
@@ -168,13 +156,30 @@ const Contentlayout = ({ children }) => {
       return false;
     });
   }
+
   const isTabAllowed = (currentPath, allowedTabs) => {
-    if(currentPath.includes('slug') || currentPath.includes('notification') || currentPath.includes('profile')){
-      return true;
-    }else{
-      return checkPath(currentPath,allowedTabs)
-    }
+    return checkPath(currentPath,allowedTabs)
   }
+  
+  // const checkPath = (path, tabs) => {
+  //   return tabs.some(tab => {
+  //     if (tab.path === path) {
+  //       return true;
+  //     }
+  //     // Recursively check the children if they exist
+  //     if (tab.children && tab.children.length > 0) {
+  //       return checkPath(path, tab.children);
+  //     }
+  //     return false;
+  //   });
+  // }
+  // const isTabAllowed = (currentPath, allowedTabs) => {
+  //   if(currentPath.includes('slug') || currentPath.includes('notification') || currentPath.includes('profile')){
+  //     return true;
+  //   }else{
+  //     return checkPath(currentPath,allowedTabs)
+  //   }
+  // }
   const remove = () => {
     document.querySelector("body").classList.remove("main-sidebar-show");
     if (document.querySelector(".card.search-result") != null) {

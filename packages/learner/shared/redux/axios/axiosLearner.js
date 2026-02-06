@@ -75,6 +75,7 @@ axiosInstance.interceptors.response.use(
             axiosInstance.get(`/auth/refreshToken`).finally(() => { });
           } else {
             axiosInstance.post(`/auth/logout`).finally(() => {
+              document.body.classList.remove("dark-theme");
               isSwalOpen401 = false;
               localStorage.clear();
               Router.push('/');
@@ -96,11 +97,32 @@ axiosInstance.interceptors.response.use(
           timerProgressBar: true,
           didClose: () => {
             axiosInstance.post(`/auth/logout`).finally(() => {
+              document.body.classList.remove("dark-theme");
               isSwalOpen403 = false;
               Router.push('/');
               localStorage.clear();
             });
           }
+        });
+      }
+    }  else if (error?.response?.status === 503) {
+      if(!isSwalOpen403){
+        isSwalOpen403 = true;
+        Swal.fire({
+          title: '',
+          text: error?.response?.data.message,
+          icon: 'warning',
+          confirmButtonText: 'Ok',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            axiosInstance.post(`/auth/logout`).finally(() => {
+              document.body.classList.remove("dark-theme");
+              isSwalOpen403 = false;
+              Router.push('/');
+              localStorage.clear();
+            });
+          } 
         });
       }
     } else if (error?.response?.status === 404) {
@@ -122,7 +144,7 @@ axiosInstance.interceptors.response.use(
             closeOnClick: false,
             draggable: false,
             pauseOnHover: false,
-            style: { width: '400px' }
+            style: { width: '330px' }
           }
         );
       } else {
@@ -138,7 +160,7 @@ axiosInstance.interceptors.response.use(
             closeOnClick: false,
             draggable: false,
             pauseOnHover: false,
-            style: { width: '400px' }
+            style: { width: '330px' }
           }
         );
       }
@@ -156,7 +178,7 @@ axiosInstance.interceptors.response.use(
           closeOnClick: false,
           draggable: false,
           pauseOnHover: false,
-          style: { width: '400px' }
+          style: { width: '330px' }
         }
       );
     }

@@ -22,6 +22,11 @@ const initialState = {
   saveTerminationeventslogs: [],
   importResp: [],
   success: null,
+  scenarioImportData: [],
+  ScenarioexportList: [],
+  ScenarioExport: [],
+  exportscenario:[],
+  exportData: null,
 };
 
 const slice = createSlice({
@@ -92,6 +97,24 @@ const slice = createSlice({
     hasGetSaveConfigSucc(state, action) {
       (state.isLoading = false),
         (state.saveComponentConfigData = action.payload);
+    },
+    hasGetScenarioImportSucc(state, action) {
+      (state.isLoading = false),
+        (state.scenarioImportData = action.payload);
+    },
+    hasGetScenarioexportListSucc(state, action) {
+      (state.isLoading = false), (state.ScenarioexportList = action.payload);
+    },
+    hasGetScenarioExportSucc(state, action) {
+      (state.isLoading = false), (state.ScenarioExport = action.payload);
+    },
+    hasGetScenarioExport(state, action) {
+      (state.isLoading = false), (state.exportscenario = action.payload);
+    },
+    hasExportSuccess(state, action) {
+      state.isLoading = false;
+      state.exportData = action.payload;
+      state.success = true;
     },
     //HAS ERROR
     hasError(state, action) {
@@ -430,5 +453,62 @@ export function importScenarioZip(formData) {
 export function clearimportMastersAction() {
   return (dispatch) => {
     dispatch(slice.actions.hasImportSucc(null));
+  };
+}
+
+export function getScenarioImport(id) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.scenario_import}/${id}`);
+      dispatch(slice.actions.hasGetScenarioImportSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getScenarioExportList() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.export_list}`);
+      dispatch(slice.actions.hasGetScenarioexportListSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function ScenarioExport(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.create_export_zip}`, payload);
+      dispatch(slice.actions.hasGetScenarioExportSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function exportScenario(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.scenario_export_zip}`, payload);
+      dispatch(slice.actions.hasGetScenarioExport(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearScenarioExport() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetScenarioExportSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
   };
 }

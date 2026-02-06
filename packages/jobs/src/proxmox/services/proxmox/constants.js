@@ -29,6 +29,16 @@ const VM_PROCESSES = {
   DELETE_LXC_SNAPSHOT:"Delete LXC Snapshot",
   RESTORE_LXC_SNAPSHOT:"Restore LXC Snapshot",
   RESTORE_QEMU_SNAPSHOT:"Restore QEMU Snapshot",
+  RESUME_VM:"Resume QEMU VM",
+  PAUSE_VM:"Pause QEMU VM",
+  GET_TASK_LOG:"Export Status",
+  TAKE_BACKUP:"Backup VM",
+  FETCH_FILE_NAME:"File Name",
+  CLONE_LXC:"Clone LXC Component",
+  TEMPLATE_LXC:"Template LXC",
+  CLONE_QEMU:"Clone QEMU Component",
+  TEMPLATE_QEMU:"Template QEMU",
+  GET_QEMU_CONFIG:"QEMU Config",
 };
 
 module.exports = {

@@ -25,9 +25,14 @@ import {
   getLogs,
   getEventList,
   eventRestart,
+  deletescenario,
   clearEventRestart,
   clearGetSessionStatusList,
+  pausescenario,
+  resumescenario,
+  canresumescenario,
 } from "../../../shared/redux/slices/events/events";
+import { getTabList } from "../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../shared/layout-components/seo/seo";
 import "../../../shared/utils/i18n";
 import ScenarioDiagram from "./scenariodiagram";
@@ -36,7 +41,7 @@ import dynamic from "next/dynamic";
 
 const PdfLoader = dynamic(
   () => import("../../../shared/data/common/PdfLoader"),
-  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> },
 );
 
 const Dashboard = () => {
@@ -51,13 +56,14 @@ const Dashboard = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [isNotified, setIsNotified] = useState(false);
   const [showRestartFailureModal, setShowRestartFailureModal] = useState(false);
-
   const [showChat, setShowChat] = useState(false);
   const [reverseSeconds, setReverseSeconds] = useState(0);
+  const [timerPaused, setTimerPaused] = useState(true);
   const [reverseTimerActive, setReverseTimerActive] = useState(false);
   const [scenarioStatus, setScenarioStatus] = useState("Pending");
   const [vmStep, setVmStep] = useState("");
   const pollingRef = useRef(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [countdown, setCountdown] = useState(10);
   const [countdownActive, setCountdownActive] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
@@ -65,6 +71,8 @@ const Dashboard = () => {
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   const [isAutoComplete, setIsAutoComplete] = useState(false);
+  const [dynamicTab, setDynamicTab] = useState("Basic Information");
+  const [pdfNotFound, setPdfNotFound] = useState(false);
 
   const vmStepsOrder = [
     "Initializing",
@@ -73,35 +81,6 @@ const Dashboard = () => {
     "Starting",
     "Running",
   ];
-
-  const statusBadgeMap = {
-    Start: "primary-transparent",
-    Pause: "warning-transparent",
-    Resume: "info-transparent",
-    Terminated: "danger-transparent",
-    Completed: "success-transparent",
-    Failed: "dark-transparent",
-    Initiated: "secondary-transparent",
-  };
-
-  const typeBadgeMap = {
-    Learner: "primary-transparent",
-    Instructor: "success-transparent",
-    Admin: "danger-transparent",
-    System: "secondary-transparent",
-  };
-
-  const badgeTextColorMap = {
-    "primary-transparent": "text-primary",
-    "secondary-transparent": "text-secondary",
-    "success-transparent": "text-success",
-    "danger-transparent": "text-danger",
-    "warning-transparent": "text-warning",
-    "info-transparent": "text-info",
-    "dark-transparent": "text-dark",
-    "light-transparent": "text-dark",
-  };
-
   const {
     hasGetEventSucc,
     saveScenariosData,
@@ -109,20 +88,25 @@ const Dashboard = () => {
     hasGetSessionStatusListData,
     hasGetLogsListData,
     hasGetEventRestartSucc,
+    hasdeletescenarioSucc,
+    getSingleScenariosSucc,
+    tabListSucc,
     errorData,
   } = useSelector((state) => ({
     hasGetEventSucc: state?.events?.getEventListData?.data,
+    getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
     saveScenariosData: state?.events?.saveEvents,
     hasGetUpdateSessionStatusSucc: state?.events?.updateSessionStatus,
     hasGetSessionStatusListData: state?.events?.getSessionStatusListData?.data,
     hasGetLogsListData: state?.events?.getLogsData?.data,
+    tabListSucc: state?.scenarios?.getTabListData?.data,
     hasGetEventRestartSucc: state?.events?.eventRestart,
+    hasdeletescenarioSucc: state?.scenarios?.hasdeletescenarioSuccData?.data,
     errorData: state?.events?.error,
   }));
   useEffect(() => {
     dispatch(getEventList());
   }, [dispatch]);
-
   useEffect(() => {
     if (hasGetEventSucc && hasGetEventSucc.length > 0) {
       const scenario = hasGetEventSucc[0];
@@ -139,14 +123,27 @@ const Dashboard = () => {
         }
       }
 
+      // if (scenario.reverse_timer) {
+      //   const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
+      //   const reverseTotalSeconds = rh * 3600 + rm * 60 + rs;
+      //   setReverseSeconds(reverseTotalSeconds);
+      //   setReverseTimerActive(true);
+      // }
       if (scenario.reverse_timer) {
         const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
-        const reverseTotalSeconds = rh * 3600 + rm * 60 + rs;
-        setReverseSeconds(reverseTotalSeconds);
-        setReverseTimerActive(true);
+        setReverseSeconds(rh * 3600 + rm * 60 + rs);
+
+        if (scenario.status === "Start" || scenario.status === "Resume") {
+          setReverseTimerActive(true);
+        } else {
+          setReverseTimerActive(false); // ⏸ pause stops countdown
+        }
       }
     }
   }, [hasGetEventSucc]);
+  useEffect(() => {
+    dispatch(getTabList());
+  }, [dispatch]);
 
   useEffect(() => {
     let reverseInterval;
@@ -165,14 +162,17 @@ const Dashboard = () => {
     return () => clearInterval(reverseInterval);
   }, [reverseTimerActive, reverseSeconds]);
 
+  console.log("rowValuesrowValuesroddddddddwValues", saveScenariosData);
+
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       dispatch(getEventList());
 
-      handleClone(saveScenariosData?.eventlearnerid);
+      handleClone(saveScenariosData?.vmrequestid);
       const payload = {
         scenarioid: rowValues?.scenarioid,
         learnerid: rowValues?.learner_id,
+        vmrequestid: saveScenariosData?.vmrequestid,
         eventlearnerid: saveScenariosData?.eventlearnerid,
       };
       dispatch(getEventsConfigurations(payload));
@@ -182,7 +182,12 @@ const Dashboard = () => {
   }, [saveScenariosData]);
 
   useEffect(() => {
-    if (hasGetUpdateSessionStatusSucc?.statusCode == 200) {
+    if (
+      hasGetUpdateSessionStatusSucc?.statusCode == 200 &&
+      confirmAction !== "pause" &&
+      confirmAction !== "resume"
+    ) {
+      // logout only for terminate/stop/similar actions
       localStorage.removeItem("userLearner");
       localStorage.removeItem("accessTokenLearner");
       localStorage.removeItem("menusLearner");
@@ -192,12 +197,11 @@ const Dashboard = () => {
     }
   }, [hasGetUpdateSessionStatusSucc]);
 
-
   useEffect(() => {
     // Success case
     if (hasGetEventRestartSucc?.statusCode === 200) {
       dispatch(getEventList());
-      handleClone(rowValues?.eventlearnerid);
+      handleClone(rowValues?.vmrequestid);
       setShowCloneModal(true);
       setIsActionInProgress(false);
       dispatch(clearEventRestart());
@@ -235,7 +239,7 @@ const Dashboard = () => {
                 position: toast.POSITION.TOP_RIGHT,
                 hideProgressBar: true,
                 theme: "colored",
-              }
+              },
             );
           })
         : toast.error(
@@ -248,11 +252,36 @@ const Dashboard = () => {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
       dispatch(clearHasError());
     }
   }, [errorData]);
+  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
+
+  useEffect(() => {
+    if (hasGetEventSucc && hasGetEventSucc.length > 0) {
+      const scenario = hasGetEventSucc[0];
+      setRowValues(scenario);
+
+      // 🔥 FIX: ONLY set from backend on first load, NOT after button click
+      setScenarioStatus((prev) => {
+        if (prev === "Pause" || prev === "Resume") return prev;
+        return scenario.status;
+      });
+
+      if (scenario.calculated_timer) {
+        const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
+        const totalSeconds = h * 3600 + m * 60 + s;
+        setElapsedSeconds(totalSeconds);
+
+        if (scenario.status === "Start" || scenario.status === "Resume") {
+          setTimerActive(true);
+          setTimerPaused(false);
+        }
+      }
+    }
+  }, [hasGetEventSucc]);
 
   const baseUrl = process.env.API_URL_FILEMANAGER;
 
@@ -283,19 +312,160 @@ const Dashboard = () => {
     setShowConfirm(true);
   };
 
+  const handlePause = async () => {
+    try {
+      setConfirmAction("pause");
+      setActionLoading(true);
+
+      const scenarioData = hasGetEventSucc?.[0];
+      const payload = {
+        scenarioid: scenarioData?.scenarioid,
+        learner_id: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        instructor_id: scenarioData?.instructor_id,
+        status: "Pause",
+        timer: formatTime(elapsedSeconds),
+        eventlearnerid: scenarioData?.eventlearnerid,
+        type: "learner",
+      };
+
+      const resPause = await dispatch(pausescenario(payload));
+      const pauseOk =
+        resPause?.payload?.statusCode === 200 || resPause?.statusCode === 200;
+
+      if (!pauseOk) {
+        console.error("Failed to pause scenario.");
+        return;
+      }
+
+      // 🔹 Step 2: pause success → update session status
+      const resUpdate = await dispatch(updateSessionStatus(payload));
+
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Paused Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+
+      setScenarioStatus("Pause");
+      setTimerActive(false); // ⛔ stop interval
+      setTimerPaused(true);
+      dispatch(getEventList());
+      // dispatch(getSingleScenarios(query.slug[0]));
+    } catch (err) {
+      console.error("Failed to pause scenario.");
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      setConfirmAction("resume");
+      setActionLoading(true);
+
+      const scenarioData = hasGetEventSucc?.[0];
+      const payload = {
+        scenarioid: scenarioData?.scenarioid,
+        learner_id: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        instructor_id: scenarioData?.instructor_id,
+        status: "Resume",
+        timer: formatTime(elapsedSeconds),
+        eventlearnerid: scenarioData?.eventlearnerid,
+        type: "learner",
+      };
+
+      //Step 1: Validate with backend
+      const canResumeRes = await dispatch(canresumescenario(payload));
+
+      const canResumeOk = canResumeRes?.statusCode === 200;
+
+      if (!canResumeOk) {
+        return;
+      }
+
+      const resResume = await dispatch(resumescenario(payload));
+      const resumeOk =
+        resResume?.payload?.statusCode === 200 || resResume?.statusCode === 200;
+
+      if (!resumeOk) {
+        return;
+      }
+      // 🔹 Step 3: Update session status in DB
+      await dispatch(updateSessionStatus(payload));
+
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Scenario Resumed Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+
+      setScenarioStatus("Resume");
+      setTimerActive(true); // ▶ start interval
+      setTimerPaused(false);
+      dispatch(getEventList());
+    } catch (err) {
+      console.error("Resume failed:", err);
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const handleDelete = () => {
+    setConfirmAction("delete");
+    setShowConfirm(true);
+    setTimerPaused(true);
+    setTimerActive(false);
+  };
+
+  useEffect(() => {
+    if (scenarioStatus === "Pause") {
+      setTimerActive(false);
+      setTimerPaused(true);
+    } else if (scenarioStatus === "Resume" || scenarioStatus === "Running") {
+      setTimerActive(true);
+      setTimerPaused(false);
+    }
+  }, [scenarioStatus]);
+  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
+
   const handleConfirmAction = async () => {
     try {
+      setActionLoading(true);
       const scenarioData = hasGetEventSucc?.[0];
       const mappedStatus = {
         start: "Start",
         terminate: "Terminated",
         complete: "Completed",
+        delete: "Terminated",
         initializing: "Initializing",
       };
+      if (
+        confirmAction === "terminate" ||
+        confirmAction === "complete" ||
+        confirmAction === "delete"
+      ) {
+        setTimerPaused(true);
+        setTimerActive(false);
+      }
 
       const payload = {
         scenarioid: scenarioData?.scenarioid,
-        learnerid: scenarioData?.learner_id,
+        vmrequestid: scenarioData?.vmrequestid,
+        learner_id: scenarioData?.learner_id,
         status: mappedStatus[confirmAction],
         timer: formatTime(elapsedSeconds),
         eventlearnerid: scenarioData?.eventlearnerid,
@@ -314,6 +484,9 @@ const Dashboard = () => {
       } else if (confirmAction === "restart") {
         setIsActionInProgress(true);
         dispatch(eventRestart(payload));
+      } else if (confirmAction === "delete") {
+        dispatch(updateSessionStatus(payload));
+        dispatch(deletescenario(payload));
       }
       setShowConfirm(false);
     } catch (err) {
@@ -322,8 +495,34 @@ const Dashboard = () => {
     }
   };
 
+  useEffect(() => {
+    if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
+      if (hasdeletescenarioSucc?.statusCode === 200) {
+        toast.success(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+            {hasdeletescenarioSucc?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: false,
+            theme: "colored",
+          },
+        );
+        setScenarioStatus(
+          confirmAction === "terminate" ? "Terminated" : "Completed",
+        );
+      }
+      setActionLoading(false); // Remove loading
+      dispatch(cleardeletescenario());
+      dispatch(hasGetEventSucc(query.slug[0]));
+    }
+  }, [hasdeletescenarioSucc, errorData]);
   const handleCancelAction = () => {
     setShowConfirm(false);
+    if (timerActive === false && timerPaused === true) {
+      setTimerPaused(false);
+      setTimerActive(true);
+    }
   };
 
   const handleConfirm = () => {
@@ -354,17 +553,17 @@ const Dashboard = () => {
     return `${hours}:${mins}:${secs}`;
   };
 
-  const handleClone = (eventlearnerid) => {
-    if (!eventlearnerid) return;
+  const handleClone = (vmrequestid) => {
+    if (!vmrequestid) return;
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
     setShowCloneModal(true);
-    dispatch(getSessionStatusList(eventlearnerid));
+    dispatch(getSessionStatusList(vmrequestid));
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
-        dispatch(getSessionStatusList(eventlearnerid));
+        dispatch(getSessionStatusList(vmrequestid));
       }, 10000);
     }, 100);
   };
@@ -441,18 +640,52 @@ const Dashboard = () => {
     setScenarioStatus("Initializing");
     dispatch(getEventList());
   };
-
+  //added
   useEffect(() => {
     let interval;
-    if (timerActive) {
+    if (timerActive && !timerPaused) {
       interval = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [timerActive]);
+  }, [timerActive, timerPaused]);
+
+  const formatEventKey = (name) =>
+    name?.toLowerCase()?.replace(/\s+/g, "_") ?? "";
+  useEffect(() => {
+    if (tabListSucc && Array.isArray(tabListSucc)) {
+      const enabledTabs = tabListSucc
+        .filter((tab) => tab.event_status === "True")
+        .sort((a, b) => a.tab_ordering - b.tab_ordering);
+      if (enabledTabs.length > 0) {
+        const basicTab = enabledTabs.find(
+          (tab) => tab.tab_name?.toLowerCase() === "Basic Information",
+        );
+        if (basicTab) {
+          setDynamicTab(formatEventKey(basicTab.tab_name));
+          setActiveTab(basicTab.tab_name);
+        } else {
+          const firstActive = enabledTabs[0];
+          setDynamicTab(formatEventKey(firstActive.tab_name));
+          setActiveTab(firstActive.tab_name);
+        }
+      }
+    }
+  }, [tabListSucc]);
 
   const isTerminated = rowValues?.isnotitermination === "Yes";
+
+  const isTimerVisible = !(
+    isScenarioError400 ||
+    ["Terminated", "Completed", "Pending", "Failed", "Initializing"].includes(
+      scenarioStatus,
+    )
+  );
+  console.log(
+    "scenarioStatusscenarioStatussrrrrrrrrrrrrcenarioStatus",
+    rowValues,
+  );
 
   return (
     <>
@@ -474,18 +707,18 @@ const Dashboard = () => {
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                              ? 2
-                              : level === "Hard"
-                              ? 3
-                              : 0;
+                                ? 2
+                                : level === "Hard"
+                                  ? 3
+                                  : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                              ? "text-warning"
-                              : level === "Hard"
-                              ? "text-danger"
-                              : "text-muted";
+                                ? "text-warning"
+                                : level === "Hard"
+                                  ? "text-danger"
+                                  : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
@@ -518,7 +751,7 @@ const Dashboard = () => {
                 >
                   {isScenarioError400 ||
                   ["Terminated", "Completed", "Pending", "Failed"].includes(
-                    scenarioStatus
+                    scenarioStatus,
                   ) ? (
                     <>
                       <div style={{ display: "flex", gap: "10px" }}>
@@ -536,7 +769,7 @@ const Dashboard = () => {
                       <Button
                         variant="info"
                         size="sm"
-                        onClick={() => handleClone(rowValues?.eventlearnerid)}
+                        onClick={() => handleClone(rowValues?.vmrequestid)}
                       >
                         <i
                           className="fas fa-spinner fa-spin"
@@ -575,73 +808,147 @@ const Dashboard = () => {
                         }}
                       >
                         <>
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={handleComplete}
-                            disabled={isActionInProgress}
-                          >
-                            Complete
-                          </Button>
-
-                          <Button
-  variant="warning"
-  size="sm"
-  onClick={handleRestart}
-  disabled={isActionInProgress}
->
-  {isActionInProgress ? (
-    <>
-      <span
-        className="spinner-border spinner-border-sm me-2"
-        role="status"
-        aria-hidden="true"
-      ></span>
-      Restarting...
-    </>
-  ) : (
-    <>
-      <i className="fe fe-play"></i> Restart
-    </>
-  )}
-</Button>
-
-
-                          <Button
-                            variant={
-                              isNotified && !replyReceived ? "danger" : "info"
-                            }
-                            size="sm"
-                            onClick={() => {
-                              setShowChat(true);
-                            }}
-                            disabled={isActionInProgress}
-                            className="position-relative "
-                          >
-                            <i className="fa fa-hand-paper text-white me-1 "></i>{" "}
-                            Raise Request
-                            {rowValues.unseen_instructor_admin_message_count >
-                              0 && (
-                              <span
-                                className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                style={{
-                                  fontSize: "0.6rem",
-                                  minWidth: "18px",
-                                  height: "18px",
-                                  padding: " 5px",
-                                }}
+                          {scenarioStatus === "Pause" ? (
+                            <>
+                              {/* RESUME */}
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={handleResume}
+                                disabled={
+                                  actionLoading && confirmAction === "resume"
+                                }
                               >
-                                {rowValues.unseen_instructor_admin_message_count >
-                                99
-                                  ? "99+"
-                                  : rowValues.unseen_instructor_admin_message_count}
-                                <span className="visually-hidden">
-                                  unread messages
-                                </span>
-                              </span>
-                            )}
-                          </Button>
+                                {actionLoading && confirmAction === "resume" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Resuming...
+                                  </>
+                                ) : (
+                                  "Resume"
+                                )}
+                              </Button>
+
+                              {/* DELETE */}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleDelete}
+                                disabled={
+                                  actionLoading && confirmAction === "delete"
+                                }
+                              >
+                                {actionLoading && confirmAction === "delete" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Deleting...
+                                  </>
+                                ) : (
+                                  "Delete"
+                                )}
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              {/* PAUSE */}
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handlePause}
+                                disabled={
+                                  actionLoading && confirmAction === "pause"
+                                }
+                              >
+                                {actionLoading && confirmAction === "pause" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Pausing...
+                                  </>
+                                ) : (
+                                  "Pause"
+                                )}
+                              </Button>
+
+                              {/* RESTART */}
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={handleRestart}
+                                disabled={isActionInProgress}
+                              >
+                                {isActionInProgress ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                      aria-hidden="true"
+                                    ></span>
+                                    Restarting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fe fe-play"></i> Restart
+                                  </>
+                                )}
+                              </Button>
+
+                              {/* COMPLETE */}
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={handleComplete}
+                                disabled={
+                                  actionLoading && confirmAction === "complete"
+                                }
+                              >
+                                {actionLoading &&
+                                confirmAction === "complete" ? (
+                                  <>
+                                    <i className="fas fa-spinner fa-spin"></i>{" "}
+                                    Completing...
+                                  </>
+                                ) : (
+                                  "Complete"
+                                )}
+                              </Button>
+                            </>
+                          )}
                         </>
+
+                        <Button
+                          variant={
+                            isNotified && !replyReceived ? "danger" : "info"
+                          }
+                          size="sm"
+                          onClick={() => {
+                            setShowChat(true);
+                          }}
+                          disabled={isActionInProgress}
+                          className="position-relative "
+                        >
+                          <i className="fa fa-hand-paper text-white me-1 "></i>{" "}
+                          Raise Request
+                          {rowValues.unseen_instructor_admin_message_count >
+                            0 && (
+                            <span
+                              className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style={{
+                                fontSize: "0.6rem",
+                                minWidth: "18px",
+                                height: "18px",
+                                padding: " 5px",
+                              }}
+                            >
+                              {rowValues.unseen_instructor_admin_message_count >
+                              99
+                                ? "99+"
+                                : rowValues.unseen_instructor_admin_message_count}
+                              <span className="visually-hidden">
+                                unread messages
+                              </span>
+                            </span>
+                          )}
+                        </Button>
                       </div>
                     </>
                   )}
@@ -718,415 +1025,393 @@ const Dashboard = () => {
                       <Tab.Container id="scenario-tabs" activeKey={activeTab}>
                         <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
                           <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white w-100">
-                            <Nav.Item
-                              onClick={() => setActiveTab("basic_info")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="basic_info"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "basic_info"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "basic_info"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Basic Information
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("instruction")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="instruction"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "instruction"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "instruction"
-                                      ? "bold"
-                                      : "normal",
-                                }}
-                              >
-                                Instruction Details
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("diagram")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="diagram"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "diagram"
-                                      ? "#007bff"
-                                      : "gray",
-                                  fontWeight:
-                                    activeTab === "diagram" ? "bold" : "normal",
-                                }}
-                              >
-                                Scenario Diagram
-                              </Nav.Link>
-                            </Nav.Item>
-
-                            <Nav.Item
-                              onClick={() => setActiveTab("logs")}
-                              style={{ flex: 1, textAlign: "start" }}
-                            >
-                              <Nav.Link
-                                eventKey="logs"
-                                className="masterlist"
-                                style={{
-                                  color:
-                                    activeTab === "logs" ? "#007bff" : "gray",
-                                  fontWeight:
-                                    activeTab === "logs" ? "bold" : "normal",
-                                }}
-                              >
-                                Logs
-                              </Nav.Link>
-                            </Nav.Item>
+                            {tabListSucc
+                              ?.filter((tab) => tab.event_status === "True")
+                              ?.sort((a, b) => a.tab_ordering - b.tab_ordering)
+                              ?.map((tab) => (
+                                <Nav.Item
+                                  key={tab.scenariotabid}
+                                  onClick={() => {
+                                    setActiveTab(tab.tab_name);
+                                  }}
+                                  style={{ flex: 1, textAlign: "start" }}
+                                >
+                                  <Nav.Link
+                                    eventKey={tab.tab_name}
+                                    className="masterlist"
+                                    style={{
+                                      color:
+                                        activeTab === tab.tab_name
+                                          ? "#007bff"
+                                          : "gray",
+                                      fontWeight:
+                                        activeTab === tab.tab_name
+                                          ? "bold"
+                                          : "normal",
+                                    }}
+                                  >
+                                    {tab.tab_name}
+                                  </Nav.Link>
+                                </Nav.Item>
+                              ))}
                           </Nav>
                         </Row>
 
                         <Row>
                           <Col md={12} className="pt-3">
                             <Tab.Content>
-                              <Tab.Pane eventKey="basic_info">
-                                <Row className="gy-4">
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-layers text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariocategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Category
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                              {tabListSucc
+                                ?.filter((tab) => tab.event_status === "True")
+                                ?.sort(
+                                  (a, b) => a.tab_ordering - b.tab_ordering,
+                                )
+                                ?.map((tab) => (
+                                  <Tab.Pane
+                                    eventKey={tab.tab_name}
+                                    key={tab.scenariotabid}
+                                  >
+                                    {/* 👇 Conditional rendering per tab name */}
+                                    {tab.tab_name === "Basic Information" && (
+                                      <Row className="gy-4">
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-layers text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariocategory_name ||
+                                                  "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Scenario Category
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-tag text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariosubcategory_name ||
-                                            "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Scenario Subcategory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-tag text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariosubcategory_name ||
+                                                  "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Scenario Subcategory
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-clock text-danger fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.duration
-                                            ? `${rowValues.duration} mins`
-                                            : "0 mins"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Duration (In Minutes)
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-clock text-danger fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.duration
+                                                  ? `${rowValues.duration} mins`
+                                                  : "0 mins"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Duration (In Minutes)
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.scenariolevel || "—"}
-                                        </div>
-                                        <small className="text-muted">
-                                          Level
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-bar-chart text-warning fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.scenariolevel ||
+                                                  "—"}
+                                              </div>
+                                              <small className="text-muted">
+                                                Level
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-server text-primary fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.component_count}
-                                        </div>
-                                        <small className="text-muted">
-                                          Total VM
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-server text-primary fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.component_count}
+                                              </div>
+                                              <small className="text-muted">
+                                                Total VM
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-cpu text-info fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_cpu} Cores
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual CPU
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-cpu text-info fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.virtual_cpu} Cores
+                                              </div>
+                                              <small className="text-muted">
+                                                Virtual CPU
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-box text-warning fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.virtual_memory} M
-                                        </div>
-                                        <small className="text-muted">
-                                          Virtual Memory
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-box text-warning fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.virtual_memory} M
+                                              </div>
+                                              <small className="text-muted">
+                                                Virtual Memory
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={3}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-hard-drive text-success fs-4 mt-1"></i>
-                                      <div>
-                                        <div className="fw-semibold text-dark mb-1">
-                                          {rowValues?.storage_size} GB
-                                        </div>
-                                        <small className="text-muted">
-                                          Storage Size
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
+                                        <Col md={3}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-hard-drive text-success fs-4 mt-1"></i>
+                                            <div>
+                                              <div className="fw-semibold text-dark mb-1">
+                                                {rowValues?.storage_size} GB
+                                              </div>
+                                              <small className="text-muted">
+                                                Storage Size
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
 
-                                  <Col md={12}>
-                                    <div className="d-flex align-items-start gap-3">
-                                      <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
-                                      <div>
-                                        <div
-                                          className="fw-semibold text-dark mb-2"
-                                          dangerouslySetInnerHTML={{
-                                            __html:
-                                              rowValues?.scenariodescription ||
-                                              "—",
-                                          }}
-                                        />
-                                        <small className="text-muted">
-                                          Description
-                                        </small>
-                                      </div>
-                                    </div>
-                                  </Col>
-                                </Row>
-                              </Tab.Pane>
-
-                              <Tab.Pane eventKey="instruction">
-                                {pdfUrl ? (
-                                  <PdfLoader fileUrl={pdfUrl} />
-                                ): (
-                                  <Row>
-                                    <Col sm={12}>
-                                      <Card className="custom-card">
-                                        <Card.Body className="overflow-auto pd-t-10">
-                                          <Row className="signpages text-center">
-                                            <Col md={10} className="mx-auto">
-                                              <Card
-                                                style={{
-                                                  border: "none",
-                                                  backgroundColor: "#f6f7fb",
+                                        <Col md={12}>
+                                          <div className="d-flex align-items-start gap-3">
+                                            <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
+                                            <div>
+                                              <div
+                                                className="fw-semibold text-dark mb-2"
+                                                dangerouslySetInnerHTML={{
+                                                  __html:
+                                                    rowValues?.scenariodescription ||
+                                                    "—",
                                                 }}
-                                              >
-                                                <Card.Body>
-                                                  <div className="text-center">
-                                                    <img
-                                                      src={crossEvalicon.src}
-                                                      alt="No data"
-                                                      className="wd-150"
-                                                    />
-                                                    <h5 className="mt-4">
-                                                      No instruction PDF
-                                                      provided.
-                                                    </h5>
-                                                  </div>
-                                                </Card.Body>
-                                              </Card>
-                                            </Col>
-                                          </Row>
-                                        </Card.Body>
-                                      </Card>
-                                    </Col>
-                                  </Row>
-                                )}
-                              </Tab.Pane>
+                                              />
+                                              <small className="text-muted">
+                                                Description
+                                              </small>
+                                            </div>
+                                          </div>
+                                        </Col>
+                                      </Row>
+                                    )}
 
-                              <Tab.Pane eventKey="diagram">
-                                <div>
-                                  <ScenarioDiagram
-                                    scenariodiagram={
-                                      rowValues?.scenariodiagram &&
-                                      rowValues.scenariodiagram.trim() !== ""
-                                        ? rowValues.scenariodiagram
-                                        : ""
-                                    }
-                                  />
-                                </div>
-                              </Tab.Pane>
+                                    {tab.tab_name === "Instruction Details" && (
+                                      <Row className="align-items-center mb-2">
+                                        <Col>
+                                          <h5>Instruction Details</h5>
+                                        </Col>
+                                        <PdfLoader
+                                          fileUrl={pdfUrl}
+                                          setPdfNotFound={setPdfNotFound}
+                                        />
+                                      </Row>
+                                    )}
 
-                              <Tab.Pane eventKey="logs">
-                                <div>
-                                  {hasGetLogsListData &&
-                                  hasGetLogsListData.length > 0 ? (
-                                    <div
-                                      style={{
-                                        maxHeight: "600px",
-                                        overflowY: "auto",
-                                        border: "1px solid #ddd",
-                                        borderRadius: "6px",
-                                      }}
-                                    >
-                                      <table className="table text-nowrap table-bordered m-0">
-                                        <thead className="table-info">
-                                          <tr>
-                                            <th>Session Start</th>
-                                            <th>Type</th>
-                                            <th>Status</th>
-                                            <th>Log Date</th>
-                                            <th>Remark</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {hasGetLogsListData.map(
-                                            (log, index) => {
-                                              const statusColor =
-                                                statusBadgeMap[log.status] ||
-                                                "light-transparent";
-                                              const typeColor =
-                                                typeBadgeMap[log.type] ||
-                                                "light-transparent";
+                                    {tab.tab_name === "Scenario Diagram" && (
+                                      <ScenarioDiagram
+                                        // scenarioId={rowId}
+                                        isTimerVisible={isTimerVisible}
+                                        scenarioStatus={scenarioStatus}
+                                        scenariodiagram={
+                                          rowValues?.scenariodiagram?.trim() !==
+                                          ""
+                                            ? rowValues.scenariodiagram
+                                            : ""
+                                        }
+                                      />
+                                    )}
 
-                                              const statusTextClass =
-                                                badgeTextColorMap[
-                                                  statusColor
-                                                ] || "text-dark";
-                                              const typeTextClass =
-                                                badgeTextColorMap[typeColor] ||
-                                                "text-dark";
-
-                                              return (
-                                                <tr key={index}>
-                                                  <td>
-                                                    {new Date(
-                                                      log.startedon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={typeColor}
-                                                      className={`rounded-pill ${typeTextClass}`}
-                                                    >
-                                                      {log.type}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    <Badge
-                                                      bg={statusColor}
-                                                      className={`rounded-pill ${statusTextClass}`}
-                                                    >
-                                                      {log.status}
-                                                    </Badge>
-                                                  </td>
-
-                                                  <td>
-                                                    {new Date(
-                                                      log.createdon
-                                                    ).toLocaleString("en-US", {
-                                                      year: "numeric",
-                                                      month: "short",
-                                                      day: "2-digit",
-                                                      hour: "numeric",
-                                                      minute: "2-digit",
-                                                      second: "2-digit",
-                                                      hour12: true,
-                                                    })}
-                                                  </td>
-
-                                                  <td>{log.remark}</td>
+                                    {tab.tab_name === "Logs" && (
+                                      <div>
+                                        {hasGetLogsListData?.length > 0 ? (
+                                          <div
+                                            style={{
+                                              maxHeight: "600px",
+                                              overflowY: "auto",
+                                              border: "1px solid #ddd",
+                                              borderRadius: "6px",
+                                            }}
+                                          >
+                                            <table className="table text-nowrap table-bordered">
+                                              <thead className="table-info">
+                                                <tr>
+                                                  <th>Session Start</th>
+                                                  <th>Type</th>
+                                                  <th>Status</th>
+                                                  <th>Log Date</th>
+                                                  <th>Remark</th>
                                                 </tr>
-                                              );
-                                            }
-                                          )}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  ) : (
-                                    <Row>
-                                      <Col sm={12}>
-                                        <Card className="custom-card">
-                                          <Card.Body className="overflow-auto pd-t-10">
-                                            <Row className="signpages text-center">
-                                              <Col md={10} className="mx-auto">
-                                                <Card
-                                                  style={{
-                                                    border: "none",
-                                                    backgroundColor: "#f6f7fb",
-                                                  }}
-                                                >
-                                                  <Card.Body>
-                                                    <div className="text-center">
-                                                      <img
-                                                        src={crossEvalicon.src}
-                                                        alt="No data"
-                                                        className="wd-150"
-                                                      />
-                                                      <h5 className="mt-4">
-                                                        No logs available.
-                                                      </h5>
-                                                    </div>
-                                                  </Card.Body>
-                                                </Card>
-                                              </Col>
-                                            </Row>
-                                          </Card.Body>
-                                        </Card>
-                                      </Col>
-                                    </Row>
-                                  )}
-                                </div>
-                              </Tab.Pane>
+                                              </thead>
+                                              <tbody>
+                                                {hasGetLogsListData.map(
+                                                  (log, index) => (
+                                                    <tr key={index}>
+                                                      <td>
+                                                        {log.startedon
+                                                          ? new Date(
+                                                              log.startedon,
+                                                            ).toLocaleString()
+                                                          : "-"}
+                                                      </td>
+                                                      <td>{log.type}</td>
+                                                      <td>{log.status}</td>
+                                                      <td>
+                                                        {new Date(
+                                                          log.createdon,
+                                                        ).toLocaleString()}
+                                                      </td>
+                                                      <td>{log.remark}</td>
+                                                    </tr>
+                                                  ),
+                                                )}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-4">
+                                            No logs available
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* 👇 Flexible / Custom tab support */}
+                                    {/* {tab.tab_type === "Flexible" &&
+                                                        tab.widget_url && (
+                                                          <iframe
+                                                            src={tab.widget_url}
+                                                            title={tab.tab_name}
+                                                            style={{
+                                                              width: "100%",
+                                                              height: "600px",
+                                                              border: "none",
+                                                              borderRadius: "8px",
+                                                            }}
+                                                          ></iframe>
+                                                        )} */}
+                                    {/* 👇 Flexible / Custom tab support */}
+                                    {tab.tab_type === "Flexible" &&
+                                      tab.widget_url && (
+                                        <div
+                                          style={{
+                                            width: "100%",
+                                            position: "relative",
+                                          }}
+                                        >
+                                          {/* === TOP BUTTON BAR === */}
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                              marginBottom: "8px",
+                                            }}
+                                          >
+                                            {/* LEFT SIDE BUTTONS */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                gap: "8px",
+                                              }}
+                                            >
+                                              <button
+                                                onClick={() =>
+                                                  window.history.back()
+                                                }
+                                                className="btn btn-light"
+                                                title="Back (Alt + ←)"
+                                              >
+                                                <i className="fe fe-arrow-left"></i>
+                                              </button>
+
+                                              {/* Forward Button (Alt + Right Arrow) */}
+                                              <button
+                                                onClick={() =>
+                                                  window.history.forward()
+                                                }
+                                                className="btn btn-light"
+                                                title="Forward (Alt + →)"
+                                              >
+                                                <i className="fe fe-arrow-right"></i>
+                                              </button>
+                                            </div>
+
+                                            {/* RIGHT SIDE BUTTONS */}
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                gap: "8px",
+                                              }}
+                                            >
+                                              {/* Refresh Iframe */}
+                                              <button
+                                                onClick={() => {
+                                                  const frame =
+                                                    document.getElementById(
+                                                      `flex-iframe-${tab.tab_name}`,
+                                                    );
+                                                  if (frame)
+                                                    frame.src = frame.src;
+                                                }}
+                                                className="btn btn-light"
+                                                title="Refresh"
+                                              >
+                                                <i className="fe fe-refresh-cw"></i>
+                                              </button>
+
+                                              {/* Fullscreen Iframe */}
+                                              <button
+                                                onClick={() => {
+                                                  const frame =
+                                                    document.getElementById(
+                                                      `flex-iframe-${tab.tab_name}`,
+                                                    );
+                                                  if (
+                                                    frame &&
+                                                    frame.requestFullscreen
+                                                  ) {
+                                                    frame.requestFullscreen();
+                                                  }
+                                                }}
+                                                className="btn btn-light"
+                                                title="Fullscreen"
+                                              >
+                                                <i className="fe fe-maximize"></i>
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* === IFRAME === */}
+                                          <iframe
+                                            id={`flex-iframe-${tab.tab_name}`}
+                                            src={tab.widget_url}
+                                            title={tab.tab_name}
+                                            style={{
+                                              width: "100%",
+                                              height: "900px",
+                                              border: "none",
+                                              borderRadius: "8px",
+                                            }}
+                                          ></iframe>
+                                        </div>
+                                      )}
+                                  </Tab.Pane>
+                                ))}
                             </Tab.Content>
                           </Col>
                         </Row>
@@ -1195,13 +1480,13 @@ const Dashboard = () => {
                               <div className="d-flex">
                                 <i
                                   className={`fa ${item.icon} ${iconBackground(
-                                    item.step
+                                    item.step,
                                   )} product-icon ${getStepClass(item.step)}`}
                                 ></i>
                                 <div className="ml-2">
                                   <span
                                     className={`font-weight-semibold mb-4 tx-14 ${getStepClass(
-                                      item.step
+                                      item.step,
                                     )}`}
                                   >
                                     {item.label}
@@ -1212,7 +1497,7 @@ const Dashboard = () => {
                                 </div>
                               </div>
                               {getStepClass(item.step).includes(
-                                "text-warning"
+                                "text-warning",
                               ) && (
                                 <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
                               )}
@@ -1246,6 +1531,9 @@ const Dashboard = () => {
                 <p>Are you sure you want to start the event?</p>
               )}
               {confirmAction === "terminate" && (
+                <p>Are you sure you want to terminate the event?</p>
+              )}
+              {confirmAction === "delete" && (
                 <p>Are you sure you want to terminate the event?</p>
               )}
               {confirmAction === "complete" && !isAutoComplete && (

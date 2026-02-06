@@ -1,4 +1,5 @@
 const vmconfigRouter = require("../components/vmconfig");
+const vmstartRouter = require("../components/vmstart");
 const dashboardRouter = require("../components/dashboard");
 const commonsRouter = require("../components/commons");
 const roleMenuRouter = require("../components/role_access/menus");
@@ -39,180 +40,193 @@ const authRouter = require("../components/auth");
 const companySettingRouter = require("../components/company_setting");
 const customscenariosRouter = require("../components/custom_scenarios");
 const scenariosTabs = require("../components/scenarios_tabs");
+const scenarioImport = require("../components/scenario_import")
 const customersRouter = require("../components/customers");
+const labSessions = require("../components/lab_sessions");
+const vmScenarioStart = require("../components/vm_scenario_start");
+const customcomponentRouter = require("../components/custom_component");
+const runningComponnets = require("../components/running_component");
+const licenseDashboardRouter = require("../components/licensedashboard");
+
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
   const router = express.Router();
   router.use("/auth", authRouter(iocContainer));
-  router.use("/vmconfig", authJwt.authenticateToken, vmconfigRouter(iocContainer));
-  router.use("/dashboard", authJwt.authenticateToken, dashboardRouter(iocContainer));
+  router.use("/vmconfig", [authJwt.authenticateToken(['/scenariotermination'])], vmconfigRouter(iocContainer));
+  router.use("/vmstart", [authJwt.authenticateToken([''])], vmstartRouter(iocContainer));
+  router.use("/dashboard", [authJwt.authenticateToken(['/dashboard'])], dashboardRouter(iocContainer));
   router.use(
     "/commons",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([''])],
     commonsRouter(iocContainer)
   );
-  authJwt.authenticateToken,
-    router.use(
-      "/roleaccess/menus",
-      authJwt.authenticateToken,
-      roleMenuRouter(iocContainer)
-    );
+  router.use(
+    "/roleaccess/menus",
+    [authJwt.authenticateToken(["/admin"])],
+    roleMenuRouter(iocContainer)
+  );
   router.use(
     "/roleaccess/roles",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(["/admin"])],
     roleRouter(iocContainer)
   );
   router.use(
     "/roleaccess/org",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     OrganizationRouter(iocContainer)
   );
-  router.use(
-    "/roleaccess/users",
-    authJwt.authenticateToken,
+  router.use("/roleaccess/users",
+    [authJwt.authenticateToken([''])],
     UserRouter(iocContainer)
   );
-  authJwt.authenticateToken,
-    router.use(
-      "/actions",
-      authJwt.authenticateToken,
-      actionRouter(iocContainer)
-    );
+  router.use(
+    "/actions",
+    [authJwt.authenticateToken([""])],
+    actionRouter(iocContainer)
+  );
   router.use(
     "/templates",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     templateRouter(iocContainer)
   );
   router.use(
     "/selectors",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     selectorRouter(iocContainer)
   );
   router.use(
     "/masters",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(["",'/masters'])],
     mastersRouter(iocContainer)
   );
   router.use(
     "/workflows",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     workflowRouter(iocContainer)
   );
-  authJwt.authenticateToken,
-    router.use(
-      "/notification",
-      authJwt.authenticateToken,
-      notiRouter(iocContainer)
-    );
+  router.use(
+    "/notification",
+    [authJwt.authenticateToken([""])],
+    notiRouter(iocContainer)
+  );
   router.use(
     "/web-settings",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     webSettings(iocContainer)
   );
   router.use(
     "/systemconfigapi",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     systemConfigsRouter(iocContainer)
   );
-  authJwt.authenticateToken,
-    router.use(
-      "/learners",
-      authJwt.authenticateToken,
-      learnersRouter(iocContainer)
-    );
+
+  router.use(
+    "/learners",
+    [authJwt.authenticateToken(['/users-management'])],
+    learnersRouter(iocContainer)
+  );
   router.use(
     "/instructors",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/users-management'])],
     instructorsRouter(iocContainer)
   );
-  router.use("/scenario", authJwt.authenticateToken, scenario(iocContainer));
+  router.use("/scenario", [authJwt.authenticateToken(['/scenarios'])], scenario(iocContainer));
   router.use(
     "/scenario-categories",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/masters'])],
     scenarioCategories(iocContainer)
   );
   router.use(
     "/scenario-subcategories",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/masters'])],
     scenariosubCategories(iocContainer)
   );
   router.use(
     "/component-category",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/masters'])],
     componentCategory(iocContainer)
   );
   router.use(
     "/component-subcategory",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     componentSubCategory(iocContainer)
   );
   router.use(
     "/components",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/components'])],
     componentRouter(iocContainer)
   );
   router.use(
     "/batches",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     componentBatchRouter(iocContainer)
   );
   router.use(
     "/usersession",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/user-sessions'])],
     usersessionRouter(iocContainer)
   );
   router.use(
     "/network",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/network'])],
     networkRouter(iocContainer)
   );
   router.use(
     "/apilogs",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/proxmoxlogs'])],
     apilogsRouter(iocContainer)
   );
   router.use(
     "/chatbox",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     chatboxRouter(iocContainer)
   );
   router.use(
     "/scenario_questions",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     scenarioquestionRouter(iocContainer)
   );
-  router.use("/event", authJwt.authenticateToken, eventRouter(iocContainer));
-  router.use("/faqs", authJwt.authenticateToken, faqsRouter(iocContainer));
+  router.use("/event", [authJwt.authenticateToken(['/events'])], eventRouter(iocContainer));
+  router.use("/faqs", [authJwt.authenticateToken(['/masters'])], faqsRouter(iocContainer));
   router.use(
     "/widgets",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/masters'])],
     widgetsRouter(iocContainer)
   );
   router.use(
     "/eventchatbox",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken([""])],
     eventchatboxRouter(iocContainer)
   );
   router.use(
     "/eventdashboard",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/event-dashboard'])],
     eventdashboardRouter(iocContainer)
   );
   router.use(
     "/user-reports",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/userreport'])],
     userreportsRouter(iocContainer)
   );
   router.use(
     "/instructor-reports",
-    authJwt.authenticateToken,
+    [authJwt.authenticateToken(['/instructorreport'])],
     instructorreportsRouter(iocContainer)
   );
-  router.use("/report", authJwt.authenticateToken, reportRouter(iocContainer));
-  router.use("/company_setting", companySettingRouter(iocContainer));
-  router.use("/custom_scenarios", authJwt.authenticateToken, customscenariosRouter(iocContainer));
-  router.use("/scenarios_tabs", authJwt.authenticateToken, scenariosTabs(iocContainer));
+  router.use("/report", [authJwt.authenticateToken(['/loginlogs',])], reportRouter(iocContainer));
+  router.use("/company_setting", [authJwt.authenticateToken(['',])], companySettingRouter(iocContainer));
+  router.use("/custom_scenarios", [authJwt.authenticateToken(['/customscenarios'])], customscenariosRouter(iocContainer));
+  router.use("/scenarios_tabs", [authJwt.authenticateToken(['/masters'])], scenariosTabs(iocContainer));
+ 
+  router.use("/customers",[authJwt.authenticateToken([""])],customersRouter(iocContainer));
+  router.use("/lab_sessions",[authJwt.authenticateToken([""])],labSessions(iocContainer));
+
+  router.use("/custom_component", [authJwt.authenticateToken([""])], customcomponentRouter(iocContainer));
+  router.use("/vm_scenario_start", [authJwt.authenticateToken([""])], vmScenarioStart(iocContainer));
+  router.use("/running_component", [authJwt.authenticateToken([""])], runningComponnets(iocContainer));
+   router.use("/licensedashboard",
+       [authJwt.authenticateToken([""])], 
+       licenseDashboardRouter(iocContainer));
   router.get("/", (_req, res) => res.json("Masters Module"));
-  router.use("/customers",authJwt.authenticateToken,customersRouter(iocContainer));
   return router;
 };

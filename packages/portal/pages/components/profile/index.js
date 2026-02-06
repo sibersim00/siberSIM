@@ -131,7 +131,7 @@ const Index = () => {
   const signOut = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const usertype = user?.usertype;
-
+     document.body.classList.remove("dark-theme");
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("menus");

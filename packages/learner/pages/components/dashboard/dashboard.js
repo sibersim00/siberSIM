@@ -23,6 +23,8 @@ const Dashboard = () => {
       state?.dashboard?.getStudentDashboardData?.data,
   }));
 
+  console.log("hasGetStudentDashboardListSucc",hasGetStudentDashboardListSucc);
+  
   useEffect(() => {
     dispatch(getStudentDashboard());
   }, [dispatch]);

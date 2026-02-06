@@ -4,6 +4,7 @@ const getList = ({ db }) => async () => {
         scenariotabid,
         tab_name,
         tab_status,
+        event_status,
         tab_type,
         widget_url,
         tab_ordering,
@@ -61,16 +62,16 @@ const save = ({ db, validation }) => async (body, userid, payloadArray = []) => 
     errors.push(validation.messages.order_duplicate);
   }
 
-  // 🟢 Step 5: Stop if any error
+  
   if (errors.length > 0) return { status: false, errors };
 
   try {
-    // 🟢 Step 6: Update or insert
     if (isUpdate) {
       await db.sequelize.query(
         `UPDATE scenario_tabs 
          SET tab_name = :tab_name,
              tab_status = :tab_status,
+             event_status = :event_status,
              tab_type = :tab_type,
              widget_url = :widget_url,
              tab_ordering = :tab_ordering,
@@ -81,6 +82,7 @@ const save = ({ db, validation }) => async (body, userid, payloadArray = []) => 
             id: body.scenariotabid,
             tab_name: body.tab_name,
             tab_status: body.tab_status || "True",
+            event_status: body.event_status || "True",
             tab_type: body.tab_type || "Fixed",
             widget_url: body.widget_url || null,
             tab_ordering: body.tab_ordering || null,
@@ -96,12 +98,13 @@ const save = ({ db, validation }) => async (body, userid, payloadArray = []) => 
     } else {
       await db.sequelize.query(
         `INSERT INTO scenario_tabs 
-        (tab_name, tab_status, tab_type, widget_url, tab_ordering, createdon)
-        VALUES (:tab_name, :tab_status, :tab_type, :widget_url, :tab_ordering, CURRENT_TIMESTAMP)`,
+        (tab_name, tab_status,event_status, tab_type, widget_url, tab_ordering, createdon)
+        VALUES (:tab_name, :tab_status, :event_status, :tab_type, :widget_url, :tab_ordering, CURRENT_TIMESTAMP)`,
         {
           replacements: {
             tab_name: body.tab_name,
             tab_status: body.tab_status || "True",
+            event_status: body.event_status || "True",
             tab_type: body.tab_type || "Fixed",
             widget_url: body.widget_url || null,
             tab_ordering: body.tab_ordering || null,
