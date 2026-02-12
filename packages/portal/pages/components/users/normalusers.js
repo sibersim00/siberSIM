@@ -29,6 +29,8 @@ import NormalUserModal from "../../../shared/data/admin/modals/normal-user";
 import MapInstructorModal from "../../../shared/data/admin/modals/map-instructors";
 import ImportAdUser from "./import-adminusers";
 import "../../../shared/utils/i18n";
+import { getInitials, stringToColor } from "../../../shared/utils/regex";
+
 import { useTranslation } from "react-i18next";
 import { getLocalStorageData } from "../../../shared/redux/slices/localstorage/LocalStorage";
 import {
@@ -68,6 +70,7 @@ const Normaluser = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [mapInstructors, setMapInstructors] = useState(false);
   const [visibleCount, setVisibleCount] = useState(50);
+  const [imgError, setImgError] = useState(false);
   const [rowValues, setRowValues] = useState({
     title: "Add",
     componentcategoryid: 0,
@@ -344,7 +347,7 @@ const Normaluser = () => {
   };
   useEffect(() => {
     dispatch(getNormalusersManageList());
-    return () => {};
+    return () => { };
   }, []);
 
   useEffect(() => {
@@ -385,20 +388,9 @@ const Normaluser = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              },
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -406,6 +398,17 @@ const Normaluser = () => {
               theme: "colored",
             },
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          },
+        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -746,6 +749,8 @@ const Normaluser = () => {
     },
     [handleLoadMore],
   );
+
+
   return (
     <>
       <Seo title="SIMUser" />
@@ -896,7 +901,7 @@ const Normaluser = () => {
                         >
                           <Card className="card custom-card our-team">
                             <Card.Body>
-                              <div className="picture avatar-lg online text-center">
+                              {/* <div className="picture avatar-lg online text-center">
                                 <div
                                   className="rounded-circle pointer"
                                   style={{
@@ -924,8 +929,45 @@ const Normaluser = () => {
                                     }}
                                   />
                                 </div>
+                              </div> */}
+                              <div className="picture avatar-lg online text-center">
+                                <div
+                                  className="rounded-circle pointer"
+                                  style={{
+                                    width: "100px",
+                                    height: "100px",
+                                    overflow: "hidden",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    background:
+                                      !item?.profile || imgError
+                                        ? stringToColor(item?.name || item?.username || "User")
+                                        : "transparent",
+                                    color: "#2b2b2b",
+                                    fontWeight: 600,
+                                    fontSize: "28px",
+                                    userSelect: "none",
+                                  }}
+                                >
+                                  {item?.profile && !imgError ? (
+                                    <img
+                                      alt="avatar"
+                                      src={`${process.env.API_URL_FILEMANAGER}${item?.profile}`}
+                                      onError={() => setImgError(true)}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                      }}
+                                    />
+                                  ) : (
+                                    getInitials(
+                                      `${item?.firstname || ""} ${item?.lastname || ""}`.trim() || "User"
+                                    )
+                                  )}
+                                </div>
                               </div>
-
                               <div className="text-center mt-3">
                                 <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
                                   <a>
