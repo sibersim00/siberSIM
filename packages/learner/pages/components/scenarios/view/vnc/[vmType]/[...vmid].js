@@ -18,7 +18,6 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
-  clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
@@ -29,6 +28,7 @@ import {
   restoresnapshot,
   getSingleVMDetail,
   clearCustomComponent,
+  clearSaveComponent,
   qemuconfig,
   stopVm,
   rejectStoppedVm,
@@ -207,11 +207,11 @@ export default function ProxmoxConsole() {
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
-        `/ticket?vmid=${encodeURIComponent(
-          realVmid,
-        )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
-          cleanName,
-        )}`,
+      `/ticket?vmid=${encodeURIComponent(
+        realVmid,
+      )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
+        cleanName,
+      )}`,
       {
         method: "GET",
         headers: {
@@ -237,7 +237,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch {}
+        } catch { }
         rfbRef.current = null;
       }
 
@@ -286,7 +286,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch {}
+        } catch { }
       }
     };
   }, []);
@@ -660,15 +660,20 @@ export default function ProxmoxConsole() {
       componentimage: "",
     },
     validationSchema: Yup.object({
-      // componentName: Yup.string().required("Component name is required"),
+
+      // componentName: Yup.string()
+      //   .required("Component name is required")
+      //   .test(
+      //     "no-leading-trailing-spaces",
+      //     "Component name must not have spaces at the beginning or end",
+      //     (value) => value === value?.trim(),
+      //   ),
       componentName: Yup.string()
         .required("Component name is required")
-        .test(
-          "no-leading-trailing-spaces",
-          "Component name must not have spaces at the beginning or end",
-          (value) => value === value?.trim(),
+        .matches(
+          /^[A-Za-z0-9_-]{1,63}$/,
+          "Only letters, numbers, dash (-) and underscore (_) allowed. No spaces. Max 63 characters."
         ),
-      // .matches(/\.NEW$/, "Component name must end with .NEW"),
       componentcategoryid: Yup.string().required(
         "Component category is required",
       ),
@@ -749,8 +754,8 @@ export default function ProxmoxConsole() {
             await Swal.fire(
               "Error",
               saveRes?.error?.error ||
-                saveRes?.error?.message ||
-                "Failed to save component",
+              saveRes?.error?.message ||
+              "Failed to save component",
               "error",
             );
             setShowConvertDrawer(false);
@@ -779,8 +784,8 @@ export default function ProxmoxConsole() {
             await Swal.fire(
               "Error",
               res?.error?.error ||
-                res?.error?.message ||
-                "Failed to Save component",
+              res?.error?.message ||
+              "Failed to Save component",
               "error",
             );
             setShowConvertDrawer(false);
@@ -824,8 +829,8 @@ export default function ProxmoxConsole() {
           await Swal.fire(
             "Error",
             saveRes?.error?.error ||
-              saveRes?.error?.message ||
-              "Failed to save component",
+            saveRes?.error?.message ||
+            "Failed to save component",
             "error",
           );
           setShowConvertDrawer(false);
@@ -1301,7 +1306,7 @@ export default function ProxmoxConsole() {
                   >
                     ⛶
                   </button>
-                  
+
                   <div style={{ position: "relative" }}>
                     <button
                       onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
@@ -1731,8 +1736,8 @@ export default function ProxmoxConsole() {
                       <td>
                         {vmDetails.ports?.length > 0
                           ? vmDetails.ports.map((p, i) => (
-                              <div key={i}>{p}</div>
-                            ))
+                            <div key={i}>{p}</div>
+                          ))
                           : "N/A"}
                       </td>
                     </tr>
