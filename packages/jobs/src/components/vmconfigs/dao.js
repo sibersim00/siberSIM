@@ -2367,7 +2367,26 @@ const save =
       }
       /** ---------- QEMU ---------- **/
       if (vmType === "qemu") {
-        cloneResult = await proxmoxService.cloneQEMU(sourceVmid, newVmid,payload.componentname);
+        function toProxmoxHostname(name) {
+            return (
+              name
+                .toLowerCase()
+                .replace(/[_.]/g, "")     //  remove underscore & dot
+                .replace(/[^a-z0-9-]/g, "") // keep existing behaviour for others
+                .replace(/^-+/, "")
+                .replace(/-+$/, "")
+                .substring(0, 63) || "vm"
+            );
+          }
+ 
+          const proxmoxHostname = toProxmoxHostname(payload.componentname);
+          console.log("proxmoxHostnameproxmoxHostname",proxmoxHostname)
+          cloneResult = await proxmoxService.cloneQEMU(
+            sourceVmid,
+            newVmid,
+            proxmoxHostname,
+          );
+   
         if (cloneResult?.status !== 200) {
           return await markComponentRejected({
             db,

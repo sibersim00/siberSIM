@@ -608,7 +608,7 @@ const ManageComponent = () => {
     }).then((result) => {
       if (result.isConfirmed) {
         const payload = {
-          component_id: item?.componentid,
+          vmid: item?.vmid,
         };
         dispatch(deleteComponent(payload));
       }

@@ -671,9 +671,21 @@ export default function ProxmoxConsole() {
       componentName: Yup.string()
         .required("Component name is required")
         .matches(
-          /^[A-Za-z0-9_-]{1,63}$/,
-          "Only letters, numbers, dash (-) and underscore (_) allowed. No spaces. Max 63 characters."
+          /^[A-Za-z0-9-]{1,63}$/,
+          "Only letters, numbers and dash (-) allowed. No spaces, underscore or full stop."
+        )
+        .test(
+          "no-leading-dash",
+          "Component name cannot start with '-'",
+          value => !value || !/^-/.test(value)
+        )
+        .test(
+          "no-trailing-dash",
+          "Component name cannot end with '-'",
+          value => !value || !/-$/.test(value)
         ),
+
+
       componentcategoryid: Yup.string().required(
         "Component category is required",
       ),
