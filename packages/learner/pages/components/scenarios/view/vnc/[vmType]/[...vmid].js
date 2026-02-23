@@ -18,7 +18,7 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
-  clearSaveComponent,
+  // clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
