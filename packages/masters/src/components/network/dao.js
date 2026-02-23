@@ -2,8 +2,6 @@ const ProxMoxService = require("../../services/proxmox/ProxMoxService");
 const NotiTemplate = require("../../utils/notiUtility");
 const MailTemplate = require("../../utils/mailUtility");
 
- 
-
 const fetchAndStoreOVSNetworks =
   ({ db }) =>
   async (body, ipAddress) => {

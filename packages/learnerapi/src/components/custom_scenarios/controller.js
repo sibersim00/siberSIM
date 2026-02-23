@@ -43,7 +43,6 @@ const getById =
           .status(404)
           .send({ statusCode: 404, message: "Scenario not found" });
       }
-
       res.status(200).send({
         statusCode: 200,
         message: "Get Scenario Details",
@@ -63,9 +62,7 @@ const create =
     try {
       const body = req.body;
       const learner_id = req.learneruser.learner_id;
-
       const result = await dao.create({ db })(body, learner_id);
-
       return res.status(result.statusCode).send({
         statusCode: result.statusCode,
         message: result.message,

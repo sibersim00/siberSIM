@@ -3,10 +3,6 @@ const constants = require("../../services/proxmox/constants");
 const NotiTemplate = require("../../utils/notiUtility");
 const MailTemplate = require("../../utils/mailUtility");
 
-
-
-
-
 const generateProxmoxAccessToken =
   ({ db, payload }) =>
     async (ip_address) => {
@@ -286,52 +282,11 @@ const getOperationFailedLogs =
     }
   };
 
-
-
-// const getSnapshotsByVmid =
-//   ({ db }) =>
-//   async (vmid) => {
-//     try {
-//       const snapshots = await db.sequelize.query(
-//         `SELECT snapshotid, vmid, snapshot_name, snapshot_status, createdon 
-//          FROM vm_snapshots
-//          WHERE vmid = ? AND deletedon IS NULL`,
-//         {
-//           replacements: [vmid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       return snapshots;
-//     } catch (error) {
-//       console.error("DAO Error fetching snapshots:", error);
-//       return [];
-//     }
-//   };
 const getSnapshotsByVmid =
   ({ db }) =>
     async (vmid) => {
       try {
-        const rows = await db.sequelize.query(
-          `
-        SELECT 
-            sd.snapshotid,
-            sd.vmid,
-            sd.snapshot_name,
-            sd.snapshot_status,
-            sd.createdon,
-            vc.componentname,
-            vc.componenttype,
-            s.scenariotitle
-        FROM vm_snapshots sd
-        LEFT JOIN vm_config vc 
-            ON sd.vmid = vc.vmid
-        LEFT JOIN scenarios s
-            ON vc.scenarioid = s.scenarioid
-        WHERE sd.vmid = ?
-          AND sd.deletedon IS NULL
-        ORDER BY sd.createdon ASC;
-        `,
+        const rows = await db.sequelize.query( ` SELECT  sd.snapshotid, sd.vmid, sd.snapshot_name, sd.snapshot_status, sd.createdon, vc.componentname, vc.componenttype, s.scenariotitle FROM vm_snapshots sd LEFT JOIN vm_config vc  ON sd.vmid = vc.vmid LEFT JOIN scenarios s ON vc.scenarioid = s.scenarioid WHERE sd.vmid = ? AND sd.deletedon IS NULL ORDER BY sd.createdon ASC; `,
           {
             replacements: [vmid],
             type: db.sequelize.QueryTypes.SELECT,
@@ -378,29 +333,7 @@ const getSnapshotsByVmid =
     };
 
 const getComponentByVmid = ({ db }) => async (vmid) => {
-  const [res] = await db.sequelize.query(
-    `
-    SELECT
-      c.componentid,
-      c.componentname,
-      c.componenttype,
-      c.vmid,
-      c.componentcategoryid,
-      c.network_ports,
-      c.cores,
-      c.memory,
-      c.storage,
-      v.scenarioid,
-      v.vmrequestid
-    FROM components c
-    INNER JOIN vm_config v
-      ON c.vmid = v.master_vmid
-    WHERE v.vmid = :vmid
-      AND c.status = 'Active'
-      AND v.status != 'Destroyed'
-      AND c.deletedon IS NULL
-    LIMIT 1
-    `,
+  const [res] = await db.sequelize.query( ` SELECT c.componentid, c.componentname, c.componenttype, c.vmid, c.componentcategoryid, c.network_ports, c.cores, c.memory, c.storage, v.scenarioid, v.vmrequestid FROM components c INNER JOIN vm_config v ON c.vmid = v.master_vmid WHERE v.vmid = :vmid AND c.status = 'Active' AND v.status != 'Destroyed' AND c.deletedon IS NULL LIMIT 1 `,
     {
       replacements: { vmid }, // 👈 Sequelize replaces :vmid here
       type: db.sequelize.QueryTypes.SELECT,

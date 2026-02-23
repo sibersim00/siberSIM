@@ -56,21 +56,12 @@ const Dashboard = () => {
   }, [getUserDataFromLocal]);
 
   useEffect(() => {
-    dispatch(getDashboardListData());
-    // Check license expiry on dashboard load
+    dispatch(getDashboardListData())
     checkLicenseAndShowPopup();
   }, [dispatch]);
-
-  // Function to check license expiry and determine if popup should show
   const checkLicenseAndShowPopup = () => {
-    // Check if license expiry flag is true
     const isLicenseExpiryFlag = localStorage.getItem('is_license_expiry') === 'true';
-
-    console.log("isLicenseExpiryFlagisLicenseExpiryFlag",isLicenseExpiryFlag)
-
-    // Get company settings
     const storedSettings = localStorage.getItem("company_settings");
-
     if (storedSettings) {
       try {
         const parsedSettings = JSON.parse(storedSettings);
@@ -83,19 +74,15 @@ const Dashboard = () => {
         } else if (parsedSettings?.statusCode === 200 && parsedSettings?.data) {
           licenseData = parsedSettings.data;
         }
-
-        if (licenseData && licenseData.licenseStatus?.expiry_date) {
+       if (licenseData && licenseData.licenseStatus?.expiry_date) {
           const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
           const currentDate = new Date();
-
-          // Use UTC for consistent date calculation
           const expiryUTC = Date.UTC(
             expiryDate.getUTCFullYear(),
             expiryDate.getUTCMonth(),
             expiryDate.getUTCDate()
           );
-
-          const currentUTC = Date.UTC(
+const currentUTC = Date.UTC(
             currentDate.getUTCFullYear(),
             currentDate.getUTCMonth(),
             currentDate.getUTCDate()
@@ -103,18 +90,12 @@ const Dashboard = () => {
 
           const timeDiff = expiryUTC - currentUTC;
           const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-          console.log("daysLeftttttttttt",daysLeft)
-          // Format date using UTC methods
           const formatDateDDMMYYYY = (dateObj) => {
             const day = String(dateObj.getUTCDate()).padStart(2, "0");
             const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
             const year = dateObj.getUTCFullYear();
             return `${day}-${month}-${year}`;
           };
-
-          // Check conditions for showing popup:
-          // 1. License expiry flag is true (set on login)
-          // 2. License has 30 days or less remaining
           if (daysLeft <= 30 && isLicenseExpiryFlag) {
             setLicenseInfo({
               daysLeft,
@@ -129,18 +110,13 @@ const Dashboard = () => {
       }
     }
   };
-
-  // Handle modal close
   const handleLicensePopupClose = () => {
     setShowLicensePopup(false);
-    // Set flag to false when modal is closed
     localStorage.setItem('is_license_expiry', 'false');
   };
 
   const handleCardClick = (viewName) => {
-    dispatch(handleManageView(viewName)); // Store viewName in Redux
-
-    // Redirect based on viewName
+    dispatch(handleManageView(viewName)); 
     const routeMap = {
       adminuser: "/adminusers",
       instructor: "/instructors",
@@ -304,10 +280,6 @@ const Dashboard = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-
-                  {/* Extra Admin-Specific Cards */}
-
-                  {/* 1. Total Component Count */}
                   <Col sm={12} md={6} lg={6} xl={3}>
                     <Card
                       className="custom-card"
@@ -362,40 +334,6 @@ const Dashboard = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-
-                  {/* 3. Total Published Scenarios */}
-                  {/* <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("scenario")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Scenario
-                          </label>
-                          <h2 className="text-end">
-                            <i className="fa fa-cube float-start text-info"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.total_scenarios || 0),
-                                0
-                              )}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Published<span className="float-end">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.published_scenarios || 0))}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col> */}
                   <Col sm={12} md={6} lg={6} xl={3}>
                     <Card
                       className="custom-card"
@@ -463,7 +401,6 @@ const Dashboard = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  {/* three widge in row virtual cpu storage memory */}
                   <Col md={12}>
                     <Card className="custom-card p-0">
                       <Row className="g-0"> {/* removes all gutters between columns */}

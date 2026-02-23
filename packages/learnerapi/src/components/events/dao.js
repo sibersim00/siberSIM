@@ -4,146 +4,17 @@ const getAll =
     try {
       /* ===================== QUERY 1 : WITH VM REQUEST ===================== */
 
-      let result = await db.sequelize.query(
-        `
-        SELECT
-          e.eventid,
-          e.eventuuid,
-          e.eventname,
-
-          el.eventlearnerid,
-          el.learner_id,
-          el.team_name,
-          el.team_description,
-          el.loggedon,
-
-          vr.vmrequestid,
-          vr.vmrequestuuid,
-          vr.status,
-          vr.vm_steps,
-          vr.startedon,
-          vr.completedon,
-          vr.timer,
-
-          CASE
-            WHEN vr.status = 'Start' THEN
-              SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW()))
-            WHEN vr.status = 'Resume'
-                 AND vr.resumeon IS NOT NULL THEN
-              SEC_TO_TIME(
-                TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) +
-                TIME_TO_SEC(vr.timer)
-              )
-            ELSE vr.timer
-          END AS calculated_timer,
-
-          COALESCE(vr.scenariodiagram, s.scenariodiagram) AS scenariodiagram,
-
-          s.scenarioid,
-          s.scenariouuid,
-          s.scenariotitle,
-          s.scenarioidentification,
-          s.scenariolevel,
-          s.duration,
-          s.scenariodescription,
-          s.instruction_file,
-          s.component_config,
-
-          sc.categoryname AS scenariocategory_name,
-          scc.categoryname AS scenariosubcategory_name,
-
-          SEC_TO_TIME(
-            GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime))
-          ) AS reverse_timer
-
-        FROM event_learners el
-        INNER JOIN events e ON e.eventid = el.eventid
-        INNER JOIN scenarios s ON s.scenarioid = e.scenarioid
-        INNER JOIN scenario_categories sc
-          ON sc.scenariocategoryid = s.scenariocategoryid
-        INNER JOIN scenario_categories scc
-          ON scc.scenariocategoryid = s.scenariosubcategoryid
-        INNER JOIN vm_request vr
-          ON vr.vmrequestid = el.vmrequestid
-            AND vr.status IN (
-  'Pending',
-    'Running',
-    'Initializing',
-    'Pause',
-    'Resume',
-    'Start',
-    'Completed',
-    'Failed'
-  )
-        WHERE
-          el.learner_id = ?
-          AND el.eventid = ?
-          AND s.deletedon IS NULL
-
-        ORDER BY vr.modifiedon DESC
-        LIMIT 1
+      let result = await db.sequelize.query( ` SELECT e.eventid, e.eventuuid, e.eventname, el.eventlearnerid, el.learner_id, el.team_name, el.team_description, el.loggedon, vr.vmrequestid, vr.vmrequestuuid, vr.status, vr.vm_steps, vr.startedon, vr.completedon, vr.timer, CASE WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW())) WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME( TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + TIME_TO_SEC(vr.timer) ) ELSE vr.timer END AS calculated_timer, COALESCE(vr.scenariodiagram, s.scenariodiagram) AS scenariodiagram, s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariolevel, s.duration, s.scenariodescription, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, SEC_TO_TIME(   GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime)) ) AS reverse_timer FROM event_learners el INNER JOIN events e ON e.eventid = el.eventid INNER JOIN scenarios s ON s.scenarioid = e.scenarioid INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid INNER JOIN vm_request vr ON vr.vmrequestid = el.vmrequestid AND vr.status IN ( 'Pending', 'Running', 'Initializing', 'Pause', 'Resume', 'Start', 'Completed', 'Failed' ) WHERE el.learner_id = ? AND el.eventid = ? AND s.deletedon IS NULL ORDER BY vr.modifiedon DESC LIMIT 1
         `,
         {
           replacements: [learner_id, eventid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
-      console.log("resultresultresultresultresult", result);
-
       /* ===================== QUERY 2 : FALLBACK (PENDING) ===================== */
 
       if (result.length === 0 || !result[0].vmrequestid) {
-        result = await db.sequelize.query(
-          `
-          SELECT
-            e.eventid,
-            e.eventuuid,
-            e.eventname,
-
-            el.eventlearnerid,
-            el.learner_id,
-            el.team_name,
-            el.team_description,
-            el.loggedon,
-
-            NULL AS vmrequestid,
-            NULL AS vmrequestuuid,
-            'Pending' AS status,
-            'Pending' AS vm_steps,
-            '00:00:00' AS timer,
-            '00:00:00' AS calculated_timer,
-
-            s.scenariodiagram,
-            s.scenarioid,
-            s.scenariouuid,
-            s.scenariotitle,
-            s.scenarioidentification,
-            s.scenariolevel,
-            s.duration,
-            s.scenariodescription,
-            s.instruction_file,
-            s.component_config,
-
-            sc.categoryname AS scenariocategory_name,
-            scc.categoryname AS scenariosubcategory_name,
-
-            SEC_TO_TIME(
-              GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime))
-            ) AS reverse_timer
-
-          FROM event_learners el
-          INNER JOIN events e ON e.eventid = el.eventid
-          INNER JOIN scenarios s ON s.scenarioid = e.scenarioid
-          INNER JOIN scenario_categories sc
-            ON sc.scenariocategoryid = s.scenariocategoryid
-          INNER JOIN scenario_categories scc
-            ON scc.scenariocategoryid = s.scenariosubcategoryid
-
-          WHERE
-            el.learner_id = ?
-            AND el.eventid = ?
-            AND s.deletedon IS NULL
+        result = await db.sequelize.query( ` SELECT e.eventid, e.eventuuid, e.eventname, el.eventlearnerid, el.learner_id, el.team_name, el.team_description, el.loggedon, NULL AS vmrequestid, NULL AS vmrequestuuid, 'Pending' AS status, 'Pending' AS vm_steps, '00:00:00' AS timer, '00:00:00' AS calculated_timer, s.scenariodiagram, s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariolevel, s.duration, s.scenariodescription, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, SEC_TO_TIME( GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), e.eventendtime)) ) AS reverse_timer FROM event_learners el INNER JOIN events e ON e.eventid = el.eventid INNER JOIN scenarios s ON s.scenarioid = e.scenarioid INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE el.learner_id = ? AND el.eventid = ? AND s.deletedon IS NULL
           `,
           {
             replacements: [learner_id, eventid],
@@ -219,7 +90,6 @@ const getAll =
 const startEvent =
   ({ db, validation }) =>
   async (body ) => {
-    console.log("gggggggggggg",body)
     try {
       /* ---------------- ACTIVE USER LIMIT ---------------- */
       const [activeUsersResult] = await db.sequelize.query(
@@ -250,7 +120,6 @@ const startEvent =
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-      console.log("existing", existing);
       if (!existing.length) {
         return {
           statusCode: 404,
@@ -419,9 +288,6 @@ const updateEventLearnerStatus =
         status: status,
         remark: `Event status changed to ${status} by learner`,
       });
-
-      console.log("statusstatusstatusstatusstatus",status);
-      
       if (status === "Pause") {
         await updateScenarioDiagram(db, vmrequestid);
       }
@@ -454,8 +320,6 @@ async function updateScenarioDiagram(db, vmrequestid) {
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
-    console.log("Insidedddddddddupdate");
-    
     if (!row?.scenariodiagram) return;
     let diagram = JSON.parse(row.scenariodiagram);
     diagram.nodes?.forEach((n) => {
@@ -585,17 +449,7 @@ const canResumeScenario =
             message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
           };
         }
-
-      const [activeScenario] = await db.sequelize.query(
-        `
-        SELECT scenarioid
-        FROM vm_request
-        WHERE requestedby_id = :learner_id
-          AND requestedby_role = 'Learner'
-          AND status IN ('Initializing', 'Running')
-          AND vmrequestid != :vmrequestid
-        LIMIT 1
-        `,
+      const [activeScenario] = await db.sequelize.query( ` SELECT scenarioid FROM vm_request WHERE requestedby_id = :learner_id AND requestedby_role = 'Learner' AND status IN ('Initializing', 'Running') AND vmrequestid != :vmrequestid LIMIT 1 `,
         {
           replacements: { learner_id, vmrequestid },
           type: db.sequelize.QueryTypes.SELECT,

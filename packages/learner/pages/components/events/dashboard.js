@@ -89,12 +89,10 @@ const Dashboard = () => {
     hasGetLogsListData,
     hasGetEventRestartSucc,
     hasdeletescenarioSucc,
-    getSingleScenariosSucc,
     tabListSucc,
     errorData,
   } = useSelector((state) => ({
     hasGetEventSucc: state?.events?.getEventListData?.data,
-    getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
     saveScenariosData: state?.events?.saveEvents,
     hasGetUpdateSessionStatusSucc: state?.events?.updateSessionStatus,
     hasGetSessionStatusListData: state?.events?.getSessionStatusListData?.data,
@@ -122,13 +120,6 @@ const Dashboard = () => {
           setTimerActive(true);
         }
       }
-
-      // if (scenario.reverse_timer) {
-      //   const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
-      //   const reverseTotalSeconds = rh * 3600 + rm * 60 + rs;
-      //   setReverseSeconds(reverseTotalSeconds);
-      //   setReverseTimerActive(true);
-      // }
       if (scenario.reverse_timer) {
         const [rh, rm, rs] = scenario.reverse_timer.split(":").map(Number);
         setReverseSeconds(rh * 3600 + rm * 60 + rs);
@@ -161,9 +152,6 @@ const Dashboard = () => {
     }
     return () => clearInterval(reverseInterval);
   }, [reverseTimerActive, reverseSeconds]);
-
-  console.log("rowValuesrowValuesroddddddddwValues", saveScenariosData);
-
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       dispatch(getEventList());
@@ -187,7 +175,6 @@ const Dashboard = () => {
       confirmAction !== "pause" &&
       confirmAction !== "resume"
     ) {
-      // logout only for terminate/stop/similar actions
       localStorage.removeItem("userLearner");
       localStorage.removeItem("accessTokenLearner");
       localStorage.removeItem("menusLearner");
@@ -198,7 +185,6 @@ const Dashboard = () => {
   }, [hasGetUpdateSessionStatusSucc]);
 
   useEffect(() => {
-    // Success case
     if (hasGetEventRestartSucc?.statusCode === 200) {
       dispatch(getEventList());
       handleClone(rowValues?.vmrequestid);
@@ -206,7 +192,6 @@ const Dashboard = () => {
       setIsActionInProgress(false);
       dispatch(clearEventRestart());
     }
-    // Failure case — also catch 500s or network errors
     else if (
       hasGetEventRestartSucc?.statusCode &&
       hasGetEventRestartSucc?.statusCode !== 200
@@ -257,14 +242,12 @@ const Dashboard = () => {
       dispatch(clearHasError());
     }
   }, [errorData]);
-  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
-
-  useEffect(() => {
+useEffect(() => {
     if (hasGetEventSucc && hasGetEventSucc.length > 0) {
       const scenario = hasGetEventSucc[0];
       setRowValues(scenario);
 
-      // 🔥 FIX: ONLY set from backend on first load, NOT after button click
+      //  FIX: ONLY set from backend on first load, NOT after button click
       setScenarioStatus((prev) => {
         if (prev === "Pause" || prev === "Resume") return prev;
         return scenario.status;
@@ -288,13 +271,6 @@ const Dashboard = () => {
   const pdfUrl = rowValues?.instruction_file
     ? `${baseUrl}${rowValues.instruction_file}`
     : null;
-
-  // const viewerUrl = pdfUrl
-  //   ? `https://docs.google.com/gview?url=${encodeURIComponent(
-  //       pdfUrl
-  //     )}&embedded=true`
-  //   : null;
-
   const handleStart = () => {
     setIsScenarioError400(false);
     setConfirmAction("initializing");
@@ -338,7 +314,7 @@ const Dashboard = () => {
         return;
       }
 
-      // 🔹 Step 2: pause success → update session status
+      // Step 2: pause success → update session status
       const resUpdate = await dispatch(updateSessionStatus(payload));
 
       toast.success(
@@ -353,7 +329,7 @@ const Dashboard = () => {
       );
 
       setScenarioStatus("Pause");
-      setTimerActive(false); // ⛔ stop interval
+      setTimerActive(false); // stop interval
       setTimerPaused(true);
       dispatch(getEventList());
       // dispatch(getSingleScenarios(query.slug[0]));
@@ -398,7 +374,7 @@ const Dashboard = () => {
       if (!resumeOk) {
         return;
       }
-      // 🔹 Step 3: Update session status in DB
+      // Step 3: Update session status in DB
       await dispatch(updateSessionStatus(payload));
 
       toast.success(
@@ -1290,22 +1266,6 @@ const Dashboard = () => {
                                         )}
                                       </div>
                                     )}
-
-                                    {/* 👇 Flexible / Custom tab support */}
-                                    {/* {tab.tab_type === "Flexible" &&
-                                                        tab.widget_url && (
-                                                          <iframe
-                                                            src={tab.widget_url}
-                                                            title={tab.tab_name}
-                                                            style={{
-                                                              width: "100%",
-                                                              height: "600px",
-                                                              border: "none",
-                                                              borderRadius: "8px",
-                                                            }}
-                                                          ></iframe>
-                                                        )} */}
-                                    {/* 👇 Flexible / Custom tab support */}
                                     {tab.tab_type === "Flexible" &&
                                       tab.widget_url && (
                                         <div

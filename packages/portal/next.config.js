@@ -88,6 +88,8 @@ const nextConfig = withTM({
         source: "/usersession_view/:slug*",
         destination: "/components/usersessions/view/:slug*",
       },
+      { source: "/scenarios_edit/:slug*",
+        destination: "/components/usersessions/edit/:slug*",},
       { source: "/students", destination: "/components/learners" },
       { source: "/batches", destination: "/components/batches" },
       { source: "/instructors", destination: "/components/instructors" },

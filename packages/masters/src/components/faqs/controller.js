@@ -11,17 +11,13 @@ const getFaqsAll = ({ dao, db, validation }) => async (req, res) => {
 const getFaqById = ({ dao, db, validation }) => async (req, res) => {
   try {
     const id = req.params.id;
-
     if (!id) {
       return res.status(400).json({ statusCode: 400, message: "FAQ ID is required." });
     }
-
     const result = await dao.getFaqById({ db })(id);
-
     if (!result || result.length === 0) {
       return res.status(404).json({ statusCode: 404, message: "FAQ not found." });
     }
-
     res.status(200).json({
       statusCode: 200,
       message: validation.messages.get_faq_details, // Define this in your validation messages
@@ -33,13 +29,11 @@ const getFaqById = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
-
 const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const userid = req.user.userid;
     const result = await dao.save({ db, validation })(body, userid);
-
     if (result.statusCode === 200) {
       return res.status(200).send({
         statusCode: 200,

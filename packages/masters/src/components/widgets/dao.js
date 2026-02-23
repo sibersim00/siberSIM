@@ -1,28 +1,6 @@
 const getWidgetsAll = ({ db }) => async (id = null) => {
   try {
-    const [res] = await db.sequelize.query(`
-      SELECT 
-        wbw.webbrowserwidgetid,
-        wbw.widget_name,
-        wbw.widget_url,
-        wbw.order,
-        CASE 
-          WHEN wbw.status = 'Active' THEN 'true' 
-          ELSE 'false' 
-        END AS status,
-        CONCAT(au.firstname, ' ', au.lastname) AS createdby,
-        CONCAT(mu.firstname, ' ', mu.lastname) AS modifiedby,
-        DATE_FORMAT(wbw.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(wbw.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-      FROM web_browser_widgets wbw
-      LEFT JOIN ad_users au ON wbw.createdby = au.userid
-      LEFT JOIN ad_users mu ON wbw.modifiedby = mu.userid
-      WHERE wbw.deletedon IS NULL
-      ORDER BY wbw.widget_name ASC, 
-        CASE 
-          WHEN wbw.modifiedon IS NOT NULL THEN wbw.modifiedon 
-          ELSE wbw.createdon 
-        END DESC
+    const [res] = await db.sequelize.query(` SELECT  wbw.webbrowserwidgetid, wbw.widget_name, wbw.widget_url, wbw.order, CASE  WHEN wbw.status = 'Active' THEN 'true'  ELSE 'false'  END AS status, CONCAT(au.firstname, ' ', au.lastname) AS createdby, CONCAT(mu.firstname, ' ', mu.lastname) AS modifiedby, DATE_FORMAT(wbw.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(wbw.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM web_browser_widgets wbw LEFT JOIN ad_users au ON wbw.createdby = au.userid LEFT JOIN ad_users mu ON wbw.modifiedby = mu.userid WHERE wbw.deletedon IS NULL ORDER BY wbw.widget_name ASC,  CASE  WHEN wbw.modifiedon IS NOT NULL THEN wbw.modifiedon  ELSE wbw.createdon  END DESC
     `);
 
     return res;

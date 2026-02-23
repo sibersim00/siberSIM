@@ -11,8 +11,7 @@ const labSessionList =
     }
 
     const [res] = await db.sequelize.query(
-      `
-    SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
+      `SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
       `,
       { replacements }
     );
@@ -35,15 +34,7 @@ const save =
       const MAX_SEATS = 20;
 
       const overlappingSessions = await db.sequelize.query(
-        `
-  SELECT reservedseats, datetime, duration
-  FROM lab_sessions
-  WHERE deletedon IS NULL
-    AND (
-        :new_start < DATE_ADD(datetime, INTERVAL duration HOUR)
-        AND :new_end > datetime
-    )
-  `,
+        ` SELECT reservedseats, datetime, duration FROM lab_sessions WHERE deletedon IS NULL AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) AND :new_end > datetime ) `,
         {
           replacements: { new_start: startTime, new_end: endTime },
           type: db.sequelize.QueryTypes.SELECT,
@@ -105,34 +96,7 @@ const save =
       // -------------------------------
       // Insert Lab Session
       // -------------------------------
-      const insertQuery = `
-        INSERT INTO lab_sessions (
-          labuuid,
-          bookingname,
-          datetime,
-          duration,
-          accesslevel,
-          personincharge,
-          reservedseats,
-          allowedusers,
-          status,
-          createdby,
-          createdon
-        ) VALUES (
-          UUID(),
-          :bookingname,
-          :datetime,
-          :duration,
-          :accesslevel,
-          :personincharge,
-          :reservedseats,
-          :allowedusers,
-          'Active',
-          :createdby,
-          CURRENT_TIMESTAMP
-        )
-      `;
-
+      const insertQuery = ` INSERT INTO lab_sessions ( labuuid, bookingname, datetime, duration, accesslevel, personincharge, reservedseats, allowedusers, status, createdby, createdon ) VALUES ( UUID(), :bookingname, :datetime, :duration, :accesslevel, :personincharge, :reservedseats, :allowedusers, 'Active', :createdby, CURRENT_TIMESTAMP ) `;
       await db.sequelize.query(insertQuery, {
         replacements: {
           bookingname: body.bookingname?.trim() || null,
@@ -197,16 +161,7 @@ const update =
       const MAX_SEATS = 20;
 
       const overlappingSessions = await db.sequelize.query(
-        `
-  SELECT reservedseats
-  FROM lab_sessions
-  WHERE deletedon IS NULL
-    AND labid != :_id
-    AND (
-        :new_start < DATE_ADD(datetime, INTERVAL duration HOUR)
-        AND :new_end > datetime
-    )
-  `,
+        ` SELECT reservedseats FROM lab_sessions WHERE deletedon IS NULL AND labid != :_id AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) AND :new_end > datetime ) `,
         {
           replacements: {
             _id: body.lab_id,
@@ -268,20 +223,7 @@ const update =
       // --------------------------------
       // Update Query
       // --------------------------------
-      const updateQuery = `
-        UPDATE lab_sessions
-        SET bookingname = :bookingname,
-            datetime = :datetime,
-            duration = :duration,
-            accesslevel = :accesslevel,
-            personincharge = :personincharge,
-            reservedseats = :reservedseats,
-            allowedusers = :allowedusers,
-            status = :status,
-            modifiedby = :modifiedby,
-            modifiedon = CURRENT_TIMESTAMP
-        WHERE labid = :lab_id
-      `;
+      const updateQuery = ` UPDATE lab_sessions SET bookingname = :bookingname, datetime = :datetime, duration = :duration, accesslevel = :accesslevel, personincharge = :personincharge, reservedseats = :reservedseats, allowedusers = :allowedusers, status = :status, modifiedby = :modifiedby, modifiedon = CURRENT_TIMESTAMP WHERE labid = :lab_id `;
 
       await db.sequelize.query(updateQuery, {
         replacements: {
@@ -320,10 +262,7 @@ const deleteById =
 
       // 1. Check if lab session exists & not already deleted
       const [existing] = await db.sequelize.query(
-        `
-        SELECT labid 
-        FROM lab_sessions
-        WHERE labid = :labId AND deletedon IS NULL
+        ` SELECT labid  FROM lab_sessions WHERE labid = :labId AND deletedon IS NULL
         `,
         {
           replacements: { labId },
@@ -339,12 +278,7 @@ const deleteById =
       }
 
       // 2. Soft delete lab session
-      await db.sequelize.query(
-        `
-        UPDATE lab_sessions
-        SET deletedon = NOW(), modifiedby = :modifiedBy
-        WHERE labid = :labId
-        `,
+      await db.sequelize.query( ` UPDATE lab_sessions SET deletedon = NOW(), modifiedby = :modifiedBy WHERE labid = :labId `,
         {
           replacements: {
             labId,
@@ -390,14 +324,7 @@ const changeStatus =
       }
 
       // --- Update lab session status ---
-      await db.sequelize.query(
-        `
-        UPDATE lab_sessions 
-        SET status = ?, 
-            modifiedby = ?, 
-            modifiedon = CURRENT_TIMESTAMP
-        WHERE labid = ?
-        `,
+      await db.sequelize.query( ` UPDATE lab_sessions  SET status = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE labid = ? `,
         {
           replacements: [status, session_userid, body.lab_id],
           type: db.sequelize.QueryTypes.UPDATE,

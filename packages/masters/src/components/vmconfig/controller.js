@@ -157,10 +157,10 @@ const getSnapshotsByVmid =
 const exportScenario = () => async (req, res) => {
   try {
     const { scenarioid, exportid } = req.body;
-    const file_name = `scenario_${scenarioid}.zip`; 
+    const file_name = `scenario_${scenarioid}.zip`;
     const response = await axios.post(
       `${EVENTLEARNER_API_URL}/vmconfigs/exports`,
-      { scenarioid, exportid,file_name },
+      { scenarioid, exportid, file_name },
       { responseType: "stream" } // <--- important
     );
 
@@ -175,72 +175,397 @@ const exportScenario = () => async (req, res) => {
 };
 
 const save =
+  ({ }) =>
+    async (req, res, next) => {
+      try {
+        const payload = req.body;
+        console.log("payloajjjjjjjjjjjjjjjjjd", payload);
+
+        try {
+          const response = await axios.post(
+            `${EVENTLEARNER_API_URL}/vmconfigs/save`,
+            payload
+          );
+
+          return res.status(200).send({
+            statusCode: 200,
+            message: response.data?.message,
+            data: response.data,
+          });
+        } catch (error) {
+          console.error("Axios Request Failed:", error.response?.data || error.message);
+
+          return res.status(error.response?.status || 500).send({
+            statusCode: error.response?.data?.statusCode || 500,
+            message: error.response?.data?.message || "Something went wrong.",
+            error: error.response?.data?.error,
+          });
+        }
+      } catch (err) {
+        console.error("Error in event learner:", err);
+        next(err);
+      }
+    };
+
+const deleteScenarioLearner =
+  ({ }) =>
+    async (req, res, next) => {
+      try {
+        const { vmrequestid, status, type } = req.body;
+        try {
+          const response = await axios.post(
+            `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-learner`,
+            { vmrequestid, status, type }
+          );
+          return res.status(200).send({
+            statusCode: 200,
+            message: response.data.message || "Job started successfully.",
+            data: response.data,
+          });
+        } catch (error) {
+          console.error("Axios request failed:");
+          if (error.response) {
+            console.error("Response Error:");
+          } else {
+            console.error("Request Setup Error:", error.message);
+          }
+          return res.status(500).send({
+            statusCode: 500,
+            message: "Failed to call Jobs service.",
+            error: error.response?.data || error.message,
+          });
+        }
+      } catch (err) {
+        console.error("Error in starting event learner:", err);
+        next(err);
+      }
+    };
+const addScenarioVmNetwork =
   ({}) =>
   async (req, res, next) => {
     try {
-      const payload = req.body;
-      console.log("payloajjjjjjjjjjjjjjjjjd", payload);
-
+      const { vmid, vmType, netKey } = req.body;
       try {
         const response = await axios.post(
-          `${EVENTLEARNER_API_URL}/vmconfigs/save`,
-          payload
+          `${EVENTLEARNER_API_URL}/vmconfigs/add-vm-network`,
+          { vmid, vmType, netKey },
         );
 
         return res.status(200).send({
           statusCode: 200,
-          message: response.data?.message,
+          message: response.data.message || "Job started successfully.",
           data: response.data,
         });
       } catch (error) {
-        console.error("Axios Request Failed:", error.response?.data || error.message);
-
-        return res.status(error.response?.status || 500).send({
-          statusCode: error.response?.data?.statusCode || 500,
-          message: error.response?.data?.message || "Something went wrong.",
-          error: error.response?.data?.error,
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
         });
       }
     } catch (err) {
-      console.error("Error in event learner:", err);
+      console.error("Error in add scenario network:", err);
       next(err);
     }
   };
+const deleteScenarioVmNetwork =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmid, vmType, netKey } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/delete-vm-network`,
+          { vmid, vmType, netKey },
+        );
 
-  const deleteScenarioLearner =
-    ({ }) =>
-      async (req, res, next) => {
-        try {
-          const { vmrequestid, status, type } = req.body;
-          try {
-            const response = await axios.post(
-              `${EVENTLEARNER_API_URL}/vmconfigs/delete-scenario-learner`,
-              { vmrequestid, status, type }
-            );
-            return res.status(200).send({
-              statusCode: 200,
-              message: response.data.message || "Job started successfully.",
-              data: response.data,
-            });
-          } catch (error) {
-            console.error("Axios request failed:");
-            if (error.response) {
-              console.error("Response Error:");
-            } else {
-              console.error("Request Setup Error:", error.message);
-            }
-            return res.status(500).send({
-              statusCode: 500,
-              message: "Failed to call Jobs service.",
-              error: error.response?.data || error.message,
-            });
-          }
-        } catch (err) {
-          console.error("Error in starting event learner:", err);
-          next(err);
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
         }
-      };
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in delete scenario network:", err);
+      next(err);
+    }
+  };
+const ModifyScenarioVmNetwork =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const {
+        vmType,
+        vmid,
+        netKey,
+        mode,
+        source,
+        sourceHandle,
+        target,
+        targetHandle,
+        label,
+      } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/modify-vm-network`,
+          {
+            vmType,
+            vmid,
+            netKey,
+            mode,
+            source,
+            sourceHandle,
+            target,
+            targetHandle,
+            label,
+          },
+        );
 
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in modify scenario network:", err);
+      next(err);
+    }
+  };
+const addRuntimeComponent =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, scenarioid, newNode } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/add-single-component`,
+          { vmrequestid, scenarioid, newNode },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in add runtime component:", err);
+      next(err);
+    }
+  };
+const stopDestroySingleComponent =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/delete-single-network`,
+          { vmrequestid, vmid },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in stop destroy single componnet:", err);
+      next(err);
+    }
+  };
+const disconnectRuntimeNetworks =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid, netKey } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/disconnect-single-network`,
+          { vmrequestid, vmid, netKey },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in disconnect runtime network:", err);
+      next(err);
+    }
+  };
+const connectRuntimeNetwork =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid, netKey } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/connect-single-network`,
+          { vmrequestid, vmid, netKey },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in connect runtime networkr:", err);
+      next(err);
+    }
+  };
+const plugRuntimeNetwork =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid, netKey } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/plug-single-network`,
+          { vmrequestid, vmid, netKey },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in plug runtime network:", err);
+      next(err);
+    }
+  };
+const unplugRuntimeNetwork =
+  ({}) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid, netKey } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/unplug-single-network`,
+          { vmrequestid, vmid, netKey },
+        );
+
+        return res.status(200).send({
+          statusCode: 200,
+          message: response.data.message || "Job started successfully.",
+          data: response.data,
+        });
+      } catch (error) {
+        console.error("Axios request failed:");
+        if (error.response) {
+          console.error("Response Error:");
+        } else {
+          console.error("Request Setup Error:", error.message);
+        }
+        return res.status(500).send({
+          statusCode: 500,
+          message: "Something went wrong. Please try again.",
+          error: error.response?.data || error.message,
+        });
+      }
+    } catch (err) {
+      console.error("Error in unplug runtime network:", err);
+      next(err);
+    }
+  };
 
 
 module.exports = {
@@ -254,4 +579,13 @@ module.exports = {
   exportScenario,
   save,
   deleteScenarioLearner,
+  addScenarioVmNetwork,
+  deleteScenarioVmNetwork,
+  ModifyScenarioVmNetwork,
+  addRuntimeComponent,
+  stopDestroySingleComponent,
+  disconnectRuntimeNetworks,
+  connectRuntimeNetwork,
+  plugRuntimeNetwork,
+  unplugRuntimeNetwork
 };

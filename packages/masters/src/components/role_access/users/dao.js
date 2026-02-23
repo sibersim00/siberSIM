@@ -164,8 +164,7 @@ const update = ({ db, validation }) => async (body, session_userid) => {
 };
 
 const status = ({ db }) => async (body, loginId) => {
-  const status = body.status == 'true' ? 'Active' : 'Inactive';
-  let [res] = await db.sequelize.query(`UPDATE ad_users set status =:_status,modifiedby = now(), modifiedby = :_loginid where userid=:_id`, {
+  let [res] = await db.sequelize.query(`UPDATE ad_users set status =:_status, modifiedby = :_loginid where userid=:_id`, {
     replacements: {
       _id: body.userid,
       _loginid: loginId,

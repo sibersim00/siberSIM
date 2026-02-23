@@ -320,7 +320,9 @@ const handleThemeToggle = () => {
               })}
             </div>
             <div className="dropdown-footer">
-              <span onClick={() => navigate.push("/components/notifications/notificationList")} className="text-primary pointer">
+              <span 
+              // onClick={() => navigate.push("/components/notifications/notificationList")} className="text-primary pointer"
+              >
                 View All Notifications
               </span>
             </div>

@@ -16,7 +16,6 @@ import Select from "react-select";
 import { toast, ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import Seo from "../../../../shared/layout-components/seo/seo";
-// import ImportAdUser from "./import-adminusers";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
 import { getLocalStorageData } from "../../../../shared/redux/slices/localstorage/LocalStorage";
@@ -27,11 +26,9 @@ import {
 } from "../../../../shared/redux/slices/normalusers/normalUserManage";
 import { getInstructorList } from "../../../../shared/redux/slices/common/masters.js";
 import { instructorReportList } from "../../../../shared/redux/slices/instructorreports/instructorreportsManage.js";
-import { verifylearnerData } from "../../../../shared/redux/slices/authentication/Auth";
- 
 import * as XLSX from "xlsx";
 import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
- 
+
 const instructorreport = () => {
   const { hasGetInstructorListSucc, hasinstructorreportslist } = useSelector(
     (state) => {
@@ -60,25 +57,16 @@ const instructorreport = () => {
       };
     }
   );
-  console.log("hasinstructorreportslist", hasinstructorreportslist);
-  console.log(
-    "hasGetStudentListSuccreporthasGetStudentListSuccreport",
-    hasGetInstructorListSucc
-  );
   const dispatch = useDispatch();
   const { push } = useRouter();
   const { t } = useTranslation();
-  const [openImportModal, setOpenImportModal] = useState(false);
-  const [compStatus, setCompStatus] = useState("true");
   const [view, setView] = useState("list");
   const [rowData, setRowData] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [InstructorDropdown, setInstructorropdown] = useState([]);
-  const [quickFilter, setQuickFilter] = useState("");
   const [formModal, setformModal] = useState(false);
   const [mapInstructors, setMapInstructors] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
   const [rowValues, setRowValues] = useState({
     title: "Add",
     componentcategoryid: 0,
@@ -88,14 +76,14 @@ const instructorreport = () => {
     description: "",
   });
   const [oneClick, setOneClick] = useState(false);
- 
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"));
     }
   }, []);
- 
+
   useEffect(() => {
     dispatch(getInstructorList());
   }, []);
@@ -106,14 +94,14 @@ const instructorreport = () => {
       setRowData([]);
     }
   }, [hasinstructorreportslist]);
- 
+
   useEffect(() => {
     const payload = {
       instructor_id: hasGetInstructorListSucc?.instructor_id,
     };
     dispatch(instructorReportList(payload));
   }, []);
- 
+
   const [userType, setUserType] = useState("");
   const formValidation = useFormik({
     enableReinitialize: true,
@@ -130,63 +118,44 @@ const instructorreport = () => {
       eventlearnerid: rowValues?.eventlearnerid,
     },
   });
-  // const customStyles = {
-  //   control: (styles, { isFocused, isDisabled }) => ({
-  //     ...styles,
-  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-  //     boxShadow: isDisabled
-  //       ? null
-  //       : isFocused
-  //       ? "0 0 0 0.001rem #00d683"
-  //       : null,
-  //     "&:hover": {
-  //       borderColor: isDisabled
-  //         ? "#e8e8f7"
-  //         : isFocused
-  //         ? "#00d683"
-  //         : styles.borderColor,
-  //     },
-  //   }),
-  // };
-     const customStyles = () => {
-  return {
-    control: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--dark-bg-color)",
-      borderColor: "#ced4da",
-      minHeight: "38px",
-    }),
-    multiValue: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--primary-bg-color)",
-    }),
-    multiValueLabel: (styles) => ({
-      ...styles,
-       color: "#fff",
-    }),
-    multiValueRemove: (styles) => ({
-      ...styles,
-      color: "#fff",
-      ":hover": {
-        backgroundColor: "#EB5757",
-        color: "white",
-      },
-    }),
-    input: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    singleValue: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    placeholder: (styles) => ({
-      ...styles,
-      color: "#aaa",
-    }),
+  const customStyles = () => {
+    return {
+      control: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--dark-bg-color)",
+        borderColor: "#ced4da",
+        minHeight: "38px",
+      }),
+      multiValue: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--primary-bg-color)",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: "#fff",
+      }),
+      multiValueRemove: (styles) => ({
+        ...styles,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "#EB5757",
+          color: "white",
+        },
+      }),
+      input: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      singleValue: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      placeholder: (styles) => ({
+        ...styles,
+        color: "#aaa",
+      }),
+    };
   };
-};
-
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -237,13 +206,10 @@ const instructorreport = () => {
     },
   ];
 
- 
-  console.log("hasuserreportslisthasuserreportslist", hasinstructorreportslist);
- 
   const handleExport = () => {
     const exportData = (hasinstructorreportslist || []).map((row, index) => {
       const fullName = `${row.firstname || ""} ${row.lastname || ""}`.trim();
- 
+
       return [
         index + 1,
         row.username || "N/A",
@@ -254,7 +220,7 @@ const instructorreport = () => {
         row.last_logout || "N/A",
       ];
     });
- 
+
     const header = [
       "Sr No.",
       "Username",
@@ -264,81 +230,34 @@ const instructorreport = () => {
       "Last Login",
       "Last Logout",
     ];
- 
+
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "SIMUser Report");
- 
+
     const timestamp = new Date()
       .toISOString()
       .replace(/[-T:\.]/g, "")
       .slice(0, 15);
     const fileName = `InstructorProfile_${timestamp}.xlsx`;
- 
+
     XLSX.writeFile(workbook, fileName);
   };
- 
+
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 10,
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
- 
-  const onFilterChanged = (data) => {
-    setQuickFilter(data);
-    const val = data.toLowerCase();
- 
-    let filteredList = hasinstructorreportslist ?? [];
- 
-    if (compStatus === "true") {
-      filteredList = filteredList.filter(
-        (d) => d?.status?.toString() === "true"
-      );
-    } else if (compStatus === "false") {
-      filteredList = filteredList.filter(
-        (d) => d?.status?.toString() === "false"
-      );
-    }
- 
-    const temp = filteredList.filter((d) => {
-      const fullName = `${d.firstname ?? ""} ${d.lastname ?? ""}`.toLowerCase();
-      const firstName = d.firstname?.toLowerCase() ?? "";
-      const lastName = d.lastname?.toLowerCase() ?? "";
- 
-      const email = d.email?.toLowerCase() ?? "";
-      const mobile = d.mobile?.toString().toLowerCase() ?? "";
-      const username = d.username?.toLowerCase() ?? "";
- 
-      return (
-        fullName.includes(val) || // match combined full name
-        (typeof d.username === "string" &&
-          d.username.toLowerCase().includes(val)) ||
-        (typeof d.firstname === "string" &&
-          d.firstname.toLowerCase().includes(val)) ||
-        (typeof d.lastname === "string" &&
-          d.lastname.toLowerCase().includes(val)) ||
-        (typeof d.email === "string" && d.email.toLowerCase().includes(val)) ||
-        (typeof d.address === "string" &&
-          d.address.toLowerCase().includes(val)) ||
-        (typeof d.organization === "string" &&
-          d.organization.toLowerCase().includes(val)) ||
-        ((typeof d.mobile === "number" || typeof d.mobile === "string") &&
-          String(d.mobile).toLowerCase().includes(val)) ||
-        !val
-      );
-    });
- 
-    setGridData(temp);
-    setRowData(temp);
-  };
- 
+
+
   useEffect(() => {
     dispatch(getNormalusersManageList());
-    return () => {};
+    return () => { };
   }, []);
- 
+
   useEffect(() => {
     if (gridApi) {
       gridApi.sizeColumnsToFit();
@@ -352,7 +271,7 @@ const instructorreport = () => {
       resizable: true,
     };
   }, []);
- 
+
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
@@ -364,10 +283,10 @@ const instructorreport = () => {
       setMapInstructors(true);
     }
   };
- 
+
   const handleReturnView = (props) => {
     push(`/normalusers_view/${props?.learner_uuid}`);
- 
+
     console.log("props", props);
   };
   const frameworkComponents = {
@@ -403,11 +322,11 @@ const instructorreport = () => {
         instructor_id: item.instructor_id,
         name: item.name,
       }));
- 
+
       setInstructorropdown(dropdownData);
     }
   }, [hasGetInstructorListSucc]);
- 
+
   return (
     <>
       <Seo title="SIMManager Report" />
@@ -420,18 +339,18 @@ const instructorreport = () => {
                 <div className="d-flex justify-content-between align-items-center">
                   <h4> SIMManager Report</h4>
                   <Form.Group as={Col} md="6" className="">
-                   
+
                     <Select
-                     theme={(theme) => ({
-                                  ...theme,
-                                  colors: {
-                                    ...theme.colors,
-                                    primary25: "var(--primary-bg-color)",
-                                    primary: "var(--primary-bg-color)",
-                                  },
-                                })}
+                      theme={(theme) => ({
+                        ...theme,
+                        colors: {
+                          ...theme.colors,
+                          primary25: "var(--primary-bg-color)",
+                          primary: "var(--primary-bg-color)",
+                        },
+                      })}
                       isMulti
- styles={customStyles()}
+                      styles={customStyles()}
                       name="instructor_id"
                       value={formValidation.values.instructor_id}
                       options={InstructorDropdown}
@@ -443,21 +362,21 @@ const instructorreport = () => {
                           "instructor_id",
                           selectedOptions || []
                         );
- 
+
                         const selectedIds = (selectedOptions || []).map(
                           (s) => s.instructor_id
                         );
- 
+
                         const payload =
                           selectedIds.length > 0
                             ? { instructor_id: selectedIds }
                             : {};
- 
+
                         dispatch(instructorReportList(payload));
                       }}
                       menuPosition="fixed"
                     />
- 
+
                     <div
                       className="text-danger mt-1"
                       style={{ fontSize: "0.875rem" }}
@@ -503,7 +422,7 @@ const instructorreport = () => {
             </Card.Body>
           </Card>
         </Col>
- 
+
         <Col md={12}>
           {view == "card" ? (
             <>
@@ -569,7 +488,6 @@ const instructorreport = () => {
     </>
   );
 };
- 
+
 instructorreport.layout = "Contentlayout";
 export default instructorreport;
- 

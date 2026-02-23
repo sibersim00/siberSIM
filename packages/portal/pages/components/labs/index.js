@@ -67,7 +67,6 @@ const Labs = () => {
   const [backview, setBackView] = useState("card");
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const [filterSlot, setfilterSlot] = useState([]);
-  const [selectedEventData, setSelectedEventData] = useState(null);
   const [allowedUsersModal, setAllowedUsersModal] = useState(false);
   const [allowedUsersData, setAllowedUsersData] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -191,7 +190,6 @@ const Labs = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
-
   useEffect(() => {
     if (addLabData?.statusCode == 200) {
       setformModal(false);
@@ -288,20 +286,9 @@ const Labs = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -309,6 +296,17 @@ const Labs = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -736,9 +734,9 @@ const Labs = () => {
                                   >
                                     {item.bookingname.length > 20
                                       ? `${item.bookingname.substring(
-                                          0,
-                                          17
-                                        )}...`
+                                        0,
+                                        17
+                                      )}...`
                                       : item.bookingname}
                                   </span>
                                 </h6>
@@ -816,24 +814,6 @@ const Labs = () => {
                                   <i className="fe fe-users"></i>
                                 </OverlayTrigger>
                               </div>
-                              &nbsp;
-                              {/* <div className="btn btn-sm ripple me-1 mg-t-5">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>{"Change Status"}</Tooltip>}
-                                >
-                                  <label className="custom-switch mg-t-50">
-                                    <input
-                                      type="checkbox"
-                                      name="custom-switch-checkbox1"
-                                      className="custom-switch-input"
-                                      checked={item?.status === "true"}
-                                      onChange={() => handleStatusSwitch(item)}
-                                    />
-                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                  </label>
-                                </OverlayTrigger>
-                              </div> */}
                             </div>
                           </Card.Body>
                         </Card>
@@ -935,9 +915,8 @@ const Labs = () => {
                             justifyContent: "center",
                             fontSize: "12px",
                           }}
-                          className={`pd-2 font-weight-normal ${
-                            isDarkMode ? "text-white" : "text-black"
-                          }`}
+                          className={`pd-2 font-weight-normal ${isDarkMode ? "text-white" : "text-black"
+                            }`}
                         >
                           <div
                             style={{
@@ -949,8 +928,8 @@ const Labs = () => {
 
                           {timeStr && <div className="me-2">{timeStr}</div>}
                           {eventInfo.event?.title &&
-                          eventInfo.event.title.length > 10 &&
-                          eventInfo.view.type != "timeGridDay" ? (
+                            eventInfo.event.title.length > 10 &&
+                            eventInfo.view.type != "timeGridDay" ? (
                             <OverlayTrigger
                               trigger="click"
                               placement="auto"

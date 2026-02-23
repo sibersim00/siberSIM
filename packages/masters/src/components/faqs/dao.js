@@ -1,27 +1,6 @@
 const getFaqsAll = ({ db }) => async (id = null) => {
   try {
-    const [res] = await db.sequelize.query(`
-      SELECT 
-        faq.faq_id,
-        faq.question,
-        faq.answer,
-        faq.order_by,
-        faq.type,
-        CASE 
-          WHEN faq.status = 'Active' THEN 'true' 
-          ELSE 'false' 
-        END AS status,
-        CONCAT(au.firstname, ' ', au.lastname) AS createdby,
-        CONCAT(mu.firstname, ' ', mu.lastname) AS modifiedby,
-        DATE_FORMAT(faq.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(faq.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-      FROM mst_faqs faq
-      LEFT JOIN ad_users au ON faq.createdby = au.userid
-      LEFT JOIN ad_users mu ON faq.modifiedby = mu.userid
-      WHERE faq.deletedon IS NULL
-      ORDER BY faq.question ASC, 
-      CASE WHEN faq.modifiedon IS NOT NULL THEN faq.modifiedon ELSE faq.createdon END DESC
-    `);
+    const [res] = await db.sequelize.query(` SELECT  faq.faq_id, faq.question, faq.answer, faq.order_by, faq.type, CASE  WHEN faq.status = 'Active' THEN 'true'  ELSE 'false'  END AS status, CONCAT(au.firstname, ' ', au.lastname) AS createdby, CONCAT(mu.firstname, ' ', mu.lastname) AS modifiedby, DATE_FORMAT(faq.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(faq.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM mst_faqs faq LEFT JOIN ad_users au ON faq.createdby = au.userid LEFT JOIN ad_users mu ON faq.modifiedby = mu.userid WHERE faq.deletedon IS NULL ORDER BY faq.question ASC,  CASE WHEN faq.modifiedon IS NOT NULL THEN faq.modifiedon ELSE faq.createdon END DESC `);
 
     return res;
   } catch (error) {
@@ -33,12 +12,7 @@ const getFaqsAll = ({ db }) => async (id = null) => {
 
 const statusChange = ({ db, validation }) => async (body) => {
   const status = body.status === 'true' ? 'Active' : 'Inactive';
-  const query = `
-    UPDATE mst_faqs 
-    SET status = :status, 
-        modifiedby = :modifiedby, 
-        modifiedon = NOW() 
-    WHERE faq_id = :faq_id
+  const query = ` UPDATE mst_faqs  SET status = :status,  modifiedby = :modifiedby,  modifiedon = NOW()  WHERE faq_id = :faq_id
   `;
   await db.sequelize.query(query, {
     replacements: {
@@ -51,21 +25,7 @@ const statusChange = ({ db, validation }) => async (body) => {
 };
 
 const getFaqById = ({ db }) => async (id) => {
-  const [res] = await db.sequelize.query(
-    `SELECT
-      faq_id,
-      question,
-      answer,
-      order_by,
-      status,
-      type,
-      createdby,
-      modifiedby,
-      createdon,
-      modifiedon
-    FROM mst_faqs
-    WHERE deletedon IS NULL
-      AND faq_id = :id`,
+  const [res] = await db.sequelize.query( `SELECT faq_id, question, answer, order_by, status, type, createdby, modifiedby, createdon, modifiedon FROM mst_faqs WHERE deletedon IS NULL AND faq_id = :id`,
     {
       replacements: { id },
       type: db.sequelize.QueryTypes.SELECT,
@@ -79,21 +39,15 @@ const save = ({ db, validation }) => async (body, userid) => {
   const errors = [];
 
   // Check for duplicate
-  const checkDuplicate = await db.sequelize.query(
-    `SELECT faq_id 
-     FROM mst_faqs 
-     WHERE deletedon IS NULL 
-     AND LOWER(REPLACE(question, ' ', '')) = LOWER(REPLACE(:question, ' ', ''))`,
+  const checkDuplicate = await db.sequelize.query( `SELECT faq_id   FROM mst_faqs   WHERE deletedon IS NULL   AND LOWER(REPLACE(question, ' ', '')) = LOWER(REPLACE(:question, ' ', ''))`,
     {
       replacements: { question: body.question },
       type: db.sequelize.QueryTypes.SELECT,
     }
   );
-
   if (checkDuplicate.length > 0) {
     errors.push(validation?.messages?.question_duplicate);
   }
-
   const existingOrder = await db.sequelize.query(
   `SELECT faq_id FROM mst_faqs 
    WHERE deletedon IS NULL AND order_by = :order_by AND type = :type`,
@@ -123,7 +77,6 @@ errors.push(validation.messages.order_by_duplicate);
         (question, answer, order_by, status, type, createdby, createdon) 
       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
-
     const values = [
       body.question,
       body.answer,
@@ -148,12 +101,8 @@ errors.push(validation.messages.order_by_duplicate);
   }
 };
 
-
-
-
 const update = ({ db, validation }) => async (body, userid) => {
   let errors = [];
-
   // Check required fields and ID presence
   if (!body.faq_id) {
     errors.push("FAQ ID is required for update.");
@@ -163,7 +112,6 @@ const update = ({ db, validation }) => async (body, userid) => {
     errors.push("Question and Answer are required.");
     return { success: false, errors };
   }
-
   // Check duplicate question (exclude current faq_id)
   const checkDuplicate = await db.sequelize.query(
     `SELECT faq_id FROM mst_faqs 
@@ -196,23 +144,11 @@ const update = ({ db, validation }) => async (body, userid) => {
 if (existingOrder.length > 0) {
 errors.push(validation.messages.order_by_duplicate);
 }
-
-
   if (errors.length > 0) {
     return { success: false, errors };
   }
-
   try {
-    const updateQuery = `
-      UPDATE mst_faqs
-      SET question = ?, 
-          answer = ?, 
-          order_by = ?, 
-          type = ?, 
-          modifiedby = ?, 
-          modifiedon = CURRENT_TIMESTAMP
-      WHERE faq_id = ? AND deletedon IS NULL
-    `;
+    const updateQuery = ` UPDATE mst_faqs SET question = ?,  answer = ?,  order_by = ?,  type = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE faq_id = ? AND deletedon IS NULL `;
 
     const updateParams = [
       body.question,
@@ -280,9 +216,7 @@ const faqVerify = ({ db, validation }) => async (body) => {
         question: element.question?.trim(),
         answer: element.answer?.trim(),
       };
-
       const faqErrors = [];
-
       // Validate question
       if (!asset.question) {
         faqErrors.push({ field: "question", message: "Question cannot be empty." });
@@ -294,7 +228,6 @@ const faqVerify = ({ db, validation }) => async (body) => {
         if (asset.question.length < 3 || asset.question.length > 255) {
           faqErrors.push({ field: "question", message: "Question must be between 3 and 255 characters." });
         }
-
         const normalizedQuestion = asset.question.toLowerCase().replace(/\s+/g, "");
         if (questionSet.has(normalizedQuestion)) {
           faqErrors.push({
@@ -304,7 +237,6 @@ const faqVerify = ({ db, validation }) => async (body) => {
         } else {
           questionSet.add(normalizedQuestion);
         }
-
         // Check duplicate question in DB
         let query = `SELECT faq_id FROM mst_faqs 
                      WHERE LOWER(REPLACE(question, ' ', '')) = LOWER(REPLACE(?, ' ', '')) 
@@ -344,12 +276,7 @@ const faqVerify = ({ db, validation }) => async (body) => {
 
       // Validate order_by (optional + DB check)
       if (asset.order_by !== undefined && asset.type) {
-        const orderCheckQuery = `
-          SELECT faq_id FROM mst_faqs 
-          WHERE deletedon IS NULL 
-            AND order_by = :order_by 
-            AND type = :type
-            ${asset.faq_id ? "AND faq_id != :faq_id" : ""}
+        const orderCheckQuery = ` SELECT faq_id FROM mst_faqs  WHERE deletedon IS NULL  AND order_by = :order_by  AND type = :type ${asset.faq_id ? "AND faq_id != :faq_id" : ""}
         `;
 
         const replacements = {
@@ -446,11 +373,7 @@ const faqImport = ({ db, validation }) => async (body,user) => {
 
       if (asset.faq_id && asset.faq_id !== "" && asset.faq_id !== 0) {
         // Update existing FAQ
-        const updateQuery = `
-          UPDATE mst_faqs 
-          SET question = ?, answer = ?, order_by = ?,  type = ?, modifiedby = ?, modifiedon = CURRENT_TIMESTAMP 
-          WHERE faq_id = ?`;
-
+        const updateQuery = ` UPDATE mst_faqs  SET question = ?, answer = ?, order_by = ?,  type = ?, modifiedby = ?, modifiedon = CURRENT_TIMESTAMP  WHERE faq_id = ?`;
         const replacements = [
           asset.question,
           asset.answer,
@@ -459,18 +382,15 @@ const faqImport = ({ db, validation }) => async (body,user) => {
           user.userid,
           asset.faq_id
         ];
-
         const [updatedFaq] = await db.sequelize.query(updateQuery, {
           replacements
         });
-
         if (updatedFaq) insertedFaqs.push(updatedFaq);
       } else {
         // Insert new FAQ
         const insertQuery = `
           INSERT INTO mst_faqs (question, answer, order_by, type, createdby, createdon)
           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`;
-
         const replacements = [
           asset.question,
           asset.answer,
@@ -486,7 +406,6 @@ const faqImport = ({ db, validation }) => async (body,user) => {
         if (newFaq) insertedFaqs.push(newFaq);
       }
     }
-
     return {
       status: true,
       message: "FAQs have been imported successfully.",
@@ -500,7 +419,6 @@ const faqImport = ({ db, validation }) => async (body,user) => {
     };
   }
 };
-
 
 module.exports = {
   getFaqsAll,

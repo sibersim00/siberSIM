@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 import { maxWidth } from "@mui/system";
 
 const DiagramComponents = (props) => {
-  const { scenarioId, setScenarioId, setTabIndex, setView, setRowValues } =
+  const { scenarioId, setScenarioId, setView, setRowValues } =
     props;
   const [networkconfigData, setNetworkconfigData] = useState([]);
   const dispatch = useDispatch();
@@ -46,10 +46,6 @@ const DiagramComponents = (props) => {
     });
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, // use state variable for page size
-  };
   const [rowData, setRowData] = useState([]);
   const [rowData2, setRowData2] = useState([]);
   const [publishedDate, setPublishedDate] = useState(null);
@@ -130,9 +126,6 @@ const DiagramComponents = (props) => {
     },
   };
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -149,11 +142,9 @@ const DiagramComponents = (props) => {
       const parsedcomponentData = JSON.parse(
         hasGetScenarioListSucc.component_config
       );
-
-      // Map to set default duration = 0 if missing or falsy
       const sanitizedData = parsedcomponentData.map((item) => ({
         ...item,
-        duration: item.duration != null ? item.duration : 0, // if duration is null/undefined, set 0
+        duration: item.duration != null ? item.duration : 0,
       }));
 
       setRowData(sanitizedData);
@@ -161,11 +152,7 @@ const DiagramComponents = (props) => {
     }
     if (hasGetScenarioListSucc && hasGetScenarioListSucc.network_config) {
       setNetworkconfigData(hasGetScenarioListSucc.network_config);
-
-      // Instead of pushing one network per row, create a single row with all network ids
       setRowData2([{ networkid: hasGetScenarioListSucc.network_config }]);
-
-      // Format publishedon date
       const publishedRaw = hasGetScenarioListSucc.publishedon;
       if (publishedRaw) {
         const formatted = new Date(publishedRaw)
@@ -174,85 +161,79 @@ const DiagramComponents = (props) => {
             month: "short",
             year: "numeric",
           })
-          .replace(/ /g, "-"); // eg. "11-Jun-2025"
+          .replace(/ /g, "-");
         setPublishedDate(formatted);
       }
     }
   }, [hasGetScenarioListSucc]);
   const onRowDragEnd = useCallback((event) => {
     const updatedData = [];
-
-    // Collect the updated order of rows
     event.api.forEachNodeAfterFilterAndSort((node) => {
       updatedData.push(node.data);
     });
-    setRowData(updatedData); // Update the state with the new order
+    setRowData(updatedData);
   }, []);
   const onRejectClick = async () => {
-  const confirmResult = await Swal.fire({
-    title: "Are you sure?",
-    text: "Do you really want to reject this scenario?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, Reject",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: " var(--primary-bg-color)",
-      cancelButtonColor: "var(--secondary)",
-    reverseButtons: true,
-  });
-
-  if (confirmResult.isConfirmed) {
-    const { value: reason } = await Swal.fire({
-      title: "Reject Reason",
-      input: "textarea",
-      inputLabel: "Please provide a reason for rejection",
-      inputPlaceholder: "Enter reason here...",
-      inputAttributes: {
-        "aria-label": "Reject reason",
-      },
+    const confirmResult = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to reject this scenario?",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Submit",
+      confirmButtonText: "Yes, Reject",
       cancelButtonText: "Cancel",
-     confirmButtonColor: " var(--primary-bg-color)",
+      confirmButtonColor: " var(--primary-bg-color)",
       cancelButtonColor: "var(--secondary)",
-      inputValidator: (value) => {
-        if (!value) {
-          return "Reject reason is required!";
-        }
-      },
+      reverseButtons: true,
     });
 
-    if (reason) {
-      // Proceed to submit with reject reason
-      onSubmit("Reject", reason);
+    if (confirmResult.isConfirmed) {
+      const { value: reason } = await Swal.fire({
+        title: "Reject Reason",
+        input: "textarea",
+        inputLabel: "Please provide a reason for rejection",
+        inputPlaceholder: "Enter reason here...",
+        inputAttributes: {
+          "aria-label": "Reject reason",
+        },
+        showCancelButton: true,
+        confirmButtonText: "Submit",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: " var(--primary-bg-color)",
+        cancelButtonColor: "var(--secondary)",
+        inputValidator: (value) => {
+          if (!value) {
+            return "Reject reason is required!";
+          }
+        },
+      });
+      if (reason) { onSubmit("Reject", reason); }
     }
-  }
-};
-  const onSubmit = (status, rejectReason = "") => {
-  let list = [];
-  rowData.map((obj, index) => {
-    list.push({
-      order: index + 1,
-      componentid: obj.componentid,
-      network_ids: obj.network_ids,
-      vmid: obj.vmid,
-      componentname: obj.componentname,
-      duration: obj.duration,
-      imageurl: obj.imageurl,
-      nodeid: obj.nodeid,
-    });
-  });
-
-  const payload = {
-    component_config: list,
-    network_config: networkconfigData,
-    approval_status: status,
-    scenarioid: scenarioId,
-    reject_reason: rejectReason, // 👈 New field
   };
+  const onSubmit = (status, rejectReason = "") => {
+    let list = [];
+    rowData.map((obj, index) => {
+      list.push({
+        order: index + 1,
+        componentid: obj.componentid,
+        network_ids: obj.network_ids,
+        vmid: obj.vmid,
+        componentname: obj.componentname,
+        duration: obj.duration,
+        imageurl: obj.imageurl,
+        nodeid: obj.nodeid,
+      });
+    });
 
-  dispatch(saveComponentConfiguration(payload));
-};
+    const payload = {
+      component_config: list,
+      network_config: networkconfigData,
+      approval_status: status,
+      scenarioid: scenarioId,
+      reject_reason: rejectReason,
+    };
+
+    dispatch(saveComponentConfiguration(payload));
+  };
   useEffect(() => {
     if (saveComponentConfigRes && saveComponentConfigRes.statusCode === 200) {
       setScenarioId("");
@@ -271,19 +252,8 @@ const DiagramComponents = (props) => {
       dispatch(clearSingleScenarios());
       setView("list");
       dispatch(getScenarioList());
-      //    push(`/scenarios_view/${scenarioId}?tab=diagram`);
     }
   }, [saveComponentConfigRes]);
-
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const reordered = Array.from(rowData);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-
-    setRowData(reordered);
-  };
   return (
     <>
       <Row className="row-sm mg-t-10">
@@ -313,23 +283,6 @@ const DiagramComponents = (props) => {
                     />
                   </div>
                 </Col>
-
-                {/* <Col md={4} className="ms-3">
-                  <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "30em", width: "100%" }}
-                  >
-                    <AgGridReact
-                      rowData={rowData2}
-                      defaultColDef={defaultColDef}
-                      columnDefs={columnDefs2}
-                      rowHeight={30}
-
-                      headerHeight={30}
-                    />
-                  </div>
-                </Col> */}
-
                 <Col md={4} className="ms-3">
                   <label className="form-label text-muted fw-semibold">
                     VM Network
@@ -338,7 +291,6 @@ const DiagramComponents = (props) => {
                     className=""
                     style={{ width: "100%", overflowY: "auto" }}
                   >
-                    {/* <h6 className="mb-3 fw-semibold text-muted">VM Network</h6> */}
                     <div
                       style={{
                         display: "flex",
@@ -368,8 +320,6 @@ const DiagramComponents = (props) => {
                         ))
                       )}
                     </div>
-
-                    {/* Published Date */}
                     <div className="mt-3">
                       <h6 className="fw-semibold text-muted mb-1">
                         Published Date
@@ -379,37 +329,21 @@ const DiagramComponents = (props) => {
                   </div>
                 </Col>
               </Row>
-            
-              {/* <div className="justify-content-end d-flex mt-2">
-  {hasGetScenarioListSucc?.approval_status === "Pending" && (
-    <>
-      <Button className="bg-secondary" onClick={() => onSubmit("Pending")}>
-        Save as Draft
-      </Button>
-      <Button className="mx-2 bg-danger" onClick={() => onSubmit("Reject")}>
-        Reject
-      </Button>
-      <Button className="bg-success" onClick={() => onSubmit("Approve")}>
-        Approve
-      </Button>
-    </>
-  )}
-</div> */}
-<div className="justify-content-end d-flex mt-2">
-  {hasGetScenarioListSucc?.approval_status === "Pending" && (
-    <>
-      <Button className="bg-secondary" onClick={() => onSubmit("Pending")}>
-        Save as Draft
-      </Button>
-      <Button className="mx-2 bg-danger" onClick={onRejectClick}>
-        Reject
-      </Button>
-      <Button className="bg-success" onClick={() => onSubmit("Approve")}>
-        Approve
-      </Button>
-    </>
-  )}
-</div>
+              <div className="justify-content-end d-flex mt-2">
+                {hasGetScenarioListSucc?.approval_status === "Pending" && (
+                  <>
+                    <Button className="bg-secondary" onClick={() => onSubmit("Pending")}>
+                      Save as Draft
+                    </Button>
+                    <Button className="mx-2 bg-danger" onClick={onRejectClick}>
+                      Reject
+                    </Button>
+                    <Button className="bg-success" onClick={() => onSubmit("Approve")}>
+                      Approve
+                    </Button>
+                  </>
+                )}
+              </div>
 
             </Card.Body>
           </Card>

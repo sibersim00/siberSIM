@@ -12,8 +12,6 @@ import {
   Badge,
 } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
 import { useRouter } from "next/router";
 import {
   getSingleScenarios,
@@ -149,6 +147,7 @@ const ScenariosView = () => {
     (state) => state?.localData?.getLocalData
   );
 const learnerId = getUserDataFromLocal?.learner_id;
+console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
 
   useEffect(() => {
     dispatch(getTabList());
@@ -189,7 +188,7 @@ const learnerId = getUserDataFromLocal?.learner_id;
       return;
     }
 
-    activeScenarioIdRef.current = scenario.scenariouuid;
+    activeScenarioIdRef.current = scenario.scenariouuid;  
 
     setRowValues(scenario);
     setScenarioStatus(scenario.status);
@@ -1253,6 +1252,9 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                             ? rowValues.scenariodiagram
                                             : ""
                                         }
+                                        rowValues={rowValues}
+                                        manipulationFlag={rowValues?.manipulation_flag}
+                                        isrunning={rowValues?.status}
                                       />
                                     )}
 
@@ -1321,21 +1323,6 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                       </div>
                                     )}
 
-                                    {/* 👇 Flexible / Custom tab support */}
-                                    {/* {tab.tab_type === "Flexible" &&
-                                      tab.widget_url && (
-                                        <iframe
-                                          src={tab.widget_url}
-                                          title={tab.tab_name}
-                                          style={{
-                                            width: "100%",
-                                            height: "600px",
-                                            border: "none",
-                                            borderRadius: "8px",
-                                          }}
-                                        ></iframe>
-                                      )} */}
-                                    {/* 👇 Flexible / Custom tab support */}
                                     {tab.tab_type === "Flexible" &&
                                       tab.widget_url && (
                                         <div

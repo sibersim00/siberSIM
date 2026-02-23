@@ -5,15 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 const list =
   ({ db }) =>
     async () => {
-      let [res] = await db.sequelize.query(`SELECT 
-  userid AS instructor_id,loginid, firstname,lastname,email,mobile,usertype,organization, address,profile,isverified,useruuid AS instructor_uuid,
-  CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status,
-  profile,
-  DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-  DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-FROM ad_users 
-WHERE usertype = "Instructor"
-ORDER BY firstname ASC;`);
+      let [res] = await db.sequelize.query(`SELECT  userid AS instructor_id,loginid, firstname,lastname,email,mobile,usertype,organization, address,profile,isverified,useruuid AS instructor_uuid, CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status, profile, DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM ad_users  WHERE usertype = "Instructor" ORDER BY firstname ASC;`);
       return res;
     };
 
@@ -22,25 +14,7 @@ const getById =
     async (useruuid) => {
       try {
         // 1. Get instructor details
-        const instructorQuery = `
-        SELECT 
-          userid AS instructor_id,
-          loginid,
-          CONCAT(firstname, ' ', lastname) AS Instructor_name,
-          email,
-          mobile,
-          profile,
-          address,
-          organization,
-          status,
-          CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status,
-          profile,
-          DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-          DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-        FROM ad_users 
-        WHERE useruuid = ? AND usertype = "Instructor"
-        LIMIT 1
-      `;
+        const instructorQuery = ` SELECT  userid AS instructor_id, loginid, CONCAT(firstname, ' ', lastname) AS Instructor_name, email, mobile, profile, address, organization, status, CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status, profile, DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM ad_users  WHERE useruuid = ? AND usertype = "Instructor" LIMIT 1 `;
         const [instructorResult] = await db.sequelize.query(instructorQuery, {
           replacements: [useruuid],
         });
@@ -49,30 +23,14 @@ const getById =
         const instructor = instructorResult[0];
 
         // 2. Get student-instructor mappings
-        const studentMapQuery = `
-        SELECT 
-  lim.learner_id,
-  CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-  l.email,
-  l.mobile,
-  lim.instructor_id,
-  l.status
-FROM learner_instructor_map lim
-JOIN ad_users u ON lim.instructor_id = u.userid
-JOIN learners l ON l.learner_id = lim.learner_id
-WHERE u.useruuid = ?
-ORDER BY learner_name ASC
+        const studentMapQuery = ` SELECT  lim.learner_id, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, l.email, l.mobile, lim.instructor_id, l.status FROM learner_instructor_map lim JOIN ad_users u ON lim.instructor_id = u.userid JOIN learners l ON l.learner_id = lim.learner_id WHERE u.useruuid = ? ORDER BY learner_name ASC
       `;
         const [studentsResult] = await db.sequelize.query(studentMapQuery, {
           replacements: [useruuid],
         });
 
         // 3. Get total mapped student count
-        const studentCountQuery = `
-        SELECT COUNT(*) AS mapped_student_count
-        FROM learner_instructor_map lim
-        JOIN ad_users u ON lim.instructor_id = u.userid
-        WHERE u.useruuid = ?
+        const studentCountQuery = ` SELECT COUNT(*) AS mapped_student_count FROM learner_instructor_map lim JOIN ad_users u ON lim.instructor_id = u.userid WHERE u.useruuid = ?
       `;
         const [[countResult]] = await db.sequelize.query(studentCountQuery, {
           replacements: [useruuid],
@@ -92,16 +50,7 @@ ORDER BY learner_name ASC
         if (!user) throw new Error("Instructor not found");
 
         // 5. Get scenarios
-        const scenariosQuery = `
-        SELECT 
-          scenarioid,
-          scenariotitle,
-          scenariostatus,
-          status,
-          createdon
-        FROM scenarios
-        WHERE createdby = ?
-      `;
+        const scenariosQuery = ` SELECT  scenarioid, scenariotitle, scenariostatus, status, createdon FROM scenarios WHERE createdby = ? `;
         const [scenariosResult] = await db.sequelize.query(scenariosQuery, {
           replacements: [user.userid],
         });

@@ -6,11 +6,9 @@ import {
   getCategoriesList,
   getScenarioComponentListbyCategory,
 } from "../../../shared/redux/slices/commons/commons";
-
 import {
   getSenarioDigramList,
   getSinglecustomScenarios,
-  clearSingleScenarios,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
 
 const normalizeImageUrl = (url) => {
@@ -29,7 +27,7 @@ const SidebarFlow = ({
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
-const {
+  const {
     getMasterCatListData,
     getComponentByCatData,
     getScenarioDigListData,
@@ -59,10 +57,8 @@ const {
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
-    const [isDark, setIsDark] = useState(false);
-  // const theme = localStorage.getItem("theme_preference") || "light";
-  // const isDark = theme === "dark";
-    useEffect(() => {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
     const theme = localStorage.getItem("theme_preference") || "light";
     setIsDark(theme === "dark");
   }, []);
@@ -73,7 +69,6 @@ const {
   useEffect(() => {
     if (scenarioId) {
       const payload = { scenarioid: scenarioId };
-      // dispatch(getScenarioFlow(payload));
       dispatch(getSinglecustomScenarios(scenarioId));
     }
   }, [scenarioId]);
@@ -95,17 +90,15 @@ const {
   };
 
   const [oneClick, setOneClick] = useState(false);
-  const [copyModal, setcopyModal] = useState(false);
   const [catDropDownData, setCatDropDown] = useState([]);
   const [scenarioDropDownData, setScenarioDropDownData] = useState([]);
   const [componentDropDownData, setComponentDropDown] = useState([]);
   const [componentCache, setComponentCache] = useState({});
   const [imageNodeData, setImageNodeData] = useState([]);
-  const [droppedImages, setDroppedImages] = useState([]); 
+  const [droppedImages, setDroppedImages] = useState([]);
   const [toBeDragComponent, setToBeDragComponent] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
-  const [selectedScenario, setSelectedScenario] = useState(null);
   const [rowValues, setRowValues] = useState(null);
   useEffect(() => {
     if (getScenarioFlowchart) {
@@ -214,80 +207,63 @@ const {
       const normalizedData = parsedcomponentData.map((node) => ({
         ...node,
         componentid: node.componentid || node.componentId || node.id,
-        imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl || node.subcategoryimage || ""}`, // 👈 ensure full URL
+        imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl || node.subcategoryimage || ""}`, //ensure full URL
       }));
 
-      setImageNodeData(normalizedData); // 👈 update sidebar immediately
+      setImageNodeData(normalizedData); // update sidebar immediately
       setDroppedImages(normalizedData.map((comp) => comp.id));
       setDraggedComponent(normalizedData);
     }
   }, [getScenarioFlowchart]);
+
   useEffect(() => {
-    if (getScenarioDigListData && getScenarioDigListData.length > 0) {
-      let temp = getScenarioDigListData.map((scenario) => ({
-        value: scenario?.scenarioid || "",
-        label: scenario?.scenariotitle,
-        scenariodiagram: scenario?.scenariodiagram,
-        digramcomponent: scenario?.components,
-      }));
-      setScenarioDropDownData(temp);
+    if (!getScenarioFlowchart?.components) {
+      setImageNodeData([]);
+      return;
     }
-  }, [getScenarioDigListData]);
-
-  const handleCopyScenario = () => {
-    handleOneClick(false);
-    if (scenarioId && scenarioId != "") {
-      setcopyModal(true);
+    let parsedComponents = [];
+    try {
+      const parsed = JSON.parse(getScenarioFlowchart.components);
+      parsedComponents = Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error("Invalid components JSON", err);
+      parsedComponents = [];
     }
-  };
-useEffect(() => {
-  if (!getScenarioFlowchart?.components) {
-    setImageNodeData([]);
-    return;
-  }
-  let parsedComponents = [];
-  try {
-    const parsed = JSON.parse(getScenarioFlowchart.components);
-    parsedComponents = Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.error("Invalid components JSON", err);
-    parsedComponents = [];
-  }
-  const normalizedComponents = parsedComponents.map((node) => ({
-    ...node,
-    componentid: node.componentid || node.componentId || node.id,
-    imageUrl: normalizeImageUrl(
-      node.imageUrl || node.subcategoryimage
-    ),
-  }));
-  setImageNodeData(normalizedComponents);
-}, [getScenarioFlowchart]);
+    const normalizedComponents = parsedComponents.map((node) => ({
+      ...node,
+      componentid: node.componentid || node.componentId || node.id,
+      imageUrl: normalizeImageUrl(
+        node.imageUrl || node.subcategoryimage
+      ),
+    }));
+    setImageNodeData(normalizedComponents);
+  }, [getScenarioFlowchart]);
 
 
 
-useEffect(() => {
-  if (!imageNodeData || imageNodeData.length === 0) return;
-  setNodes((prevNodes) => {
-    const updated = prevNodes.map((node) => {
-      const match = imageNodeData.find(
-        (imgNode) =>
-          imgNode.componentid === node.data?.componentId ||
-          imgNode.label === node.data?.label
-      );
-      if (match && match.imageUrl && node.data?.image !== match.imageUrl) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            image: match.imageUrl,
-          },
-        };
-      }
-      return node;
+  useEffect(() => {
+    if (!imageNodeData || imageNodeData.length === 0) return;
+    setNodes((prevNodes) => {
+      const updated = prevNodes.map((node) => {
+        const match = imageNodeData.find(
+          (imgNode) =>
+            imgNode.componentid === node.data?.componentId ||
+            imgNode.label === node.data?.label
+        );
+        if (match && match.imageUrl && node.data?.image !== match.imageUrl) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              image: match.imageUrl,
+            },
+          };
+        }
+        return node;
+      });
+      return updated;
     });
-    return updated;
-  });
-}, [imageNodeData]);
+  }, [imageNodeData]);
   return (
     <div
       style={{
@@ -317,7 +293,7 @@ useEffect(() => {
                 primary: "var(--primary-bg-color)",
               },
             })}
-               styles={{
+            styles={{
               control: (provided) => ({
                 ...provided,
                 backgroundColor: isDark ? "var(--dark-bg-color)" : "#fff",
@@ -335,10 +311,10 @@ useEffect(() => {
                 backgroundColor: state.isSelected
                   ? "var(--primary-bg-color)"
                   : state.isFocused
-                  ? "#04973C"
-                  : isDark
-                  ? "var(--dark-bg-color)"
-                  : "#fff",
+                    ? "#04973C"
+                    : isDark
+                      ? "var(--dark-bg-color)"
+                      : "#fff",
                 color: isDark ? "#fff" : "#000",
                 cursor: "pointer",
               }),
@@ -374,7 +350,7 @@ useEffect(() => {
               primary: "var(--primary-bg-color)",
             },
           })}
-           styles={{
+          styles={{
             control: (provided) => ({
               ...provided,
               backgroundColor: isDark ? "var(--dark-bg-color)" : "#fff",
@@ -392,10 +368,10 @@ useEffect(() => {
               backgroundColor: state.isSelected
                 ? "var(--primary-bg-color)"
                 : state.isFocused
-                ? "#04973C"
-                : isDark
-                ? "var(--dark-bg-color)"
-                : "#fff",
+                  ? "#04973C"
+                  : isDark
+                    ? "var(--dark-bg-color)"
+                    : "#fff",
               color: isDark ? "#fff" : "#000",
               cursor: "pointer",
             }),

@@ -43,13 +43,13 @@ const FileUploader = dynamic(
   () => {
     return import("../common/fileuploads/fileuploader");
   },
-  { ssr: false }
+  { ssr: false },
 );
 const EditorComponent = dynamic(
   () => {
     return import("../common/ckEditor");
   },
-  { ssr: false }
+  { ssr: false },
 );
 import { FilePath } from "../common/fileuploads/filepath";
 import {
@@ -170,14 +170,14 @@ const ScenarioForm = (props) => {
       boxShadow: isDisabled
         ? null
         : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
+          ? "0 0 0 0.001rem #00d683"
+          : null,
       "&:hover": {
         borderColor: isDisabled
           ? "#e8e8f7"
           : isFocused
-          ? "#00d683"
-          : styles.borderColor,
+            ? "#00d683"
+            : styles.borderColor,
       },
     }),
   };
@@ -222,7 +222,7 @@ const ScenarioForm = (props) => {
     } else {
       formValidation.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
       setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : ""
+        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
       );
     }
   };
@@ -241,7 +241,8 @@ const ScenarioForm = (props) => {
       }));
       setSubCatDropDownData(temp);
       const selectedsubcategory = temp.find(
-        (obj) => obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
+        (obj) =>
+          obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid,
       );
     }
   }, [hasubCatByIdRes]);
@@ -253,7 +254,7 @@ const ScenarioForm = (props) => {
       }));
       setCatDropDownData(temp);
       const selectedcategory = temp.find(
-        (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
+        (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid,
       );
 
       formValidation.setFieldValue("scenariocategoryid", selectedcategory);
@@ -271,7 +272,7 @@ const ScenarioForm = (props) => {
                 position: toast.POSITION.TOP_RIGHT,
                 hideProgressBar: true,
                 theme: "colored",
-              }
+              },
             );
           })
         : toast.error(
@@ -282,7 +283,7 @@ const ScenarioForm = (props) => {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
 
       dispatch(clearHasError());
@@ -322,12 +323,12 @@ const ScenarioForm = (props) => {
       let selectedInstructor;
       if (userType === "Instructor" && userId) {
         selectedInstructor = temp.find(
-          (obj) => obj?.instructor_id?.toString() === userId.toString()
+          (obj) => obj?.instructor_id?.toString() === userId.toString(),
         );
       } else {
         // fallback to selected row value
         selectedInstructor = temp.find(
-          (obj) => obj?.instructor_id === rowValues?.instructor_id
+          (obj) => obj?.instructor_id === rowValues?.instructor_id,
         );
       }
 
@@ -345,7 +346,7 @@ const ScenarioForm = (props) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setScenarioId(saveScenariosData?.scenarioid);
@@ -364,7 +365,7 @@ const ScenarioForm = (props) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       dispatch(getScenarioList());
@@ -385,7 +386,7 @@ const ScenarioForm = (props) => {
       scenariosubcategoryid:
         subCatDropDownData.find(
           (obj) =>
-            obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid
+            obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid,
         ) || null,
       scenariotitle: rowValues?.scenariotitle || "",
       description: rowValues?.scenariodescription || "",
@@ -393,18 +394,18 @@ const ScenarioForm = (props) => {
         level.find((obj) => obj?.name === rowValues?.scenariolevel) || null,
       instructor_id:
         instDropDownData.find(
-          (obj) => obj?.instructor_id === rowValues?.instructor_id
+          (obj) => obj?.instructor_id === rowValues?.instructor_id,
         ) || null,
       learner_id:
         instDropDownData.find(
-          (obj) => obj?.learner_id === rowValues?.learner_id
+          (obj) => obj?.learner_id === rowValues?.learner_id,
         ) || null,
       status: rowValues?.status || "",
       image_url: rowValues?.instruction_file || "",
       duration: rowValues?.duration || "",
       scenariocategoryids:
         catDropDownData.find(
-          (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid
+          (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid,
         ) || "",
       scenarioimage: rowValues?.scenarioimage || "",
     },
@@ -413,7 +414,7 @@ const ScenarioForm = (props) => {
         .required("Required")
         .matches(
           /^[a-zA-Z0-9 _:-]+$/,
-          "Invalid - only letters, numbers, spaces, hyphens (-), underscores (_), and colons (:) are allowed"
+          "Invalid - only letters, numbers, spaces, hyphens (-), underscores (_), and colons (:) are allowed",
         )
         .min(3, "Minimum 3 characters required")
         .max(30, "Identification should not exceed 30 characters")
@@ -422,7 +423,7 @@ const ScenarioForm = (props) => {
           "No leading or trailing spaces allowed",
           (value) => {
             return value ? !/^\s|\s$/.test(value) : true;
-          }
+          },
         ),
 
       scenariotitle: Yup.string()
@@ -430,7 +431,7 @@ const ScenarioForm = (props) => {
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
-          (value) => value === value?.trim()
+          (value) => value === value?.trim(),
         ),
       description: Yup.string().test("non-empty", error?.required, (value) => {
         return value && value.trim() !== "";
@@ -441,7 +442,7 @@ const ScenarioForm = (props) => {
         .test(
           "non-empty-object",
           "Scenario Level must be selected",
-          (value) => value && Object.keys(value).length > 0
+          (value) => value && Object.keys(value).length > 0,
         ),
       // scenariocategoryid: Yup.object().required('required'),
       scenariocategoryids: Yup.object().required("Required"),
@@ -451,7 +452,7 @@ const ScenarioForm = (props) => {
         .test(
           "non-empty-object",
           "Scenario Subcategory must be selected",
-          (value) => value && Object.keys(value).length > 0
+          (value) => value && Object.keys(value).length > 0,
         ),
 
       duration: Yup.string()
@@ -463,7 +464,7 @@ const ScenarioForm = (props) => {
           (value) => {
             const minutes = parseInt(value, 10);
             return minutes >= 1 && minutes <= 1440;
-          }
+          },
         ),
       image_url: Yup.string()
         .required("Required")
@@ -523,6 +524,22 @@ const ScenarioForm = (props) => {
     };
     dispatch(getScenarioSubCategorybyId(payload));
   };
+
+  const memoizedFetchFiles = React.useMemo(() => {
+    if (!formValidation.values.image_url) return [];
+
+    return ismulti
+      ? formValidation.values.image_url.split(",")
+      : [formValidation.values.image_url];
+  }, [formValidation.values.image_url, ismulti]);
+
+  const memoizedFetchimageFiles = React.useMemo(() => {
+    if (!formValidation.values.scenarioimage) return [];
+
+    return ismulti
+      ? formValidation.values.scenarioimage.split(",")
+      : [formValidation.values.scenarioimage];
+  }, [formValidation.values.scenarioimage, ismulti]);
 
   return (
     <>
@@ -766,24 +783,24 @@ const ScenarioForm = (props) => {
                                                       }),
                                                       option: (
                                                         provided,
-                                                        state
+                                                        state,
                                                       ) => ({
                                                         ...provided,
                                                         backgroundColor:
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C"
-                                                            : isDark
-                                                            ? "var(--dark-bg-color)"
-                                                            : "#fff",
+                                                              ? "#04973C"
+                                                              : isDark
+                                                                ? "var(--dark-bg-color)"
+                                                                : "#fff",
                                                         color: isDark
                                                           ? "#fff"
                                                           : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -791,7 +808,7 @@ const ScenarioForm = (props) => {
                                                           : "#555",
                                                       }),
                                                       placeholder: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -819,7 +836,7 @@ const ScenarioForm = (props) => {
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariolevel",
-                                                        e
+                                                        e,
                                                       );
                                                     }}
                                                     isInvalid={
@@ -892,24 +909,24 @@ const ScenarioForm = (props) => {
                                                       }),
                                                       option: (
                                                         provided,
-                                                        state
+                                                        state,
                                                       ) => ({
                                                         ...provided,
                                                         backgroundColor:
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C"
-                                                            : isDark
-                                                            ? "var(--dark-bg-color)"
-                                                            : "#fff",
+                                                              ? "#04973C"
+                                                              : isDark
+                                                                ? "var(--dark-bg-color)"
+                                                                : "#fff",
                                                         color: isDark
                                                           ? "#fff"
                                                           : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -917,7 +934,7 @@ const ScenarioForm = (props) => {
                                                           : "#555",
                                                       }),
                                                       placeholder: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -955,15 +972,15 @@ const ScenarioForm = (props) => {
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariocategoryids",
-                                                        e
+                                                        e,
                                                       );
                                                       formValidation.setFieldValue(
                                                         "scenariosubcategoryid",
-                                                        null
+                                                        null,
                                                       );
                                                       setSubCatDropDownData([]);
                                                       handelGetSubCat(
-                                                        e.scenariocategoryid
+                                                        e.scenariocategoryid,
                                                       );
                                                     }}
                                                     isInvalid={
@@ -1034,24 +1051,24 @@ const ScenarioForm = (props) => {
                                                       }),
                                                       option: (
                                                         provided,
-                                                        state
+                                                        state,
                                                       ) => ({
                                                         ...provided,
                                                         backgroundColor:
                                                           state.isSelected
                                                             ? "var(--primary-bg-color)"
                                                             : state.isFocused
-                                                            ? "#04973C"
-                                                            : isDark
-                                                            ? "var(--dark-bg-color)"
-                                                            : "#fff",
+                                                              ? "#04973C"
+                                                              : isDark
+                                                                ? "var(--dark-bg-color)"
+                                                                : "#fff",
                                                         color: isDark
                                                           ? "#fff"
                                                           : "#000",
                                                         cursor: "pointer",
                                                       }),
                                                       singleValue: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -1059,7 +1076,7 @@ const ScenarioForm = (props) => {
                                                           : "#474646ff",
                                                       }),
                                                       placeholder: (
-                                                        provided
+                                                        provided,
                                                       ) => ({
                                                         ...provided,
                                                         color: isDark
@@ -1095,7 +1112,7 @@ const ScenarioForm = (props) => {
                                                     onChange={(e) => {
                                                       formValidation.setFieldValue(
                                                         "scenariosubcategoryid",
-                                                        e
+                                                        e,
                                                       );
                                                     }}
                                                   />
@@ -1208,16 +1225,19 @@ const ScenarioForm = (props) => {
                                                         handleUpload={
                                                           handleUpload
                                                         }
+                                                        // fetchfiles={
+                                                        //   ismulti
+                                                        //     ? formValidation.values.image_url.split(
+                                                        //         ","
+                                                        //       )
+                                                        //     : [
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .image_url,
+                                                        //       ]
+                                                        // }
                                                         fetchfiles={
-                                                          ismulti
-                                                            ? formValidation.values.image_url.split(
-                                                                ","
-                                                              )
-                                                            : [
-                                                                formValidation
-                                                                  .values
-                                                                  .image_url,
-                                                              ]
+                                                          memoizedFetchFiles
                                                         }
                                                       />
 
@@ -1296,19 +1316,22 @@ const ScenarioForm = (props) => {
                                                         handleUpload={
                                                           handleUpload
                                                         }
+                                                        // fetchfiles={
+                                                        //   ismulti
+                                                        //     ? (
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .scenarioimage ||
+                                                        //         ""
+                                                        //       ).split(",")
+                                                        //     : [
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .scenarioimage,
+                                                        //       ]
+                                                        // }
                                                         fetchfiles={
-                                                          ismulti
-                                                            ? (
-                                                                formValidation
-                                                                  .values
-                                                                  .scenarioimage ||
-                                                                ""
-                                                              ).split(",")
-                                                            : [
-                                                                formValidation
-                                                                  .values
-                                                                  .scenarioimage,
-                                                              ]
+                                                          memoizedFetchimageFiles
                                                         }
                                                       />
                                                     </div>
@@ -1367,7 +1390,7 @@ const ScenarioForm = (props) => {
                                                       setInitialHtml(data);
                                                       formValidation.setFieldValue(
                                                         "description",
-                                                        data
+                                                        data,
                                                       );
                                                     }}
                                                     editorLoaded={editorLoaded}

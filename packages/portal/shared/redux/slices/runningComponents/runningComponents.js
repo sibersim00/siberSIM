@@ -8,6 +8,8 @@ const initialState = {
   apilogdataData: [],
   apilogsDatalist: [],
   selectedLogData: [],
+  TerminationSucc: [],
+  stopcomponentSucc: [],
 };
 
 const slice = createSlice({
@@ -25,6 +27,14 @@ const slice = createSlice({
     hasFetchapilogsSuccesslist(state, action) {
       state.isLoading = false;
       state.apilogsDatalist = action.payload;
+    },
+    hasGetTerminationSucc(state, action) {
+      state.isLoading = false;
+      state.TerminationSucc = action.payload;
+    },
+    hasstopcomponentSucc(state, action) {
+      state.isLoading = false;
+      state.stopcomponentSucc = action.payload;
     },
      hasFetchApiLogByIdSuccess(state, action) {
       state.isLoading = false;
@@ -76,6 +86,44 @@ export function clearfetchlogbyid() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasFetchApiLogByIdSuccess());
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function terminateScenario(payload) {
+  console.log(
+    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
+    payload
+  );
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_dropped_component}`, payload);
+      console.log("response", response);
+      dispatch(slice.actions.hasGetTerminationSucc(response.data));
+
+      console.log("response", response);
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function stopcomponent(payload) {
+  console.log(
+    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
+    payload
+  );
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.stop_single_component}`, payload);
+      console.log("response", response);
+      dispatch(slice.actions.hasstopcomponentSucc(response.data));
+
+      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

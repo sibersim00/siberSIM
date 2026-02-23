@@ -7,11 +7,6 @@ const setEventLearnerConfiguration =
   async (req, res, next) => {
     try {
       const { scenarioid, learnerid, eventlearnerid,vmrequestid } = req.body;
-      console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
-      
-      
-      const ipAddress =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
       if (!scenarioid || !learnerid || !eventlearnerid) {
         return res
           .status(400)
@@ -48,7 +43,7 @@ const setEventLearnerConfiguration =
   };
 
 const updateCompleteTerminate =
-  ({ dao, db }) =>
+  ({ }) =>
   async (req, res, next) => {
     try {
       const { eventlearnerid, status, type,vmrequestid } = req.body;
@@ -166,13 +161,10 @@ const generateProxmoxAccessToken =
 
 
   const startEventLearner =
-  ({ dao, db, validation }) =>
+  ({ }) =>
   async (req, res, next) => {
     try {
       const { scenarioid, learnerid, eventlearnerid,vmrequestid } = req.body;
-      const ipAddress =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
       if (!scenarioid || !learnerid || !eventlearnerid) {
         return res.status(400).send({
           statusCode: 400,

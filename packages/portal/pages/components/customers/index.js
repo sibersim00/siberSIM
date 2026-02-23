@@ -35,10 +35,6 @@ import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import CustomerModal from "../../../shared/data/admin/modals/CustomerModal";
 import LicenseModal from "../../../shared/data/admin/modals/LicenseModal";
-// const copyToClipboard = (text) => {
-//   navigator.clipboard.writeText(text);
-// };
-
 const copyToClipboard = async (text) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -1089,8 +1085,8 @@ resendLicenseButtonRenderer: function (props) {
           openFlag={licenseFormModal}
           handleFormModal={(flag) => {
             setLicenseFormModal(flag);
-            setHideCanvasForModal(false); // show Offcanvas again
-            if (!flag) setShowCanvas(true); // keep offcanvas open after closing modal
+            setHideCanvasForModal(false); 
+            if (!flag) setShowCanvas(true); 
           }}
           rowValues={canvasData}
           oneClick={oneClick}

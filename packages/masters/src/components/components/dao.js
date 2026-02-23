@@ -288,7 +288,8 @@ const update =
         }
 
         // Get updated siberSIM VM details
-        const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
+        const vmDetailResponse = await vmDetails( db ,body, ipAddress);
+
         const proxmoxData = vmDetailResponse?.data || {};
         const vmConfig = proxmoxData.data || {};
 
@@ -627,7 +628,13 @@ const vmDetails =
         let response;
 
         try {
-          await proxmoxService.generateAccessTicket();
+             const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: "Could not connect to Proxmox server.",
+          };
+        }
 
           if (vmType === "lxc") {
             response = await proxmoxService.LXC_Container_detail(vmid);

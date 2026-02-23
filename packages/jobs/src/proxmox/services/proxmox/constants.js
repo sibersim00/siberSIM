@@ -39,6 +39,12 @@ const VM_PROCESSES = {
   CLONE_QEMU:"Clone QEMU Component",
   TEMPLATE_QEMU:"Template QEMU",
   GET_QEMU_CONFIG:"QEMU Config",
+  DELETE_VM_NETWORK:"Delete Network Port",
+  DISCONNECT_VM_NETWORK:"Disconnet Network Port",
+  CONNECT_VM_NETWORK:"Connect Network Port",
+  GET_VM_NETWORK_INFO:"Network Information",
+  UNPLUG_VM_NETWORK:"Unplug Network Port",
+  PLUG_VM_NETWORK:"Plug Network Port",
 };
 
 module.exports = {

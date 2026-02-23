@@ -1,21 +1,6 @@
 const getInstructorDetails = ({ db }) => async (instructor_id = null) => {
   try {
-    let baseQuery = `
-      SELECT 
-        u.userid AS instructor_id,
-        u.loginid AS username,
-        u.firstname,
-        u.lastname,
-        u.email,
-        u.mobile,
-        DATE(urt.logged_in) AS login_date,
-        DATE_FORMAT(MAX(urt.logged_in), '%Y-%m-%d %H:%i:%s') AS last_login,
-        DATE_FORMAT(MAX(urt.logged_out), '%Y-%m-%d %H:%i:%s') AS last_logout
-      FROM ad_users u
-      LEFT JOIN ad_user_refresh_tokens urt 
-        ON u.userid = urt.userid
-      WHERE u.usertype = 'Instructor'
-    `;
+    let baseQuery = ` SELECT  u.userid AS instructor_id, u.loginid AS username, u.firstname, u.lastname, u.email, u.mobile, DATE(urt.logged_in) AS login_date, DATE_FORMAT(MAX(urt.logged_in), '%Y-%m-%d %H:%i:%s') AS last_login, DATE_FORMAT(MAX(urt.logged_out), '%Y-%m-%d %H:%i:%s') AS last_logout FROM ad_users u LEFT JOIN ad_user_refresh_tokens urt  ON u.userid = urt.userid WHERE u.usertype = 'Instructor' `;
 
     const replacements = {};
 
@@ -29,17 +14,7 @@ const getInstructorDetails = ({ db }) => async (instructor_id = null) => {
     }
 
     // Add GROUP BY and ORDER BY
-    baseQuery += `
-      GROUP BY 
-        u.userid,
-        u.loginid,
-        u.firstname,
-        u.lastname,
-        u.email,
-        u.mobile,
-        DATE(urt.logged_in)
-      ORDER BY login_date DESC
-    `;
+    baseQuery += ` GROUP BY  u.userid, u.loginid, u.firstname, u.lastname, u.email, u.mobile, DATE(urt.logged_in) ORDER BY login_date DESC `;
 
     const result = await db.sequelize.query(baseQuery, {
       replacements,
@@ -77,21 +52,7 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
   }
 
   // Main instructor stats query
-  const query = `
-    SELECT
-      s.createdby AS instructor_id,
-       CONCAT(u.firstname, ' ', u.lastname) AS instructor_name,
-      COUNT(*) AS total_scenarios,
-      SUM(s.scenariostatus = 'Publish') AS total_published,
-      SUM(s.scenariostatus = 'Draft') AS total_draft,
-      SUM(s.scenariolevel = 'Easy') AS cnt_easy,
-      SUM(s.scenariolevel = 'Medium') AS cnt_medium,
-      SUM(s.scenariolevel = 'Hard') AS cnt_hard
-    FROM scenarios s
-    JOIN ad_users u ON s.createdby = u.userid
-    WHERE ${baseWhere}
-    GROUP BY s.createdby
-  `;
+  const query = ` SELECT s.createdby AS instructor_id, CONCAT(u.firstname, ' ', u.lastname) AS instructor_name, COUNT(*) AS total_scenarios, SUM(s.scenariostatus = 'Publish') AS total_published, SUM(s.scenariostatus = 'Draft') AS total_draft, SUM(s.scenariolevel = 'Easy') AS cnt_easy, SUM(s.scenariolevel = 'Medium') AS cnt_medium, SUM(s.scenariolevel = 'Hard') AS cnt_hard FROM scenarios s JOIN ad_users u ON s.createdby = u.userid WHERE ${baseWhere} GROUP BY s.createdby `;
 
   const rows = await db.sequelize.query(query, {
     replacements,
@@ -99,18 +60,7 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
   });
 
   // Category breakdown
-  const categoryQuery = `
-    SELECT 
-      s.createdby AS instructor_id,
-       CONCAT(u.firstname, ' ', u.lastname) AS instructor_name,
-      sc.categoryname,
-      COUNT(*) AS category_count
-    FROM scenarios s
-    JOIN ad_users u ON s.createdby = u.userid
-    JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid
-    WHERE ${baseWhere}
-    GROUP BY s.createdby, sc.categoryname
-  `;
+  const categoryQuery = ` SELECT  s.createdby AS instructor_id, CONCAT(u.firstname, ' ', u.lastname) AS instructor_name, sc.categoryname, COUNT(*) AS category_count FROM scenarios s JOIN ad_users u ON s.createdby = u.userid JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid WHERE ${baseWhere} GROUP BY s.createdby, sc.categoryname `;
 
   const categoryRows = await db.sequelize.query(categoryQuery, {
     replacements,
@@ -118,25 +68,12 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
   });
 
   // Quiz breakdown
-  const quizQuery = `
-    SELECT 
-      s.createdby AS instructor_id,
-      c.categoryname AS category_name,
-      COUNT(q.scenariolearnarquizid) AS quiz_count
-    FROM scenario_learner_quiz q
-    JOIN scenarios s ON s.scenarioid = q.scenarioid
-    JOIN scenario_categories c ON s.scenariocategoryid = c.scenariocategoryid
-    WHERE s.deletedon IS NULL
-      ${replacements.instructor_id ? ' AND s.createdby IN (:instructor_id)' : ''}
-      ${replacements.scenario_id ? ' AND s.scenarioid IN (:scenario_id)' : ''}
-    GROUP BY s.createdby, c.categoryname
-  `;
+  const quizQuery = ` SELECT  s.createdby AS instructor_id, c.categoryname AS category_name, COUNT(q.scenariolearnarquizid) AS quiz_count FROM scenario_learner_quiz q JOIN scenarios s ON s.scenarioid = q.scenarioid JOIN scenario_categories c ON s.scenariocategoryid = c.scenariocategoryid WHERE s.deletedon IS NULL ${replacements.instructor_id ? ' AND s.createdby IN (:instructor_id)' : ''} ${replacements.scenario_id ? ' AND s.scenarioid IN (:scenario_id)' : ''} GROUP BY s.createdby, c.categoryname `;
 
   const quizRows = await db.sequelize.query(quizQuery, {
     replacements,
     type: db.sequelize.QueryTypes.SELECT,
   });
-
   // Build maps for categories and quizzes
   const categoryMap = {};
   for (const row of categoryRows) {
@@ -158,9 +95,7 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
     if (!total) {
       return null;
     }
-
     const instructorId = row.instructor_id;
-
     return {
       instructor_id: instructorId,
       instructor_name: row.instructor_name,
@@ -186,15 +121,11 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
       by_category_quiz: quizMap[instructorId] || {},
     };
   };
-
-  // Format and filter empty results
   const formatted = Array.isArray(rows) ? rows.map(formatStats).filter(Boolean) : [];
-
   // Return null if no meaningful data
   if (formatted.length === 0) {
     return null;
   }
-
   // Determine structure of returned data
   if (
     (Array.isArray(instructor_id) && instructor_id.length > 1) ||
@@ -203,10 +134,8 @@ const getInstructorStatistics = ({ db }) => async (instructor_id, scenario_id) =
   ) {
     return formatted;
   }
-
   return formatted[0];
 };
-
 module.exports = {
   getInstructorDetails,
   getInstructorStatistics

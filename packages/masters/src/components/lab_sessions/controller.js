@@ -22,9 +22,7 @@ const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.save({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -43,9 +41,7 @@ const update = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.update({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -64,9 +60,7 @@ const deleteById = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.deleteById({ db })(body, session_userid);
-
     if (!result.status) {
       return res.status(400).send({
         statusCode: 400,
@@ -93,9 +87,7 @@ const changeStatus = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.changeStatus({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,

@@ -433,9 +433,6 @@ const ManageLearner = () => {
               src={props?.data?.profile}
               className="ht-35 wd-35 pointer rounded-circle"
               alt="logo"
-            // onClick={() =>
-            //   openImageViewer(props?.data?.index, props?.data?.profile)
-            // }
             />
           </OverlayTrigger>
         </>

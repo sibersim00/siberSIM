@@ -2,80 +2,6 @@ const ProxMoxService = require("../../services/proxmox/ProxMoxService");
 const constants = require("../../services/proxmox/constants");
 const NotiTemplate = require("../../utils/notiUtility");
 
-const releaseNetworks = async (db, networksArray) => {
-  const bridgesToFree = new Set();
-  let bridgeMap;
-  bridgeMap = JSON.parse(networksArray);
-  bridgeMap.forEach((net) => {
-    if (net.networkname) {
-      bridgesToFree.add(net.networkname);
-    }
-  });
-
-  if (bridgesToFree.size > 0) {
-    for (const bridge of bridgesToFree) {
-      await db.sequelize.query(
-        `UPDATE networks
-         SET status = 'Available', modifiedon = NOW()
-         WHERE networkjson LIKE ?`,
-        {
-          replacements: [`%\"iface\":\"${bridge}\"%`],
-          type: db.sequelize.QueryTypes.UPDATE,
-        }
-      );
-    }
-  }
-};
-
-async function markOperationFailedAndNotify(
-  db,
-  vmrequestid,
-  err,
-  scenarioid,
-  learner_id
-) {
-  const OP_FAILED = "Operation Failed";
-  console.error("Operation failed:", err?.message || err);
-
-  // 1. Send notification & email alert
-  await sendProxmoxDownAlerts(db, learner_id);
-
-  await new NotiTemplate(
-    db,
-    "proxmox_terminate",
-    { userid: 0, scenarioid, learner_id },
-    "Admin",
-    0
-  );
-
-  // 2. Update vm_request
-  await db.sequelize.query(
-    `UPDATE vm_request
-     SET vm_steps = ?, modifiedon = NOW(), failedon = NOW()
-     WHERE vmrequestid = ?`,
-    {
-      replacements: [OP_FAILED, vmrequestid],
-      type: db.sequelize.QueryTypes.UPDATE,
-    }
-  );
-
-  // 3. Insert log
-  await db.sequelize.query(
-    `INSERT INTO vm_request_logs
-      (vmrequestid, scenarioid, requestedby_id, requestedby_role, status, remark, createdon)
-     VALUES (?, ?, ?, 'System', ?, ?, NOW())`,
-    {
-      replacements: [
-        vmrequestid,
-        scenarioid,
-        learner_id,
-        OP_FAILED,
-        "Failed to Stop and destroy the component",
-      ],
-      type: db.sequelize.QueryTypes.INSERT,
-    }
-  );
-}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const getTerminationDelay = async (db) => {
@@ -181,26 +107,12 @@ const stopAndDestroyFailedScenarios =
             stopOK = stopRes?.status === 200;
             if (stopOK) await sleep(await getTerminationDelay(db));
             else allComponentsFixed = false; // failed stop
-            await new NotiTemplate(
-              db,
-              "proxmox_terminate",
-              { userid: 0, scenarioid, learner_id },
-              "Admin",
-              0
-            );
           }
 
           if (status === DESTROYED || stopOK) {
             const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
             destroyOK = destroyRes?.status === 200;
             if (!destroyOK) allComponentsFixed = false; // failed destroy
-            await new NotiTemplate(
-              db,
-              "proxmox_terminate",
-              { userid: 0, scenarioid, learner_id },
-              "Admin",
-              0
-            );
           }
 
           let newStatus;
@@ -211,8 +123,8 @@ const stopAndDestroyFailedScenarios =
 
           await db.sequelize.query(
             `UPDATE vm_config 
-     SET status = ?, modifiedon = NOW() 
-     WHERE vmconfigurationid = ?`,
+            SET status = ?, modifiedon = NOW() 
+            WHERE vmconfigurationid = ?`,
             {
               replacements: [newStatus, vmconfigurationid],
               type: db.sequelize.QueryTypes.UPDATE,
@@ -225,8 +137,8 @@ const stopAndDestroyFailedScenarios =
 
         await db.sequelize.query(
           `UPDATE vm_request 
-   SET vm_steps = ?, modifiedon = NOW() 
-   WHERE vmrequestid = ?`,
+            SET vm_steps = ?, modifiedon = NOW() 
+            WHERE vmrequestid = ?`,
           {
             replacements: [scenarioFinalStatus, vmrequestid],
             type: db.sequelize.QueryTypes.UPDATE,
@@ -254,18 +166,7 @@ const stopAndDestroyFailedEvents =
 
     try {
       // 1️⃣ Get all failed VM requests
-      const vmRequests = await db.sequelize.query(
-        `
-        SELECT
-          vr.vmrequestid,
-          vr.scenarioid,
-          el.eventid,
-          el.learner_id
-        FROM vm_request vr
-        INNER JOIN event_learners el
-          ON el.vmrequestid = vr.vmrequestid
-        WHERE vr.vm_steps = ?
-        `,
+      const vmRequests = await db.sequelize.query( ` SELECT vr.vmrequestid, vr.scenarioid, el.eventid, el.learner_id FROM vm_request vr INNER JOIN event_learners el ON el.vmrequestid = vr.vmrequestid WHERE vr.vm_steps = ? `,
         {
           replacements: [OP_FAILED],
           type: db.sequelize.QueryTypes.SELECT,
@@ -403,31 +304,7 @@ const getOperationFailedLogs =
   ({ db }) =>
   async () => {
     try {
-      const result = await db.sequelize.query(
-        `
-        SELECT
-          vr.vm_steps,
-          DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS started_on,
-          vr.status AS session_status,
-          CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-          s.scenariotitle AS scenario_name,
-          DATE_FORMAT(
-            CASE
-              WHEN vr.status = 'Completed' THEN vr.completedon
-              WHEN vr.status = 'Terminated' THEN vr.terminatedon
-              ELSE vr.failedon
-            END,
-            '%Y-%m-%d %H:%i:%s'
-          ) AS end_date
-        FROM vm_request vr
-        INNER JOIN scenarios s
-          ON s.scenarioid = vr.scenarioid
-        INNER JOIN learners l
-          ON l.learner_id = vr.requestedby_id
-        WHERE vr.vm_steps = 'Operation Failed'
-          AND vr.requestedby_role = 'Learner'
-        ORDER BY vr.startedon DESC
-        `,
+      const result = await db.sequelize.query( ` SELECT vr.vm_steps, DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS started_on, vr.status AS session_status, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, s.scenariotitle AS scenario_name, DATE_FORMAT( CASE WHEN vr.status = 'Completed' THEN vr.completedon WHEN vr.status = 'Terminated' THEN vr.terminatedon ELSE vr.failedon END, '%Y-%m-%d %H:%i:%s' ) AS end_date FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid INNER JOIN learners l ON l.learner_id = vr.requestedby_id WHERE vr.vm_steps = 'Operation Failed' AND vr.requestedby_role = 'Learner' ORDER BY vr.startedon DESC `,
         {
           type: db.sequelize.QueryTypes.SELECT,
         }
@@ -444,33 +321,7 @@ const getEventOperationFailedLogs =
   ({ db }) =>
   async () => {
     try {
-      const result = await db.sequelize.query(
-        `
-        SELECT
-          el.eventlearnerid,
-          vr.vm_steps,
-          DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS started_on,
-          vr.status AS session_status,
-          CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-          e.eventname AS event_name,
-          DATE_FORMAT(
-            CASE
-              WHEN vr.status = 'Completed' THEN vr.completedon
-              WHEN vr.status = 'Terminated' THEN vr.terminatedon
-              ELSE vr.failedon
-            END,
-            '%Y-%m-%d %H:%i:%s'
-          ) AS end_date
-        FROM vm_request vr
-        INNER JOIN event_learners el
-          ON el.vmrequestid = vr.vmrequestid
-        INNER JOIN events e
-          ON e.eventid = el.eventid
-        INNER JOIN learners l
-          ON l.learner_id = el.learner_id
-        WHERE vr.vm_steps = 'Operation Failed'
-        ORDER BY vr.startedon DESC
-        `,
+      const result = await db.sequelize.query( ` SELECT el.eventlearnerid, vr.vm_steps, DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS started_on, vr.status AS session_status, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, e.eventname AS event_name, DATE_FORMAT( CASE WHEN vr.status = 'Completed' THEN vr.completedon WHEN vr.status = 'Terminated' THEN vr.terminatedon ELSE vr.failedon END, '%Y-%m-%d %H:%i:%s' ) AS end_date FROM vm_request vr INNER JOIN event_learners el ON el.vmrequestid = vr.vmrequestid INNER JOIN events e ON e.eventid = el.eventid INNER JOIN learners l ON l.learner_id = el.learner_id WHERE vr.vm_steps = 'Operation Failed' ORDER BY vr.startedon DESC `,
         {
           type: db.sequelize.QueryTypes.SELECT,
         }
@@ -487,26 +338,7 @@ const getSnapshotsByVmid =
   ({ db }) =>
   async (vmid) => {
     try {
-      const rows = await db.sequelize.query(
-        `
-        SELECT 
-            sd.snapshotid,
-            sd.vmid,
-            sd.snapshot_name,
-            sd.snapshot_status,
-            sd.createdon,
-            vc.componentname,
-            vc.componenttype,
-            s.scenariotitle
-        FROM vm_snapshots sd
-        LEFT JOIN vm_config vc 
-            ON sd.vmid = vc.vmid
-        LEFT JOIN scenarios s
-            ON vc.scenarioid = s.scenarioid
-        WHERE sd.vmid = ?
-          AND sd.deletedon IS NULL
-        ORDER BY sd.createdon ASC;
-        `,
+      const rows = await db.sequelize.query( ` SELECT  sd.snapshotid, sd.vmid, sd.snapshot_name, sd.snapshot_status, sd.createdon, vc.componentname, vc.componenttype, s.scenariotitle FROM vm_snapshots sd LEFT JOIN vm_config vc  ON sd.vmid = vc.vmid LEFT JOIN scenarios s ON vc.scenarioid = s.scenarioid WHERE sd.vmid = ? AND sd.deletedon IS NULL ORDER BY sd.createdon ASC; `,
         {
           replacements: [vmid],
           type: db.sequelize.QueryTypes.SELECT,

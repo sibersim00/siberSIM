@@ -303,9 +303,6 @@ const ScenarioForm = (props) => {
   const [userType, setUserType] = useState("");
   const [userId, setUserId] = useState("");
   const [scenarioId, setScenarioId] = useState("");
-  console.log("usertype", getUserDataFromLocal.usertype);
-  console.log("scenarioId", scenarioId);
-
   useEffect(() => {
     if (
       getUserDataFromLocal &&
@@ -341,7 +338,6 @@ const ScenarioForm = (props) => {
       formValidation.setFieldValue("instructor_id", selectedInstructor);
     }
   }, [hasgetInstructorListSucc]);
-  console.log("saveScenariosData", saveScenariosData);
   useEffect(() => {
     if (saveScenariosData?.statusCode === 200) {
       toast.success(
@@ -517,6 +513,22 @@ const ScenarioForm = (props) => {
     };
     dispatch(getScenarioSubCategorybyId(payload));
   };
+const memoizedFetchFiles = React.useMemo(() => {
+  if (!formValidation.values.image_url) return [];
+
+  return ismulti
+    ? formValidation.values.image_url.split(",")
+    : [formValidation.values.image_url];
+}, [formValidation.values.image_url, ismulti]);
+
+
+const memoizedFetchimageFiles = React.useMemo(() => {
+  if (!formValidation.values.scenarioimage) return [];
+
+  return ismulti
+    ? formValidation.values.scenarioimage.split(",")
+    : [formValidation.values.scenarioimage];
+}, [formValidation.values.scenarioimage, ismulti]);
 
   return (
     <>
@@ -1046,17 +1058,18 @@ const ScenarioForm = (props) => {
                                                         handleUpload={
                                                           handleUpload
                                                         }
-                                                        fetchfiles={
-                                                          ismulti
-                                                            ? formValidation.values.image_url.split(
-                                                                ","
-                                                              )
-                                                            : [
-                                                                formValidation
-                                                                  .values
-                                                                  .image_url,
-                                                              ]
-                                                        }
+                                                        // fetchfiles={
+                                                        //   ismulti
+                                                        //     ? formValidation.values.image_url.split(
+                                                        //         ","
+                                                        //       )
+                                                        //     : [
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .image_url,
+                                                        //       ]
+                                                        // }
+                                                        fetchfiles={memoizedFetchFiles}
                                                       />
 
                                                       {formValidation.errors
@@ -1134,20 +1147,22 @@ const ScenarioForm = (props) => {
                                                         handleUpload={
                                                           handleUpload
                                                         }
-                                                        fetchfiles={
-                                                          ismulti
-                                                            ? (
-                                                                formValidation
-                                                                  .values
-                                                                  .scenarioimage ||
-                                                                ""
-                                                              ).split(",")
-                                                            : [
-                                                                formValidation
-                                                                  .values
-                                                                  .scenarioimage,
-                                                              ]
-                                                        }
+                                                        // fetchfiles={
+                                                        //   ismulti
+                                                        //     ? (
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .scenarioimage ||
+                                                        //         ""
+                                                        //       ).split(",")
+                                                        //     : [
+                                                        //         formValidation
+                                                        //           .values
+                                                        //           .scenarioimage,
+                                                        //       ]
+                                                        // }
+                                                        fetchfiles={memoizedFetchimageFiles}
+
                                                       />
                                                     </div>
 
@@ -1252,8 +1267,6 @@ const ScenarioForm = (props) => {
                           </Row>
                         </Tab.Pane>
                       )}
-                      {console.log(scenarioId, "tabIndex", tabIndex)}
-
                       {tabIndex === "tab2" &&
                         scenarioId !== undefined &&
                         scenarioId !== "" && (

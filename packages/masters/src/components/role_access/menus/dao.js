@@ -106,7 +106,7 @@ const remove = ({ db }) => async (id) => {
 
 const status = ({ db }) => async (id, body, loginId) => {
     const status = body.status == 'true' ? 'Active' : 'Inactive';
-    let [res] = await db.sequelize.query(`UPDATE ad_menus set status = '${status}',modifiedby = now(), modifiedby = '${loginId}' where menuid=:_id`, {
+    let [res] = await db.sequelize.query(`UPDATE ad_menus set status = '${status}', modifiedby = '${loginId}' where menuid=:_id`, {
         replacements: {
             _id: id
         }

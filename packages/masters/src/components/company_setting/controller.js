@@ -13,32 +13,6 @@ const exportMasters = ({ dao }) => async (req, res) => {
   }
 };
 
-// const exportMasters = ({ dao }) => async (req, res) => {
-//   try {
-//     const filePath = await dao.exportMasters();
-
-//     res.download(filePath, (err) => {
-//       if (err) {
-//         console.error("Download error:", err);
-//         return res.status(500).send("Error exporting file");
-//       }
-
-//       //  Delete file after download response is sent
-//       fs.unlink(filePath, (unlinkErr) => {
-//         if (unlinkErr) {
-//           console.error("Error deleting exported file:", unlinkErr);
-//         } else {
-//           console.log(`Deleted file: ${filePath}`);
-//         }
-//       });
-//     });
-//   } catch (err) {
-//     console.error("Error exporting data:", err);
-//     res.status(500).json({ message: "Error exporting data", error: err.message });
-//   }
-// };
-
-
 // -------- IMPORT --------
 const importMasters = ({ dao, keys }) => async (req, res) => {
   try {

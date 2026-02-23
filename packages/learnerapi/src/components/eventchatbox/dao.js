@@ -5,30 +5,14 @@ const getMessagesByEvent = ({ db }) =>
       throw new Error("Missing eventlearnerid");
     }
 
-    const result = await db.sequelize.query(
-      `SELECT *, CASE
-         WHEN DATE(createdon) = CURDATE() THEN 
-              CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p'))
-         WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN 
-              CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p'))
-         ELSE 
-             DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')
-       END AS formatted_time 
-       FROM event_learner_chats
-       WHERE eventlearnerid = ? 
-       ORDER BY createdon ASC`,
+    const result = await db.sequelize.query( `SELECT *, CASE  WHEN DATE(createdon) = CURDATE() THEN   CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p'))  WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN   CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p'))  ELSE   DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')  END AS formatted_time   FROM event_learner_chats WHERE eventlearnerid = ?  ORDER BY createdon ASC`,
       {
         replacements: [eventlearnerid],
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
 
-    await db.sequelize.query(
-      `UPDATE event_learner_chats
-       SET status = 'seen'
-       WHERE eventlearnerid = ?
-         AND sender_type IN ('Admin', 'Instructor')
-         AND status = 'sent';`,
+    await db.sequelize.query( `UPDATE event_learner_chats SET status = 'seen' WHERE eventlearnerid = ? AND sender_type IN ('Admin', 'Instructor') AND status = 'sent';`,
       {
         replacements: [eventlearnerid],
         type: db.sequelize.QueryTypes.UPDATE,
@@ -45,37 +29,19 @@ const refreshByEvent = ({ db }) =>
       throw new Error("Missing eventlearnerid or chat id");
     }
 
-    const result = await db.sequelize.query(
-      `SELECT *, CASE
-         WHEN DATE(createdon) = CURDATE() THEN 
-              CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p'))
-         WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN 
-              CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p'))
-         ELSE 
-             DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')
-       END AS formatted_time 
-       FROM event_learner_chats
-       WHERE eventlearnerid = ? 
-         AND eventlearnerchatid > ?
-       ORDER BY createdon ASC`,
+    const result = await db.sequelize.query( `SELECT *, CASE  WHEN DATE(createdon) = CURDATE() THEN   CONCAT('Today at ', DATE_FORMAT(createdon, '%l:%i %p'))  WHEN DATE(createdon) = CURDATE() - INTERVAL 1 DAY THEN   CONCAT('Yesterday at ', DATE_FORMAT(createdon, '%l:%i %p'))  ELSE   DATE_FORMAT(createdon, '%b %e, %Y %l:%i %p')  END AS formatted_time   FROM event_learner_chats  WHERE eventlearnerid = ?   AND eventlearnerchatid > ?  ORDER BY createdon ASC`,
       {
         replacements: [eventlearnerid, eventlearnerchatid],
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
 
-    await db.sequelize.query(
-      `UPDATE event_learner_chats
-       SET status = 'seen'
-       WHERE eventlearnerid = ?
-         AND sender_type IN ('Admin', 'Instructor')
-         AND status = 'sent';`,
+    await db.sequelize.query( `UPDATE event_learner_chats  SET status = 'seen'  WHERE eventlearnerid = ?  AND sender_type IN ('Admin', 'Instructor')  AND status = 'sent';`,
       {
         replacements: [eventlearnerid],
         type: db.sequelize.QueryTypes.UPDATE,
       }
     );
-
     return result;
   };
 
@@ -91,10 +57,7 @@ const sendMessage = ({ db }) => async (body) => {
     attachment = null,
   } = body;
 
-  await db.sequelize.query(
-    `INSERT INTO event_learner_chats
-      (eventlearnerid, eventid, learner_id, instructor_id, sender_type, message, attachment, status, createdon)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
+  await db.sequelize.query( `INSERT INTO event_learner_chats (eventlearnerid, eventid, learner_id, instructor_id, sender_type, message, attachment, status, createdon) VALUES (?, ?, ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
     {
       replacements: [
         eventlearnerid,

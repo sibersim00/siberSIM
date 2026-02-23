@@ -736,17 +736,6 @@ const Instructors = () => {
                         Inactive
                       </CustomToggleButton>
                     </ToggleButtonGroup>
-                    &nbsp;&nbsp;
-                    {/* <Button
-                      type="button"
-                      variant="outline-warning"
-                      onClick={() => {
-                        setShowListImport(true);
-                        handleImportModal();
-                      }}
-                    >
-                      <i className="fa fa-file-excel-o"></i> Import
-                    </Button> */}
                     &nbsp;
                     <Button
                       type="button"

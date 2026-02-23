@@ -6,7 +6,6 @@ import { useRouter } from "next/router";
 const createScenario = (props) => {
   const { scenarioId,setScenarioId, setTabIndex, setView, setRowValues} = props;
     const { query, push } = useRouter();
-    const scenario_id = query && query.scenario; 
     const [selectedScenario, setSelectedScenario] = useState(null);
 
     const [numLans, setNumLans] = useState(1); // Default value 1
@@ -18,8 +17,6 @@ const createScenario = (props) => {
                         <Card.Body>
                                 <Flowchart numLans={numLans}  
                                 setNumLans={setNumLans}
-                                //  toBeDragComponent={toBeDragComponent} 
-                                //  selectedComponent={selectedComponent}
                                   scenarioId={scenarioId}
                                    setScenarioId={setScenarioId}
                                     setTabIndex={setTabIndex}

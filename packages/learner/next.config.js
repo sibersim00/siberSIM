@@ -69,6 +69,7 @@ const nextConfig = withTM({
       { source: '/customscenarios', destination: '/components/customscenarios' },
       { source: '/pausescenarios', destination: '/components/pausescenarios' },
       { source: '/scenarios_view/:slug*', destination: '/components/scenarios/view/:slug*' },
+      { source: "/scenarios_edit/:slug*",destination: "/components/scenarios/edit/:slug*",},
       { source: "/custom_scenarios_view/:slug*", destination: "/components/customscenarios/view/:slug*", },
       { source: '/users-verification/:slug*', destination: '/components/normalusers/:slug*' },
       { source: '/scenario_quiz/:slug*', destination: '/components/scenarios/quiz/:slug*' },

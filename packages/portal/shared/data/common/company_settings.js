@@ -58,6 +58,7 @@ const CompanySettingsCommon = ({ isSL }) => {
   const [isDefaultFavicon, setIsDefaultFavicon] = useState(false);
   const [otp_verification, setisotp_verification] = useState(false);
   const [component_approval, setiscomponent_approval] = useState(true);
+  const [scenario_approval, setisscenario_approval] = useState(true);
   const [isDefaultPanel, setIsDefaultPanel] = useState(false);
   const [isDefaultWeb, setIsDefaultWeb] = useState(false);
   const [showListImort, setShowListImport] = useState(true);
@@ -124,6 +125,10 @@ const CompanySettingsCommon = ({ isSL }) => {
       );
       setiscomponent_approval(
         cmpSettingData?.component_approval == "true" ? true : false
+        // -----
+      );
+      setisscenario_approval(
+        cmpSettingData?.scenario_approval == "true" ? true : false
         // -----
       );
     }
@@ -296,6 +301,9 @@ const CompanySettingsCommon = ({ isSL }) => {
       component_approval: cmpSettingData?.component_approval
         ? cmpSettingData?.component_approval
         : "",
+      scenario_approval: cmpSettingData?.scenario_approval
+        ? cmpSettingData?.scenario_approval
+        : "",
       // -----
       max_questions: cmpSettingData?.max_questions
         ? cmpSettingData?.max_questions
@@ -329,6 +337,9 @@ const CompanySettingsCommon = ({ isSL }) => {
       pause_limit: cmpSettingData?.pause_limit
         ? cmpSettingData?.pause_limit
         : "",
+      max_ports: cmpSettingData?.max_ports
+        ? cmpSettingData?.max_ports
+        : "",
       address: cmpSettingData?.address ? cmpSettingData?.address : "",
       favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
       admin_panel_logo: cmpSettingData?.admin_panel_logo
@@ -346,11 +357,18 @@ const CompanySettingsCommon = ({ isSL }) => {
       system_name: yup.string().required(error?.required),
       system_footer: yup.string().required(error?.required),
 
-      pause_limit: yup
+      pause_limit: yup 
         .number()
         .typeError("Pause limit must be a number")
         .integer("Pause limit must be an integer")
         .min(2, "Pause limit must be greater than or equal to 2")
+        .required(error?.required),
+      max_ports: yup
+        .number()
+        .typeError("Pause limit must be a number")  
+        .integer("Pause limit must be an integer")
+        .max(16, "Maximum port limit should not exceed 16")
+        .min(1, "Minimum port limit should be 1")
         .required(error?.required),
     }),
 
@@ -379,10 +397,12 @@ const CompanySettingsCommon = ({ isSL }) => {
         cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
         hibernate_delay: data?.hibernate_delay ? data?.hibernate_delay : "",
         pause_limit: data?.pause_limit ? data?.pause_limit : "",
+        max_ports: data?.max_ports ? data?.max_ports : "",
         address: data?.address ? data?.address : "",
 
         otp_verification: data?.otp_verification.toString(),
         component_approval: data?.component_approval.toString(),
+        scenario_approval: data?.scenario_approval.toString(),
         // -----
         favicon: isDefaultFavicon ? "" : data?.favicon || "",
         admin_panel_logo: isDefaultPanel ? "" : data?.admin_panel_logo || "",
@@ -486,10 +506,10 @@ const CompanySettingsCommon = ({ isSL }) => {
                   <div
                     className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
                     style={{
-                      top: "-20px",
+                      top: "-15px",
                       left: "20px",
                       borderRadius: "20px",
-                      fontSize: "18px",
+                      fontSize: "14px",
                       letterSpacing: "0.5px",
                     }}
                   >
@@ -652,6 +672,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.system_footer}
                         </Form.Control.Feedback>
                       </Form.Group>
+                     
 
                       {/* Quiz / Website */}
                       <Form.Group
@@ -827,6 +848,67 @@ const CompanySettingsCommon = ({ isSL }) => {
                           </OverlayTrigger>
                         </div>
                       </Form.Group>
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlId="validationFormikOtp"
+                        className="my-4"
+                      >
+                        <div className="d-flex gap-2 align-items-center">
+                          <Form.Label className="mb-0">
+                            Auto Approval for a Master Scenario
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Auto Approval for a Master Scenario
+                              </Tooltip>
+                            }
+                          >
+                            <label className="custom-switch mb-0">
+                              <input
+                                type="checkbox"
+                                className="custom-switch-input"
+                                checked={scenario_approval}
+                                onChange={(e) => {
+                                  setisscenario_approval(!scenario_approval);
+                                  formValidation.setFieldValue(
+                                    "scenario_approval",
+                                    e.target.checked
+                                  );
+                                }}
+                              />
+                              <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                            </label>
+                          </OverlayTrigger>
+                        </div>
+                      </Form.Group>
+                       <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <Form.Label>
+                          Maximum Ports <span className="text-danger">*</span>
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="max_ports"
+                          autoComplete="off"
+                          placeholder="Enter system footer"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.max_ports}
+                          isInvalid={
+                            formValidation.touched.max_ports &&
+                            formValidation.errors.max_ports
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.max_ports}
+                        </Form.Control.Feedback>
+                      </Form.Group>
 
                       <Form.Group
                         as={Col}
@@ -944,10 +1026,10 @@ const CompanySettingsCommon = ({ isSL }) => {
                   <div
                     className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
                     style={{
-                      top: "-20px",
+                      top: "-15px",
                       left: "20px",
                       borderRadius: "20px",
-                      fontSize: "18px",
+                      fontSize: "14px",
                       letterSpacing: "0.5px",
                     }}
                   >
@@ -1130,10 +1212,10 @@ const CompanySettingsCommon = ({ isSL }) => {
                   <div
                     className="position-absolute px-3 py-1 bg-white fw-semibold text-primary"
                     style={{
-                      top: "-20px",
+                      top: "-15px",
                       left: "20px",
                       borderRadius: "20px",
-                      fontSize: "18px",
+                      fontSize: "14px",
                       letterSpacing: "0.5px",
                     }}
                   >
@@ -1362,6 +1444,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                     </Row>
                   </Card.Body>
                 </Card>
+                
                 <Row>
                   <Col className="d-flex justify-content-end mt-3">
                     {oneClick ? (

@@ -40,8 +40,6 @@ const sendMessage = ({ dao, db }) => async (req, res) => {
     body.learner_id = req.learneruser.learner_id; // Instructor user id
     body.instructor_id = req.learneruser.instructor_id;
     body.sender_type = req.learneruser.type;
-    console.log("++++++++++++++++++++++++++++++++++++++++++++",req.learneruser)
-    console.log("+++++++++++++++++++++++++", body)
     const result = await dao.sendMessage({ db })(body);
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,

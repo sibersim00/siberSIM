@@ -104,8 +104,6 @@ const Adminuser = () => {
         title: { display: true, text: "SIMMaster Login/Logout Stats" },
       },
     };
-
-    // return <Bar options={options} data={chartData} />;
     return (
       <div style={{ height: "450px" }}>
         <Bar
@@ -130,7 +128,7 @@ const Adminuser = () => {
         setSelectedDate(new Date(Date.now() - 86400000).toISOString().split("T")[0]);
         break;
       case "mtd":
-        setSelectedDate(""); // Optional, if you want to reset date picker
+        setSelectedDate("");
         break;
       case "ytd":
         setSelectedDate("");
@@ -362,47 +360,6 @@ const Adminuser = () => {
                       <i className="fe fe-list"></i>
                     </Button>
 
-                    {/* Filter Buttons */}
-                    {/* <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("yesterday")}
-                    >
-                      Yesterday
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("mtd")}
-                    >
-                      MTD
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("ytd")}
-                    >
-                      YTD
-                    </Button>
-                    <Button
-                      variant="dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("custom")}
-                    >
-                      Custom
-                    </Button> */}
-
-                    {/* Date Picker */}
-                    {/* <div className="mx-1">
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                      />
-                    </div> */}
-
-                    {/* Search Box */}
                     <div className="mx-1">
                       <input
                         className="form-control bd bd-2"

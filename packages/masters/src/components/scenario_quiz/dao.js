@@ -151,14 +151,7 @@ const scenarioQuestionSave =
         if (existingQuestion) {
           // Update existing question
           const updateQuery = `
-            UPDATE scenario_questions
-            SET modifiedon = CURRENT_TIMESTAMP,
-                scenarioid = ?,         
-                question_type = ?,
-                question_text = ?,
-                modifiedby = ?
-            WHERE scenarioquestionid = ?
-          `;
+          UPDATE scenario_questions   SET modifiedon = CURRENT_TIMESTAMP,   scenarioid = ?,            question_type = ?,   question_text = ?,   modifiedby = ?   WHERE scenarioquestionid = ?   `;
           const replacements = [
             body.scenarioid,
             body.question_type,

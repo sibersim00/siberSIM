@@ -17,8 +17,6 @@ const theme =
     }
   };
 
-
-
   const componentcategorylist = ({ dao, db }) => async (req, res, next) => {
     try {
       const result = await dao.componentcategorylist({ db })();
@@ -26,7 +24,7 @@ const theme =
     }
     catch (err) { next(err) }
   }
-  
+
   const componentsubcategorylist = ({ dao, db, validation }) => async (req, res, next) => {
     try {
       const body = req.body;

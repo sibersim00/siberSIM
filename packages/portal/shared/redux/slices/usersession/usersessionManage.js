@@ -24,6 +24,18 @@ const initialState = {
   getvmRestartScenario: [],
   getLogsData: [],
   hasdeletescenarioSuccData: [],
+  addNetwork: [],
+  modifyNetwork: [],
+  deleteNetwork: [],
+  saveDraggedComponentData: [],
+  deleteDraggedComponentData: [],
+  modifyNetworkIdData: [],
+  plugNetworkPort: [],
+  unplugNetworkPort: [],
+  connectNetworkPort: [],
+  disconnectNetworkPort: [],
+  modifyEditStatus: [],
+  changeReleaseEditLock: [],
 };
 
 const slice = createSlice({
@@ -86,6 +98,55 @@ const slice = createSlice({
       (state.isLoading = false), (state.getLogsData = action.payload);
     },
 
+    hasGetAddNetworkSucc(state, action) {
+      state.isLoading = false,
+        state.addNetwork = action.payload;
+    },
+    hasGetModifyNetworkSucc(state, action) {
+      state.isLoading = false,
+        state.modifyNetwork = action.payload;
+    },
+    hasGetDeleteNetworkSucc(state, action) {
+      state.isLoading = false,
+        state.deleteNetwork = action.payload;
+    },
+    saveDroppedComponentSuccess(state, action) {
+      state.isLoading = false;
+      state.saveDraggedComponentData = action.payload;
+    },
+    deleteDroppedComponentSuccess(state, action) {
+      state.isLoading = false;
+      state.deleteDraggedComponentData = action.payload;
+    },
+    modifyNetworkIdSuccess(state, action) {
+      state.isLoading = false;
+      state.modifyNetworkIdData = action.payload;
+    },
+    plugNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.plugNetworkPort = action.payload;
+    },
+    unplugNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.unplugNetworkPort = action.payload;
+    },
+    connectNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.connectNetworkPort = action.payload;
+    },
+    disconnectNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.disconnectNetworkPort = action.payload;
+    },
+    hasmodifyEditStatus(state, action) {
+      state.isLoading = false;
+      state.modifyEditStatus = action.payload;
+    },
+    haschangeReleaseEditLock(state, action) {
+      state.isLoading = false;
+      state.changeReleaseEditLock = action.payload;
+    },
+
     //HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -125,14 +186,14 @@ export function clearGetChatMessages() {
 }
 
 export function getSingleUserSession(id) {
-  console.log("idididididididididididididididididididid",id);
-  
+  console.log("idididididididididididididididididididid", id);
+
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.usersession_getbyId}/${id}`);
-      console.log("responseresponserespocccccccccccnseresponse",response);
-      
+      console.log("responseresponserespocccccccccccnseresponse", response);
+
       dispatch(slice.actions.hasGetSingleUserSessionSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -418,17 +479,6 @@ export function clearvmRestartScenario() {
   };
 }
 
-export function clearHasError() {
-  return async () => {
-    dispatch(slice.actions.startLoading());
-    try {
-      dispatch(slice.actions.hasError([]));
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-}
-
 export function handleManageView(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
@@ -478,6 +528,327 @@ export function clearGetSnapshot() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetSnapshot([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+///----------manipulation slice----------
+// export function addNetworkPort(payload) {
+//   console.log("-----------------------------------------")
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+//     try {
+//       const response = await axios.post(`${api.add_network}`, payload);
+//       dispatch(slice.actions.hasGetAddNetworkSucc(response.data));
+
+//       console.log("response", response)
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+export function addNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.add_network}`, payload);
+
+      dispatch(slice.actions.hasGetAddNetworkSucc(response.data));
+
+      return response.data; // <-- VERY IMPORTANT (so component can read result)
+
+    } catch (error) {
+
+      // extract safe message
+      const message =
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.message ||
+        "Failed to add network";
+
+      dispatch(slice.actions.hasError(message)); // store string only
+
+      return { statusCode: 500, message }; // return safe object
+    }
+  };
+}
+
+export function clearSaveNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetAddNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function modifyNetworkPort(payload) {
+  console.log("-----------------------------------------")
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.modify_network}`, payload);
+      dispatch(slice.actions.hasGetModifyNetworkSucc(response.data));
+
+      console.log("response", response)
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearModifyNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetModifyNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deleteNetworkPort(payload) {
+  console.log("-----------------------------------------")
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_network}`, payload);
+      dispatch(slice.actions.hasGetDeleteNetworkSucc(response.data));
+
+      console.log("response", response)
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearDeleteNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetDeleteNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function saveDraggedComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.save_dropped_component, payload);
+      dispatch(slice.actions.saveDroppedComponentSuccess(response.data));
+      // return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDraggedComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.saveDroppedComponentSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deleteDraggedComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.delete_dropped_component, payload);
+      dispatch(slice.actions.deleteDroppedComponentSuccess(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDeleteDraggedComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.deleteDroppedComponentSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function modifyNetworkId(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.modify_networkId, payload);
+      dispatch(slice.actions.modifyNetworkIdSuccess(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearModifyNetworkId() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.modifyNetworkIdSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function plugNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.plug_networPort, payload);
+      console.log("rrrrrrrrrrrrrrrrrrrrrr", response)
+      dispatch(slice.actions.plugNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearPlugNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.plugNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function unplugNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.unplug_networkPort, payload);
+      dispatch(slice.actions.unplugNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearUnplugNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.unplugNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function connectNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.connect_networkPort, payload);
+      dispatch(slice.actions.connectNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearConnectNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.connectNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function disconnectNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.disconnect_networkPort, payload);
+      dispatch(slice.actions.disconnectNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDisconnectNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.disconnectNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function changeEditStatus(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.change_edit_status, payload);
+      dispatch(slice.actions.hasmodifyEditStatus(response.data));
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 409) {
+        const msg =
+          error.response?.data?.message || "Someone is already editing";
+        return Promise.reject("LOCKED");
+      }
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearchangeEditStatus() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasmodifyEditStatus([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function changeReleaseEditLock(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.release_edit_lock, payload);
+      dispatch(slice.actions.haschangeReleaseEditLock(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearchangeReleaseEditLock() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.haschangeReleaseEditLock([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearHasError() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasError([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

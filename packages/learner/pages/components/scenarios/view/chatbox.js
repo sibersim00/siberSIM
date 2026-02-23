@@ -6,7 +6,7 @@ import {
   saveChatMessage,
   getRefreshMessage,
 } from "../../../../shared/redux/slices/chatbox/chatboxManage";
-const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues ,learner_id}) => {
+const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }) => {
   const dispatch = useDispatch();
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
@@ -36,14 +36,16 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues ,learner_id})
 
     return () => observer.disconnect();
   }, []);
-console.log("showChatshowChatshowChat",showChat);
+  console.log("rowValuesrowValues", rowValues.scenarioid);
 
   useEffect(() => {
-    if (showChat && rowValues?.learner_id || rowValues?.scenarioid ) {
+    let scenarioId = rowValues?.scenarioid;
+    console.log("scenarioIdscenarioId", scenarioId)
+    if (showChat && rowValues?.learner_id || rowValues?.scenarioid) {
       dispatch(
         getChatMessages({
           learner_id: learner_id,
-        scenarioid: rowValues.scenarioid,
+          scenarioid: scenarioId,
         })
       );
     }
@@ -54,8 +56,6 @@ console.log("showChatshowChatshowChat",showChat);
       Array.isArray(getChatMessagesListData) ? getChatMessagesListData : []
     );
   }, [getChatMessagesListData]);
-console.log("getChatMessagesListDatagetChatMessagesListData",getChatMessagesListData);
-
   useEffect(() => {
     if (getRefreshMsg && getRefreshMsg.length > 0) {
       let oldChat = chatMessages;
@@ -110,8 +110,8 @@ console.log("getChatMessagesListDatagetChatMessagesListData",getChatMessagesList
   const handleRefresh = () => {
     if (chatMessages?.length) {
       const lastchatobject = chatMessages[chatMessages.length - 1];
-      console.log("lastchatobjectlastchatobject",lastchatobject);
-      
+      console.log("lastchatobjectlastchatobject", lastchatobject);
+
       const payload = {
         learner_id: lastchatobject.learner_id,
         scenarioid: lastchatobject.scenarioid,
@@ -296,8 +296,8 @@ console.log("getChatMessagesListDatagetChatMessagesListData",getChatMessagesList
                             ? "#37474f"
                             : "#e0f7fa"
                           : isDarkMode
-                          ? "#1565c0"
-                          : "#007bff",
+                            ? "#1565c0"
+                            : "#007bff",
                         color: isSender
                           ? isDarkMode
                             ? "#fff"

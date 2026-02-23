@@ -4,99 +4,105 @@ import {
   Background,
   Handle,
   Position,
-  useReactFlow
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import EditableEdge from '../../../../shared/data/scenarios/EditableEdge';
-import { useDispatch,  } from "react-redux";
-import { qemuconfig ,vmStartScenario } from "../../../../shared/redux/slices/scenarios/scenarios";
+  useReactFlow,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { toast, ToastContainer } from "react-toastify";
+import { useRouter } from "next/router";
+import EditableEdge from "../../../../shared/data/scenarios/EditableEdge";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  qemuconfig,
+  vmStartScenario,
+  changeEditStatus,
+  
+} from "../../../../shared/redux/slices/scenarios/scenarios";
 const resolveImageUrl = (url) => {
-  if (!url) return '';
-  const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+  if (!url) return "";
+  const isAbsolute = url.startsWith("http://") || url.startsWith("https://");
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible, scenarioStatus }) => {
-  const networkPorts = data.networkport || [];
-  const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
+const ImageNode = ({
+  id,
+  data,
+  isConnectable,
+  deleteNode,
+  isTimerVisible,
+  scenarioStatus,
+}) => {
+  // const networkPorts = data.networkport || [];
+  // const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
+  let portKeys = [];
+  if (Array.isArray(data.networkport)) {
+    portKeys = data.networkport
+      .flatMap((obj) =>
+        Object.entries(obj).map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key, // net0 / net1
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        }),
+      )
+      .sort((a, b) => a.key.localeCompare(b.key));
+  } else if (
+    typeof data.networkport === "object" &&
+    data.networkport !== null
+  ) {
+    portKeys = Object.entries(data.networkport)
+      .map(([key, value]) => {
+        const tagMatch = value.match(/tag=(\d+)/);
+        return {
+          key,
+          label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+        };
+      })
+      .sort((a, b) => a.key.localeCompare(b.key));
+  } else {
+    portKeys = [];
+  }
   const totalPorts = portKeys.length;
-  const sides = ['Right', 'Bottom', 'Left', 'Top'];
+  const sides = ["Right", "Bottom", "Left", "Top"];
   const portsPerSide = Math.ceil(totalPorts / 4);
   const spacingRatio = 100 / (portsPerSide + 1);
   const baseSize = 90;
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  const handleClick = (dataobj) => {
+    if (scenarioStatus === "Pause") return;
+    if (!isTimerVisible) return;
 
+    const vmid = dataobj?.vmid;
+    const vmType = dataobj?.vmType;
 
+    if (!vmid || !vmType) return;
 
-  // const handleClick = (dataobj) => {
-  //   if (scenarioStatus === "Pause") return;
-  //   if (!isTimerVisible) return;
-  //   const vmid = dataobj?.vmid;
-  //   const vmType = dataobj?.vmType;
-  //   console.log("vmidvmType", vmid, vmType)
-  //   if (!vmid || !vmType) return;
-  //   if (vmid && vmType) {
-  //     const payload = {
-  //       vmid: Number(vmid),
-  //       vmType,
-  //     };
-  //     const res = dispatch(qemuconfig(payload));
-  //     console.log("res",res)
-  //   }
+    const payload = {
+      vmid: Number(vmid),
+      vmType,
+    };
 
-  //   const rawLabel = dataobj?.label || "";
-  //   const namePart = rawLabel.split("-")[1]?.trim() || "";
-  //   const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
-  //   window.open(
-  //     `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
-  //     "_blank"
-  //   );
-  // };
+    // dispatch(qemuconfig(payload)).then((res) => {
+      // const res = action?.payload;
+      const rawLabel = dataobj?.label || "";
+      const namePart = rawLabel.split("-")[1]?.trim() || "";
+      const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
 
-const handleClick = (dataobj) => {
-  if (scenarioStatus === "Pause") return;
-  if (!isTimerVisible) return;
-
-  const vmid = dataobj?.vmid;
-  const vmType = dataobj?.vmType;
-
-  if (!vmid || !vmType) return;
-
-  const payload = {
-    vmid: Number(vmid),
-    vmType,
+      window.open(
+        `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+        "_blank",
+      );
+    // });
   };
-
-  dispatch(qemuconfig(payload)).then((res) => {
-    // const res = action?.payload;
-
-    console.log("qemuconfig response", res);
-
-    // if (res?.mustStopVM === true) {
-    //   dispatch(vmStartScenario({ vmid, vmType }));
-    // }
-
-    const rawLabel = dataobj?.label || "";
-    const namePart = rawLabel.split("-")[1]?.trim() || "";
-    const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
-
-    window.open(
-      `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
-      "_blank"
-    );
-  });
-};
-
-
 
   return (
     <div
       style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
       }}
       onClick={() => handleClick(data)}
     >
@@ -104,14 +110,14 @@ const handleClick = (dataobj) => {
         style={{
           width: nodeSize,
           height: nodeSize,
-          position: 'relative',
-          borderRadius: '8px',
-          border: '2px solid #ccc',
+          position: "relative",
+          borderRadius: "8px",
+          border: "2px solid #ccc",
           // background: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
         }}
       >
         <div
@@ -119,40 +125,40 @@ const handleClick = (dataobj) => {
             width: nodeSize * 0.6,
             height: nodeSize * 0.6,
             backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
+            backgroundSize: "contain",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }}
         />
 
-        {portKeys.map((portKey, index) => {
+        {portKeys.map((port, index) => {
           const sideIndex = Math.floor(index / portsPerSide);
           const side = sides[sideIndex];
           const positionIndex = index % portsPerSide;
           let offsetPercent;
 
-          if (side === 'Right' || side === 'Top') {
+          if (side === "Right" || side === "Top") {
             offsetPercent = (positionIndex + 1) * spacingRatio;
           } else {
             offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
           }
 
           const baseHandleStyle = {
-            position: 'absolute',
+            position: "absolute",
             width: 10,
             height: 10,
-            borderRadius: '50%',
-            background: '#005eff',
-            border: '1px solid white',
+            borderRadius: "50%",
+            background: "#005eff",
+            border: "1px solid white",
             zIndex: 2,
           };
 
           const labelStyle = {
-            position: 'absolute',
+            position: "absolute",
             fontSize: 6,
             // background: '#fff',
-            padding: '1px 3px',
-            whiteSpace: 'nowrap',
+            padding: "1px 3px",
+            whiteSpace: "nowrap",
             zIndex: 5,
           };
 
@@ -160,43 +166,83 @@ const handleClick = (dataobj) => {
           let labelPosition = {};
 
           switch (side) {
-            case 'Top':
-              handleStyle = { ...baseHandleStyle, top: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
-              labelPosition = { ...labelStyle, top: -20, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
+            case "Top":
+              handleStyle = {
+                ...baseHandleStyle,
+                top: -5,
+                left: `${offsetPercent}%`,
+                transform: "translateX(-50%)",
+              };
+              labelPosition = {
+                ...labelStyle,
+                top: -20,
+                left: `${offsetPercent}%`,
+                transform: "translateX(-50%)",
+              };
               break;
-            case 'Right':
-              handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -60, top: `60%`, transform: 'translateY(-50%)' };
+            case "Right":
+              handleStyle = {
+                ...baseHandleStyle,
+                right: -5,
+                top: `${offsetPercent}%`,
+                transform: "translateY(-50%)",
+              };
+              labelPosition = {
+                ...labelStyle,
+                right: -60,
+                top: `${offsetPercent}%`,
+                transform: "translateY(-10%)",
+              };
               break;
-            case 'Bottom':
-              handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
-              labelPosition = { ...labelStyle, bottom: -20, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
+            case "Bottom":
+              handleStyle = {
+                ...baseHandleStyle,
+                bottom: -5,
+                left: `${offsetPercent}%`,
+                transform: "translateX(-50%)",
+              };
+              labelPosition = {
+                ...labelStyle,
+                bottom: -20,
+                left: `${offsetPercent}%`,
+                transform: "translateX(-50%)",
+              };
               break;
-            case 'Left':
-              handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -60, top: `60%`, transform: 'translateY(-50%)' };
+            case "Left":
+              handleStyle = {
+                ...baseHandleStyle,
+                left: -5,
+                top: `${offsetPercent}%`,
+                transform: "translateY(-50%)",
+              };
+              labelPosition = {
+                ...labelStyle,
+                left: -60,
+                top: `${offsetPercent}%`,
+                transform: "translateY(-10%)",
+              };
               break;
             default:
               break;
           }
 
           return (
-            <React.Fragment key={portKey}>
+            <React.Fragment key={port.key}>
               <Handle
                 type="source"
                 position={Position[side]}
-                id={`${portKey}-source`}
+                id={`${port.key}-source`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
               <Handle
                 type="target"
                 position={Position[side]}
-                id={`${portKey}-target`}
+                id={`${port.key}-target`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
-              <div style={labelPosition}>{portKey}</div>
+              <div style={labelPosition}>{port.label}</div>
             </React.Fragment>
           );
         })}
@@ -206,31 +252,35 @@ const handleClick = (dataobj) => {
         style={{
           marginTop: 18,
           fontSize: 10,
-          textAlign: 'center',
-          width: '100%',
+          textAlign: "center",
+          width: "100%",
           zIndex: 10,
-          position: 'relative',
+          position: "relative",
           // background: '#fff',
-          padding: '0 1px',
+          padding: "0 1px",
         }}
       >
-        {data.label || 'Unnamed'}
+        {data.label || "Unnamed"}
 
-        {data.isOnline === 'Yes' && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 8,
-            color: 'green',
-          }}>
-            <div style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              backgroundColor: 'green',
-              marginRight: 4,
-            }} />
+        {data.isOnline === "Yes" && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 8,
+              color: "green",
+            }}
+          >
+            <div
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: "green",
+                marginRight: 4,
+              }}
+            />
             Online
           </div>
         )}
@@ -239,93 +289,135 @@ const handleClick = (dataobj) => {
   );
 };
 
-
-const ScenarioDiagram = ({ scenariodiagram, isTimerVisible, scenarioStatus }) => {
-  console.log("scenariodiagram", scenariodiagram);
-
+const ScenarioDiagram = ({
+  scenariodiagram,
+  isTimerVisible,
+  scenarioStatus,
+  scenarioId,
+  rowValues,
+  manipulationFlag,
+  isrunning,
+}) => {
+  const { getSingleScenariosSucc, errorData } = useSelector((state) => ({
+    getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
+    errorData: state?.scenarios?.error,
+  }));
+  console.log("llllllllllllllllllllllllllllllll", manipulationFlag);
+  const dispatch = useDispatch();
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
+  const router = useRouter();
+  // const { push } = useRouter();
+  console.log("isrunningisrunningisrunningisrunning", isrunning);
 
   useEffect(() => {
     if (!scenariodiagram) return;
 
     try {
-      const cleanData = scenariodiagram.replace('flowchartData ', '');
-      console.log("cleanDatacleanDatacleanData", cleanData);
-
+      const cleanData = scenariodiagram.replace("flowchartData ", "");
       const parsedData = JSON.parse(cleanData);
-      console.log("parsedDataparsedDataparsedData", parsedData);
-
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
-
-      const updatedNodes = parsedData.nodes.map(node => ({
+      const updatedNodes = parsedData.nodes.map((node) => ({
         ...node,
         position: node.position || { x: 0, y: 0 }, // Ensure position exists
         data: {
           ...node.data,
           image:
-            node.data.image && node.data.image.startsWith('/uploads')
+            node.data.image && node.data.image.startsWith("/uploads")
               ? `${backendBaseUrl}${node.data.image}`
               : node.data.image,
         },
       }));
-      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
-      
-
       setElements({ nodes: updatedNodes, edges: parsedData.edges });
     } catch (err) {
-      console.error('Failed to parse scenariodiagram:', err);
+      console.error("Failed to parse scenariodiagram:", err);
     }
   }, [scenariodiagram]);
-
-  // Center graph after nodes are rendered
-  // useEffect(() => {
-  //   if (flowRef.current && elements.nodes.length > 0) {
-  //     requestAnimationFrame(() => {
-  //       flowRef.current.fitView({ padding: 0.3 });
-  //     });
-  //   }
-  // }, [elements]);
-  // Center graph after nodes are rendered
   useEffect(() => {
     if (!flowRef.current || elements.nodes.length === 0) return;
-
-    // Wait for the next paint to ensure nodes are mounted
     const id = requestAnimationFrame(() => {
       flowRef.current.fitView({ padding: 0.3 });
     });
-
     return () => cancelAnimationFrame(id);
   }, [elements.nodes]); // Only run when nodes change
 
-
   const nodeTypes = {
-    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} scenarioStatus={scenarioStatus} />,
+    imageNode: (props) => (
+      <ImageNode
+        {...props}
+        isTimerVisible={isTimerVisible}
+        scenarioStatus={scenarioStatus}
+      />
+    ),
   };
   const EditableEdgeWrapper = (edgeProps) => {
     const { getEdges, setEdges } = useReactFlow();
 
     // You can also pull labelMap or other shared state from context/store here
     const edges = getEdges(); // all current edges
-    console.log("fffffffffffffffffffffffffff", edges);
-
-
-    return (
-      <EditableEdge
-        {...edgeProps}
-        allEdges={edges}
-        setEdges={setEdges}
-      />
-    );
+    return <EditableEdge {...edgeProps} allEdges={edges} setEdges={setEdges} />;
   };
   const edgeTypes = { custom: EditableEdgeWrapper };
 
   return (
     <div
       ref={reactFlowWrapper}
-      style={{ width: '100%', height: '80vh', borderRadius: 8 }}
+      style={{ width: "100%", height: "80vh", borderRadius: 8 }}
     >
+      {/* {String(manipulationFlag) === "true" &&
+  ["Start", "Resume"].includes(isrunning) && (
+    <button
+      onClick={async () => {
+        try {
+          const vmrequestid =
+            getSingleScenariosSucc?.[0]?.vmrequestid;
+
+          if (!vmrequestid) return;
+
+          // call API
+          await dispatch(
+            changeEditStatus({ vmrequestid })
+          );
+
+          //  only runs if 200
+          router.push(`/scenarios_edit/${scenarioId}`);
+
+        } catch (error) {
+          //  LOCK CASE (409)
+          if (error?.response?.status === 409) {
+            toast.error(
+              error.response?.data?.message ||
+                "You cannot edit this scenario",
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                theme: "colored",
+              }
+            );
+          }
+          // stop flow
+          return;
+        }
+      }}
+      title="Edit"
+      style={{
+        position: "absolute",
+        top: 16,
+        right: 16,
+        backgroundColor: "#292942",
+        color: "#4d4c4c",
+        border: "none",
+        padding: "4px 4px",
+        borderRadius: 15,
+        cursor: "pointer",
+        fontSize: "16px",
+      }}
+    >
+      ✏️
+    </button>
+)} */}
+
+
       {elements.nodes.length > 0 && (
         <ReactFlow
           nodes={elements.nodes}
@@ -341,6 +433,5 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible, scenarioStatus }) =>
     </div>
   );
 };
-
 ScenarioDiagram.layout = "Contentlayout";
 export default ScenarioDiagram;

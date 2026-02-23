@@ -93,21 +93,51 @@ const DnDFlow = ({
     net3: Position.Top,
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    const networkPorts = data.networkport || {};
-    console.log("networkPorts",)
-    // const portKeys = Array.isArray(networkPorts)
-    //   ? networkPorts.flatMap((obj) => Object.keys(obj))
-    //   : Object.keys(networkPorts);
+    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa", data);
+    console.log("networkPorts");
+    // let portKeys = [];
+    // if (Array.isArray(data.networkport)) {
+    //   portKeys = data.networkport
+    //     .flatMap(obj => Object.keys(obj))
+    //     .sort();
+    // }
+
+    // else if (typeof data.networkport === "object" && data.networkport !== null) {
+    //   portKeys = Object.keys(data.networkport).sort();
+    // } else {
+    //   portKeys = [];
+    // }
     let portKeys = [];
+
     if (Array.isArray(data.networkport)) {
       portKeys = data.networkport
-        .flatMap(obj => Object.keys(obj))
-        .sort();
-    } else if (typeof data.networkport === "object" && data.networkport !== null) {
-      portKeys = Object.keys(data.networkport).sort();
+        .flatMap((obj) =>
+          Object.entries(obj).map(([key, value]) => {
+            const tagMatch = value.match(/tag=(\d+)/);
+            return {
+              key, // net0 / net1
+              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+            };
+          }),
+        )
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else if (
+      typeof data.networkport === "object" &&
+      data.networkport !== null
+    ) {
+      portKeys = Object.entries(data.networkport)
+        .map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key,
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
     } else {
       portKeys = [];
     }
+
     const totalPorts = portKeys.length;
 
     const sides = ["Right", "Bottom", "Left", "Top"];
@@ -117,7 +147,7 @@ const DnDFlow = ({
     const baseSize = 90;
     const portSpacing = 15;
     const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
-    console.log("portKeys", portKeys)
+    console.log("portKeyssssssssssssss", portKeys);
 
     return (
       <div
@@ -175,15 +205,12 @@ const DnDFlow = ({
               backgroundRepeat: "no-repeat",
             }}
           />
-
           {/* Ports */}
-          {portKeys.map((portKey, index) => {
+          {portKeys.map((port, index) => {
             const sideIndex = Math.floor(index / portsPerSide);
             const side = sides[sideIndex];
             const positionIndex = index % portsPerSide;
             let offsetPercent;
-
-            // Reverse position for specific sides
             if (side === "Right" || side === "Top") {
               offsetPercent = (positionIndex + 1) * spacingRatio;
             } else {
@@ -238,8 +265,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   right: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               case "Bottom":
@@ -266,8 +293,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   left: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               default:
@@ -275,22 +302,22 @@ const DnDFlow = ({
             }
 
             return (
-              <React.Fragment key={portKey}>
+              <React.Fragment key={port.key}>
                 <Handle
                   type="source"
                   position={Position[side]}
-                  id={`${portKey}-source`}
+                  id={`${port.key}-source`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
                 <Handle
                   type="target"
                   position={Position[side]}
-                  id={`${portKey}-target`}
+                  id={`${port.key}-target`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
-                <div style={labelPosition}>{portKey}</div>
+                <div style={labelPosition}>{port.label}</div>
               </React.Fragment>
             );
           })}
@@ -325,7 +352,7 @@ const DnDFlow = ({
         state.scenarioManage &&
         state.scenarioManage.singleScenarios &&
         state.scenarioManage.singleScenarios.data,
-    })
+    }),
   );
   useEffect(() => {
     if (toBeDragComponent && toBeDragComponent.length > 0) {
@@ -393,8 +420,8 @@ const DnDFlow = ({
               targetHandle: params.targetHandle,
             }, // this is what will be editable
           },
-          eds
-        )
+          eds,
+        ),
       );
   }, []);
 
@@ -437,13 +464,13 @@ const DnDFlow = ({
       setNodes((nds) => nds.concat(newNode));
       setDroppedImages((prev) => [...prev, draggedNode.id]); // Add to dropped images
     },
-    [screenToFlowPosition, draggedNode, droppedImages]
+    [screenToFlowPosition, draggedNode, droppedImages],
   );
 
   const deleteNode = (nodeId) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) =>
-      eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
+      eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
     );
     // Find the image used in the node and remove it from the droppedImages array
     const nodeToDelete = nodes.find((node) => node.id === nodeId);
@@ -454,7 +481,7 @@ const DnDFlow = ({
 
       // Find the id associated with the image URL
       const imageNode = imageNodeData.find(
-        (item) => item.id === imageComponent
+        (item) => item.id === imageComponent,
       );
 
       if (imageNode) {
@@ -462,7 +489,7 @@ const DnDFlow = ({
         setDroppedImages((prev) => prev.filter((id) => id !== imageId)); // Re-enable image by removing it from droppedImages
         // Also remove the object with the matching id from drggerdComponent
         setDraggedComponent((prev) =>
-          prev.filter((item) => item.id !== imageId)
+          prev.filter((item) => item.id !== imageId),
         );
         setImageNodeData((prev) => prev.filter((item) => item.id !== imageId));
       }
@@ -509,7 +536,7 @@ const DnDFlow = ({
     let componentsData = [];
     const configData = generateComponentConfig(
       flowchartData.nodes,
-      flowchartData.edges
+      flowchartData.edges,
     );
     if (nodes && nodes.length > 0) {
       const mapped = nodes
@@ -554,7 +581,7 @@ const DnDFlow = ({
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
@@ -568,7 +595,7 @@ const DnDFlow = ({
     () => ({
       imageNode: (props) => <ImageNode {...props} deleteNode={deleteNode} />,
     }),
-    [deleteNode]
+    [deleteNode],
   );
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {

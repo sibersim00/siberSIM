@@ -1,19 +1,12 @@
-// const getAll = ({ dao, db, validation}) => async (req, res) => {
-//   try {
-//     let session_userid=req.user.userid;
-//     let usertype=req.user.usertype;
-//     const result = await dao.getAll({ db })(session_userid,usertype);
-//     res.status(200).send({statusCode: 200, message: validation.messages.student_list,data:result});
-//   } catch (error) {
-//     console.error("Error fetching data:", error.message);
-//     res.status(500).json({ error: "An error occurred. Please try again later." });
-//   }
-// }; 
+
 const getAll = ({ dao, db, validation }) => async (req, res) => {
   try {
     let session_userid = req.user.userid;
     let usertype = req.user.usertype;
-    const result = await dao.getAll({ db })(session_userid, usertype);
+    // Get page & limit from query params (default to 1 and 12)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const result = await dao.getAll({ db })(session_userid, usertype, page, limit);
     res.status(200).send({
       statusCode: 200,
       message: validation.messages.student_list,
@@ -30,9 +23,7 @@ const save = ({ dao, db, validation }) => async (req, res) => {
     const body = req.body;
     const session_userid = req.user.userid;
     const usertype = req.user.usertype;
-
     const result = await dao.save({ db, validation })(body, session_userid, usertype);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,

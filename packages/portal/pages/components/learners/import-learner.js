@@ -13,15 +13,13 @@ import {
   Modal,
 } from "react-bootstrap";
 import { useFormik } from "formik";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
-import { useTranslation } from "react-i18next";
 import dynamic from "next/dynamic";
-import { regex, error } from '../../../shared/data/common/vaidationMessage/formValidationMsg';
+import { regex,error } from '../../../shared/data/common/vaidationMessage/formValidationMsg';
 import {getLearnersManageList, saveImportLearner, clearImportLearner,clearHasError} from "../../../shared/redux/slices/learner/learnerManage";
 
-const DatePicker = dynamic(() => import("react-datepicker"), { ssr: false });
 
 function ImportLearners({ impLer, setImpLer }) {
   const dispatch = useDispatch();
@@ -61,7 +59,6 @@ function ImportLearners({ impLer, setImpLer }) {
                 theme: "colored",
               }
             );
-        // dispatch(clearHasError());
       }
       setRowData(errorData?.data);
       setQuestionBanlList(errorData?.data)
@@ -305,11 +302,6 @@ if (errorData?.statusCode === 400) {
   const formik = useFormik({
       enableReinitialize: true,
       initialValues: {
-        // question_text: "",
-        // marks: "",
-        // question_order: "",
-        // question_type: "",
-        // difficulty_level: "",
         uploadfile: null,
       },
       validationSchema: yup.object().shape({

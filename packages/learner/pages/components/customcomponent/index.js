@@ -13,17 +13,12 @@ import {
   Tab,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
-import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import {
   getComponentList,
-  cleardeleteComponent,
   clearHasError,
 } from "../../../shared/redux/slices/customcomponent/customcomponentManage";
-// import * as XLSX from "xlsx";
 import { styled } from "@mui/system";
-import CustomToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
 import { ToggleButton } from "@mui/material";
@@ -43,24 +38,7 @@ const ManageCustomComponent = () => {
   const [rowData, setRowData] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
-  const [viewCatModal, setviewCatModal] = useState(false);
   const [quickFilter, setQuickFilter] = useState("");
-  const [formModal, setformModal] = useState(false);
-  const [rowId, setRowId] = useState("");
-  const [viewModal, setViewModal] = useState(false);
-  const [rowValues, setRowValues] = useState({
-    title: "Add",
-    componentcategoryid: 0,
-    componenttype: "",
-    educationcode: "",
-    categoryname: "",
-    status: true,
-    subcategoryname: "",
-    componentidentification: "",
-    image_url: "",
-    componentname: "",
-    ComponentIdentificationVMName: "",
-  });
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
   const viewType = router.query.view || "card";
@@ -74,7 +52,6 @@ const ManageCustomComponent = () => {
   const {
     hasGetComponentListSucc,
     errorData,
-    deleteComponentRes,
     statusChangeComponentRes,
   } = useSelector((state) => {
     return {
@@ -204,43 +181,7 @@ const ManageCustomComponent = () => {
     };
   }, []);
 
-  const CustomToggleButton = styled(ToggleButton)(({ value }) => {
-    const isDark = document.body.classList.contains("dark-theme");
 
-    // Define colors based on value
-    const statusColors = {
-      reject: "#19B159",
-      pending: "#19B159",
-      approved: "#19B159",
-    };
-    const greenBorder = "#19B159";
-    const borderColor = "#d1d1d1";
-
-    return {
-      textTransform: "none",
-      fontWeight: 500,
-      border: `1px solid ${isDark ? greenBorder : borderColor}`,
-      color: isDark ? "#19B159" : "#888686ff",
-
-      "&.Mui-selected": {
-        backgroundColor: "#19B159",
-        borderColor: greenBorder,
-        color: "#fff",
-        "&:hover": {
-          backgroundColor: "#19B159",
-          opacity: 0.9,
-        },
-      },
-
-      "&:not(.Mui-selected)": {
-        backgroundColor: "transparent",
-        "&:hover": {
-          borderColor: isDark ? "#19B159" : "#9c9a9aff",
-          color: isDark ? "#fff" : "#000",
-        },
-      },
-    };
-  });
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
@@ -253,37 +194,7 @@ const ManageCustomComponent = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
-
-  // const onFilterChanged = (data) => {
-  //   setQuickFilter(data);
-  //   const val = data.toLowerCase();
-
-  //   let filteredList = hasGetComponentListSucc;
-
-  //   if (compStatus !== "") {
-  //     filteredList = filteredList.filter(
-  //       (item) => item.status?.toLowerCase() === compStatus.toLowerCase()
-  //     );
-  //   }
-
-  //   const temp = filteredList.filter((item) =>
-  //     Object.keys(item).some((key) => {
-  //       const fieldValue = item[key];
-  //       if (typeof fieldValue === "string") {
-  //         return fieldValue.toLowerCase().includes(val);
-  //       }
-  //       if (typeof fieldValue === "number") {
-  //         return fieldValue.toString().includes(val);
-  //       }
-  //       return false;
-  //     })
-  //   );
-
-  //   setGridData(temp);
-  //   setRowData(temp);
-  // };
-
-  const onFilterChanged = (data) => {
+ const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
 
@@ -410,26 +321,6 @@ const ManageCustomComponent = () => {
     setRowData(filtered);
   }, [hasGetComponentListSucc, compStatus]);
 
-  const handleEdit = (props) => {
-    handleOneClick(false);
-    setBackView(view);
-    if (props && props.customcomponentuuid) {
-      setRowId(props.customcomponentuuid);
-
-      setView("Form");
-    }
-  };
-
-  const handleView = (props) => {
-    if (props && props.componentname) {
-      setviewCatModal(true);
-    }
-  };
-
-  let viewCatClose = (modal) => {
-    setviewCatModal(false);
-  };
-
   const frameworkComponents = {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
@@ -440,7 +331,7 @@ const ManageCustomComponent = () => {
         <ActionButtonRenderer
           handleEditView={handleReturnView}
           handleShowEditView={true}
-          handleEdit={handleEdit}
+          // handleEdit={handleEdit}
           propsVal={props}
         // handleShowEdit={status === "pending"}
         />
@@ -489,21 +380,6 @@ const ManageCustomComponent = () => {
       );
     },
   };
-
-  const handleFormModal = (flag) => {
-    handleOneClick(false);
-    setRowValues({
-      title: "Add",
-      componentcategoryid: 0,
-      parentcategoryname: "",
-      status: true,
-    });
-    setformModal(flag);
-  };
-  const handleViewModal = (flag) => {
-    handleOneClick(false);
-    setViewModal(flag);
-  };
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
   const zoomIn = () => {
@@ -536,11 +412,6 @@ const ManageCustomComponent = () => {
               <div className="tabs-menu ">
                 <Tab.Container
                   id="scenario-tabs"
-                  //             activeKey={compStatus}
-                  //             onSelect={(key) => {
-                  // console.log("keyvalue---------------",key)
-                  //               setCompStatus(key);
-                  //             }}
                   activeKey={compStatus}
                   onSelect={(key) => setCompStatus(key)}
                 >
@@ -655,24 +526,6 @@ const ManageCustomComponent = () => {
                         <i className="fe fe-list"></i>
                       </Button>
                       &nbsp;&nbsp;
-                      {/* <ToggleButtonGroup
-                        color="success"
-                        value={compStatus}
-                        size="small"
-                        exclusive
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setCompStatus(value);
-                        }}
-                        aria-label="Platform"
-                      >
-                        <CustomToggleButton value="reject">Reject</CustomToggleButton>
-                        <CustomToggleButton value="pending" defaultChecked>
-                          Pending
-                        </CustomToggleButton>
-                        <CustomToggleButton value="approved">Approved</CustomToggleButton>
-                      </ToggleButtonGroup>
-                      &nbsp;&nbsp; */}
                       <input
                         className="form-control bd bd-2 ms-2 w-auto"
                         value={quickFilter}
@@ -877,7 +730,7 @@ const ManageCustomComponent = () => {
                                     alt="user-img"
                                     className="wd-150 mt-5"
                                   />
-                                  <h5 className="mt-4">Loading...</h5>
+                                  <h5 className="mt-4">No Data Found</h5>
                                 </div>
                               </Card.Body>
                             </Card>

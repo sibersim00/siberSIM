@@ -1,42 +1,7 @@
 // --- Dashboard Stats with Optional EventID Filter ---
 const getDashboardStats = ({ db, validation }) => async ({ userid, usertype, eventid }) => {
   try {
-    let eventTeamsQuery = `
-     SELECT 
-    e.eventid,
-    e.eventuuid,
-    e.eventname,
-    e.eventstarttime,
-    e.eventendtime,
-    el.eventlearnerid,
-    el.team_name,
-    el.learner_id,
-    e.scenarioid,
-    CONCAT(l.firstname, ' ', l.lastname) AS learnername,
-    l.profile AS learner_profile,
-    l.email as Email,
-    l.mobile as Mobile,  
-    el.status AS team_status,
-    el.createdon AS team_createdon,
-    el.startedon AS team_startedon,
-    el.completedon AS team_completedon,
-    au.userid AS instructor_id,
-     IFNULL(ec.unseen_message_count, 0) AS unseen_message_count
-FROM event_learners el
-INNER JOIN events e ON el.eventid = e.eventid
-INNER JOIN learners l ON el.learner_id = l.learner_id
-LEFT JOIN ad_users au ON e.createdby = au.userid 
-LEFT JOIN (
-    SELECT 
-        eventlearnerid, 
-        COUNT(*) AS unseen_message_count
-    FROM event_learner_chats
-    WHERE status = 'sent'
-    GROUP BY eventlearnerid
-) ec ON ec.eventlearnerid = el.eventlearnerid
-WHERE el.deletedon IS NULL
-el.team_name ASC;
-    `;
+    let eventTeamsQuery = ` SELECT  e.eventid, e.eventuuid, e.eventname, e.eventstarttime, e.eventendtime, el.eventlearnerid, el.team_name, el.learner_id, e.scenarioid, CONCAT(l.firstname, ' ', l.lastname) AS learnername, l.profile AS learner_profile, l.email as Email, l.mobile as Mobile,   el.status AS team_status, el.createdon AS team_createdon, el.startedon AS team_startedon, el.completedon AS team_completedon, au.userid AS instructor_id, IFNULL(ec.unseen_message_count, 0) AS unseen_message_count FROM event_learners el INNER JOIN events e ON el.eventid = e.eventid INNER JOIN learners l ON el.learner_id = l.learner_id LEFT JOIN ad_users au ON e.createdby = au.userid  LEFT JOIN ( SELECT  eventlearnerid,  COUNT(*) AS unseen_message_count FROM event_learner_chats WHERE status = 'sent' GROUP BY eventlearnerid ) ec ON ec.eventlearnerid = el.eventlearnerid WHERE el.deletedon IS NULL el.team_name ASC; `;
 
     const replacements = [];
 
@@ -78,53 +43,11 @@ const getEventList = ({ db }) => async () => {
 
 const getTeamsByEventUUID = ({ db }) => async (eventuuid) => {
   try {
-    const query = `
-      SELECT 
-        e.eventid,
-        e.eventuuid,
-        e.eventname,
-
-        el.eventlearnerid,
-        el.team_name,
-        el.learner_id,
-
-        CONCAT(l.firstname, ' ', l.lastname) AS learnername,
-        l.profile AS learner_profile,
-        l.email   AS Email,
-        l.mobile  AS Mobile,
-
-        /* 🔁 MOVED FROM event_learners → vm_request */
-        IFNULL(vr.status, 'Pending') AS team_status,
-        DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS team_startedon,
-        DATE_FORMAT(vr.completedon, '%Y-%m-%d %H:%i:%s') AS team_completedon,
-        IFNULL(vr.timer, '00:00:00') AS team_timer,
-
-        IFNULL(ec.unseen_message_count, 0) AS unseen_message_count
-
-      FROM event_learners el
-      INNER JOIN events e
-        ON el.eventid = e.eventid
-      INNER JOIN learners l
-        ON el.learner_id = l.learner_id
-
-      /* SESSION SOURCE */
-      LEFT JOIN vm_request vr
-        ON vr.vmrequestid = el.vmrequestid
-       AND vr.eventid = el.eventid
-
-      /* CHAT COUNT */
-      LEFT JOIN (
-        SELECT eventlearnerid, COUNT(*) AS unseen_message_count
-        FROM event_learner_chats
-        WHERE status = 'sent'
-        GROUP BY eventlearnerid
-      ) ec
+    const query = ` SELECT  e.eventid, e.eventuuid, e.eventname, el.eventlearnerid, el.team_name, el.learner_id, CONCAT(l.firstname, ' ', l.lastname) AS learnername, l.profile AS learner_profile, l.email   AS Email, l.mobile  AS Mobile, IFNULL(vr.status, 'Pending') AS team_status, DATE_FORMAT(vr.startedon, '%Y-%m-%d %H:%i:%s') AS team_startedon, DATE_FORMAT(vr.completedon, '%Y-%m-%d %H:%i:%s') AS team_completedon, IFNULL(vr.timer, '00:00:00') AS team_timer, IFNULL(ec.unseen_message_count, 0) AS unseen_message_count FROM event_learners el INNER JOIN events e ON el.eventid = e.eventid INNER JOIN learners l ON el.learner_id = l.learner_id LEFT JOIN vm_request vr ON vr.vmrequestid = el.vmrequestid AND vr.eventid = el.eventid LEFT JOIN ( SELECT eventlearnerid, COUNT(*) AS unseen_message_count FROM event_learner_chats WHERE status = 'sent' GROUP BY eventlearnerid ) ec
         ON ec.eventlearnerid = el.eventlearnerid
-
-      WHERE el.deletedon IS NULL
+        WHERE el.deletedon IS NULL
         AND e.eventuuid = :eventuuid
-
-      ORDER BY
+        ORDER BY
         CASE
           WHEN IFNULL(vr.status, 'Pending') = 'Completed' THEN 1
           WHEN IFNULL(vr.status, 'Pending') = 'Start'     THEN 2
@@ -143,15 +66,12 @@ const getTeamsByEventUUID = ({ db }) => async (eventuuid) => {
       replacements: { eventuuid },
       type: db.sequelize.QueryTypes.SELECT,
     });
-
     return teams;
   } catch (error) {
     console.error("DAO getTeamsByEventUUID Error:", error.message);
     throw error;
   }
 };
-
-
 module.exports = {
   getDashboardStats,
   getEventList,

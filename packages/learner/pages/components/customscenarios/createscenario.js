@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Row, Col, Card, Button, Form } from "react-bootstrap"; 
+import React, { useState } from "react";
+import { Row, Col, Card,  } from "react-bootstrap"; 
 import Flowchart from "./flowchart";  
 import { useRouter } from "next/router";  
      
 const CreateScenario = (props) => {
   const { scenarioId,setScenarioId, setTabIndex, setView, setRowValues} = props;
 
-    const { query, push } = useRouter();
-    const scenario_id = query && query.scenario; 
+    const { query } = useRouter();
     const [selectedScenario, setSelectedScenario] = useState(null);
 
-    const [numLans, setNumLans] = useState(1); // Default value 1
+    const [numLans, setNumLans] = useState(1); // Default value 
     return (
         <> 
              <Row className="row-sm mg-t-10">
@@ -19,8 +18,6 @@ const CreateScenario = (props) => {
                         <Card.Body>
                                 <Flowchart numLans={numLans}  
                                 setNumLans={setNumLans}
-                                //  toBeDragComponent={toBeDragComponent} 
-                                //  selectedComponent={selectedComponent}
                                   scenarioId={scenarioId}
                                    setScenarioId={setScenarioId}
                                     setTabIndex={setTabIndex}

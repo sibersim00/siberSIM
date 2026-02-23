@@ -2,67 +2,13 @@ const getStudentDashboardData =
   ({ db }) =>
   async (learner_id) => {
     try {
-      // const completedQuery = `
-      // SELECT s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenariolevel, COUNT(*) AS completed_count FROM scenario_learner sl INNER JOIN scenarios s ON s.scenarioid = sl.scenarioid WHERE sl.status = 'Completed' GROUP BY s.scenarioid ORDER BY completed_count DESC LIMIT 5;`;
+
       const completedQuery = `SELECT s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel,COUNT( DISTINCT vr.vmrequestid) AS completed_count FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid WHERE vr.status = 'Completed' AND vr.requestedby_role = 'Learner' GROUP BY s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel ORDER BY completed_count DESC LIMIT 5; `;
 
-      // const currentScenarioQuery = `SELECT sl.scenariolearneruuid, sl.scenariolearnerid, sl.status AS learner_status, sls.status AS session_status, s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariolevel, s.duration, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, s.component_config, CASE  WHEN sls.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, sls.startedon, NOW())) WHEN sls.status = 'Resume' AND sls.resumeon IS NOT NULL THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, sls.resumeon, NOW()) + TIME_TO_SEC(sls.timer)) ELSE sls.timer END AS calculated_timer, DATE_FORMAT(sl.createdon, '%Y-%m-%d %H:%i:%s') AS startedon FROM scenario_learner sl INNER JOIN scenarios s ON s.scenarioid = sl.scenarioid INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sl.currentsession_id WHERE sl.learner_id = :learner_id AND sl.status IN ('Running', 'Initializing', 'Terminated', 'Completed','Pause') ORDER BY sl.modifiedon DESC LIMIT 1;`;
-
-      const currentScenarioQuery = `SELECT vr.vmrequestid, vr.status AS learner_status, vr.status AS session_status,s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenarioidentification,s.scenariolevel,s.duration,
-  sc.categoryname AS scenariocategory_name,
-  scc.categoryname AS scenariosubcategory_name,
-  s.component_config,
-  CASE
-  WHEN vr.status = 'Start' THEN
-  SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW()))
-  WHEN vr.status = 'Resume'
-  AND vr.resumeon IS NOT NULL THEN
-  SEC_TO_TIME(
-  TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) +
-  IFNULL(TIME_TO_SEC(vr.timer), 0)
-  )
-  ELSE vr.timer
-  END AS calculated_timer,
-  DATE_FORMAT(vr.createdon, '%Y-%m-%d %H:%i:%s') AS startedon
-  FROM vm_request vr
-  INNER JOIN scenarios s 
-  ON s.scenarioid = vr.scenarioid
-  INNER JOIN scenario_categories sc 
-  ON sc.scenariocategoryid = s.scenariocategoryid
-  INNER JOIN scenario_categories scc 
-  ON scc.scenariocategoryid = s.scenariosubcategoryid
-  WHERE
-  vr.requestedby_id = :learner_id
-  AND vr.requestedby_role = 'Learner'
-  AND vr.status IN (
-  'Running',
-  'Initializing',
-  'Terminated',
-  'Completed',
-  'Pause',
-  'Resume',
-  'Start'
-  )
-  ORDER BY 
-  CASE vr.status
-    WHEN 'Start' THEN 1
-    WHEN 'Resume' THEN 2
-    WHEN 'Running' THEN 3
-    WHEN 'Pause' THEN 4
-    ELSE 5
-  END,
-  vr.modifiedon DESC
-  LIMIT 1;`;
+      const currentScenarioQuery = `SELECT vr.vmrequestid, vr.status AS learner_status, vr.status AS session_status,s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenarioidentification,s.scenariolevel,s.duration, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, s.component_config, CASE WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW())) WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME( TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + IFNULL(TIME_TO_SEC(vr.timer), 0) ) ELSE vr.timer END AS calculated_timer, DATE_FORMAT(vr.createdon, '%Y-%m-%d %H:%i:%s') AS startedon FROM vm_request vr INNER JOIN scenarios s  ON s.scenarioid = vr.scenarioid INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE vr.requestedby_id = :learner_id AND vr.requestedby_role = 'Learner' AND vr.status IN ( 'Running', 'Initializing', 'Terminated', 'Completed', 'Pause', 'Resume', 'Start' ) ORDER BY  CASE vr.status WHEN 'Start' THEN 1 WHEN 'Resume' THEN 2 WHEN 'Running' THEN 3 WHEN 'Pause' THEN 4 ELSE 5 END, vr.modifiedon DESC LIMIT 1;`;
 
       const [completedStats, quizStats, nonCompletedCountStats] =
         await Promise.all([
-          // db.sequelize.query(
-          //   `SELECT SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed, COUNT(*) AS total FROM vm_request WHERE requestedby_id = :learner_id AND requestedby_role = 'Learner';`,
-          //   {
-          //     replacements: { learner_id },
-          //     type: db.sequelize.QueryTypes.SELECT,
-          //   }
-          // ),
           db.sequelize.query(
             `SELECT SUM(DISTINCT CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed, COUNT(DISTINCT scenarioid) AS total FROM vm_request WHERE requestedby_id = :learner_id AND requestedby_role = 'Learner';`,
             {

@@ -106,25 +106,6 @@ const Userperformance = () => {
       scenario_id: [],
     },
   });
-
-  // const customStyles = {
-  //   control: (styles, { isFocused, isDisabled }) => ({
-  //     ...styles,
-  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-  //     boxShadow: isDisabled
-  //       ? null
-  //       : isFocused
-  //       ? "0 0 0 0.001rem #00d683"
-  //       : null,
-  //     "&:hover": {
-  //       borderColor: isDisabled
-  //         ? "#e8e8f7"
-  //         : isFocused
-  //         ? "#00d683"
-  //         : styles.borderColor,
-  //     },
-  //   }),
-  // };
   const customStyles = () => {
     return {
       control: (styles) => ({
@@ -240,15 +221,12 @@ const Userperformance = () => {
       : [hasinstructorperformancelist]; // ensure it's always an array
 
     const exportData = data.map((row) => {
-      // Format levels
       const easy = row.by_level?.Easy?.count || 0;
       const easyPct = row.by_level?.Easy?.pct || "0.00";
       const medium = row.by_level?.Medium?.count || 0;
       const mediumPct = row.by_level?.Medium?.pct || "0.00";
       const hard = row.by_level?.Hard?.count || 0;
       const hardPct = row.by_level?.Hard?.pct || "0.00";
-
-      // Format categories
       const categoryStr = row.by_category
         ? Object.entries(row.by_category)
             .map(([cat, count]) => `${cat} (${count})`)
@@ -302,7 +280,7 @@ const Userperformance = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 10, 
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -440,7 +418,6 @@ const Userperformance = () => {
                         },
                       })}
                       name="scenario_id"
-                      // styles={getSelectStyles("scenario_id")}
                       value={formValidation.values.scenario_id}
                       options={scenarioDropdown}
                       getOptionLabel={(x) => x.scenariotitle}

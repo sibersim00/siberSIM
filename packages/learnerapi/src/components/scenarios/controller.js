@@ -174,6 +174,41 @@ const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
+const changeEditStatus =
+  ({ dao,db }) =>
+  async (req, res) => {
+    try {
+      const body = req.body;
+      const loginId = req.learneruser.learner_id;
+      const result = await dao.changeEditStatus({db})(body,loginId);
+      res .status(result.statusCode) .send({ statusCode: result.statusCode, message: result.message, data: result.data || null,});
+    } catch (error) {
+      console.error("Edit status error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "An error occurred. Please try again later.",
+      });
+    }
+  };
+
+  const releaseEditLock =
+  ({ dao ,db}) =>
+  async (req, res) => {
+    try {
+      const body = req.body;
+      const result = await dao.releaseEditLock({db})(body);
+      res.status(result.statusCode).send({
+        statusCode: result.statusCode,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error("Release edit lock error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "An error occurred. Please try again later.",
+      });
+    }
+  };
 
 
 module.exports = {
@@ -188,5 +223,7 @@ module.exports = {
   getLogs,
   getTabList,
   getPaused,
-  canResumeScenario
+  canResumeScenario,
+  changeEditStatus,
+  releaseEditLock
 };
