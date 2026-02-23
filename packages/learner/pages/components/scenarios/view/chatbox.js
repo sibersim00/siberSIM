@@ -36,11 +36,8 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
 
     return () => observer.disconnect();
   }, []);
-  console.log("rowValuesrowValues", rowValues.scenarioid);
-
   useEffect(() => {
     let scenarioId = rowValues?.scenarioid;
-    console.log("scenarioIdscenarioId", scenarioId)
     if (showChat && rowValues?.learner_id || rowValues?.scenarioid) {
       dispatch(
         getChatMessages({
@@ -70,6 +67,7 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
       setChatMessages(uniqueArr);
     }
   }, [getRefreshMsg]);
+console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
 
   const handleSend = () => {
     // if (!chatInput.trim()) return;
