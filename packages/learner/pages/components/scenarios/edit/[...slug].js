@@ -5,7 +5,15 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { Button, Card, Row, Col, Modal } from "react-bootstrap";
+import {
+  Button,
+  Card,
+  Row,
+  Col,
+  Modal,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import {
   ReactFlow,
@@ -46,7 +54,7 @@ import {
   clearPlugNetworkPort,
   clearUnplugNetworkPort,
   clearConnectNetworkPort,
-  clearDisconnectNetworkPort
+  clearDisconnectNetworkPort,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -96,235 +104,506 @@ const NetworkPopover = ({
 
   console.log("loadingloading", loading);
 
-  return (
+  // return (
+  //   <div
+  //     style={{
+  //       width: 300,
+  //       minHeight: 240,
+  //       background: "#0e0e23",
+  //       borderRadius: 11,
+  //       padding: 12,
+  //       zIndex: 30,
+  //       boxShadow: "0 10px 22px rgba(0,0,0,0.5)",
+  //       fontSize: 11,
+  //       color: "#fff",
+  //     }}
+  //     onMouseDown={(e) => e.stopPropagation()}
+  //     onClick={(e) => e.stopPropagation()}
+  //   >
+  //     <div
+  //       style={{
+  //         fontSize: 13,
+  //         fontWeight: 600,
+  //         marginBottom: 10,
+  //         display: "flex",
+  //         justifyContent: "space-between",
+  //         opacity: 0.9,
+  //       }}
+  //     >
+  //       <span>Network Ports</span>
+  //       <span style={{ cursor: "pointer", opacity: 0.7 }} onClick={onClose}>
+  //         ✕
+  //       </span>
+  //     </div>
+  //     <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
+  //       Delete Network Port
+  //     </div>
+
+  //     <div
+  //       style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}
+  //     >
+  //       {existingPorts.map((port) => (
+  //         <div
+  //           key={port}
+  //           style={{
+  //             display: "flex",
+  //             alignItems: "center",
+  //             background: "#1b1b3a",
+  //             borderRadius: 14,
+  //             padding: "4px 8px",
+  //             fontSize: 13,
+  //           }}
+  //         >
+  //           <span>{port}</span>
+  //           <span
+  //             onClick={(e) => {
+  //               e.stopPropagation();
+  //               setConfirmDelete({ open: true, port });
+  //             }}
+  //             style={{
+  //               marginLeft: 8,
+  //               fontSize: 13,
+  //               cursor: "pointer",
+  //               color: "#ff5c5c",
+  //             }}
+  //           >
+  //             ✕
+  //           </span>
+  //         </div>
+  //       ))}
+  //       {confirmDelete?.open && (
+  //         <div
+  //           style={{
+  //             width: "100%",
+  //             marginTop: 10,
+  //             background: "#16163a",
+  //             border: "1px solid #2a2a55",
+  //             borderRadius: 6,
+  //             padding: 8,
+  //             fontSize: 13,
+  //           }}
+  //         >
+  //           <div style={{ marginBottom: 8 }}>
+  //             Are you sure you wnat to delete <b>{confirmDelete.port}</b> ?
+  //           </div>
+  //           <div style={{ display: "flex", gap: 6 }}>
+  //             {/* YES BUTTON */}
+  //             <button
+  //               style={{
+  //                 flex: 1,
+  //                 background: deleteLoading ? "#ff7b7b" : "#ff5c5c",
+  //                 color: "#fff",
+  //                 border: "none",
+  //                 borderRadius: 4,
+  //                 cursor: deleteLoading ? "not-allowed" : "pointer",
+  //                 padding: 4,
+  //                 opacity: deleteLoading ? 0.7 : 1,
+  //               }}
+  //               disabled={deleteLoading}
+  //               onClick={handleDeleteClick}
+  //             >
+  //               {deleteLoading ? (
+  //                 <>
+  //                   Deleting... <span className="spinneredit" />
+  //                 </>
+  //               ) : (
+  //                 "Yes"
+  //               )}
+  //             </button>
+
+  //             {/* NO BUTTON */}
+  //             <button
+  //               style={{
+  //                 flex: 1,
+  //                 background: "#1b1b3a",
+  //                 color: "#fff",
+  //                 border: "1px solid #2a2a55",
+  //                 borderRadius: 4,
+  //                 cursor: "pointer",
+  //                 padding: 4,
+  //               }}
+  //               onClick={(e) => {
+  //                 e.stopPropagation();
+  //                 if (!deleteLoading) {
+  //                   setConfirmDelete({ open: false, port: null });
+  //                 }
+  //               }}
+  //             >
+  //               No
+  //             </button>
+  //           </div>
+  //         </div>
+  //       )}
+  //     </div>
+  //     {pendingNets.length > 0 && (
+  //       <div style={{ marginBottom: 10 }}>
+  //         <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
+  //           New Ports
+  //         </div>
+  //         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+  //           {pendingNets.map((net) => (
+  //             <div
+  //               key={net}
+  //               style={{
+  //                 display: "flex",
+  //                 alignItems: "center",
+  //                 background: "#24245c",
+  //                 borderRadius: 14,
+  //                 padding: "4px 8px",
+  //                 fontSize: 13,
+  //               }}
+  //             >
+  //               <span>{net}</span>
+  //               <span
+  //                 onClick={(e) => handleRemovePendingNet(e, net)}
+  //                 style={{ marginLeft: 8, cursor: "pointer", color: "#ff6b6b" }}
+  //               >
+  //                 ✕
+  //               </span>
+  //             </div>
+  //           ))}
+  //         </div>
+  //       </div>
+  //     )}
+  //     <input
+  //       value={pendingNets.join(",")}
+  //       disabled
+  //       style={{
+  //         width: "100%",
+  //         fontSize: 13,
+  //         padding: "6px 8px",
+  //         background: "#16163a",
+  //         border: "1px solid #2a2a55",
+  //         borderRadius: 6,
+  //         color: "#fff",
+  //       }}
+  //     />
+  //     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+  //       <button
+  //         onClick={handleAddMore}
+  //         style={{
+  //           flex: 1,
+  //           padding: 6,
+  //           fontSize: 11,
+  //           background: "#1b1b3a",
+  //           color: "#fff",
+  //           border: "1px solid #2c2c55",
+  //           borderRadius: 4,
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         Add More
+  //       </button>
+  //       {/* <button
+  //         onClick={() => handleAddNetworkPort(nodeId, pendingNets.join(","))}
+  //         style={{
+  //           flex: 1,
+  //           padding: 6,
+  //           fontSize: 9,
+  //           background: "#1b1b3a",
+  //           color: "#fff",
+  //           border: "1px solid #2c2c55",
+  //           borderRadius: 4,
+  //           cursor: "pointer",
+  //         }}
+  //       >
+  //         Add Port
+  //       </button> */}
+  //       <button
+  //         onClick={onAddPort}
+  //         disabled={loading}
+  //         style={{
+  //           flex: 1,
+  //           padding: 6,
+  //           fontSize: 11,
+  //           background: loading ? "#2a2a55" : "#1b1b3a",
+  //           color: "#fff",
+  //           border: "1px solid #2c2c55",
+  //           borderRadius: 4,
+  //           cursor: loading ? "not-allowed" : "pointer",
+  //           opacity: loading ? 0.7 : 1,
+  //         }}
+  //       >
+  //         {loading ? (
+  //           <>
+  //             Adding... <span className="spinneredit" />
+  //           </>
+  //         ) : (
+  //           "Add Port"
+  //         )}
+  //       </button>
+  //     </div>
+  //   </div>
+  // );
+return (
+  <div
+    style={{
+      width: 340,
+      background: "linear-gradient(180deg,#0f172a,#0b1220)",
+      borderRadius: 18,
+      padding: 18,
+      boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+      color: "#e5e7eb",
+      fontSize: 13,
+      border: "1px solid rgba(255,255,255,0.05)",
+    }}
+    onMouseDown={(e) => e.stopPropagation()}
+    onClick={(e) => e.stopPropagation()}
+  >
+    {/* HEADER */}
     <div
       style={{
-        width: 300,
-        minHeight: 240,
-        background: "#0e0e23",
-        borderRadius: 11,
-        padding: 12,
-        zIndex: 30,
-        boxShadow: "0 10px 22px rgba(0,0,0,0.5)",
-        fontSize: 11,
-        color: "#fff",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
       }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
     >
+      <div style={{ fontSize: 16, fontWeight: 600 }}>Manage Ports</div>
+      <div
+        onClick={onClose}
+        style={{ cursor: "pointer", opacity: 0.6, fontSize: 16 }}
+      >
+        ✕
+      </div>
+    </div>
+
+    {/* EXISTING PORTS LABEL */}
+    <div
+      style={{
+        fontSize: 11,
+        letterSpacing: 1,
+        color: "#9cafc9",
+        marginBottom: 8,
+      }}
+    >
+      EXISTING PORTS
+    </div>
+
+    {/* SCROLL ONLY PORT LIST */}
+    <div
+      className="existing-scroll"
+      style={{
+        maxHeight: 150,
+        overflowY: "auto",
+        paddingRight: 6,
+        marginBottom: 12,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      {existingPorts.map((port) => (
+        <div
+          key={port}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "rgba(255,255,255,0.03)",
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.04)",
+          }}
+        >
+          <span style={{ fontWeight: 500 }}>{port}</span>
+
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDelete({ open: true, port });
+            }}
+            style={{
+              cursor: "pointer",
+              color: "#ef4444",
+              fontSize: 14,
+              opacity: 0.8,
+            }}
+          >
+            ✕
+          </span>
+        </div>
+      ))}
+    </div>
+
+    {/* ✅ CONFIRM DELETE OUTSIDE SCROLL */}
+    {confirmDelete?.open && (
       <div
         style={{
-          fontSize: 13,
-          fontWeight: 600,
-          marginBottom: 10,
-          display: "flex",
-          justifyContent: "space-between",
-          opacity: 0.9,
+          background: "rgba(239,68,68,0.08)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          borderRadius: 12,
+          padding: 12,
+          marginBottom: 18,
         }}
       >
-        <span>Network Ports</span>
-        <span style={{ cursor: "pointer", opacity: 0.7 }} onClick={onClose}>
-          ✕
-        </span>
-      </div>
-      <div
-        style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}
-      >
-        {existingPorts.map((port) => (
-          <div
-            key={port}
+        <div style={{ marginBottom: 10 }}>
+          Delete <b>{confirmDelete.port}</b> ?
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            disabled={deleteLoading}
+            onClick={handleDeleteClick}
             style={{
-              display: "flex",
-              alignItems: "center",
-              background: "#1b1b3a",
-              borderRadius: 14,
-              padding: "4px 8px",
-              fontSize: 13,
+              flex: 1,
+              padding: 8,
+              borderRadius: 10,
+              border: "none",
+              background: "#ef4444",
+              color: "#fff",
+              cursor: deleteLoading ? "not-allowed" : "pointer",
+              opacity: deleteLoading ? 0.6 : 1,
             }}
           >
-            <span>{port}</span>
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmDelete({ open: true, port });
-              }}
+            {deleteLoading ? "Deleting..." : "Yes"}
+          </button>
+
+          <button
+            onClick={() =>
+              !deleteLoading &&
+              setConfirmDelete({ open: false, port: null })
+            }
+            style={{
+              flex: 1,
+              padding: 8,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* ---------------- FIXED BELOW ---------------- */}
+
+    {/* PENDING PORTS */}
+    {pendingNets.length > 0 && (
+      <>
+        <div
+          style={{
+            marginBottom: 8,
+            fontSize: 11,
+            letterSpacing: 1,
+            color: "#a0b0c7",
+          }}
+        >
+          NEW PORTS (PENDING)
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            background: "rgba(37,99,235,0.06)",
+            padding: 10,
+            borderRadius: 14,
+            border: "1px solid rgba(37,99,235,0.15)",
+            marginBottom: 16,
+          }}
+        >
+          {pendingNets.map((net) => (
+            <div
+              key={net}
               style={{
-                marginLeft: 8,
-                fontSize: 13,
-                cursor: "pointer",
-                color: "#ff5c5c",
+                display: "flex",
+                alignItems: "center",
+                padding: "6px 10px",
+                background: "rgba(37,99,235,0.15)",
+                borderRadius: 20,
+                fontSize: 12,
+                color: "#60a5fa",
               }}
             >
-              ✕
-            </span>
-          </div>
-        ))}
-        {confirmDelete?.open && (
-          <div
-            style={{
-              width: "100%",
-              marginTop: 10,
-              background: "#16163a",
-              border: "1px solid #2a2a55",
-              borderRadius: 6,
-              padding: 8,
-              fontSize: 13,
-            }}
-          >
-            <div style={{ marginBottom: 8 }}>
-              Are you sure you wnat to delete <b>{confirmDelete.port}</b> ?
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {/* YES BUTTON */}
-              <button
+              {net}
+              <span
+                onClick={(e) => handleRemovePendingNet(e, net)}
                 style={{
-                  flex: 1,
-                  background: deleteLoading ? "#ff7b7b" : "#ff5c5c",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: deleteLoading ? "not-allowed" : "pointer",
-                  padding: 4,
-                  opacity: deleteLoading ? 0.7 : 1,
-                }}
-                disabled={deleteLoading}
-                onClick={handleDeleteClick}
-              >
-                {deleteLoading ? (
-                  <>
-                    Deleting... <span className="spinneredit" />
-                  </>
-                ) : (
-                  "Yes"
-                )}
-              </button>
-
-              {/* NO BUTTON */}
-              <button
-                style={{
-                  flex: 1,
-                  background: "#1b1b3a",
-                  color: "#fff",
-                  border: "1px solid #2a2a55",
-                  borderRadius: 4,
+                  marginLeft: 6,
                   cursor: "pointer",
-                  padding: 4,
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!deleteLoading) {
-                    setConfirmDelete({ open: false, port: null });
-                  }
+                  color: "#ef4444",
                 }}
               >
-                No
-              </button>
+                ✕
+              </span>
             </div>
-
-          </div>
-        )}
-      </div>
-      {pendingNets.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
-            New Ports
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {pendingNets.map((net) => (
-              <div
-                key={net}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  background: "#24245c",
-                  borderRadius: 14,
-                  padding: "4px 8px",
-                  fontSize: 13,
-                }}
-              >
-                <span>{net}</span>
-                <span
-                  onClick={(e) => handleRemovePendingNet(e, net)}
-                  style={{ marginLeft: 8, cursor: "pointer", color: "#ff6b6b" }}
-                >
-                  ✕
-                </span>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
+      </>
+    )}
+
+    {/* NEW PORT NUMBER */}
+    <div style={{ marginBottom: 18 }}>
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: 1,
+          color: "#acb8c9",
+          marginBottom: 6,
+        }}
+      >
+        NEW PORT NUMBER
+      </div>
+
       <input
         value={pendingNets.join(",")}
         disabled
         style={{
           width: "100%",
-          fontSize: 13,
-          padding: "6px 8px",
-          background: "#16163a",
-          border: "1px solid #2a2a55",
-          borderRadius: 6,
+          padding: "10px 12px",
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.03)",
           color: "#fff",
+          fontSize: 13,
         }}
       />
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <button
-          onClick={handleAddMore}
-          style={{
-            flex: 1,
-            padding: 6,
-            fontSize: 11,
-            background: "#1b1b3a",
-            color: "#fff",
-            border: "1px solid #2c2c55",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Add More
-        </button>
-        {/* <button
-          onClick={() => handleAddNetworkPort(nodeId, pendingNets.join(","))}
-          style={{
-            flex: 1,
-            padding: 6,
-            fontSize: 9,
-            background: "#1b1b3a",
-            color: "#fff",
-            border: "1px solid #2c2c55",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Add Port
-        </button> */}
-        <button
-          onClick={onAddPort}
-          disabled={loading}
-          style={{
-            flex: 1,
-            padding: 6,
-            fontSize: 11,
-            background: loading ? "#2a2a55" : "#1b1b3a",
-            color: "#fff",
-            border: "1px solid #2c2c55",
-            borderRadius: 4,
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          {loading ? (
-            <>
-              Adding... <span className="spinneredit" />
-            </>
-          ) : (
-            "Add Port"
-          )}
-        </button>
-
-      </div>
     </div>
-  );
+
+    {/* BUTTONS */}
+    <div style={{ display: "flex", gap: 10 }}>
+      <button
+        onClick={handleAddMore}
+        style={{
+          flex: 1,
+          padding: 10,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255,255,255,0.05)",
+          color: "#fff",
+          cursor: "pointer",
+        }}
+      >
+        + Add More
+      </button>
+
+      <button
+        onClick={onAddPort}
+        disabled={loading}
+        style={{
+          flex: 1,
+          padding: 10,
+          borderRadius: 12,
+          border: "none",
+          background: "#2563eb",
+          color: "#fff",
+          fontWeight: 500,
+          cursor: loading ? "not-allowed" : "pointer",
+          opacity: loading ? 0.6 : 1,
+        }}
+      >
+        {loading ? "Adding..." : "Add Port"}
+      </button>
+    </div>
+  </div>
+);
+
 };
 
 const blockEvent = (e) => {
@@ -395,7 +674,6 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
             ) : (
               "Unplug"
             )}
-
           </button>
         )}
       </div>
@@ -437,7 +715,7 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
       </div>
 
       {/* Row 3 */}
-      <button className="btn advanced">⚙ Advanced Options</button>
+      {/* <button className="btn advanced">⚙ Advanced Options</button> */}
 
       <style jsx>{`
         .port-pop {
@@ -576,15 +854,15 @@ const DnDFlow = ({
   const [bridgeLoading, setBridgeLoading] = useState(false);
   const [portRuntimeState, setPortRuntimeState] = useState({});
   const [hydrated, setHydrated] = useState(false);
-useEffect(() => {
-  const saved = localStorage.getItem("portRuntimeState");
+  useEffect(() => {
+    const saved = localStorage.getItem("portRuntimeState");
 
-  if (saved) {
-    setPortRuntimeState(JSON.parse(saved));
-  }
+    if (saved) {
+      setPortRuntimeState(JSON.parse(saved));
+    }
 
-  setHydrated(true);
-}, []);
+    setHydrated(true);
+  }, []);
   useEffect(() => {
     const theme = localStorage.getItem("theme_preference");
 
@@ -612,7 +890,7 @@ useEffect(() => {
     // const getPortColor = (portKey) => {
     //   const state = portRuntimeState?.[`${id}-${portKey}`];
     //   console.log("statestatestatestate",state);
-      
+
     //   if (!state) return "#2F80ED";
     //   console.log("statestate",state)
     //   if (!state.plugged && !state.connected) return "#ff0000";
@@ -621,16 +899,13 @@ useEffect(() => {
     //   // normal connected
     //   return "#2F80ED";
     // };
-const getPortColor = (portKey) => {
-  const state = portRuntimeState?.[`${id}-${portKey}`];
+    const getPortColor = (portKey) => {
+      const state = portRuntimeState?.[`${id}-${portKey}`];
 
-  if (!state) return "#2F80ED";
+      if (!state) return "#2F80ED";
 
-  return state.plugged ? "#2F80ED" : "#ff0000";
-};
-
-
-
+      return state.plugged ? "#2F80ED" : "#ff0000";
+    };
 
     let portKeys = [];
     if (Array.isArray(data.networkport)) {
@@ -714,49 +989,112 @@ const getPortColor = (portKey) => {
             boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
           }}
         >
-          <button
-            onMouseDown={(e) => {
-              e.stopPropagation(); // REQUIRED for ReactFlow
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              openPopover(id, {
-                x: e.clientX,
-                y: e.clientY,
-              });
-            }}
-            style={{
-              position: "absolute",
-              top: 2,
-              left: 3,
-              borderRadius: "50%",
-              width: 16,
-              height: 16,
-              fontSize: 8,
-              cursor: "pointer",
-              background: "#fff",
-              zIndex: 10,
-            }}
+          {/* <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip id={`tooltip-${id}`}>Add / Delete Node</Tooltip>}
           >
-            +
-          </button>
-          <button
-            onClick={() => deleteNode(id)}
-            style={{
-              position: "absolute",
-              top: 2,
-              right: 3,
-              borderRadius: "50%",
-              width: 16,
-              height: 16,
-              fontSize: 8,
-              cursor: "pointer",
-              background: "#fff",
-              zIndex: 10,
-            }}
+            <button
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openPopover(id, {
+                  x: e.clientX,
+                  y: e.clientY,
+                });
+              }}
+              style={{
+                position: "absolute",
+                top: 2,
+                left: 3,
+                borderRadius: "50%",
+                width: 16,
+                height: 16,
+                fontSize: 8,
+                cursor: "pointer",
+                background: "#fff",
+                zIndex: 10,
+              }}
+            >
+              +
+            </button>
+          </OverlayTrigger> */}
+          <OverlayTrigger
+  placement="top"
+  overlay={<Tooltip id={`tooltip-${id}`}>Add/Delete Node</Tooltip>}
+>
+  <button
+    onMouseDown={(e) => e.stopPropagation()}
+    onClick={(e) => {
+      e.stopPropagation();
+      openPopover(id, {
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }}
+    style={{ position: "absolute", top: 6, left: 6, width: 18, height: 18, borderRadius: "50%", border: "none", background: "rgba(0, 123, 255, 0.15)", color: "#3f89ff", fontSize: 14, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", transition: "all 0.2s ease", zIndex: 10,
+    }}
+    onMouseEnter={(e) =>
+      (e.currentTarget.style.background = "rgba(0, 123, 255, 0.25)")
+    }
+    onMouseLeave={(e) =>
+      (e.currentTarget.style.background = "rgba(0, 123, 255, 0.15)")
+    }
+  >
+    +
+  </button>
+</OverlayTrigger>
+          {/* <OverlayTrigger
+            placement="top"
+            overlay={
+              <Tooltip id={`delete-tooltip-${id}`}>Stop & Destroy VM</Tooltip>
+            }
           >
-            ×
-          </button>
+            <button
+              onMouseDown={(e) => e.stopPropagation()} // important for ReactFlow
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteNode(id);
+              }}
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 3,
+                borderRadius: "50%",
+                width: 16,
+                height: 16,
+                fontSize: 8,
+                cursor: "pointer",
+                background: "#fff",
+                zIndex: 10,
+              }}
+            >
+              ×
+            </button>
+          </OverlayTrigger> */}
+          <OverlayTrigger
+  placement="top"
+  overlay={<Tooltip id={`delete-tooltip-${id}`}>Stop & Destroy VM</Tooltip>}
+>
+  <button
+    onMouseDown={(e) => e.stopPropagation()}
+    onClick={(e) => {
+      e.stopPropagation();
+      deleteNode(id);
+    }}
+    style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: "50%", border: "none", background: "rgba(220, 53, 69, 0.15)", color: "#ff2828", fontSize: 14, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", transition: "all 0.2s ease", zIndex: 10,
+    }}
+    onMouseEnter={(e) =>
+      (e.currentTarget.style.background = "rgba(220, 53, 69, 0.25)")
+    }
+    onMouseLeave={(e) =>
+      (e.currentTarget.style.background = "rgba(220, 53, 69, 0.15)")
+    }
+  >
+    ×
+  </button>
+</OverlayTrigger>
           <div
             style={{
               width: nodeSize * 0.6,
@@ -864,7 +1202,7 @@ const getPortColor = (portKey) => {
                   onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
                   // style={handleStyle}
                   style={{ ...handleStyle, background: getPortColor(port.key) }}
-                // isConnectable={isConnectable}
+                  // isConnectable={isConnectable}
                 />
 
                 <Handle
@@ -874,7 +1212,7 @@ const getPortColor = (portKey) => {
                   onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
                   // style={handleStyle}
                   style={{ ...handleStyle, background: getPortColor(port.key) }}
-                // isConnectable={isConnectable}
+                  // isConnectable={isConnectable}
                 />
 
                 <div style={labelPosition}>{port.label}</div>
@@ -950,7 +1288,7 @@ const getPortColor = (portKey) => {
     (state) => state?.scenarios?.disconnectNetworkPort?.data,
   );
 
-  console.log("disconnectNetworkdisconnectNetwork", disconnectNetwork)
+  console.log("disconnectNetworkdisconnectNetwork", disconnectNetwork);
   const scenario = getSingleScenariosSucc?.[0] || null;
   const parsedDiagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
@@ -1016,37 +1354,33 @@ const getPortColor = (portKey) => {
   //     })),
   //   );
 
-
   // }, [portRuntimeState]);
-useEffect(() => {
-  if (!hydrated) return;
+  useEffect(() => {
+    if (!hydrated) return;
 
-  localStorage.setItem(
-    "portRuntimeState",
-    JSON.stringify(portRuntimeState)
-  );
+    localStorage.setItem("portRuntimeState", JSON.stringify(portRuntimeState));
 
-  setNodes((nds) =>
-    nds.map((node) => ({
-      ...node,
-      data: {
-        ...node.data,
-        portRuntimeState,
-      },
-    }))
-  );
-}, [portRuntimeState, hydrated]);
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          portRuntimeState,
+        },
+      })),
+    );
+  }, [portRuntimeState, hydrated]);
 
-useEffect(() => {
-  const saved = localStorage.getItem("portRuntimeState");
-  console.log("Savinaaaaaaaaag:a", portRuntimeState);
-console.log("Loading:", saved);
-  if (saved) {
-    setPortRuntimeState(JSON.parse(saved));
-  }
-}, []);
+  useEffect(() => {
+    const saved = localStorage.getItem("portRuntimeState");
+    console.log("Savinaaaaaaaaag:a", portRuntimeState);
+    console.log("Loading:", saved);
+    if (saved) {
+      setPortRuntimeState(JSON.parse(saved));
+    }
+  }, []);
 
-  console.log("datadataaaaaaaaaaaaaaaa", nodes)
+  console.log("datadataaaaaaaaaaaaaaaa", nodes);
 
   const nodeMap = useMemo(() => {
     if (!diagram?.nodes) return {};
@@ -1342,7 +1676,7 @@ console.log("Loading:", saved);
           image: draggedNode.imageUrl,
           label: draggedNode.label,
           vmid: draggedNode.vmid,
-          vmType: (draggedNode.vmType).toLowerCase(), // fallback
+          vmType: draggedNode.vmType.toLowerCase(), // fallback
           componentId: draggedNode.componentid,
           networkport: draggedNode.networkport,
           duration: draggedNode.duration,
@@ -1896,21 +2230,20 @@ console.log("Loading:", saved);
         nds.map((node) =>
           node.id === nodeId
             ? {
-              ...node,
-              data: {
-                ...node.data,
-                networkport: node.data.networkport.filter(
-                  (obj) => !obj[portKey],
-                ),
-              },
-            }
+                ...node,
+                data: {
+                  ...node.data,
+                  networkport: node.data.networkport.filter(
+                    (obj) => !obj[portKey],
+                  ),
+                },
+              }
             : node,
         ),
       );
       setConfirmDelete({ open: false, port: null });
-      setPortPopover(null);      // <-- ADD THIS (or your popover state reset)
+      setPortPopover(null); // <-- ADD THIS (or your popover state reset)
       setActivePopover(null); // CLOSE POPOVER
-
     } catch (err) {
       toast.error("Failed to delete network port");
     }
@@ -1932,7 +2265,7 @@ console.log("Loading:", saved);
 
     if (ok) {
       setActivePopover(null); // CLOSE POPOVER
-      setPendingNets([]);     // optional cleanup
+      setPendingNets([]); // optional cleanup
     }
 
     return res;
@@ -2004,10 +2337,11 @@ console.log("Loading:", saved);
                       return [1, 2, 3].map((star) => (
                         <i
                           key={star}
-                          className={`me-1 ${star <= filledStars
-                            ? `fas fa-star ${colorClass}`
-                            : "far fa-star text-muted"
-                            }`}
+                          className={`me-1 ${
+                            star <= filledStars
+                              ? `fas fa-star ${colorClass}`
+                              : "far fa-star text-muted"
+                          }`}
                           style={{ fontSize: "18px" }}
                         ></i>
                       ));
@@ -2135,7 +2469,7 @@ console.log("Loading:", saved);
                 data={portPopover}
                 runtimeState={
                   portRuntimeState?.[
-                  `${portPopover.nodeId}-${portPopover.portKey}`
+                    `${portPopover.nodeId}-${portPopover.portKey}`
                   ]
                 }
                 onClose={() => setPortPopover(null)}

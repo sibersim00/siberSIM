@@ -365,7 +365,7 @@ const ScenarioDiagram = ({
       ref={reactFlowWrapper}
       style={{ width: "100%", height: "80vh", borderRadius: 8 }}
     >
-      {/* {String(manipulationFlag) === "true" &&
+      {String(manipulationFlag) === "true" &&
   ["Start", "Resume"].includes(isrunning) && (
     <button
       onClick={async () => {
@@ -415,7 +415,7 @@ const ScenarioDiagram = ({
     >
       ✏️
     </button>
-)} */}
+)}
 
 
       {elements.nodes.length > 0 && (

@@ -154,7 +154,7 @@ const ImageNode = ({ data, isConnectable }) => {
               break;
             case 'Right':
               handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, right: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             case 'Bottom':
               handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
@@ -162,7 +162,7 @@ const ImageNode = ({ data, isConnectable }) => {
               break;
             case 'Left':
               handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, left: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             default:
               break;
@@ -295,7 +295,7 @@ const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
       ref={reactFlowWrapper}
       style={{ width: '100%', height: '80vh', borderRadius: 8 }}
     >
-    {/* {getSingleScenariosSucc?.[0]?.status !== "Pause" && (
+    {getSingleScenariosSucc?.[0]?.status !== "Pause" && (
           <button
             onClick={async () => {
               try {
@@ -345,7 +345,7 @@ const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
           >
             ✏️
           </button>
-         )}  */}
+         )} 
       {elements.nodes.length > 0 && (
         <ReactFlow
           nodes={elements.nodes}
