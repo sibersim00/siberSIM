@@ -76,8 +76,6 @@ const SidebarFlow = ({
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
-  console.log("getComponentByCatDatagetComponentByCatData", getComponentByCatData)
-
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     const theme = localStorage.getItem("theme_preference") || "light";
@@ -87,14 +85,6 @@ const SidebarFlow = ({
     dispatch(getCategoriesList());
     dispatch(getSenarioDigramList());
   }, []);
-  // useEffect(() => {
-  //   if (scenarioId) {
-  //     console.log("scenarioIdscenarioIdscenarioId", scenarioId)
-  //     const payload = { scenarioid: scenarioId };
-  //     dispatch(getSingleScenarios(scenarioId));
-  //   }
-  // }, [scenarioId]);
-
   useEffect(() => {
     if (query.slug) {
       // setRowId(query.slug[0]);
@@ -102,7 +92,6 @@ const SidebarFlow = ({
     }
   }, [query.slug]);
   const handleDragStart = (e, node) => {
-   console.log("nodeeeeeeeeeeeeee",node)
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
@@ -167,8 +156,6 @@ const SidebarFlow = ({
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
   };
-  console.log("getComponentByCatDatagetComponentByCatDatagetComponentByCatData",getComponentByCatData);
-  
   useEffect(() => {
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({
@@ -183,8 +170,6 @@ const SidebarFlow = ({
       setComponentDropDown(filteredData);
     }
   }, [getComponentByCatData]);
-console.log("selectedComponentselectedComponent",selectedComponent);
-
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
       setToBeDragComponent((prev) => {
@@ -198,8 +183,6 @@ console.log("selectedComponentselectedComponent",selectedComponent);
   }, [selectedComponent]);
   useEffect(() => {
     if (toBeDragComponent && toBeDragComponent.length > 0) {
-      console.log("toBeDragComponenttoBeDragComponent", toBeDragComponent)
-
       const newNodes = toBeDragComponent.map((cat) => ({
         id: cat?.value,
         imageUrl: cat?.subcategoryimage
@@ -212,7 +195,6 @@ console.log("selectedComponentselectedComponent",selectedComponent);
         duration: cat?.duration,
         componentid: cat?.componentid,
       }));
-      console.log("newNodesnewNodes", newNodes)
       setImageNodeData((prevData) => {
         const existingIds = new Set(prevData.map((item) => item.id));
         const merged = [...prevData];
@@ -228,122 +210,113 @@ console.log("selectedComponentselectedComponent",selectedComponent);
     }
   }, [toBeDragComponent]);
 
-  useEffect(() => {
-    if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
-      return;
- const scenario = getSingleScenariosSucc[0];
-    console.log("scenarioscenario", scenario);
-    if (!scenario) return;
+//   useEffect(() => {
+//     if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
+//       return;
+//  const scenario = getSingleScenariosSucc[0];
+//     console.log("scenarioscenario", scenario);
+//     if (!scenario) return;
+//   /* ---------- restore diagram ---------- */
+//     if (scenario.scenariodiagram?.trim()) {
+//       const parsed = JSON.parse(
+//         scenario.scenariodiagram.replace("flowchartData ", "")
+//       );
+//       if (parsed?.nodes && parsed?.edges) {
+//         setNodes(parsed.nodes);
+//         setEdges(parsed.edges);
+//       }
+//     }
+//   /* ---------- restore components ---------- */
+//     if (!scenario.components) return;
+//     let parsedComponents = [];
+//     console.log("componentssssssssssss", scenario.components)
+//     try {
+//       parsedComponents = JSON.parse(scenario.components);
+//       console.log("parsedComponentsparsedComponents", parsedComponents)
+//     } catch (e) {
+//       console.error("Invalid components JSON", e);
+//       return;
+//     }
+//     const normalized = parsedComponents.map((node) => ({
+//       ...node,
+//       id: node.id || node.nodeid,
+//       componentid: node.componentid || node.componentId || node.id,
+//       imageUrl: normalizeImageUrl(
+//         node.imageUrl || node.subcategoryimage
+//       ),
+//       networkport: node.networkport || [],
+//     }
+//     ));
+//     console.log("normalizednormalized", normalized)
+
+//     setImageNodeData(normalized);
+//     setDraggedComponent(normalized);
+//     setDroppedImages(normalized.map((n) => n.id));
+//   }, [getSingleScenariosSucc]);
+useEffect(() => {
+  if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
+    return;
+
+  const scenario = getSingleScenariosSucc[0];
+  if (!scenario) return;
   /* ---------- restore diagram ---------- */
-    if (scenario.scenariodiagram?.trim()) {
-      const parsed = JSON.parse(
+  let parsedDiagram = null;
+  if (scenario.scenariodiagram?.trim()) {
+    try {
+      parsedDiagram = JSON.parse(
         scenario.scenariodiagram.replace("flowchartData ", "")
       );
-      if (parsed?.nodes && parsed?.edges) {
-        setNodes(parsed.nodes);
-        setEdges(parsed.edges);
+      if (parsedDiagram?.nodes && parsedDiagram?.edges) {
+        setNodes(parsedDiagram.nodes);
+        setEdges(parsedDiagram.edges);
+      }
+    } catch (err) {
+      console.error("Invalid scenariodiagram JSON", err);
+    }
+  }
+  /* ---------- restore components ---------- */
+  if (!scenario.components) return;
+  let parsedComponents = [];
+  try {
+    parsedComponents = JSON.parse(scenario.components);
+  } catch (e) {
+    console.error("Invalid components JSON", e);
+    return;
+  }
+  const normalized = parsedComponents.map((node) => {
+    const componentId = node.componentid || node.componentId || node.id;
+    let updatedImage = "";
+    if (parsedDiagram?.nodes?.length) {
+      const matchedNode = parsedDiagram.nodes.find(
+        (n) => String(n?.data?.componentId) === String(componentId)
+      );
+      if (matchedNode?.data?.image) {
+        updatedImage = matchedNode.data.image;
       }
     }
-  /* ---------- restore components ---------- */
-    if (!scenario.components) return;
-    let parsedComponents = [];
-    console.log("componentssssssssssss", scenario.components)
-    try {
-      parsedComponents = JSON.parse(scenario.components);
-      console.log("parsedComponentsparsedComponents", parsedComponents)
-    } catch (e) {
-      console.error("Invalid components JSON", e);
-      return;
-    }
-    const normalized = parsedComponents.map((node) => ({
+    return {
       ...node,
       id: node.id || node.nodeid,
-      componentid: node.componentid || node.componentId || node.id,
+      componentid: componentId,
       imageUrl: normalizeImageUrl(
-        node.imageUrl || node.subcategoryimage
+        updatedImage || node.imageUrl || node.subcategoryimage
       ),
       networkport: node.networkport || [],
-    }
-    ));
-    console.log("normalizednormalized", normalized)
-
-    setImageNodeData(normalized);
-    setDraggedComponent(normalized);
-    setDroppedImages(normalized.map((n) => n.id));
-  }, [getSingleScenariosSucc]);
-
-  //-new component dragged 
-  // useEffect(() => {
-  //   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
-  //     return;
-  //   const scenario = getSingleScenariosSucc[0];
-  //   console.log("scenarioscenario", scenario);
-  //   if (!scenario) return;
-
-  //   /* ---------- restore diagram ---------- */
-  //   let parsedDiagram = null;
-
-  //   if (scenario.scenariodiagram?.trim()) {
-  //     try {
-  //       parsedDiagram = JSON.parse(
-  //         scenario.scenariodiagram.replace("flowchartData ", "")
-  //       );
-
-  //       if (parsedDiagram?.nodes && parsedDiagram?.edges) {
-  //         setNodes(parsedDiagram.nodes);
-  //         setEdges(parsedDiagram.edges);
-  //       }
-  //     } catch (e) {
-  //       console.error("Invalid scenariodiagram JSON", e);
-  //       return;
-  //     }
-  //   }
-
-  //   /* ---------- restore components FROM DIAGRAM (source of truth) ---------- */
-  //   if (!parsedDiagram?.nodes) return;
-
-  //   const diagramComponents = parsedDiagram.nodes
-  //     .filter((n) => n.type === "imageNode" && n.data)
-  //     .map((node) => ({
-  //       id: node.id,
-  //       nodeid: node.id,
-
-  //       // IMPORTANT: keep compatibility with old code
-  //       componentid: node.data.componentId || node.data.componentid || node.id,
-
-  //       label: node.data.label || "",
-  //       duration: node.data.duration ?? "",
-  //       vmid: node.data.vmid,
-  //       vmType: node.data.vmType,
-
-  //       imageUrl: normalizeImageUrl(node.data.image),
-  //       networkport: node.data.networkport || [],
-  //     }));
-
-  //   console.log("diagramComponents ", diagramComponents);
-
-  //   // sidebar data
-  //   setImageNodeData(diagramComponents);
-
-  //   // drag state
-  //   setDraggedComponent(diagramComponents);
-
-  //   // track dropped images (for preventing duplicate drop)
-  //   setDroppedImages(diagramComponents.map((n) => n.id));
-
-  // }, [getSingleScenariosSucc]);
+    };
+  });
+  setImageNodeData(normalized);
+  setDraggedComponent(normalized);
+  setDroppedImages(normalized.map((n) => n.id));
+}, [getSingleScenariosSucc]);
 
   useEffect(() => {
     if (!imageNodeData?.length) return;
-
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
         const match = imageNodeData.find(
           (img) => String(img.id) === String(node.id)
         );
-
         if (!match) return node;
-
         return {
           ...node,
           data: {
