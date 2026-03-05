@@ -104,238 +104,8 @@ const NetworkPopover = ({
 
   console.log("loadingloading", loading);
 
-  // return (
-  //   <div
-  //     style={{
-  //       width: 300,
-  //       minHeight: 240,
-  //       background: "#0e0e23",
-  //       borderRadius: 11,
-  //       padding: 12,
-  //       zIndex: 30,
-  //       boxShadow: "0 10px 22px rgba(0,0,0,0.5)",
-  //       fontSize: 11,
-  //       color: "#fff",
-  //     }}
-  //     onMouseDown={(e) => e.stopPropagation()}
-  //     onClick={(e) => e.stopPropagation()}
-  //   >
-  //     <div
-  //       style={{
-  //         fontSize: 13,
-  //         fontWeight: 600,
-  //         marginBottom: 10,
-  //         display: "flex",
-  //         justifyContent: "space-between",
-  //         opacity: 0.9,
-  //       }}
-  //     >
-  //       <span>Network Ports</span>
-  //       <span style={{ cursor: "pointer", opacity: 0.7 }} onClick={onClose}>
-  //         ✕
-  //       </span>
-  //     </div>
-  //     <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
-  //       Delete Network Port
-  //     </div>
 
-  //     <div
-  //       style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}
-  //     >
-  //       {existingPorts.map((port) => (
-  //         <div
-  //           key={port}
-  //           style={{
-  //             display: "flex",
-  //             alignItems: "center",
-  //             background: "#1b1b3a",
-  //             borderRadius: 14,
-  //             padding: "4px 8px",
-  //             fontSize: 13,
-  //           }}
-  //         >
-  //           <span>{port}</span>
-  //           <span
-  //             onClick={(e) => {
-  //               e.stopPropagation();
-  //               setConfirmDelete({ open: true, port });
-  //             }}
-  //             style={{
-  //               marginLeft: 8,
-  //               fontSize: 13,
-  //               cursor: "pointer",
-  //               color: "#ff5c5c",
-  //             }}
-  //           >
-  //             ✕
-  //           </span>
-  //         </div>
-  //       ))}
-  //       {confirmDelete?.open && (
-  //         <div
-  //           style={{
-  //             width: "100%",
-  //             marginTop: 10,
-  //             background: "#16163a",
-  //             border: "1px solid #2a2a55",
-  //             borderRadius: 6,
-  //             padding: 8,
-  //             fontSize: 13,
-  //           }}
-  //         >
-  //           <div style={{ marginBottom: 8 }}>
-  //             Are you sure you wnat to delete <b>{confirmDelete.port}</b> ?
-  //           </div>
-  //           <div style={{ display: "flex", gap: 6 }}>
-  //             {/* YES BUTTON */}
-  //             <button
-  //               style={{
-  //                 flex: 1,
-  //                 background: deleteLoading ? "#ff7b7b" : "#ff5c5c",
-  //                 color: "#fff",
-  //                 border: "none",
-  //                 borderRadius: 4,
-  //                 cursor: deleteLoading ? "not-allowed" : "pointer",
-  //                 padding: 4,
-  //                 opacity: deleteLoading ? 0.7 : 1,
-  //               }}
-  //               disabled={deleteLoading}
-  //               onClick={handleDeleteClick}
-  //             >
-  //               {deleteLoading ? (
-  //                 <>
-  //                   Deleting... <span className="spinneredit" />
-  //                 </>
-  //               ) : (
-  //                 "Yes"
-  //               )}
-  //             </button>
-
-  //             {/* NO BUTTON */}
-  //             <button
-  //               style={{
-  //                 flex: 1,
-  //                 background: "#1b1b3a",
-  //                 color: "#fff",
-  //                 border: "1px solid #2a2a55",
-  //                 borderRadius: 4,
-  //                 cursor: "pointer",
-  //                 padding: 4,
-  //               }}
-  //               onClick={(e) => {
-  //                 e.stopPropagation();
-  //                 if (!deleteLoading) {
-  //                   setConfirmDelete({ open: false, port: null });
-  //                 }
-  //               }}
-  //             >
-  //               No
-  //             </button>
-  //           </div>
-  //         </div>
-  //       )}
-  //     </div>
-  //     {pendingNets.length > 0 && (
-  //       <div style={{ marginBottom: 10 }}>
-  //         <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
-  //           New Ports
-  //         </div>
-  //         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-  //           {pendingNets.map((net) => (
-  //             <div
-  //               key={net}
-  //               style={{
-  //                 display: "flex",
-  //                 alignItems: "center",
-  //                 background: "#24245c",
-  //                 borderRadius: 14,
-  //                 padding: "4px 8px",
-  //                 fontSize: 13,
-  //               }}
-  //             >
-  //               <span>{net}</span>
-  //               <span
-  //                 onClick={(e) => handleRemovePendingNet(e, net)}
-  //                 style={{ marginLeft: 8, cursor: "pointer", color: "#ff6b6b" }}
-  //               >
-  //                 ✕
-  //               </span>
-  //             </div>
-  //           ))}
-  //         </div>
-  //       </div>
-  //     )}
-  //     <input
-  //       value={pendingNets.join(",")}
-  //       disabled
-  //       style={{
-  //         width: "100%",
-  //         fontSize: 13,
-  //         padding: "6px 8px",
-  //         background: "#16163a",
-  //         border: "1px solid #2a2a55",
-  //         borderRadius: 6,
-  //         color: "#fff",
-  //       }}
-  //     />
-  //     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-  //       <button
-  //         onClick={handleAddMore}
-  //         style={{
-  //           flex: 1,
-  //           padding: 6,
-  //           fontSize: 11,
-  //           background: "#1b1b3a",
-  //           color: "#fff",
-  //           border: "1px solid #2c2c55",
-  //           borderRadius: 4,
-  //           cursor: "pointer",
-  //         }}
-  //       >
-  //         Add More
-  //       </button>
-  //       {/* <button
-  //         onClick={() => handleAddNetworkPort(nodeId, pendingNets.join(","))}
-  //         style={{
-  //           flex: 1,
-  //           padding: 6,
-  //           fontSize: 9,
-  //           background: "#1b1b3a",
-  //           color: "#fff",
-  //           border: "1px solid #2c2c55",
-  //           borderRadius: 4,
-  //           cursor: "pointer",
-  //         }}
-  //       >
-  //         Add Port
-  //       </button> */}
-  //       <button
-  //         onClick={onAddPort}
-  //         disabled={loading}
-  //         style={{
-  //           flex: 1,
-  //           padding: 6,
-  //           fontSize: 11,
-  //           background: loading ? "#2a2a55" : "#1b1b3a",
-  //           color: "#fff",
-  //           border: "1px solid #2c2c55",
-  //           borderRadius: 4,
-  //           cursor: loading ? "not-allowed" : "pointer",
-  //           opacity: loading ? 0.7 : 1,
-  //         }}
-  //       >
-  //         {loading ? (
-  //           <>
-  //             Adding... <span className="spinneredit" />
-  //           </>
-  //         ) : (
-  //           "Add Port"
-  //         )}
-  //       </button>
-  //     </div>
-  //   </div>
-  // );
-return (
+  return (
   <div
     style={{
       width: 340,
@@ -2305,6 +2075,26 @@ const DnDFlow = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [connectPopover]);
 
+  const getPopoverPosition = (anchor) => {
+  const popoverWidth = 340;
+  const margin = 20;
+
+  let left = anchor.x;
+  let top = anchor.y;
+
+  // if popover goes outside right screen → move left
+  if (anchor.x + popoverWidth > window.innerWidth) {
+    left = anchor.x - popoverWidth - margin;
+  }
+
+  // prevent bottom overflow
+  const popoverHeight = 400;
+  if (anchor.y + popoverHeight > window.innerHeight) {
+    top = window.innerHeight - popoverHeight - margin;
+  }
+
+  return { left, top };
+};
   return (
     <>
       <ToastContainer />
@@ -2418,12 +2208,17 @@ const DnDFlow = ({
           </ReactFlow>
           {activePopover && (
             <div
-              style={{
-                position: "fixed",
-                top: activePopover.anchor.y,
-                left: activePopover.anchor.x,
-                zIndex: 9999,
-              }}
+              // style={{
+              //   position: "fixed",
+              //   top: activePopover.anchor.y,
+              //   left: activePopover.anchor.x,
+              //   zIndex: 9999,
+              // }}
+                style={{
+      position: "fixed",
+      ...getPopoverPosition(activePopover.anchor),
+      zIndex: 9999,
+    }}
             >
               <NetworkPopover
                 nodeId={activePopover.nodeId}

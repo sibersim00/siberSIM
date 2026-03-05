@@ -147,40 +147,11 @@ const idSchema = joi.string().required().messages({
   "string.empty": "Invalid Request: Scenario id must be a valid number",
   "any.required": "Invalid Request: Scenario id is required",
 });
-
-// const componentconfigSchema = joi.object({
-//   scenarioid: joi.alternatives([
-//     joi.number(),
-//     joi.string().regex(/^\d+$/)
-//   ])
-//     .required()
-//     .messages({
-//       "alternatives.types": "Invalid Request: Scenario id must be a number",
-//       "any.required": "Invalid Request: Scenario id is required",
-//     }),
-  
-//   component_config: joi.array().items(joi.object()).required().messages({
-//     "array.base": "Invalid Request: Component configuration must be an array",
-//     "any.required": "Invalid Request: Component configuration is required",
-//   }),
-
-//   network_config: joi.array().required().messages({
-//     "array.base": "Invalid Request: Network configuration must be an array",
-//     "any.required": "Invalid Request: Network configuration is required",
-//   }),
-
-//   scenariostatus: joi.string().valid("Draft", "Publish").required().messages({
-//     "string.base": "Invalid Request: Scenario status must be a string",
-//     "any.only": "Invalid Request: Scenario status must be either 'Draft' or 'Publish'",
-//     "any.required": "Invalid Request: Scenario status is required",
-//   }),
-// });
-
-
 const messages = {
   'save_diagram':"Scenario Diagram Save Successfully",
   'add_success':"Scenario Created Successfully",
   'status_change': "Scenario Status Updated Successfully",
+  'status_Manipulation_change': "Scenario Manipulation Status Updated Successfully",
   'save_component_configuration' : "Component Saved Successfully",
   'scenario_publish_success': "Scenario has been published successfully.",
   'scenario_already_published': "This scenario has already been published.",

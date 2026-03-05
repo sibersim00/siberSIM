@@ -18,7 +18,6 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
-  // clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
@@ -638,15 +637,16 @@ export default function ProxmoxConsole() {
         selectedFiles.push(f.file);
       });
       let filesStr = selectedFiles.join(",");
-      formik.setFieldValue(name, filesStr ? filesStr : "");
+      // formik.setFieldValue(name, filesStr ? filesStr : "");
       setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
     } else {
       formik.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
-      setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
-      );
+      // setUploadedFile(
+      //   files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
+      // );
     }
   };
+
   console.log("getVMdetail", getVMdetail);
 
   const formik = useFormik({
@@ -668,22 +668,48 @@ export default function ProxmoxConsole() {
       //     "Component name must not have spaces at the beginning or end",
       //     (value) => value === value?.trim(),
       //   ),
+      // componentName: Yup.string()
+      //   .required("Component name is required")
+      //   .matches(
+      //     /^[A-Za-z0-9-]{1,63}$/,
+      //     "Only letters, numbers and dash (-) allowed. No spaces, underscore or full stop.",
+      //   )
+      //   .test(
+      //     "no-leading-dash",
+      //     "Component name cannot start with '-'",
+      //     (value) => !value || !/^-/.test(value),
+      //   )
+      //   .test(
+      //     "no-trailing-dash",
+      //     "Component name cannot end with '-'",
+      //     (value) => !value || !/-$/.test(value),
+      //   ),
       componentName: Yup.string()
-        .required("Component name is required")
-        .matches(
-          /^[A-Za-z0-9-]{1,63}$/,
-          "Only letters, numbers and dash (-) allowed. No spaces, underscore or full stop.",
-        )
-        .test(
-          "no-leading-dash",
-          "Component name cannot start with '-'",
-          (value) => !value || !/^-/.test(value),
-        )
-        .test(
-          "no-trailing-dash",
-          "Component name cannot end with '-'",
-          (value) => !value || !/-$/.test(value),
-        ),
+  .required("Component name is required")
+  .matches(
+    /^[A-Za-z0-9.-]{1,63}$/,
+    "Only letters (a-z, A-Z), numbers (0-9), dash (-) and dot (.) are allowed. No spaces, underscore or special characters.",
+  )
+  .test(
+    "no-leading-dash",
+    "Component name cannot start with '-'",
+    (value) => !value || !/^-/.test(value),
+  )
+  .test(
+    "no-trailing-dash",
+    "Component name cannot end with '-'",
+    (value) => !value || !/-$/.test(value),
+  )
+  .test(
+    "no-leading-dot",
+    "Component name cannot start with '.'",
+    (value) => !value || !/^\./.test(value),
+  )
+  .test(
+    "no-trailing-dot",
+    "Component name cannot end with '.'",
+    (value) => !value || !/\.$/.test(value),
+  ),
 
       componentcategoryid: Yup.string().required(
         "Component category is required",
@@ -869,6 +895,10 @@ export default function ProxmoxConsole() {
       }
     },
   });
+
+  console.log("formikformikformikformik",formik);
+  
+  
   return (
     <>
       <Seo title={`${cleanName}`} />
@@ -1587,7 +1617,15 @@ export default function ProxmoxConsole() {
                         value={formik.values.componentName}
                         onChange={formik.handleChange}
                         className="modern-input"
+                          isInvalid={
+      formik.touched.componentName && formik.errors.componentName
+    }
                       />
+                        {formik.touched.componentName && formik.errors.componentName && (
+    <Form.Control.Feedback type="invalid">
+      {formik.errors.componentName}
+    </Form.Control.Feedback>
+  )}
                     </Form.Group>
                     <Row>
                       {/* Category */}
@@ -1601,6 +1639,9 @@ export default function ProxmoxConsole() {
                             value={formik.values.componentcategoryid}
                             onChange={formik.handleChange}
                             className="modern-input"
+                             isInvalid={
+      formik.touched.componentcategoryid && formik.errors.componentcategoryid
+    }
                           >
                             <option value="">Select Category</option>
                             {catDropDownData.map((cat) => (
@@ -1609,6 +1650,12 @@ export default function ProxmoxConsole() {
                               </option>
                             ))}
                           </Form.Select>
+                            {formik.touched.componentcategoryid &&
+    formik.errors.componentcategoryid && (
+      <Form.Control.Feedback type="invalid">
+        {formik.errors.componentcategoryid}
+      </Form.Control.Feedback>
+    )}
                         </Form.Group>
                       </Col>
 

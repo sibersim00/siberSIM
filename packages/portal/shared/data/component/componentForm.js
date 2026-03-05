@@ -250,12 +250,12 @@ const ComponentForm = (props) => {
       });
       let filesStr = selectedFiles.join(",");
       formValidation.setFieldValue(name, filesStr ? filesStr : "");
-      setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
+      // setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
     } else {
       formValidation.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
-      setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
-      );
+      // setUploadedFile(
+      //   files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
+      // );
     }
   };
 

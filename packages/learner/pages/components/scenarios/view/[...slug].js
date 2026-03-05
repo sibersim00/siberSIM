@@ -585,6 +585,9 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
 
   useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
+      if (!step || !step.trim()) {
+      return;
+      }
     setVmStep(step);
     if (step === "Running" || step === "Pause") {
       setCountdown(10);

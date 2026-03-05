@@ -50,7 +50,7 @@ const changeMaipulationStatus = ({ db, validation }) => async (body, session_use
       replacements: queryParams,
       type: db.sequelize.QueryTypes.UPDATE,
     });
-    return { statusCode: 200, message: validation.messages.status_change };
+    return { statusCode: 200, message: validation.messages.status_Manipulation_change };
   } catch (error) {
     console.error("Error Scenario Status:", error);
     throw error;
@@ -58,7 +58,7 @@ const changeMaipulationStatus = ({ db, validation }) => async (body, session_use
 };
 const getById = ({ db }) => async (uuid) => {
   try {
-    const res = await db.sequelize.query( `SELECT s.scenarioid, s.scenarioidentification, s.scenariouuid, s.scenariotitle, s.scenariodescription, s.scenariolevel, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.components, s.component_config, s.network_config, s.instruction_file, s.scenarioimage, s.instructor_id, s.duration, s.scenariostatus, s.publishedon, CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, CONCAT(user.firstname, ' ', user.lastname) AS instructor_name, DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid  = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT  JOIN ad_users user ON user.userid = s.instructor_id WHERE s.deletedon IS NULL AND  s.scenariouuid = :_uuid`,
+    const res = await db.sequelize.query( `SELECT s.scenarioid,s.manipulation_flag, s.scenarioidentification, s.scenariouuid, s.scenariotitle, s.scenariodescription, s.scenariolevel, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.components, s.component_config, s.network_config, s.instruction_file, s.scenarioimage, s.instructor_id, s.duration, s.scenariostatus, s.publishedon, CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, CONCAT(user.firstname, ' ', user.lastname) AS instructor_name, DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid  = s.scenariocategoryid INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT  JOIN ad_users user ON user.userid = s.instructor_id WHERE s.deletedon IS NULL AND  s.scenariouuid = :_uuid`,
       {
         replacements: { _uuid: uuid },
         type: db.sequelize.QueryTypes.SELECT,
@@ -182,10 +182,11 @@ const create = ({ db }) => async (body, session_userid) => {
     if (check_scenario) {
       return { statusCode: 400, message: "The provided title is already registered. Please use a different one.", };
     }
-    const insertQuery = `INSERT INTO scenarios (scenarioidentification,scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, instructor_id, createdby, createdon, publishedon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,Now()) 
+    const insertQuery = `INSERT INTO scenarios (scenarioidentification,manipulation_flag,scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, instructor_id, createdby, createdon, publishedon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,Now()) 
         `;
     const queryParams = [
       body.identification,
+      body.manipulation_flag,
       body.title,
       body.description,
       body.level,
@@ -241,8 +242,8 @@ const update = ({ db }) => async (body, session_userid) => {
         statusCode: 400, message: "The provided title is already registered. Please use a different one.",
       };
     }
-    const updateQuery = `UPDATE scenarios SET scenarioidentification = ?, scenariotitle = ?, scenariodescription = ?, scenariolevel = ?, scenariocategoryid = ?, scenariosubcategoryid = ?, instruction_file = ?, duration = ?, scenarioimage = ?,instructor_id = ?, modifiedby = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenarioid = ?`;
-    const queryParams = [ body.identification, body.title, body.description, body.level, body.scenariocategoryid, body.scenariosubcategoryid, body.instruction_file, body.duration, body.scenarioimage, body.instructor_id, session_userid, body.scenarioid,
+    const updateQuery = `UPDATE scenarios SET scenarioidentification = ?,manipulation_flag = ?, scenariotitle = ?, scenariodescription = ?, scenariolevel = ?, scenariocategoryid = ?, scenariosubcategoryid = ?, instruction_file = ?, duration = ?, scenarioimage = ?,instructor_id = ?, modifiedby = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenarioid = ?`;
+    const queryParams = [ body.identification,body.manipulation_flag, body.title, body.description, body.level, body.scenariocategoryid, body.scenariosubcategoryid, body.instruction_file, body.duration, body.scenarioimage, body.instructor_id, session_userid, body.scenarioid,
     ];
     await db.sequelize.query(updateQuery, {
       replacements: queryParams,
