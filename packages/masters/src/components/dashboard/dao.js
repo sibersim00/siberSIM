@@ -122,26 +122,50 @@ WHERE deletedon IS NULL`;
       type: db.sequelize.QueryTypes.SELECT,
     });
 
+  //   let sessionQuery = `
+  // SELECT 
+  //   vr.scenarioid, 
+  //   COUNT(*) AS running_sessions 
+  // FROM vm_request vr
+  // INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
+  // WHERE vr.vm_steps = 'Running'
+  //   AND vr.requestedby_role = 'Learner'
+  //   AND s.deletedon IS NULL`;
+
+  //   if (usertype === 'Instructor') {
+  //     sessionQuery += ` AND s.createdby = :userid`;
+  //   }
+
+  //   sessionQuery += ` GROUP BY vr.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
+
     let sessionQuery = `
-  SELECT 
-    vr.scenarioid, 
-    COUNT(*) AS running_sessions 
-  FROM vm_request vr
-  INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
-  WHERE vr.vm_steps = 'Running'
-    AND vr.requestedby_role = 'Learner'
-    AND s.deletedon IS NULL`;
+SELECT 
+  vr.scenarioid, 
+  COUNT(*) AS running_sessions
+FROM vm_request vr
+INNER JOIN scenarios s 
+  ON vr.scenarioid = s.scenarioid
+LEFT JOIN learners l 
+  ON l.learner_id = vr.requestedby_id
+WHERE vr.vm_steps = 'Running'
+  AND vr.requestedby_role = 'Learner'
+  AND s.deletedon IS NULL
+`;
 
-    if (usertype === 'Instructor') {
-      sessionQuery += ` AND s.createdby = :userid`;
-    }
+if (usertype === 'Instructor') {
+  sessionQuery += ` AND l.instructor_id = :userid`;
+}
 
-    sessionQuery += ` GROUP BY vr.scenarioid ORDER BY running_sessions DESC LIMIT 5`;
-
+sessionQuery += `
+GROUP BY vr.scenarioid
+ORDER BY running_sessions DESC
+LIMIT 5
+`;
     const runningSessions = await db.sequelize.query(sessionQuery, {
       replacements: { userid },
       type: db.sequelize.QueryTypes.SELECT,
     });
+console.log("runningSessionsrunningSessions",runningSessions);
 
     let runningSessionDetailsQuery = `
   SELECT 
@@ -160,7 +184,7 @@ WHERE deletedon IS NULL`;
     AND s.deletedon IS NULL
 `;
     if (usertype === 'Instructor') {
-      runningSessionDetailsQuery += ` AND s.createdby = :userid`;
+      runningSessionDetailsQuery += ` AND l.instructor_id = :userid`;
     }
     runningSessionDetailsQuery += `
   ORDER BY vr.startedon DESC
@@ -174,34 +198,68 @@ WHERE deletedon IS NULL`;
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
+    console.log("useriduseriduserid",userid);
+    console.log("usertypeusertypeusertypeusertype",usertype);
+    
     const [sessionStats = { total_sessions: 0, pause_resume_count: 0, running_sessions: 0 }] =
-      await db.sequelize.query(
-        `SELECT 
-       COUNT(*) AS total_sessions,
-         SUM(
-    CASE 
-      WHEN vr.status IN ('Pause', 'Resume','Start')
-           AND vr.vm_steps = 'Running'
-      THEN 1 ELSE 0
-    END
-  ) AS pause_resume_count,
-       SUM(
-         CASE 
-           WHEN vr.status IN ('Resume','Start') AND vr.vm_steps = 'Running' 
-           THEN 1 ELSE 0 
-         END
-       ) AS running_sessions
-     FROM vm_request vr
-     INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
-     WHERE vr.requestedby_role IN ('Learner','Instructor','Admin','Event')
-       AND s.deletedon IS NULL
-       ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
-        {
-          replacements: { userid },
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-
+  //     await db.sequelize.query(
+  //       `SELECT 
+  //      COUNT(*) AS total_sessions,
+  //        SUM(
+  //   CASE 
+  //     WHEN vr.status IN ('Pause', 'Resume','Start')
+  //          AND vr.vm_steps = 'Running'
+  //     THEN 1 ELSE 0
+  //   END
+  // ) AS pause_resume_count,
+  //      SUM(
+  //        CASE 
+  //          WHEN vr.status IN ('Resume','Start') AND vr.vm_steps = 'Running' 
+  //          THEN 1 ELSE 0 
+  //        END
+  //      ) AS running_sessions
+  //    FROM vm_request vr
+  //    INNER JOIN scenarios s ON vr.scenarioid = s.scenarioid
+  //    WHERE vr.requestedby_role IN ('Learner','Instructor','Admin','Event')
+  //      AND s.deletedon IS NULL
+  //      ${usertype === 'Instructor' ? 'AND s.createdby = :userid' : ''}`,
+  //       {
+  //         replacements: { userid },
+  //         type: db.sequelize.QueryTypes.SELECT,
+  //       }
+  //     );
+await db.sequelize.query(
+  `SELECT 
+    COUNT(*) AS total_sessions,
+    SUM(
+      CASE 
+        WHEN vr.status IN ('Pause','Resume','Start')
+        AND vr.vm_steps = 'Running'
+        THEN 1 ELSE 0
+      END
+    ) AS pause_resume_count,
+    SUM(
+      CASE 
+        WHEN vr.status IN ('Resume','Start')
+        AND vr.vm_steps = 'Running'
+        THEN 1 ELSE 0
+      END
+    ) AS running_sessions
+  FROM vm_request vr
+  INNER JOIN scenarios s 
+    ON vr.scenarioid = s.scenarioid
+  LEFT JOIN learners l 
+    ON l.learner_id = vr.requestedby_id 
+    AND vr.requestedby_role = 'Learner'
+  WHERE vr.requestedby_role IN ('Learner','Instructor','Admin','Event')
+    AND s.deletedon IS NULL
+    ${usertype === 'Instructor' ? 'AND l.instructor_id = :userid' : ''}
+  `,
+  {
+    replacements: { userid },
+    type: db.sequelize.QueryTypes.SELECT,
+  }
+);
 
     // 13. LATEST INSTRUCTORS
     let latestInstructors = [];

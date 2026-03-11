@@ -1263,10 +1263,10 @@ const columnDefs = useMemo(() => {
                           {/* Second row for actions */}
                           <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
                             {/* Edit Button */}
-                            {!(
+                            {/* {!(
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
-                            ) && (
+                            ) && ( */}
                                 <div
                                   className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
                                   onClick={() => handleEdit(item)}
@@ -1278,7 +1278,7 @@ const columnDefs = useMemo(() => {
                                     <i className="fe fe-edit"></i>
                                   </OverlayTrigger>
                                 </div>
-                              )}
+                              {/* )} */}
 
                             {/* View Button */}
                             <div
@@ -1297,24 +1297,6 @@ const columnDefs = useMemo(() => {
                                 <i className="fe fe-eye"></i>
                               </OverlayTrigger>
                             </div>
-
-                            {/* <div
-                              className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-                              onClick={() =>
-                                push({
-                                  pathname: `/scenarios_view_start/${item?.scenariouuid}`,
-                                  query: { backType: scenType },
-                                })
-                              }
-                            >
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={<Tooltip>Start Scenario</Tooltip>}
-                              >
-                               <i className="fe fe-play"></i>
-
-                              </OverlayTrigger>
-                            </div> */}
 
                             {item.scenariostatus === "Publish" && (
                               <div
@@ -1431,73 +1413,6 @@ const columnDefs = useMemo(() => {
           )}
         </Col>
       </Row>
-      {/* <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-            styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              // onClick={handleExportZip}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal> */}
       <Modal
         show={showExportModal}
         onHide={() => setShowExportModal(false)}

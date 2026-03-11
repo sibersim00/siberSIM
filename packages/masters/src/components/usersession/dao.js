@@ -1,12 +1,20 @@
 const listScenarios =
   ({ db }) =>
     async (usertype, session_userid) => {
+      console.log("usertypeusertypeusertype",usertype);
+      console.log("session_userid",session_userid);
+      
+
       let condition = `vr.status IN ('Pause','Start','Resume')`;
 
+      // if (usertype === "Instructor") {
+      //   condition += ` AND vr.requestedby_role = 'Learner'
+      //                AND vr.requestedby_id = :session_userid`;
+      // }
       if (usertype === "Instructor") {
-        condition += ` AND vr.requestedby_role = 'Instructor'
-                     AND vr.requestedby_id = :session_userid`;
-      }
+  condition += ` AND vr.requestedby_role = 'Learner'
+                 AND l.instructor_id = :session_userid`;
+}
 
       const query = `
         SELECT vr.vmrequestid, vr.vmrequestuuid, vr.eventid, s.scenariotitle, s.scenario_type, vr.isedit, vr.requestedby_id AS learner_id, CASE  WHEN vr.requestedby_role = 'Instructor' THEN vr.requestedby_id ELSE NULL END AS instructor_id, vr.scenarioid, vr.requestedby_role, vr.status AS scenario_status, vr.vm_steps AS vm_step_status, vr.startedon, vr.completedon, vr.terminatedon, vr.failedon, vr.isnotitermination, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, CONCAT(inst.firstname, ' ', inst.lastname) AS user_name, l.profile, IFNULL(chat.unseen_message_count, 0) AS unseen_message_count FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid LEFT JOIN learners l  ON l.learner_id = vr.requestedby_id AND vr.requestedby_role IN ('Learner' ,'Event')   LEFT JOIN ad_users inst  ON inst.userid = vr.requestedby_id AND vr.requestedby_role IN ('Admin', 'Instructor') LEFT JOIN ( SELECT scenarioid, learner_id, COUNT(*) AS unseen_message_count FROM scenario_learner_chats WHERE status = 'sent' AND sender_type = 'Learner' GROUP BY scenarioid, learner_id ) chat ON chat.scenarioid = vr.scenarioid AND chat.learner_id = vr.requestedby_id WHERE ${condition} ORDER BY vr.startedon DESC `;
