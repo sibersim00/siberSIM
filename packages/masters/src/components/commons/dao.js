@@ -136,7 +136,8 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         componentimage AS imageurl,
         storage,
         memory,
-        duration
+        duration,
+        componentname
       FROM components
       WHERE status = 'Active'
         AND deletedon IS NULL
@@ -171,6 +172,7 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         componenttype : row.componenttype,
         vmname: row.vmname || "",
         storage: row.storage || "",
+        componentname: row.componentname || "",
         memory: row.memory || 0,
         duration: row.duration || 0
       });

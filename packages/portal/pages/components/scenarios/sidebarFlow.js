@@ -167,13 +167,15 @@ const sidebarFlow = ({
   };
 
 
+console.log("getComponentByCatDatagetComponentByCatData",getComponentByCatData);
 
   useEffect(() => {
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({
         value: cat?.vmid || "",
-        label: cat?.vmid + " - " + cat?.vmname,
+        label: cat?.vmid + " - " + cat?.componentname,
         networkport: cat?.networkport || "",
+        componentname: cat?.componentname || "",
         subcategoryimage: cat?.imageurl || "",
         duration: cat?.duration || "",
         componentid: cat?.componentid || "",

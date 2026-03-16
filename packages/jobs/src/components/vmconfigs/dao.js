@@ -147,7 +147,7 @@ const setScenarioLearnerConfiguration =
 
         let network_bridge_name = "{}";
         const [componentInfo] = await db.sequelize.query(
-          `SELECT componenttype, network_bridge_name, vmid_name FROM components WHERE componentid = ?`,
+          `SELECT componenttype, network_bridge_name, vmid_name,componentname FROM components WHERE componentid = ?`,
           {
             replacements: [componentid],
             type: db.sequelize.QueryTypes.SELECT,
@@ -182,7 +182,7 @@ const setScenarioLearnerConfiguration =
           order,
           master_vmid: vmid,
           vmid: null,
-          componentname: componentInfo.vmid_name,
+          componentname: componentInfo.componentname,
           duration,
           network_bridge_json: JSON.stringify(network_bridge_json),
           status: statusVal,
@@ -987,7 +987,7 @@ const startScenarioLearner =
         await db.sequelize.query(
           `UPDATE vm_config
              SET status = 'Running', modifiedon = NOW()
-             WHERE vmid = ? AND componenttype = ? AND status = 'Stopped'`,
+             WHERE vmid = ? AND componenttype = ?`,
           {
             replacements: [vmid, vmType.toUpperCase()],
             type: db.sequelize.QueryTypes.UPDATE,
@@ -2345,11 +2345,11 @@ const save =
         function toProxmoxHostname(name) {
           return (
             name
-            .replace(/[^A-Za-z0-9.-]/g, "") // allow letters, numbers, dash, dot
-            .replace(/^-+/, "")
-            .replace(/-+$/, "")
-            .substring(0, 63) || "vm"
-            );
+              .replace(/[^A-Za-z0-9.-]/g, "") // allow letters, numbers, dash, dot
+              .replace(/^-+/, "")
+              .replace(/-+$/, "")
+              .substring(0, 63) || "vm"
+          );
         }
         const proxmoxHostname = toProxmoxHostname(payload.componentname);
         cloneResult = await proxmoxService.cloneQEMU(
@@ -2389,10 +2389,9 @@ const save =
             }
           }
           // Still running → wait before next check
-          await sleep(5000);
+          await sleep(10000);
         }
         templateResult = await proxmoxService.templateQEMU(newVmid);
-        await sleep(20000);
         if (templateResult?.status !== 200) {
           await sleep(await getTerminationDelay(db));
           const cleanupSuccess = await cleanupQEMUOnTemplateFail();
@@ -2454,21 +2453,42 @@ const save =
         });
         return ports;
       };
-      const extractBridgeNames = () => {
-        const bridges = {};
-        Object.entries(proxmoxData).forEach(([k, v]) => {
-          if (!k.startsWith("net")) return;
+      // const extractBridgeNames = () => {
+      //   const bridges = {};
+      //   Object.entries(proxmoxData).forEach(([k, v]) => {
+      //     if (!k.startsWith("net")) return;
 
-          if (vmType === "qemu") {
-            const m = v.match(/bridge=(\w+)/);
-            if (m) bridges[k] = m[1];
-          } else {
-            const m = v.match(/name=(eth\d+)/);
-            if (m) bridges[k] = m[1];
-          }
-        });
-        return bridges;
-      };
+      //     if (vmType === "qemu") {
+      //       const m = v.match(/bridge=(\w+)/);
+      //       if (m) bridges[k] = m[1];
+      //     } else {
+      //       const m = v.match(/name=(eth\d+)/);
+      //       if (m) bridges[k] = m[1];
+      //     }
+      //   });
+      //   return bridges;
+      // };
+      const extractPortsPrefix = () => {
+  const prefix = {};
+
+  Object.entries(proxmoxData).forEach(([k, v]) => {
+    if (!k.startsWith("net")) return;
+
+    if (vmType === "qemu") {
+      const typeMatch = v.match(/^(\w+)=/);
+      if (typeMatch && typeMatch[1]) {
+        prefix[k] = typeMatch[1];   // virtio
+      }
+    } else if (vmType === "lxc") {
+      const nameMatch = v.match(/name=(eth\d+)/);
+      if (nameMatch && nameMatch[1]) {
+        prefix[k] = `name=${nameMatch[1]}`;
+      }
+    }
+  });
+
+  return prefix;
+};
       await db.sequelize.query(
         ` INSERT INTO components ( componentuuid, componentcategoryid, componenttype, vmid, componentname, vmid_name, component_status, componentimage, duration, proxmox_json, network_ports, network_bridge_name, cores, memory, storage, status, createdby, createdon ) VALUES ( UUID(), ?, ?, ?, ?, ?, 'Private', ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW() ) `,
         {
@@ -2482,7 +2502,7 @@ const save =
             payload.duration || 0,
             safeJson(proxmoxData),
             safeJson(extractNetworkPorts()),
-            safeJson(extractBridgeNames()),
+            safeJson(extractPortsPrefix()),
             parseInt(proxmoxData?.cores) || null,
             parseInt(proxmoxData?.memory) || null,
             extractStorage(),
@@ -2748,7 +2768,6 @@ const stopScenarioVM =
     }
   };
 
-
 const addScenarioVmNetwork =
   ({ ipAddress, db }) =>
   async (vmid, vmType, netKey) => {
@@ -2762,7 +2781,7 @@ const addScenarioVmNetwork =
 
     const [settings] = await db.sequelize.query(
       `SELECT max_ports FROM web_settings WHERE status = 1 LIMIT 1`,
-      { type: db.sequelize.QueryTypes.SELECT }
+      { type: db.sequelize.QueryTypes.SELECT },
     );
 
     const maxPorts = settings?.max_ports ?? 8;
@@ -2794,7 +2813,7 @@ const addScenarioVmNetwork =
       {
         replacements: [vmid],
         type: db.sequelize.QueryTypes.SELECT,
-      }
+      },
     );
     let existingCount = 0;
     if (existingRow?.[0]?.network_bridge_json) {
@@ -2814,7 +2833,7 @@ const addScenarioVmNetwork =
       const proxmoxService = ProxMoxService(
         db,
         { vmType: normalizedVmType },
-        ipAddress
+        ipAddress,
       );
       /* -------------------- AUTH -------------------- */
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -2832,7 +2851,7 @@ const addScenarioVmNetwork =
         {
           replacements: [vmid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
       let bridgeJson = {};
       if (configRows?.[0]?.network_bridge_json) {
@@ -2862,7 +2881,7 @@ const addScenarioVmNetwork =
           vmid,
           normalizedVmType,
           key,
-          netValue
+          netValue,
         );
 
         if (!addNetRes || addNetRes.status !== 200) {
@@ -2885,7 +2904,7 @@ const addScenarioVmNetwork =
         {
           replacements: [JSON.stringify(bridgeJson), vmid],
           type: db.sequelize.QueryTypes.UPDATE,
-        }
+        },
       );
 
       if (updateResult === 0) {
@@ -2902,7 +2921,7 @@ const addScenarioVmNetwork =
         {
           replacements: [vmid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!configRow?.vmrequestid) {
@@ -2918,7 +2937,7 @@ const addScenarioVmNetwork =
         {
           replacements: [configRow.vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (vmReqRow?.scenariodiagram) {
@@ -2932,7 +2951,7 @@ const addScenarioVmNetwork =
 
         if (diagram?.nodes) {
           const node = diagram.nodes.find(
-            (n) => Number(n?.data?.vmid) === Number(vmid)
+            (n) => Number(n?.data?.vmid) === Number(vmid),
           );
 
           if (node) {
@@ -2945,9 +2964,7 @@ const addScenarioVmNetwork =
               const netValueQEMU = "virtio,bridge=vmbr10";
               const netValueLXC = `name=eth${idx},bridge=vmbr10,ip=dhcp`;
               const netValue =
-                normalizedVmType === "qemu"
-                  ? netValueQEMU
-                  : netValueLXC;
+                normalizedVmType === "qemu" ? netValueQEMU : netValueLXC;
 
               node.data.networkport.push({
                 [key]: netValue,
@@ -2957,12 +2974,9 @@ const addScenarioVmNetwork =
             await db.sequelize.query(
               `UPDATE vm_request SET scenariodiagram = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
               {
-                replacements: [
-                  JSON.stringify(diagram),
-                  configRow.vmrequestid,
-                ],
+                replacements: [JSON.stringify(diagram), configRow.vmrequestid],
                 type: db.sequelize.QueryTypes.UPDATE,
-              }
+              },
             );
           }
         }
@@ -3120,7 +3134,6 @@ const deleteScenarioVmNetwork =
     }
   };
 
-
 const ModifyScenarioVmNetwork =
   ({ ipAddress, db }) =>
   async (
@@ -3154,7 +3167,7 @@ const ModifyScenarioVmNetwork =
         }
         networkid = availableNetwork.networkid;
         networkname = availableNetwork.networkname;
-    const ethIndex = netKey.replace("net", "");
+        const ethIndex = netKey.replace("net", "");
 
         /* ---------- BUILD NET VALUE ---------- */
         if (normalizedVmType === "qemu") {
@@ -3924,7 +3937,7 @@ const connectRuntimeNetwork =
           );
         }
       }
-          //  UPDATE SCENARIO DIAGRAM
+      //  UPDATE SCENARIO DIAGRAM
       const [reqRow] = await db.sequelize.query(
         `SELECT scenariodiagram
          FROM vm_request
@@ -4041,19 +4054,23 @@ const unplugRuntimeNetwork =
         const ethIndex = netKey.replace("net", "");
         newValue = `name=eth${ethIndex},bridge=${bridge},hwaddr=${mac},link_down=1,type=veth`;
       }
-      console.log("newValuenewValuenewValuenewValue",newValue);
-      
+      console.log("newValuenewValuenewValuenewValue", newValue);
+
       /* ---------------- CALL PROXMOX ---------------- */
       const res = await proxmoxService.unplugVmNetwork(
-        vmid, vmType, netKey, mac, bridge,
+        vmid,
+        vmType,
+        netKey,
+        mac,
+        bridge,
       );
 
       if (!res || res.status !== 200)
         return { success: false, message: "Unplug API failed" };
 
       /* ================= UPDATE vm_config JSON ================= */
-      console.log("vmConfigvmConfigvmConfig",vmConfig);
-      
+      console.log("vmConfigvmConfigvmConfig", vmConfig);
+
       if (vmConfig.network_bridge_json) {
         const obj = JSON.parse(vmConfig.network_bridge_json);
         obj[netKey] = newValue;
@@ -4268,28 +4285,24 @@ const stopComponent =
         return { success: false, message: "Component not found" };
       }
 
-      const { componenttype, network_bridge_json, vmconfigurationid } =
-        vmConfig;
+      const { componenttype, vmconfigurationid } = vmConfig;
 
       const vmType = componenttype.toLowerCase();
 
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
+
       if (!tokenResult || tokenResult.status !== "200") {
         return { success: false, message: "Proxmox auth failed" };
       }
 
-      /* ---------------- STOP ---------------- */
-      let stopSuccess = false;
-
+      /* ---------------- STOP VM ---------------- */
       try {
         const stopRes = await proxmoxService.stopVM(vmid, vmType);
 
         if (!stopRes || stopRes.status !== 200) {
           throw new Error("Stop failed");
         }
-
-        stopSuccess = true;
       } catch (stopErr) {
         console.error("STOP FAILED → Rolling back", stopErr);
 
@@ -4300,89 +4313,22 @@ const stopComponent =
           console.error("Rollback start also failed", startErr);
         }
 
-        await db.sequelize.query(
-          `UPDATE vm_config
-           SET status='Stopped', modifiedon=NOW()
-           WHERE vmconfigurationid=?`,
-          {
-            replacements: [vmconfigurationid],
-          },
-        );
-
         return {
           success: false,
           message: "Stop failed — VM restarted",
         };
       }
-      await sleep(await getTerminationDelay(db));
-      /* ---------------- DESTROY ---------------- */
-      try {
-        const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
 
-        if (!destroyRes || destroyRes.status !== 200) {
-          throw new Error("Destroy failed");
-        }
-      } catch (destroyErr) {
-        console.error("DESTROY FAILED", destroyErr);
-
-        // As requested → mark Destroyed even if API failed
-        await db.sequelize.query(
-          `UPDATE vm_config
-           SET status='Destroyed', modifiedon=NOW()
-           WHERE vmconfigurationid=?`,
-          {
-            replacements: [vmconfigurationid],
-          },
-        );
-
-        return {
-          success: false,
-          message: "Destroy failed but status updated",
-        };
-      }
-
-      /* ---------------- UPDATE STATUS ---------------- */
+      /* ---------------- UPDATE COMPONENT STATUS ---------------- */
       await db.sequelize.query(
         `UPDATE vm_config
-         SET status='Completed', modifiedon=NOW()
+         SET status='Stopped', modifiedon=NOW()
          WHERE vmconfigurationid=?`,
         {
           replacements: [vmconfigurationid],
         },
       );
 
-      /* ---------------- RELEASE NETWORKS ---------------- */
-      if (network_bridge_json) {
-        const parsed = JSON.parse(network_bridge_json);
-
-        const bridges = Object.values(parsed)
-          .map((v) => {
-            // NEW FORMAT (object)
-            if (typeof v === "object" && v?.value) {
-              const match = v.value.match(/bridge=([^,]+)/);
-              return match ? match[1] : null;
-            }
-
-            // OLD FORMAT (string)
-            if (typeof v === "string") {
-              const match = v.match(/bridge=([^,]+)/);
-              return match ? match[1] : null;
-            }
-
-            return null;
-          })
-          .filter(Boolean);
-
-
-        if (bridges.length > 0) {
-          await db.sequelize.query(
-            `UPDATE networks
-       SET status='Available', modifiedon=NOW()
-       WHERE networkname IN (:bridges)`,
-            { replacements: { bridges } },
-          );
-        }
-      }
       /* ---------------- UPDATE DIAGRAM ---------------- */
       const [vmRequest] = await db.sequelize.query(
         `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=?`,
@@ -4391,9 +4337,30 @@ const stopComponent =
           type: db.sequelize.QueryTypes.SELECT,
         },
       );
+
       if (vmRequest?.scenariodiagram) {
         const diagram = JSON.parse(vmRequest.scenariodiagram);
-        diagram.nodes = diagram.nodes.filter((n) => n.data?.vmid != vmid);
+
+        /* ---- Update node isOnline ---- */
+        diagram.nodes = diagram.nodes.map((node) => {
+          if (node?.data?.vmid == vmid) {
+            node.data.isOnline = "No";
+          }
+          return node;
+        });
+
+        /* ---- Update edges isAttacked ---- */
+        const nodeId = diagram.nodes.find((n) => n?.data?.vmid == vmid)?.id;
+
+        if (nodeId) {
+          diagram.edges = diagram.edges.map((edge) => {
+            if (edge.source === nodeId || edge.target === nodeId) {
+              edge.isAttacked = "No";
+            }
+            return edge;
+          });
+        }
+
         await db.sequelize.query(
           `UPDATE vm_request
            SET scenariodiagram=?, modifiedon=NOW()
@@ -4403,9 +4370,226 @@ const stopComponent =
           },
         );
       }
+
       return {
         success: true,
-        message: "Component stopped & destroyed successfully",
+        message: "Component stopped successfully",
+      };
+    } catch (err) {
+      console.error("FATAL ERROR", err);
+      return { success: false, message: err.message };
+    }
+  };
+
+const startComponent =
+  ({ db, ipAddress }) =>
+  async (vmrequestid, vmid) => {
+    try {
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT * FROM vm_config
+         WHERE vmrequestid=? AND vmid=? LIMIT 1`,
+        {
+          replacements: [vmrequestid, vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (!vmConfig) {
+        return { success: false, message: "Component not found" };
+      }
+
+      const { componenttype, vmconfigurationid } = vmConfig;
+      const vmType = componenttype.toLowerCase();
+
+      const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+      const tokenResult = await proxmoxService.generateAccessTicket();
+
+      if (!tokenResult || tokenResult.status !== "200") {
+        return { success: false, message: "Proxmox auth failed" };
+      }
+
+      /* -------- START VM -------- */
+      try {
+        const startRes = await proxmoxService.startVM(vmid, vmType);
+
+        if (!startRes || startRes.status !== 200) {
+          throw new Error("Start failed");
+        }
+      } catch (startErr) {
+        console.error("START FAILED → Rolling back", startErr);
+
+        try {
+          await proxmoxService.stopVM(vmid, vmType);
+        } catch (stopErr) {
+          console.error("Rollback stop failed", stopErr);
+        }
+
+        return {
+          success: false,
+          message: "Start failed — VM stopped",
+        };
+      }
+
+      /* -------- UPDATE STATUS -------- */
+      await db.sequelize.query(
+        `UPDATE vm_config
+         SET status='Running', modifiedon=NOW()
+         WHERE vmconfigurationid=?`,
+        { replacements: [vmconfigurationid] },
+      );
+
+      /* -------- UPDATE DIAGRAM -------- */
+      const [vmRequest] = await db.sequelize.query(
+        `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=?`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (vmRequest?.scenariodiagram) {
+        const diagram = JSON.parse(vmRequest.scenariodiagram);
+
+        let nodeId = null;
+
+        diagram.nodes = diagram.nodes.map((node) => {
+          if (node?.data?.vmid == vmid) {
+            node.data.isOnline = "Yes";
+            nodeId = node.id;
+          }
+          return node;
+        });
+
+        if (nodeId) {
+          diagram.edges = diagram.edges.map((edge) => {
+            if (edge.source === nodeId || edge.target === nodeId) {
+              edge.isAttacked = "Yes";
+            }
+            return edge;
+          });
+        }
+
+        await db.sequelize.query(
+          `UPDATE vm_request
+           SET scenariodiagram=?, modifiedon=NOW()
+           WHERE vmrequestid=?`,
+          {
+            replacements: [JSON.stringify(diagram), vmrequestid],
+          },
+        );
+      }
+
+      return {
+        success: true,
+        message: "Component started successfully",
+      };
+    } catch (err) {
+      console.error("FATAL ERROR", err);
+      return { success: false, message: err.message };
+    }
+  };
+
+// const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const restartComponent =
+  ({ db, ipAddress }) =>
+  async (vmrequestid, vmid) => {
+    try {
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT * FROM vm_config
+         WHERE vmrequestid=? AND vmid=? LIMIT 1`,
+        {
+          replacements: [vmrequestid, vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (!vmConfig) {
+        return { success: false, message: "Component not found" };
+      }
+
+      const { componenttype } = vmConfig;
+      const vmType = componenttype.toLowerCase();
+
+      const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+      const tokenResult = await proxmoxService.generateAccessTicket();
+
+      if (!tokenResult || tokenResult.status !== "200") {
+        return { success: false, message: "Proxmox auth failed" };
+      }
+
+      /* -------- STOP VM -------- */
+      try {
+        await proxmoxService.stopVM(vmid, vmType);
+      } catch (stopErr) {
+        console.error("Restart stop failed", stopErr);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      /* -------- START VM AGAIN -------- */
+      try {
+        const startRes = await proxmoxService.startVM(vmid, vmType);
+        if (!startRes || startRes.status !== 200) {
+          throw new Error("Restart start failed");
+        }
+      } catch (startErr) {
+        console.error("Restart failed → fallback start", startErr);
+
+        try {
+          await proxmoxService.startVM(vmid, vmType);
+        } catch (err) {
+          console.error("Fallback start also failed", err);
+        }
+
+        return {
+          success: false,
+          message: "Restart failed",
+        };
+      }
+
+      /* -------- UPDATE DIAGRAM -------- */
+      const [vmRequest] = await db.sequelize.query(
+        `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=?`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (vmRequest?.scenariodiagram) {
+        const diagram = JSON.parse(vmRequest.scenariodiagram);
+
+        let nodeId = null;
+
+        diagram.nodes = diagram.nodes.map((node) => {
+          if (node?.data?.vmid == vmid) {
+            node.data.isOnline = "Yes";
+            nodeId = node.id;
+          }
+          return node;
+        });
+
+        if (nodeId) {
+          diagram.edges = diagram.edges.map((edge) => {
+            if (edge.source === nodeId || edge.target === nodeId) {
+              edge.isAttacked = "Yes";
+            }
+            return edge;
+          });
+        }
+
+        await db.sequelize.query(
+          `UPDATE vm_request
+           SET scenariodiagram=?, modifiedon=NOW()
+           WHERE vmrequestid=?`,
+          {
+            replacements: [JSON.stringify(diagram), vmrequestid],
+          },
+        );
+      }
+
+      return {
+        success: true,
+        message: "Component restarted successfully",
       };
     } catch (err) {
       console.error("FATAL ERROR", err);
@@ -4443,4 +4627,6 @@ module.exports = {
   unplugRuntimeNetwork,
   plugRuntimeNetwork,
   stopComponent,
+  startComponent,
+  restartComponent,
 };

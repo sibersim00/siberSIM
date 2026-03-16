@@ -7,9 +7,6 @@ import {
   getCategoriesList,
   getScenarioComponentListbyCategory,
 } from "../../../../shared/redux/slices/common/masters";
-// import {
-//   getSenarioDigramList,
-// } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
 import {
   getSingleScenarios,
      getSingleUserSession
@@ -178,8 +175,9 @@ const SidebarFlow = ({
       let filteredData = getComponentByCatData.map((cat) => ({
         value: cat?.vmid || "",
         vmType: cat?.componenttype,
-        label: cat?.vmid + " - " + cat?.vmname,
+        label: cat?.vmid + " - " + cat?.componentname,
         networkport: cat?.networkport || "",
+        componentname: cat?.componentname || "",
         subcategoryimage: cat?.imageurl || "",
         duration: cat?.duration || "",
         componentid: cat?.componentid || "",
@@ -232,122 +230,207 @@ const SidebarFlow = ({
     }
   }, [toBeDragComponent]);
 
-  useEffect(() => {
-    if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
-      return;
-    const scenario = getSingleScenariosSucc[0];
-    console.log("scenarioscenario", scenario);
-    if (!scenario) return;
-    /* ---------- restore diagram ---------- */
-    if (scenario.scenariodiagram?.trim()) {
-      const parsed = JSON.parse(
-        scenario.scenariodiagram.replace("flowchartData ", "")
-      );
-      if (parsed?.nodes && parsed?.edges) {
-        setNodes(parsed.nodes);
-        setEdges(parsed.edges);
-      }
-    }
-    /* ---------- restore components ---------- */
-    if (!scenario.components) return;
-    let parsedComponents = [];
-    console.log("componentssssssssssss", scenario.components)
-    try {
-      parsedComponents = JSON.parse(scenario.components);
-      console.log("parsedComponentsparsedComponents", parsedComponents)
-    } catch (e) {
-      console.error("Invalid components JSON", e);
-      return;
-    }
-    const normalized = parsedComponents.map((node) => ({
-      ...node,
-      id: node.id || node.nodeid,
-      componentid: node.componentid || node.componentId || node.id,
-      imageUrl: normalizeImageUrl(
-        node.imageUrl || node.subcategoryimage
-      ),
-      networkport: node.networkport || [],
-    }
-    ));
-    console.log("normalizednormalized", normalized)
-
-    setImageNodeData(normalized);
-    setDraggedComponent(normalized);
-    setDroppedImages(normalized.map((n) => n.id));
-  }, [getSingleScenariosSucc]);
-
-  //-new component dragged 
   // useEffect(() => {
   //   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
   //     return;
   //   const scenario = getSingleScenariosSucc[0];
   //   console.log("scenarioscenario", scenario);
   //   if (!scenario) return;
-
   //   /* ---------- restore diagram ---------- */
-  //   let parsedDiagram = null;
-
   //   if (scenario.scenariodiagram?.trim()) {
-  //     try {
-  //       parsedDiagram = JSON.parse(
-  //         scenario.scenariodiagram.replace("flowchartData ", "")
-  //       );
-
-  //       if (parsedDiagram?.nodes && parsedDiagram?.edges) {
-  //         setNodes(parsedDiagram.nodes);
-  //         setEdges(parsedDiagram.edges);
-  //       }
-  //     } catch (e) {
-  //       console.error("Invalid scenariodiagram JSON", e);
-  //       return;
+  //     const parsed = JSON.parse(
+  //       scenario.scenariodiagram.replace("flowchartData ", "")
+  //     );
+  //     if (parsed?.nodes && parsed?.edges) {
+  //       setNodes(parsed.nodes);
+  //       setEdges(parsed.edges);
   //     }
   //   }
+  //   /* ---------- restore components ---------- */
+  //   if (!scenario.components) return;
+  //   let parsedComponents = [];
+  //   console.log("componentssssssssssss", scenario.components)
+  //   try {
+  //     parsedComponents = JSON.parse(scenario.components);
+  //     console.log("parsedComponentsparsedComponents", parsedComponents)
+  //   } catch (e) {
+  //     console.error("Invalid components JSON", e);
+  //     return;
+  //   }
+  //   const normalized = parsedComponents.map((node) => ({
+  //     ...node,
+  //     id: node.id || node.nodeid,
+  //     componentid: node.componentid || node.componentId || node.id,
+  //     imageUrl: normalizeImageUrl(
+  //       node.imageUrl || node.subcategoryimage
+  //     ),
+  //     networkport: node.networkport || [],
+  //   }
+  //   ));
+  //   console.log("normalizednormalized", normalized)
 
-  //   /* ---------- restore components FROM DIAGRAM (source of truth) ---------- */
-  //   if (!parsedDiagram?.nodes) return;
-
-  //   const diagramComponents = parsedDiagram.nodes
-  //     .filter((n) => n.type === "imageNode" && n.data)
-  //     .map((node) => ({
-  //       id: node.id,
-  //       nodeid: node.id,
-
-  //       // IMPORTANT: keep compatibility with old code
-  //       componentid: node.data.componentId || node.data.componentid || node.id,
-
-  //       label: node.data.label || "",
-  //       duration: node.data.duration ?? "",
-  //       vmid: node.data.vmid,
-  //       vmType: node.data.vmType,
-
-  //       imageUrl: normalizeImageUrl(node.data.image),
-  //       networkport: node.data.networkport || [],
-  //     }));
-
-  //   console.log("diagramComponents ", diagramComponents);
-
-  //   // sidebar data
-  //   setImageNodeData(diagramComponents);
-
-  //   // drag state
-  //   setDraggedComponent(diagramComponents);
-
-  //   // track dropped images (for preventing duplicate drop)
-  //   setDroppedImages(diagramComponents.map((n) => n.id));
-
+  //   setImageNodeData(normalized);
+  //   setDraggedComponent(normalized);
+  //   setDroppedImages(normalized.map((n) => n.id));
   // }, [getSingleScenariosSucc]);
+
+  // //-new component dragged 
+  // // useEffect(() => {
+  // //   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
+  // //     return;
+  // //   const scenario = getSingleScenariosSucc[0];
+  // //   console.log("scenarioscenario", scenario);
+  // //   if (!scenario) return;
+
+  // //   /* ---------- restore diagram ---------- */
+  // //   let parsedDiagram = null;
+
+  // //   if (scenario.scenariodiagram?.trim()) {
+  // //     try {
+  // //       parsedDiagram = JSON.parse(
+  // //         scenario.scenariodiagram.replace("flowchartData ", "")
+  // //       );
+
+  // //       if (parsedDiagram?.nodes && parsedDiagram?.edges) {
+  // //         setNodes(parsedDiagram.nodes);
+  // //         setEdges(parsedDiagram.edges);
+  // //       }
+  // //     } catch (e) {
+  // //       console.error("Invalid scenariodiagram JSON", e);
+  // //       return;
+  // //     }
+  // //   }
+
+  // //   /* ---------- restore components FROM DIAGRAM (source of truth) ---------- */
+  // //   if (!parsedDiagram?.nodes) return;
+
+  // //   const diagramComponents = parsedDiagram.nodes
+  // //     .filter((n) => n.type === "imageNode" && n.data)
+  // //     .map((node) => ({
+  // //       id: node.id,
+  // //       nodeid: node.id,
+
+  // //       // IMPORTANT: keep compatibility with old code
+  // //       componentid: node.data.componentId || node.data.componentid || node.id,
+
+  // //       label: node.data.label || "",
+  // //       duration: node.data.duration ?? "",
+  // //       vmid: node.data.vmid,
+  // //       vmType: node.data.vmType,
+
+  // //       imageUrl: normalizeImageUrl(node.data.image),
+  // //       networkport: node.data.networkport || [],
+  // //     }));
+
+  // //   console.log("diagramComponents ", diagramComponents);
+
+  // //   // sidebar data
+  // //   setImageNodeData(diagramComponents);
+
+  // //   // drag state
+  // //   setDraggedComponent(diagramComponents);
+
+  // //   // track dropped images (for preventing duplicate drop)
+  // //   setDroppedImages(diagramComponents.map((n) => n.id));
+
+  // // }, [getSingleScenariosSucc]);
+
+  // useEffect(() => {
+  //   if (!imageNodeData?.length) return;
+  //   console.log("imageNodeDataimageNodeDataimageNodeData",imageNodeData);
+    
+
+  //   setNodes((prevNodes) =>
+  //     prevNodes.map((node) => {
+  //       const match = imageNodeData.find(
+  //         (img) => String(img.id) === String(node.id)
+  //       );
+
+  //       if (!match) return node;
+
+  //       return {
+  //         ...node,
+  //         data: {
+  //           ...node.data,
+  //           image: match.imageUrl,          //  image visible
+  //           networkport: match.networkport, //  ports visible
+  //           componentId: match.componentid,
+  //           label: match.label || node.data?.label,
+  //         },
+  //       };
+  //     })
+  //   );
+  // }, [imageNodeData]);
+useEffect(() => {
+  if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
+    return;
+
+  const scenario = getSingleScenariosSucc[0];
+  if (!scenario) return;
+  /* ---------- restore diagram ---------- */
+  let parsedDiagram = null;
+  if (scenario.scenariodiagram?.trim()) {
+    try {
+      parsedDiagram = JSON.parse(
+        scenario.scenariodiagram.replace("flowchartData ", "")
+      );
+      if (parsedDiagram?.nodes && parsedDiagram?.edges) {
+        setNodes(parsedDiagram.nodes);
+        setEdges(parsedDiagram.edges);
+      }
+    } catch (err) {
+      console.error("Invalid scenariodiagram JSON", err);
+    }
+  }
+  /* ---------- restore components ---------- */
+  console.log("scenarioscenarioscenario",scenario);
+  
+  if (!scenario.components) return;
+  let parsedComponents = [];
+  try {
+    parsedComponents = JSON.parse(scenario.components);
+  } catch (e) {
+    console.error("Invalid components JSON", e);
+    return;
+  }
+  const normalized = parsedComponents.map((node) => {
+    console.log("nodenodenodddddddddddddenode",node);
+    
+    const componentId = node.componentid || node.componentId || node.id;
+    let updatedImage = "";
+    if (parsedDiagram?.nodes?.length) {
+      const matchedNode = parsedDiagram.nodes.find(
+        (n) => String(n?.data?.componentId) === String(componentId)
+      );
+      if (matchedNode?.data?.image) {
+        updatedImage = matchedNode.data.image;
+      }
+    }
+    return {
+      ...node,
+      id: node.id || node.nodeid,
+      componentid: componentId,
+      imageUrl: normalizeImageUrl(
+        updatedImage || node.imageUrl || node.subcategoryimage
+      ),
+      networkport: node.networkport || [],
+    };
+  });
+  console.log("normalizednormassssssssssssssssssslizednormalizednormalized",normalized);
+  
+  setImageNodeData(normalized);
+  setDraggedComponent(normalized);
+  setDroppedImages(normalized.map((n) => n.id));
+}, [getSingleScenariosSucc]);
 
   useEffect(() => {
     if (!imageNodeData?.length) return;
-
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
         const match = imageNodeData.find(
           (img) => String(img.id) === String(node.id)
         );
-
         if (!match) return node;
-
         return {
           ...node,
           data: {

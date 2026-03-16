@@ -784,16 +784,14 @@ export default function ProxmoxConsole() {
           };
 
           const saveRes = await dispatch(saveCustomComponent(payload1));
-          console.log("saveRes", saveRes?.data?.customcomponentid);
+          console.log("saveRsssssssssssssssses", saveRes?.data?.customcomponentid);
           if (!saveRes?.success) {
             setIsSaving(false);
             setOverlayLoading(false);
             await Swal.fire(
               "Error",
               saveRes?.error?.error ||
-                saveRes?.error?.message ||
-                "Failed to save component",
-              "error",
+                saveRes?.error?.message
             );
             setShowConvertDrawer(false);
             return;

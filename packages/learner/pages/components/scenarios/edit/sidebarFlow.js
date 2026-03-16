@@ -106,6 +106,8 @@ const SidebarFlow = ({
           }
         })(),
     };
+    console.log("normalizedNodenormalizedNodenormalizedNode",normalizedNode);
+    
     setDraggedNode(normalizedNode);
   };
 
@@ -161,9 +163,10 @@ const SidebarFlow = ({
       let filteredData = getComponentByCatData.map((cat) => ({
         value: cat?.vmid || "",
         vmType : cat?.componenttype,
-        label: cat?.vmid + " - " + cat?.vmname,
+        label: cat?.vmid + " - " + cat?.componentname,
         networkport: cat?.networkport || "",
         subcategoryimage: cat?.imageurl || "",
+        componentname: cat?.componentname || "",
         duration: cat?.duration || "",
         componentid: cat?.componentid || "",
       }));
@@ -275,6 +278,8 @@ useEffect(() => {
     }
   }
   /* ---------- restore components ---------- */
+  console.log("scenarioscenarioscenario",scenario);
+  
   if (!scenario.components) return;
   let parsedComponents = [];
   try {
@@ -284,6 +289,8 @@ useEffect(() => {
     return;
   }
   const normalized = parsedComponents.map((node) => {
+    console.log("nodenodenodddddddddddddenode",node);
+    
     const componentId = node.componentid || node.componentId || node.id;
     let updatedImage = "";
     if (parsedDiagram?.nodes?.length) {
@@ -304,6 +311,8 @@ useEffect(() => {
       networkport: node.networkport || [],
     };
   });
+  console.log("normalizednormassssssssssssssssssslizednormalizednormalized",normalized);
+  
   setImageNodeData(normalized);
   setDraggedComponent(normalized);
   setDroppedImages(normalized.map((n) => n.id));

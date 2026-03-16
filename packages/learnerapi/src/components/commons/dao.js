@@ -62,7 +62,7 @@ const theme =
   };
 const scenariocomponentcategorylist = async (db, componentcategoryid) => {
   try {
-    const [rows] = await db.sequelize.query(` SELECT  componentid, network_ports, vmid, componenttype, vmid_name AS vmname, componentimage AS imageurl, storage, memory, duration FROM components WHERE status = 'Active' AND deletedon IS NULL AND componentcategoryid = :componentcategoryid ORDER BY vmname; `, {
+    const [rows] = await db.sequelize.query(` SELECT  componentid, network_ports, vmid, componenttype,componentname, vmid_name AS vmname, componentimage AS imageurl, storage, memory, duration FROM components WHERE status = 'Active' AND deletedon IS NULL AND componentcategoryid = :componentcategoryid ORDER BY vmname; `, {
       replacements: { componentcategoryid },
     });
 
@@ -91,6 +91,7 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         componenttype: row.componenttype || 0,
         vmname: row.vmname || "",
         storage: row.storage || "",
+        componentname: row.componentname || "",
         memory: row.memory || 0,
         duration: row.duration || 0
       });
