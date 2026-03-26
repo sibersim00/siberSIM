@@ -490,7 +490,7 @@ const ScenarioForm = (props) => {
         status: "true",
         instructor_id: data?.instructor_id?.instructor_id || null,
         instruction_file: data?.image_url,
-        duration: data?.duration,
+        duration: data?.duration || null,
         manipulation_flag: data?.manipulation_flag || "false",
         scenariostatus: "Draft",
         scenarioimage:
