@@ -30,5 +30,7 @@ module.exports = function (iocContainer) {
   router.post("/plug-single-network",controller.plugRuntimeNetwork(iocContainer));
   router.post("/unplug-single-network",controller.unplugRuntimeNetwork(iocContainer));
   router.post("/stop-single-component",controller.stopComponent(iocContainer));
+  router.post("/start-single-component",controller.startComponent(iocContainer));
+  router.post("/restart-single-component",controller.restartComponent(iocContainer));
   return router;
 };

@@ -363,7 +363,7 @@ const changeEditStatus =
     ) {
       return {
         statusCode: 400,
-        message: "Someone else is editing this scenario",
+        message: "This scenario is currently being edited by another user. To avoid conflicts, editing is temporarily locked",
         data: { locked: true },
       };
     }

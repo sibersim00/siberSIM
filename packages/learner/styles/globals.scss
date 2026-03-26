@@ -3643,3 +3643,76 @@ ol.progtrckr li.progtrckr-todo {
 .existing-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
+
+.dark-theme .table-responsive .table .dark-table-th{
+  color: #fff !important;
+}
+.green-hover-btn:hover {
+  background-color: #198754 !important;
+  color: #fff !important;
+  border-color: #198754 !important;
+}
+.ag-tooltip {
+  background-color: black !important;
+  color: white !important;
+  border: 1px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.scenario-loader-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(5px);
+  background: rgba(255, 255, 255, 0.5);
+  z-index: 9999;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* your loader upgraded */
+.vertical-bounce-loader {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  height: 40px;
+}
+
+.vertical-bounce-loader span {
+  display: block;
+  width: 8px;
+  height: 20px;
+  background: linear-gradient(180deg, #038736, #038736); /* modern color */
+  border-radius: 4px;
+  animation: bounceY 0.8s infinite ease-in-out;
+}
+
+/* stagger effect */
+.vertical-bounce-loader span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.vertical-bounce-loader span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes bounceY {
+  0%, 100% {
+    transform: scaleY(0.5);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1.4);
+    opacity: 1;
+  }
+}
+
+.loader-text {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}

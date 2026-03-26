@@ -105,9 +105,10 @@ const SidebarFlow = ({
   const handleDragStart = (e, node) => {
     console.log("nodeeeeeeeeeeeeee", node)
     const normalizedNode = {
-      ...node,
+       ...node,
       componentid: node.componentid || node.componentId || node.id,
-      vmType: node.vmType,
+      vmType:
+      node.vmType || node.componenttype || node.componentType || "", // ✅ SAFE FALLBACK
       vmid:
         node.vmid ||
         (() => {
@@ -189,13 +190,15 @@ const SidebarFlow = ({
 
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
-      setToBeDragComponent((prev) => {
-        const existingIds = new Set(prev.map((item) => item.value));
-        const newItems = selectedComponent.filter(
-          (item) => !existingIds.has(item.value)
-        );
-        return [...prev, ...newItems];
-      });
+      // setToBeDragComponent((prev) => {
+      //   const existingIds = new Set(prev.map((item) => item.value));
+      //   const newItems = selectedComponent.filter(
+      //     (item) => !existingIds.has(item.value)
+      //   );
+      //   return [...prev, ...newItems];
+      // });
+    setToBeDragComponent(selectedComponent);
+
     }
   }, [selectedComponent]);
   useEffect(() => {
@@ -393,31 +396,60 @@ useEffect(() => {
     console.error("Invalid components JSON", e);
     return;
   }
-  const normalized = parsedComponents.map((node) => {
-    console.log("nodenodenodddddddddddddenode",node);
+  // const normalized = parsedComponents.map((node) => {
+  //   console.log("nodenodenodddddddddddddenode",node);
     
-    const componentId = node.componentid || node.componentId || node.id;
-    let updatedImage = "";
-    if (parsedDiagram?.nodes?.length) {
-      const matchedNode = parsedDiagram.nodes.find(
-        (n) => String(n?.data?.componentId) === String(componentId)
-      );
-      if (matchedNode?.data?.image) {
-        updatedImage = matchedNode.data.image;
-      }
+  //   const componentId = node.componentid || node.componentId || node.id;
+  //   let updatedImage = "";
+  //   if (parsedDiagram?.nodes?.length) {
+  //     const matchedNode = parsedDiagram.nodes.find(
+  //       (n) => String(n?.data?.componentId) === String(componentId)
+  //     );
+  //     if (matchedNode?.data?.image) {
+  //       updatedImage = matchedNode.data.image;
+  //     }
+  //   }
+  //   return {
+  //     ...node,
+  //     id: node.id || node.nodeid,
+  //     componentid: componentId,
+  //     imageUrl: normalizeImageUrl(
+  //       updatedImage || node.imageUrl || node.subcategoryimage
+  //     ),
+  //     networkport: node.networkport || [],
+  //   };
+  // });
+  const normalized = parsedComponents.map((node) => {
+  const componentId = node.componentid || node.componentId || node.id;
+
+  let updatedImage = "";
+  let matchedNode = null;
+
+  if (parsedDiagram?.nodes?.length) {
+    matchedNode = parsedDiagram.nodes.find(
+      (n) => String(n?.data?.componentId) === String(componentId)
+    );
+
+    if (matchedNode?.data?.image) {
+      updatedImage = matchedNode.data.image;
     }
-    return {
-      ...node,
-      id: node.id || node.nodeid,
-      componentid: componentId,
-      imageUrl: normalizeImageUrl(
-        updatedImage || node.imageUrl || node.subcategoryimage
-      ),
-      networkport: node.networkport || [],
-    };
-  });
-  console.log("normalizednormassssssssssssssssssslizednormalizednormalized",normalized);
-  
+  }
+
+  return {
+    ...node,
+    id: node.id || node.nodeid,
+    componentid: componentId,
+    imageUrl: normalizeImageUrl(
+      updatedImage || node.imageUrl || node.subcategoryimage
+    ),
+    networkport: node.networkport || [],
+    vmType:
+      matchedNode?.data?.vmType ||
+      node.vmType ||
+      node.componenttype ||
+      "",
+  };
+});
   setImageNodeData(normalized);
   setDraggedComponent(normalized);
   setDroppedImages(normalized.map((n) => n.id));
@@ -439,6 +471,8 @@ useEffect(() => {
             networkport: match.networkport, //  ports visible
             componentId: match.componentid,
             label: match.label || node.data?.label,
+            vmType: match.vmType || node.data?.vmType, // ✅ ADD
+
           },
         };
       })

@@ -60,11 +60,16 @@ const setScenarioLearnerConfiguration =
           });
         } catch (fallbackError) {
           console.error("Fallback DAO also failed:", fallbackError);
-          return res.status(500).send({
-            statusCode: 500,
-            message: "Job service and fallback both failed.",
-            error: fallbackError.message || fallbackError,
-          });
+          const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
+        });
         }
       }
     } catch (err) {
@@ -197,10 +202,15 @@ const startScenarioLearner =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -234,10 +244,15 @@ const restartscenarioLearner =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -269,10 +284,15 @@ const createsnapshot =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -306,10 +326,15 @@ const deletesnapshot =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -341,10 +366,15 @@ const restoresnapshot =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -398,10 +428,15 @@ const pauseScenarioLearner =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Failed to call Jobs service.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -432,10 +467,15 @@ const resumeScenarioLearner =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Failed to call Jobs service.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -466,10 +506,15 @@ const deleteScenarioLearner =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Failed to call Jobs service.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -560,11 +605,16 @@ const saveCustomComponent =
     } catch (error) {
       console.error("Error saving custom component:", error);
 
-      return res.status(500).json({
-        statusCode: 500,
-        message: "Internal server error",
-        error: error.message,
-      });
+      const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
+        });
     }
   };
 
@@ -598,10 +648,15 @@ const getQemuConfig =
       } catch (error) {
         console.error("Axios request failed:");
 
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -632,10 +687,15 @@ const save =
           error.response?.data || error.message,
         );
 
-        return res.status(error.response?.status || 500).send({
-          statusCode: error.response?.data?.statusCode || 500,
-          message: error.response?.data?.message || "Something went wrong.",
-          error: error.response?.data?.error,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -666,10 +726,15 @@ const stopVM =
           error.response?.data || error.message,
         );
 
-        return res.status(error.response?.status || 500).send({
-          statusCode: error.response?.data?.statusCode || 500,
-          message: error.response?.data?.message || "Something went wrong.",
-          error: error.response?.data?.error,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -749,10 +814,15 @@ const addScenarioVmNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -783,10 +853,15 @@ const deleteScenarioVmNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -799,7 +874,6 @@ const ModifyScenarioVmNetwork =
   async (req, res, next) => {
     try {
       const {
-        vmType,
         vmid,
         netKey,
         mode,
@@ -813,7 +887,6 @@ const ModifyScenarioVmNetwork =
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmconfigs/modify-vm-network`,
           {
-            vmType,
             vmid,
             netKey,
             mode,
@@ -837,10 +910,15 @@ const ModifyScenarioVmNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -871,10 +949,15 @@ const addRuntimeComponent =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -905,10 +988,15 @@ const stopDestroySingleComponent =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -939,10 +1027,15 @@ const disconnectRuntimeNetworks =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -973,10 +1066,15 @@ const connectRuntimeNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -1007,10 +1105,15 @@ const plugRuntimeNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {
@@ -1041,10 +1144,15 @@ const unplugRuntimeNetwork =
         } else {
           console.error("Request Setup Error:", error.message);
         }
-        return res.status(500).send({
-          statusCode: 500,
-          message: "Something went wrong. Please try again.",
-          error: error.response?.data || error.message,
+        const statusCode = error.response?.status || 500;
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong";
+
+        return res.status(statusCode).send({
+          statusCode,
+          message,
         });
       }
     } catch (err) {

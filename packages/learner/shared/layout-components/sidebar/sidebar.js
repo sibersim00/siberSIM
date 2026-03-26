@@ -375,6 +375,7 @@ const SideBar = () => {
                           {Item.Items &&
                             Item.Items.map((menuItem, i) => (
                               <li
+                                key={menuItem.id || i}
                                 className={`nav-item ${menuItem.type === "sub"
                                   ? menuItem?.children?.[0]?.path?.split("/")[2] === location.pathname.split("/")[2]
                                     ? "active"

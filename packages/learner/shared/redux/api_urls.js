@@ -57,6 +57,10 @@ const api = {
   get_logs: "/scenarios/get-logs",
   scenario_digram_custom_list: "/custom_scenarios/scenariodigramlist",
   tab_status: "/scenarios/list",
+  post_Learnerlistbyinstructor: "/scenarios/learnerlistbyinstructor",
+  learnersByVmRequest: "/scenarios/getLearnersByVmRequest",
+  deleteInviteLearner: "/scenarios/delete-invite-learner",
+  save_Invite_Learners:"/scenarios/saveInviteLearners",
   // snapshot
   save_snapshot: "/vmconfigs/create-snapshot",
   get_snapshot: "/vmconfigs/get-snapshots",
@@ -109,7 +113,6 @@ const api = {
   scenario_sub_category_list: "/commons/scenariocategorylist",
   scenario_child_category_list: "/commons/scenariosubcategorylist",
 
-
   scenario_flowchart_save: "/custom_scenarios/save_diagram",
   master_component_cat_get: "/commons/componentcategorylist",
   scenario_component_by_catId: "/commons/scenariocomponentlist",
@@ -121,11 +124,8 @@ const api = {
   custom_component_save_learner: "/vmconfigs/savecomponent",
   reject_stopped_vm: "vmconfigs/reject-stopped-vm",
 
-
   custom_component_get: "/custom_component/get",
   custom_componentby_id: "/custom_component/getbyid",
-
-
 
   can_resume: "/scenarios/can-resume",
   event_can_resume: "/events/can-resume",
@@ -141,6 +141,8 @@ const api = {
   connect_networkPort: "vmconfigs/connect-single-network",
   disconnect_networkPort: "vmconfigs/disconnect-single-network",
 
-
+  // --------------invite scenario---------------
+  running_invite_learners: "/invitescenarios/running-invite-learners",
+  invite_scenario:"/invitescenarios/invite-scenario",
 };
 export default api;

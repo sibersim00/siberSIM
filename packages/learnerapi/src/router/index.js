@@ -13,6 +13,7 @@ const notificationRouter = require("../components/notification");
 const authRouter = require("../components/auth");
 const commonRouter = require("../components/commons");
 const customcomponentRouter = require("../components/custom_component");
+const invitescenarioRouter = require("../components/invitescenarios");
 
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
@@ -32,5 +33,8 @@ module.exports = function (iocContainer) {
   router.use("/notification", [authJwt.authenticateToken([""])], notificationRouter(iocContainer));
   router.use("/commons", [authJwt.authenticateToken([""])], commonRouter(iocContainer));
   router.use("/custom_component", [authJwt.authenticateToken(["/customcomponent"])], customcomponentRouter(iocContainer));
+  router.use("/invitescenarios", [authJwt.authenticateToken(["/invitescenarios"])], invitescenarioRouter(iocContainer));
+
   return router;
 };
+

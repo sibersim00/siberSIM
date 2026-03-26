@@ -18,6 +18,7 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
+  clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
@@ -150,12 +151,12 @@ export default function ProxmoxConsole() {
         );
         updateStatus("Starting virtual machine...");
 
-        await dispatch(
-          vmStartScenario({
-            vmid: realVmid,
-            vmType,
-          }),
-        );
+        // await dispatch(
+        //   vmStartScenario({
+        //     vmid: realVmid,
+        //     vmType,
+        //   }),
+        // );
 
         // Optional small delay to allow VM to boot
         setTimeout(() => {

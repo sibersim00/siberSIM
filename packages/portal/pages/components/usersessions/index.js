@@ -9,6 +9,8 @@ import {
   OverlayTrigger,
   Tooltip,
   Badge,
+  Modal,
+  Spinner
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
@@ -23,6 +25,12 @@ import {
   clearTerminateScenarioByAdInst,
   deletescenario
 } from "../../../shared/redux/slices/usersession/usersessionManage";
+import {
+  getrunningcomponent,
+  stopcomponent,
+  startcomponent,
+  restartcomponent,
+} from "../../../shared/redux/slices/runningComponents/runningComponents";
 // import {
 //   deletescenario
 // } from "../../../shared/redux/slices/scenariostart/scenariostartmanage";
@@ -44,7 +52,14 @@ const UserSession = () => {
   const [quickFilter, setQuickFilter] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [scenType, setScenType] = useState("All"); // Public/Private
-
+   // modals
+  const [showComponentModal, setShowComponentModal] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  // Loading State
+  const [componentLoading, setComponentLoading] = useState({
+      vmid: null,
+      action: null,
+    });
   const [selectedSession, setSelectedSession] = useState(null); // State to manage chat visibility
   const { push } = useRouter();
   const {
@@ -53,6 +68,7 @@ const UserSession = () => {
     hasGetTerminationSucc,
     hasGetDeleteSucc,
     hasGetTerminationByAdInstSucc,
+    runningComponents,
   } = useSelector((state) => {
     return {
       hasGetUserSessionListSucc:
@@ -61,13 +77,9 @@ const UserSession = () => {
       hasGetTerminationSucc: state.usersessionManage.saveTermination,
       hasGetDeleteSucc: state.usersessionManage.hasdeletescenarioSuccData,
       hasGetTerminationByAdInstSucc: state.usersessionManage.sendTermination,
+      runningComponents: state?.runningComponent?.getrunningcomponentSucc?.data,
     };
   });
-
-  console.log(
-    "hasGetUserSessionListSucc",
-    hasGetUserSessionListSucc
-  );
 
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
@@ -80,6 +92,7 @@ const UserSession = () => {
       cellRenderer: "srNoRender",
       maxWidth: 80,
       sortable: false,
+      headerTooltip:  "Sr No.",
     },
     {
       headerName: "Scenario",
@@ -87,6 +100,7 @@ const UserSession = () => {
       filter: true,
       floatingFilter: true,
       minWidth: 240,
+      headerTooltip:"Scenario",
     },
     {
       headerName: "Status",
@@ -94,7 +108,7 @@ const UserSession = () => {
       filter: true,
       floatingFilter: true,
       minWidth: 240,
-      cellRenderer: "vmStatusRenderer"
+      cellRenderer: "vmStatusRenderer",
     },
     {
       headerName: "SIMUser",
@@ -102,7 +116,8 @@ const UserSession = () => {
       floatingFilter: true,
       minWidth: 180,
       valueGetter: (params) =>
-        params.data?.learner_name || params.data?.user_name || "",
+      params.data?.learner_name || params.data?.user_name || "",
+      headerTooltip:"SIMUser",
     },
     {
       headerName: "SIMUser Type",
@@ -110,15 +125,16 @@ const UserSession = () => {
       filter: true,
       floatingFilter: true,
       minWidth: 180,
+      headerTooltip: "SIMUser Type",
 
     },
-
     {
       headerName: "Start Time",
       field: "startedon",
       filter: true,
       floatingFilter: true,
       minWidth: 180,
+      headerTooltip: "Start Time",
     },
     {
       headerName: "Action",
@@ -152,7 +168,6 @@ const UserSession = () => {
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
-
     const filtered =
       hasGetUserSessionListSucc &&
       hasGetUserSessionListSucc.filter((d) => {
@@ -181,10 +196,32 @@ const UserSession = () => {
           !val // show all if search box is empty
         );
       });
-
     setGridData(filtered);
     setRowData(filtered);
   };
+
+const [isDark, setIsDark] = useState(false);
+useEffect(() => {
+  if (showComponentModal) {
+    const theme = localStorage.getItem("theme_preference");
+    setIsDark(theme?.toLowerCase() === "dark");
+  }
+}, [showComponentModal]);
+
+const modalBodyStyle = {
+  background: isDark ? "#0f0f1b" : "#ffffff",
+  color: isDark ? "#ffffff" : "#000000",
+};
+const cardStyle = {
+  background: isDark ? "#151526" : "#f8f9fa",
+  border: isDark ? "1px solid #24243b" : "1px solid #dee2e6",
+  borderRadius: "12px",
+  padding: "16px",
+  height: "100%",
+};
+const footerStyle = {
+  background: isDark ? "#0f0f1b" : "#ffffff",
+};
 
   useEffect(() => {
     if (hasGetUserSessionListSucc) {
@@ -226,6 +263,7 @@ const UserSession = () => {
   //     dispatch(clearTerminateScenarioByAdInst());
   //   }
   // }, [hasGetTerminationByAdInstSucc]);
+  
   useEffect(() => {
     if (hasGetTerminationSucc.statusCode === 200) {
       toast.success(
@@ -310,13 +348,13 @@ const UserSession = () => {
 
       preConfirm: async () => {
         try {
-          // 🔄 Update modal → hide Yes button
+          // Update modal → hide Yes button
           Swal.update({
             title: "Please wait...",
             text: "Your scenario is being terminated. This may take a few moments.",
             icon: "info",
             showCancelButton: false,
-            showConfirmButton: false, // ✅ THIS is the key
+            showConfirmButton: false, // THIS is the key
           });
 
           const vmrequestid = data?.vmrequestid;
@@ -339,7 +377,6 @@ const UserSession = () => {
           await dispatch(
             terminateScenario({ ...basePayload, status: "Terminated" })
           );
-
           dispatch(clearTerminateScenario());
           return true;
         } catch (err) {
@@ -354,8 +391,6 @@ const UserSession = () => {
     });
   };
 
-
-
   const handleToSentRaiserequest = (sessionData) => {
     setSelectedSession(sessionData); // set the session data for the chatbox
     setShowChat(true); // open the chatbox
@@ -367,13 +402,12 @@ const UserSession = () => {
     },
     vmStatusRenderer: (props) => {
       const status = props.value;
-
-      const bg =
-        status === "Running"
-          ? "green"
-          : status === "Pause"
-            ? "orange" // yellow
-            : "#6c757d"; // grey default
+        const bg =
+          status === "Running" || status === "Start"
+            ? "green"
+            : status === "Pause"
+              ? "orange"
+              : "#6c757d";
 
       return (
         <span
@@ -392,21 +426,89 @@ const UserSession = () => {
     },
 
     actionButtonRenderer: function (props) {
-      console.log("propspropspropspropsprops", props)
+      const item = props.data;
+
+      const isRunning =
+        item?.scenario_status === "Resume" || item?.scenario_status === "Start";
+
       return (
-        <ActionButtonRenderer
-          handleEditView={handleReturnView}
-          handleShowEditView={true}
-          terminationNotification={handleSentTerminationNotification}
-          handleShowTerminationNotification={true}
-          terminateStudent={handleToTerminate}
-          handleShowTerminateStudent={true}
-          raiseRequest={handleToSentRaiserequest} // Open chat on raiseRequest
-          handleShowRaiseRequest={props?.data?.requestedby_role !== "Admin" && props?.data?.requestedby_role !== "Instructor" && props?.data?.requestedby_role !== "Event"} // Open chat on raiseRequest
-          propsVal={props}
-        />
+        <div className="d-flex align-items-center gap-2">
+          <ActionButtonRenderer
+            handleEditView={handleReturnView}
+            handleShowEditView={true}
+            terminationNotification={handleSentTerminationNotification}
+            handleShowTerminationNotification={true}
+            terminateStudent={handleToTerminate}
+            handleShowTerminateStudent={true}
+            raiseRequest={handleToSentRaiserequest}
+            handleShowRaiseRequest={
+              props?.data?.requestedby_role !== "Admin" &&
+              props?.data?.requestedby_role !== "Instructor" &&
+              props?.data?.requestedby_role !== "Event"
+            }
+            propsVal={props}
+          />
+
+          {/* SHOW ONLY WHEN RUNNING */}
+
+          {/* <OverlayTrigger placement="bottom" overlay={<Tooltip>Profile</Tooltip>}>
+                <Button
+                  id="viewBtnCommon"
+                  type="button"
+                  variant="outline-success"
+                  className="mg-r-3"
+                  size="sm"
+                  onClick={(e) => handleOnView(propsVal?.data)}
+                >
+                  <i className="ti ti-id-badge"></i>
+                </Button>
+              </OverlayTrigger> */}
+          {/* {isRunning && (
+            <OverlayTrigger
+              placement="bottom"
+              overlay={<Tooltip>Component List</Tooltip>}
+            >
+              <Button
+                id="componentListBtn"
+                type="button"
+                variant="outline-info"
+                className="mg-r-3"
+                size="sm"
+                onClick={() => {
+                  setSelectedScenario(item);
+                 setShowComponentModal(true);
+                 dispatch(
+                    getrunningcomponent({
+                      vmrequestid: item.vmrequestid,
+                    }),
+                  );
+                }}
+              >
+                <i className="fe fe-list"></i>
+              </Button>
+            </OverlayTrigger>
+          )} */}
+        </div>
       );
     },
+
+    // actionButtonRenderer: function (props) {
+    //   console.log("propspropspropspropsprops", props)
+    //   return (
+    //     <ActionButtonRenderer
+    //       handleEditView={handleReturnView}
+    //       handleShowEditView={true}
+    //       terminationNotification={handleSentTerminationNotification}
+    //       handleShowTerminationNotification={true}
+    //       terminateStudent={handleToTerminate}
+    //       handleShowTerminateStudent={true}
+    //       raiseRequest={handleToSentRaiserequest} // Open chat on raiseRequest
+    //       handleShowRaiseRequest={props?.data?.requestedby_role !== "Admin" && props?.data?.requestedby_role !== "Instructor" && props?.data?.requestedby_role !== "Event"} // Open chat on raiseRequest
+    //       propsVal={props}
+    //     />
+
+    //   );
+    // },
   };
 
   const [columnsPerRow, setColumnsPerRow] = useState(4); // Default value
@@ -430,10 +532,10 @@ const UserSession = () => {
     setRowData(hasGetUserSessionListSucc);
     setGridData(hasGetUserSessionListSucc);
   };
+
   useEffect(() => {
     if (hasGetUserSessionListSucc) {
       let filtered = [...hasGetUserSessionListSucc];
-
       if (scenType === "Resume") {
         // Running = Resume + Start
         filtered = filtered.filter(
@@ -447,12 +549,166 @@ const UserSession = () => {
         );
       }
       // All → no filter
-
       setRowData(filtered);
       setGridData(filtered);
     }
   }, [hasGetUserSessionListSucc, scenType]);
 
+ const handleStartComponent = (comp) => {
+   Swal.fire({
+     title: "Start Component?",
+     text: `Do you want to start ${comp.componentname}?`,
+     icon: "question",
+     showCancelButton: true,
+     confirmButtonColor: "#22c55e",
+     cancelButtonColor: "#6b7280",
+     confirmButtonText: "Yes, Start",
+     customClass: { container: "swal2-container-custom" },
+   }).then(async (result) => {
+     if (result.isConfirmed) {
+       try {
+         setComponentLoading({ vmid: comp.vmid, action: "start" });
+
+         await dispatch(
+           startcomponent({
+             vmrequestid: comp.vmrequestid,
+             vmid: comp.vmid,
+           }),
+         );
+
+          setShowComponentModal(false);
+
+         toast.success(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component Started Successfully
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } catch (err) {
+         toast.error(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component failed to start
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } finally {
+         setComponentLoading({ vmid: null, action: null });
+       }
+     }
+   });
+ };
+ const handleRestartComponent = (comp) => {
+   Swal.fire({
+     title: "Restart Component?",
+     text: `Do you want to restart ${comp.componentname}?`,
+     icon: "info",
+     showCancelButton: true,
+     confirmButtonColor: "#f59e0b",
+     cancelButtonColor: "#6b7280",
+     confirmButtonText: "Yes, Restart",
+     customClass: {
+       container: "swal2-container-custom",
+     },
+   }).then(async (result) => {
+     if (result.isConfirmed) {
+       try {
+         setComponentLoading({ vmid: comp.vmid, action: "restart" });
+         await dispatch(
+           restartcomponent({
+             vmrequestid: comp.vmrequestid,
+             vmid: comp.vmid,
+           }),
+         );
+
+          setShowComponentModal(false);
+
+         toast.success(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component Restarted Successfully
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } catch (err) {
+         toast.error(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component failed to restart
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } finally {
+         setComponentLoading({ vmid: null, action: null });
+       }
+     }
+   });
+ };
+ const handleStopComponent = (comp) => {
+   Swal.fire({
+     title: "Stop Component?",
+     text: `Do you want to stop ${comp.componentname}?`,
+     icon: "warning",
+     showCancelButton: true,
+     confirmButtonColor: "#ef4444",
+     cancelButtonColor: "#6b7280",
+     confirmButtonText: "Yes, Stop",
+     customClass: {
+       container: "swal2-container-custom",
+     },
+   }).then(async (result) => {
+     if (result.isConfirmed) {
+       try {
+         setComponentLoading({ vmid: comp.vmid, action: "stop" });
+         await dispatch(
+           stopcomponent({
+             vmrequestid: comp.vmrequestid,
+             vmid: comp.vmid,
+           }),
+         );
+
+          setShowComponentModal(false);
+
+         toast.success(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component Stopped Successfully
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } catch (err) {
+         toast.error(
+           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+             Component failed to stop
+           </p>,
+           {
+             position: toast.POSITION.TOP_RIGHT,
+             hideProgressBar: false,
+             theme: "colored",
+           },
+         );
+       } finally {
+         setComponentLoading({ vmid: null, action: null });
+       }
+     }
+   });
+ };
 
   return (
     <>
@@ -520,9 +776,7 @@ const UserSession = () => {
                           setScenType(e.target.value);
                         }}
                       >
-                        <CustomToggleButton value="All">
-                          All
-                        </CustomToggleButton>
+                        <CustomToggleButton value="All">All</CustomToggleButton>
                         <CustomToggleButton value="Resume">
                           Running
                         </CustomToggleButton>
@@ -558,7 +812,6 @@ const UserSession = () => {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
-                      // overlayNoRowsTemplate="No data available"
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -574,22 +827,21 @@ const UserSession = () => {
           {view === "card" ? (
             <>
               {gridData && gridData.length > 0 ? (
-                <Row className="g-3 mb-3" >
+                <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
-                      {
-                        console.log("itemitemitemitemitem", item)
-                      }
+                      {console.log("itemitemitemitemitem", item)}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenario_status === "Resume"
-                          ? "shadow-publish"
-                           : item.scenario_status === "Start"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${
+                          item.scenario_status === "Resume"
                             ? "shadow-publish"
-                          : item.scenario_status === "Pause"
-                            ? "shadow-draft"
-                            : ""
-                          }`}
+                            : item.scenario_status === "Start"
+                              ? "shadow-publish"
+                              : item.scenario_status === "Pause"
+                                ? "shadow-draft"
+                                : ""
+                        }`}
                         style={{
                           // backgroundColor: "#f8f9fc",
                           transition:
@@ -630,16 +882,15 @@ const UserSession = () => {
                               fontSize: "12px",
                               backgroundColor:
                                 item.scenario_status === "Resume" ||
-                                  item.scenario_status === "Start"
+                                item.scenario_status === "Start"
                                   ? "green"
                                   : item.scenario_status === "Pause"
                                     ? "orange"
                                     : "",
                             }}
                           >
-
-                            {(item.scenario_status === "Resume" ||
-                              item.scenario_status === "Start")
+                            {item.scenario_status === "Resume" ||
+                            item.scenario_status === "Start"
                               ? "Running"
                               : item.scenario_status}
                           </span>
@@ -692,9 +943,9 @@ const UserSession = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                      0,
-                                      27
-                                    )}...`
+                                        0,
+                                        27,
+                                      )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -712,7 +963,7 @@ const UserSession = () => {
                                   minute: "2-digit",
                                   second: "2-digit",
                                   hour12: true,
-                                }
+                                },
                               )}
                             </p>
 
@@ -748,45 +999,47 @@ const UserSession = () => {
                                   </OverlayTrigger>
                                 </div>
                               )}
-                              {item.requestedby_role !== "Admin" && item.requestedby_role !== "Instructor" && item.requestedby_role !== "Event" && (
-                                <div
-                                  className="btn btn-sm ripple bg-success-transparent text-success rounded-circle position-relative"
-                                  onClick={() => {
-                                    setSelectedSession(item);
-                                    setShowChat(true);
-                                  }}
-                                  style={{ overflow: "visible" }}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>ChatBox</Tooltip>}
+                              {item.requestedby_role !== "Admin" &&
+                                item.requestedby_role !== "Instructor" &&
+                                item.requestedby_role !== "Event" && (
+                                  <div
+                                    className="btn btn-sm ripple bg-success-transparent text-success rounded-circle position-relative"
+                                    onClick={() => {
+                                      setSelectedSession(item);
+                                      setShowChat(true);
+                                    }}
+                                    style={{ overflow: "visible" }}
                                   >
-                                    {/* Icon wrapper must be position-relative for correct badge placement */}
-                                    <span className="d-inline-block position-relative">
-                                      <i className="fas fa-comments fs-6"></i>
+                                    <OverlayTrigger
+                                      placement="bottom"
+                                      overlay={<Tooltip>ChatBox</Tooltip>}
+                                    >
+                                      {/* Icon wrapper must be position-relative for correct badge placement */}
+                                      <span className="d-inline-block position-relative">
+                                        <i className="fas fa-comments fs-6"></i>
 
-                                      {item.unseen_message_count > 0 && (
-                                        <span
-                                          className="position-absolute top-0 start-100 translate-middle-y bg-danger badge rounded-pill text-white 
+                                        {item.unseen_message_count > 0 && (
+                                          <span
+                                            className="position-absolute top-0 start-100 translate-middle-y bg-danger badge rounded-pill text-white 
   px-1 py-0 small"
-                                          style={{
-                                            transform: "translate(30%, -40%)",
-                                            zIndex: 1,
-                                          }}
-                                        >
-                                          {item.unseen_message_count > 99
-                                            ? "99+"
-                                            : item.unseen_message_count}
+                                            style={{
+                                              transform: "translate(30%, -40%)",
+                                              zIndex: 1,
+                                            }}
+                                          >
+                                            {item.unseen_message_count > 99
+                                              ? "99+"
+                                              : item.unseen_message_count}
 
-                                          <span className="visually-hidden">
-                                            unread messages
+                                            <span className="visually-hidden">
+                                              unread messages
+                                            </span>
                                           </span>
-                                        </span>
-                                      )}
-                                    </span>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                                        )}
+                                      </span>
+                                    </OverlayTrigger>
+                                  </div>
+                                )}
 
                               <div
                                 className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
@@ -804,7 +1057,7 @@ const UserSession = () => {
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                 onClick={() =>
                                   push(
-                                    `/usersession_view/${item?.vmrequestuuid}`
+                                    `/usersession_view/${item?.vmrequestuuid}`,
                                   )
                                 }
                               >
@@ -815,6 +1068,31 @@ const UserSession = () => {
                                   <i className="fe fe-eye"></i>
                                 </OverlayTrigger>
                               </div>
+
+                              {/* {["Resume", "Start"].includes(
+                                item?.scenario_status,
+                              ) && (
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Component List</Tooltip>}
+                                >
+                                  <div
+                                    className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                                    onClick={() => {
+                                      setSelectedScenario(item);
+                                      setShowComponentModal(true);
+
+                                      dispatch(
+                                        getrunningcomponent({
+                                          vmrequestid: item.vmrequestid,
+                                        }),
+                                      );
+                                    }}
+                                  >
+                                    <i className="fe fe-list"></i>
+                                  </div>
+                                </OverlayTrigger>
+                              )} */}
                             </div>
                           </div>
                         </Card.Body>
@@ -858,6 +1136,199 @@ const UserSession = () => {
           )}
         </Col>
       </Row>
+
+      {/* modal */}
+      <Modal
+        show={showComponentModal}
+        onHide={() => setShowComponentModal(false)}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Running Components</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body style={modalBodyStyle}>
+          <div className="mb-4 px-2 py-3 border-dashed-custom">
+            <div className="d-flex justify-content-between flex-wrap mb-1">
+              {/* <div>
+                <strong>Scenario Name:</strong> {selectedScenario?.scenarioname}
+              </div>
+              <div>
+                <strong>Scenario Level:</strong>{" "}
+                {selectedScenario?.scenariolevel}
+              </div>
+              <div>
+                <strong>SIMUser:</strong> {selectedScenario?.learnername}
+              </div> */}
+              <div>
+                <strong>Scenario Name :</strong>{" "}
+                {runningComponents?.[0]?.scenariotitle}
+              </div>
+
+              <div>
+                <strong>Scenario Level :</strong>{" "}
+                {runningComponents?.[0]?.scenariolevel}
+              </div>
+
+              <div>
+                <strong>SIMUser :</strong>{" "}
+                {selectedScenario?.learner_name || selectedScenario?.user_name}
+              </div>
+            </div>
+          </div>
+          {/* Component Cards */}
+          <Row className="g-3">
+            {runningComponents && runningComponents.length > 0 ? (
+              runningComponents.map((comp) => {
+                const statusColor =
+                  comp.status === "Running"
+                    ? "#22c55e"
+                    : comp.status === "Stopped"
+                      ? "#6b7280" 
+                      : "#ef4444";
+
+                return (
+                  <Col md={3} key={comp.vmconfigurationid}>
+                    <div style={cardStyle}>
+                      {/* Header */}
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={<Tooltip>{comp.componentname}</Tooltip>}
+                        >
+                          <h6
+                            className="mb-0 w-75 text-truncate"
+                            style={{ cursor: "pointer" }}
+                          >
+                            {comp.componentname}
+                          </h6>
+                        </OverlayTrigger>
+
+                        <span
+                          className="ms-2"
+                          style={{
+                            background: statusColor,
+                            padding: "4px 10px",
+                            borderRadius: "20px",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {comp.status}
+                        </span>
+                      </div>
+                      {/* Component ID */}
+                      <div style={{ fontSize: "12px", opacity: 0.7 }}>
+                        VMID: {comp.vmid}
+                      </div>
+                      {/* Type */}
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          opacity: 0.7,
+                          marginBottom: "14px",
+                        }}
+                      >
+                        Type: {comp.componenttype}
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <Button
+                          size="sm"
+                          variant="outline-primary"
+                          disabled={
+                            comp.status === "Running" ||
+                            componentLoading.vmid === comp.vmid
+                          }
+                          onClick={() => handleStartComponent(comp)}
+                        >
+                          {componentLoading.vmid === comp.vmid &&
+                          componentLoading.action === "start" ? (
+                                        <>
+                                          <Spinner
+                                            as="span"
+                                            animation="grow"
+                                            size="sm"
+                                            role="status"
+                                            aria-hidden="true"
+                                          />{" "}Starting
+                                        </>
+                                      ) : (
+                            <>▶ Start</>
+                          )}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          disabled={
+                            comp.status !== "Running" ||
+                            componentLoading.vmid === comp.vmid
+                          }
+                          onClick={() => handleStopComponent(comp)}
+                        >
+                          {componentLoading.vmid === comp.vmid &&
+                          componentLoading.action === "stop" ? (
+                                        <>
+                                          <Spinner
+                                            as="span"
+                                            animation="grow"
+                                            size="sm"
+                                            role="status"
+                                            aria-hidden="true"
+                                          />{" "}Stopping
+                                        </>
+                                      )  : (
+                             <>■ Stop</>
+                          )}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline-warning"
+                          disabled={
+                            comp.status !== "Running" ||
+                            componentLoading.vmid === comp.vmid
+                          }
+                          onClick={() => handleRestartComponent(comp)}
+                        >
+                          {componentLoading.vmid === comp.vmid &&
+                          componentLoading.action === "restart" ? (
+                                        <>
+                                          <Spinner
+                                            as="span"
+                                            animation="grow"
+                                            size="sm"
+                                            role="status"
+                                            aria-hidden="true"
+                                          />{" "}Restarting
+                                        </>
+                                      ) : (
+                             <>↻ Restart</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </Col>
+                );
+              })
+            ) : (
+              <Col md={12}>
+                <div className="text-center text-muted">
+                  No running components found
+                </div>
+              </Col>
+            )}
+          </Row>
+        </Modal.Body>
+        <Modal.Footer style={footerStyle}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowComponentModal(false)}
+          >
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* ChatBox Component */}
       {showChat && (

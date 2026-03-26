@@ -6,10 +6,14 @@ const initialState = {
   isLoading: false,
   error: null,
   apilogdataData: [],
-  apilogsDatalist: [],
-  selectedLogData: [],
-  TerminationSucc: [],
   stopcomponentSucc: [],
+  startcomponentSucc: [],
+  restartcomponentSucc: [],
+  getrunninglearnerSucc: [],
+  getrunningcomponentSucc: [],
+  fetchrunningscenario: [],
+  listRunningScenariosData: [],
+  listAllExceptRunningData: [],
 };
 
 const slice = createSlice({
@@ -24,21 +28,37 @@ const slice = createSlice({
       state.error = action.payload;
     },
 
-    hasFetchapilogsSuccesslist(state, action) {
+    hasfetchrunningscenariolist(state, action) {
       state.isLoading = false;
-      state.apilogsDatalist = action.payload;
-    },
-    hasGetTerminationSucc(state, action) {
-      state.isLoading = false;
-      state.TerminationSucc = action.payload;
+      state.fetchrunningscenario = action.payload;
     },
     hasstopcomponentSucc(state, action) {
       state.isLoading = false;
       state.stopcomponentSucc = action.payload;
     },
-     hasFetchApiLogByIdSuccess(state, action) {
+    hasstartcomponentSucc(state, action) {
       state.isLoading = false;
-      state.selectedLogData = action.payload;
+      state.startcomponentSucc = action.payload;
+    },
+    hasrestartcomponentSucc(state, action) {
+      state.isLoading = false;
+      state.restartcomponentSucc = action.payload;
+    },
+    hasgetrunninglearner(state, action) {
+      state.isLoading = false;
+      state.getrunninglearnerSucc = action.payload;
+    },
+    hasgetrunningcomponent(state, action) {
+      state.isLoading = false;
+      state.getrunningcomponentSucc = action.payload;
+    },
+    hasgetlistRunningScenariosSucc(state, action) {
+      state.isLoading = false;
+      state.listRunningScenariosData = action.payload;
+    },
+    hasgetlistAllExceptRunningSucc(state, action) {
+      state.isLoading = false;
+      state.listAllExceptRunningData = action.payload;
     },
   },
 });
@@ -46,84 +66,105 @@ const slice = createSlice({
 export default slice.reducer;
 export const { openModal, closeModal, selectEvent } = slice.actions;
 
-export function fetchapilogslist() {
+
+export function fetchrunningscenario() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.get(`${api.get_running_component}`);
-      dispatch(slice.actions.hasFetchapilogsSuccesslist(response.data));
+      const response = await axios.get(`${api.running_senario}`);
+      dispatch(slice.actions.hasfetchrunningscenariolist(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function getrunninglearner() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.get_running_learner}`);
+      dispatch(slice.actions.hasgetrunninglearner(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
 
-export function clearfetchlogs() {
+export function getrunningcomponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      dispatch(slice.actions.hasFetchapilogsSuccesslist([]));
+      const response = await axios.post(`${api.get_running_component}`,payload);
+      dispatch(slice.actions.hasgetrunningcomponent(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
 
-export function fetchApiLogById(id) {
-  return async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-    try {
-      const response = await axios.get(`${api.fetch_apilogs_by_id}/${id}`);
-      dispatch(slice.actions.hasFetchApiLogByIdSuccess(response.data.data)); 
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-}
-
-export function clearfetchlogbyid() {
-  return async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-    try {
-      dispatch(slice.actions.hasFetchApiLogByIdSuccess());
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-}
-
-
-export function terminateScenario(payload) {
-  console.log(
-    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
-    payload
-  );
-  return async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-    try {
-      const response = await axios.post(`${api.delete_dropped_component}`, payload);
-      console.log("response", response);
-      dispatch(slice.actions.hasGetTerminationSucc(response.data));
-
-      console.log("response", response);
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-}
 export function stopcomponent(payload) {
-  console.log(
-    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
-    payload
-  );
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.stop_single_component}`, payload);
-      console.log("response", response);
       dispatch(slice.actions.hasstopcomponentSucc(response.data));
+      return response.data
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function startcomponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.start_single_component}`, payload);
+      dispatch(slice.actions.hasstartcomponentSucc(response.data));
+      return response.data
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function restartcomponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.restart_single_component}`, payload);;
+      dispatch(slice.actions.hasrestartcomponentSucc(response.data));
+      return response.data
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 
-      console.log("response", response);
+export function listRunningScenarios(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(api.running, {
+        params: payload, 
+      });
+      dispatch(
+        slice.actions.hasgetlistRunningScenariosSucc(response.data.data)
+      );
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function listAllExceptRunning(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(api.all_except_running, {
+        params: payload, 
+      });
+      dispatch(
+        slice.actions.hasgetlistAllExceptRunningSucc(response.data.data)
+      );
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

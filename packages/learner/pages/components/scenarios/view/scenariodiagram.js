@@ -365,7 +365,9 @@ const ScenarioDiagram = ({
       ref={reactFlowWrapper}
       style={{ width: "100%", height: "80vh", borderRadius: 8 }}
     >
-      {String(manipulationFlag) === "true" &&
+
+      
+      {!router.asPath.includes("/invite_scenarios") && String(manipulationFlag) === "true" &&
   ["Start", "Resume"].includes(isrunning) && (
     <button
       onClick={async () => {

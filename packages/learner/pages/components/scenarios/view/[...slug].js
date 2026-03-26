@@ -10,9 +10,13 @@ import {
   Modal,
   Alert,
   Badge,
+  Form,
+  Table,
 } from "react-bootstrap";
+import Select from "react-select";
 import { toast, ToastContainer } from "react-toastify";
 import { useRouter } from "next/router";
+import Swal from "sweetalert2";
 import {
   getSingleScenarios,
   clearSingleScenarios,
@@ -32,6 +36,11 @@ import {
   pausescenario,
   resumescenario,
   canresumescenario,
+  Learnerlistbyinstructor,
+  getLearnersByVmRequest,
+  DeleteInviteLearnerController,
+  clearDeleteInviteLearnerController,
+  saveInviteLearners,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
@@ -43,7 +52,7 @@ import dynamic from "next/dynamic";
 
 const PdfLoader = dynamic(
   () => import("../../../../shared/data/common/PdfLoader"),
-  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> },
 );
 
 const ScenariosView = () => {
@@ -76,7 +85,13 @@ const ScenariosView = () => {
   const [pdfNotFound, setPdfNotFound] = useState(false);
   const [dynamicTab, setDynamicTab] = useState("Basic Information");
   const [isAnyScenarioRunning, setIsAnyScenarioRunning] = useState(false);
-  // const [actionLoading, setActionLoading] = useState(false);
+  const [learnerDropdown, setLearnerDropdown] = useState([]);
+  const [selectedLearners, setSelectedLearners] = useState([]);
+  const [showLearnerModal, setShowLearnerModal] = useState(false);
+  const [showAssignedBtn, setShowAssignedBtn] = useState(false);
+  const [showAssignedModal, setShowAssignedModal] = useState(false);
+  const [showInviteesBtn, setShowInviteesBtn] = useState(false);
+  const { t } = useTranslation();
 
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
     useState(false);
@@ -126,11 +141,14 @@ const ScenariosView = () => {
     hasdeletescenarioSucc,
     haspausescenarioSucc,
     hasresumescenarioSucc,
+    hasGetlearnerlistbyinstructorData,
+    hasGetLearnersByVmRequestDataData,
+    hasdeleteInviteLearnerControllerData,
+    hasGetsaveInviteLearnersData,
     errorData,
   } = useSelector((state) => ({
     getSingleScenariosSucc: state?.scenarios?.singleScenarios?.data,
     saveScenariosData: state?.scenarios?.saveScenarios,
-
     hasGetSessionStatusListData:
       state?.scenarios?.getSessionStatusListData?.data,
     hasGetLogsListData: state?.scenarios?.getLogsData?.data,
@@ -141,13 +159,22 @@ const ScenariosView = () => {
     haspausescenarioSucc: state?.scenarios?.pausescenarioData,
     hasresumescenarioSucc: state?.scenarios?.resumescenarioData,
 
+    hasGetlearnerlistbyinstructorData:
+      state?.scenarios?.learnerlistbyinstructor?.data,
+    hasGetLearnersByVmRequestDataData:
+      state?.scenarios?.getLearnersByVmRequestData?.data,
+    hasdeleteInviteLearnerControllerData:
+      state?.scenarios?.deleteInviteLearnerController,
+    hasGetsaveInviteLearnersData:
+      state?.scenarios?.hasGetsaveInviteLearnersData,
+
     errorData: state?.scenarios?.error,
   }));
+
   const getUserDataFromLocal = useSelector(
-    (state) => state?.localData?.getLocalData
+    (state) => state?.localData?.getLocalData,
   );
-const learnerId = getUserDataFromLocal?.learner_id;
-console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
+  const learnerId = getUserDataFromLocal?.learner_id;
 
   useEffect(() => {
     dispatch(getTabList());
@@ -163,7 +190,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
         .sort((a, b) => a.tab_ordering - b.tab_ordering);
       if (enabledTabs.length > 0) {
         const basicTab = enabledTabs.find(
-          (tab) => tab.tab_name?.toLowerCase() === "Basic Information"
+          (tab) => tab.tab_name?.toLowerCase() === "Basic Information",
         );
         if (basicTab) {
           setDynamicTab(formatEventKey(basicTab.tab_name));
@@ -176,34 +203,38 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
       }
     }
   }, [tabListSucc]);
-  console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
-  
+
   const activeScenarioIdRef = useRef(null);
+
   useEffect(() => {
     if (!getSingleScenariosSucc?.length || !query.slug?.[0]) return;
-
     const scenario = getSingleScenariosSucc[0];
-
     if (String(scenario.scenariouuid) !== String(query.slug[0])) {
       return;
     }
-
-    activeScenarioIdRef.current = scenario.scenariouuid;  
-
+    activeScenarioIdRef.current = scenario.scenariouuid;
     setRowValues(scenario);
     setScenarioStatus(scenario.status);
-
     if (scenario.calculated_timer) {
       const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
       const totalSeconds = h * 3600 + m * 60 + s;
       setElapsedSeconds(totalSeconds);
-
       if (scenario.status === "Start" || scenario.status === "Resume") {
         setTimerActive(true);
         setTimerPaused(false);
       }
     }
+    if (getSingleScenariosSucc?.[0].vmrequestid) {
+      const payload = {
+        vmrequestid:
+          getSingleScenariosSucc &&
+          getSingleScenariosSucc?.[0] &&
+          getSingleScenariosSucc?.[0].vmrequestid,
+      };
+      dispatch(getLearnersByVmRequest(payload));
+    }
   }, [getSingleScenariosSucc, query.slug?.[0]]);
+
   useEffect(() => {
     if (saveScenariosData?.statusCode == 200) {
       setActionLoading(false); //  Reset loading for Start action
@@ -217,10 +248,53 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
         vmrequestid: saveScenariosData?.vmrequestid,
       };
       dispatch(getConfigurations(payload));
+
       setShowCloneModal(true);
       dispatch(clearSaveScenarios());
     }
   }, [saveScenariosData]);
+
+  useEffect(() => {
+    if (hasdeleteInviteLearnerControllerData?.statusCode == 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {hasdeleteInviteLearnerControllerData?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+
+      const payload = {
+        vmrequestid: getSingleScenariosSucc?.[0].vmrequestid,
+      };
+      dispatch(getLearnersByVmRequest(payload));
+      dispatch(clearDeleteInviteLearnerController());
+    }
+  }, [hasdeleteInviteLearnerControllerData]);
+
+  const handleDeletecard = (learner) => {
+    Swal.fire({
+      title: t("common.swal.title"),
+      text: t("common.swal.text_delete"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: t("common.swal.yes"),
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const payload = {
+          learnerid: learner.learner_id,
+          vmrequestid: learner.vmrequestid,
+        };
+        dispatch(DeleteInviteLearnerController(payload));
+      }
+    });
+  };
 
   useEffect(() => {
     if (
@@ -236,18 +310,25 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         setScenarioStatus(
-          confirmAction === "terminate" ? "Terminated" : "Completed"
+          confirmAction === "terminate" ? "Terminated" : "Completed",
         );
       }
       setActionLoading(false); // Remove loading
       dispatch(clearUpdateCompletedTerminated());
       dispatch(getSingleScenarios(query.slug[0]));
+      const payload = {
+        vmrequestid:
+          getSingleScenariosSucc &&
+          getSingleScenariosSucc?.[0] &&
+          getSingleScenariosSucc?.[0].vmrequestid,
+      };
+      dispatch(getLearnersByVmRequest(payload));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
-  
+
   useEffect(() => {
     if (hasdeletescenarioSucc?.statusCode || errorData?.statusCode === 400) {
       if (hasdeletescenarioSucc?.statusCode === 200) {
@@ -259,10 +340,10 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         setScenarioStatus(
-          confirmAction === "terminate" ? "Terminated" : "Completed"
+          confirmAction === "terminate" ? "Terminated" : "Completed",
         );
       }
       setActionLoading(false); // Remove loading
@@ -293,7 +374,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
                 position: toast.POSITION.TOP_RIGHT,
                 hideProgressBar: true,
                 theme: "colored",
-              }
+              },
             );
           })
         : toast.error(
@@ -304,7 +385,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
       dispatch(clearHasError());
     }
@@ -324,6 +405,8 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
     : null;
 
   const handleStart = () => {
+    setShowAssignedBtn(false);
+    setShowInviteesBtn(false);
     setIsScenarioError400(false);
     setConfirmAction("initializing");
     setShowConfirm(true);
@@ -351,11 +434,13 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
     setTimerPaused(true);
     setTimerActive(false);
   };
+
   const handleConfirmAction = async () => {
     try {
       setActionLoading(true);
 
       const scenarioData = getSingleScenariosSucc?.[0];
+
       const mappedStatus = {
         start: "Start",
         terminate: "Terminated",
@@ -376,6 +461,8 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
+        // invited_by_learner_id: getUserDataFromLocal?.learner_id,
+        // invitelearnerids: selectedLearners?.map((item) => item.learner_id),
         status: mappedStatus[confirmAction],
         timer:
           confirmAction === "initializing"
@@ -394,7 +481,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
         dispatch(updateSessionStatus(payload));
         dispatch(updateCompletedTerminated(payload));
       }
-      // 🔥 THE NEW DELETE API
+      //  THE NEW DELETE API
       else if (confirmAction === "delete") {
         dispatch(updateSessionStatus(payload));
         dispatch(deletescenario(payload));
@@ -409,6 +496,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
 
   const handleCancelAction = () => {
     setShowConfirm(false);
+    setSelectedLearners([]);
     setIsTerminatingOrCompleting(false);
     if (timerActive === false && timerPaused === true) {
       setTimerPaused(false);
@@ -427,10 +515,13 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
       } else {
         handleConfirmAction();
       }
+      setShowAssignedBtn(false); // hide Assigned
+      setShowInviteesBtn(false); // hide Invitees
     } catch (err) {
       alert("Something went wrong while confirming the action.");
     }
   };
+
   const handlePause = async () => {
     try {
       setConfirmAction("pause");
@@ -468,7 +559,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setScenarioStatus("Pause");
@@ -524,7 +615,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setScenarioStatus("Resume");
@@ -570,7 +661,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
         dispatch(getSessionStatusList(scenariolearnersessionuuid));
-      }, 10000);
+      }, 5000);
     }, 100);
   };
 
@@ -585,15 +676,17 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
 
   useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
-      if (!step || !step.trim()) {
+    if (!step || !step.trim()) {
       return;
-      }
+    }
     setVmStep(step);
     if (step === "Running" || step === "Pause") {
       setCountdown(10);
       setCountdownActive(true);
       clearInterval(pollingRef.current);
       pollingRef.current = null;
+
+      setShowAssignedBtn(true);
     }
 
     if (step === "Failed") {
@@ -618,6 +711,10 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
       setTimerActive(true);
       setTimerPaused(false);
       dispatch(getSingleScenarios(query.slug[0]));
+      //   const learnerPayload = {
+      //     vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+      //   };
+      //   dispatch(getLearnersByVmRequest(getSingleScenariosSucc?.[0]?.vmrequestid));
     }
 
     return () => clearInterval(timer);
@@ -650,6 +747,7 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
     setTimerPaused(false);
     setScenarioStatus("Initializing");
     dispatch(getSingleScenarios(query.slug[0]));
+    setShowAssignedBtn(true);
   };
 
   useEffect(() => {
@@ -667,10 +765,113 @@ console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSuc
   const isTimerVisible = !(
     isScenarioError400 ||
     ["Terminated", "Completed", "Pending", "Failed", "Initializing"].includes(
-      scenarioStatus
+      scenarioStatus,
     )
   );
-console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
+
+  const customStyles = () => {
+    return {
+      control: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--dark-bg-color)",
+        borderColor: "#ced4da",
+        minHeight: "38px",
+      }),
+      multiValue: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--primary-bg-color)",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: "#fff",
+      }),
+      multiValueRemove: (styles) => ({
+        ...styles,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "#EB5757",
+          color: "white",
+        },
+      }),
+      input: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      singleValue: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      placeholder: (styles) => ({
+        ...styles,
+        color: "#aaa",
+      }),
+    };
+  };
+
+  useEffect(() => {
+    if (hasGetlearnerlistbyinstructorData?.length > 0) {
+      const dropdownData = hasGetlearnerlistbyinstructorData.map((item) => ({
+        learner_id: item.learner_id,
+        learner_name: item.learner_name,
+      }));
+      setLearnerDropdown(dropdownData);
+    }
+  }, [hasGetlearnerlistbyinstructorData]);
+
+  const handleShowLearnerModal = () => {
+    if (getSingleScenariosSucc?.[0]?.vmrequestid) {
+      dispatch(
+        getLearnersByVmRequest({
+          vmrequestid: getSingleScenariosSucc?.[0].vmrequestid,
+        }),
+      );
+      setShowLearnerModal(true);
+    }
+  };
+
+  const handleAssignSubmit = async () => {
+    const payload = {
+      vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+      invited_by_learner_id: getUserDataFromLocal?.learner_id,
+      invitelearnerids: selectedLearners.map((item) => item.learner_id),
+    };
+
+    try {
+      await dispatch(saveInviteLearners(payload));
+
+      // SUCCESS TOAST
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Invitees Assigned Successfully.
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+
+      dispatch(
+        getLearnersByVmRequest({
+          vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+        }),
+      );
+      setShowAssignedModal(false);
+      setShowAssignedBtn(false);
+      setShowInviteesBtn(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenAssignedModal = () => {
+    dispatch(
+      Learnerlistbyinstructor({
+        vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+      }),
+    );
+    setShowAssignedModal(true);
+  };
 
   return (
     <>
@@ -691,18 +892,18 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                              ? 2
-                              : level === "Hard"
-                              ? 3
-                              : 0;
+                                ? 2
+                                : level === "Hard"
+                                  ? 3
+                                  : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                              ? "text-warning"
-                              : level === "Hard"
-                              ? "text-danger"
-                              : "text-muted";
+                                ? "text-warning"
+                                : level === "Hard"
+                                  ? "text-danger"
+                                  : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
@@ -759,17 +960,17 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                             router.push(
                               `/scenarios?categoryId=${categoryId}&subcategoryName=${subcategoryName}&view=${
                                 backView || "list"
-                              }`
+                              }`,
                             );
                           } else if (categoryId) {
                             router.push(
                               `/scenarios?categoryId=${categoryId}&view=${
                                 backView || "list"
-                              }`
+                              }`,
                             );
                           } else {
                             router.push(
-                              `/scenarios?view=${backView || "list"}`
+                              `/scenarios?view=${backView || "list"}`,
                             );
                           }
 
@@ -788,7 +989,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                 >
                   {isScenarioError400 ||
                   ["Terminated", "Completed", "Pending", "Failed"].includes(
-                    scenarioStatus
+                    scenarioStatus,
                   ) ? (
                     <div style={{ display: "flex", gap: "10px" }}>
                       <Button variant="success" size="sm" onClick={handleStart}>
@@ -1084,7 +1285,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                               {tabListSucc
                                 ?.filter((tab) => tab.tab_status === "True")
                                 ?.sort(
-                                  (a, b) => a.tab_ordering - b.tab_ordering
+                                  (a, b) => a.tab_ordering - b.tab_ordering,
                                 )
                                 ?.map((tab) => (
                                   <Tab.Pane
@@ -1211,7 +1412,60 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                           </div>
                                         </Col>
 
-                                        <Col md={12}>
+                                        {hasGetLearnersByVmRequestDataData?.length >
+                                          0 &&
+                                          ![
+                                            "Completed",
+                                            "Terminated",
+                                            "Deleted",
+                                          ].includes(scenarioStatus) && (
+                                            <Col md={3}>
+                                              <div className="d-flex align-items-start gap-3">
+                                                <i className="fe fe-user-plus text-secondary fs-4 mt-1"></i>
+                                                <div>
+                                                  <div className="fw-semibold text-dark mb-2" />
+
+                                                  <Button
+                                                    size="sm"
+                                                    className="rounded-pill d-flex align-items-center gap-1 px-3 btn-transparent "
+                                                    onClick={
+                                                      handleShowLearnerModal
+                                                    }
+                                                  >
+                                                    <i className="fe fe-eye"></i>
+                                                    Invitees
+                                                  </Button>
+
+                                                  <small className="text-muted">
+                                                    Assigned Invitees
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                          )}
+                                        {showAssignedBtn && (
+                                          <Col md={3}>
+                                            <div className="d-flex align-items-start gap-3">
+                                              <i className="fe fe-check-circle me-2 text-primary fs-4 mt-1"></i>
+                                              <div>
+                                                <div className="fw-semibold text-dark mb-2" />
+
+                                                <Button
+                                                  size="sm"
+                                                  className="rounded-pill d-flex align-items-center gap-1 px-3 btn-transparent"
+                                                  onClick={
+                                                    handleOpenAssignedModal
+                                                  }
+                                                >
+                                                  <i className="fe fe-users"></i>{" "}
+                                                  Assign Invitees
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </Col>
+                                        )}
+
+                                        <Col md={6}>
                                           <div className="d-flex align-items-start gap-3">
                                             <i className="fe fe-file-text text-dark fs-4 mt-1"></i>
                                             <div>
@@ -1256,7 +1510,9 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                             : ""
                                         }
                                         rowValues={rowValues}
-                                        manipulationFlag={rowValues?.manipulation_flag}
+                                        manipulationFlag={
+                                          rowValues?.manipulation_flag
+                                        }
                                         isrunning={rowValues?.status}
                                       />
                                     )}
@@ -1300,7 +1556,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                                       <td>
                                                         {log.startedon
                                                           ? new Date(
-                                                              log.startedon
+                                                              log.startedon,
                                                             ).toLocaleString()
                                                           : "-"}
                                                       </td>
@@ -1308,12 +1564,12 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                                       <td>{log.status}</td>
                                                       <td>
                                                         {new Date(
-                                                          log.createdon
+                                                          log.createdon,
                                                         ).toLocaleString()}
                                                       </td>
                                                       <td>{log.remark}</td>
                                                     </tr>
-                                                  )
+                                                  ),
                                                 )}
                                               </tbody>
                                             </table>
@@ -1383,7 +1639,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                                 onClick={() => {
                                                   const frame =
                                                     document.getElementById(
-                                                      `flex-iframe-${tab.tab_name}`
+                                                      `flex-iframe-${tab.tab_name}`,
                                                     );
                                                   if (frame)
                                                     frame.src = frame.src;
@@ -1399,7 +1655,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                                 onClick={() => {
                                                   const frame =
                                                     document.getElementById(
-                                                      `flex-iframe-${tab.tab_name}`
+                                                      `flex-iframe-${tab.tab_name}`,
                                                     );
                                                   if (
                                                     frame &&
@@ -1500,13 +1756,13 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                               <div className="d-flex">
                                 <i
                                   className={`fa ${item.icon} ${iconBackground(
-                                    item.step
+                                    item.step,
                                   )} product-icon ${getStepClass(item.step)}`}
                                 ></i>
                                 <div className="ml-2">
                                   <span
                                     className={`font-weight-semibold mb-4 tx-14 ${getStepClass(
-                                      item.step
+                                      item.step,
                                     )}`}
                                   >
                                     {item.label}
@@ -1517,7 +1773,7 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                                 </div>
                               </div>
                               {getStepClass(item.step).includes(
-                                "text-warning"
+                                "text-warning",
                               ) && (
                                 <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
                               )}
@@ -1542,33 +1798,227 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
             </Modal.Footer>
           </Modal>
 
-          <Modal show={showConfirm} onHide={handleCancelAction} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>Confirm action</Modal.Title>
+          <Modal
+            show={showConfirm}
+            onHide={handleCancelAction}
+            centered
+            size="md"
+          >
+            <Modal.Header closeButton className="border-bottom">
+              <Modal.Title className="fw-semibold">Start Scenario</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+
+            <Modal.Body className="pt-6 pb-6">
               {confirmAction === "initializing" && (
-                <p>Are you sure you want to start the scenario?</p>
+                <>
+                  <p className="text-muted mb-3">
+                    Are you sure you want to start this scenario?
+                  </p>
+
+                  {/* <Form.Group className="mb-2">
+                    <Form.Label className="fw-medium mb-2  text-success ">
+                      Select Invitees
+                    </Form.Label>
+
+                    <Select
+                      isMulti
+                      styles={customStyles()}
+                      theme={(theme) => ({
+                        ...theme,
+                        colors: {
+                          ...theme.colors,
+                          primary25: "var(--primary-bg-color)",
+                          primary: "var(--primary-bg-color)",
+                        },
+                      })}
+                      name="learner_id"
+                      value={selectedLearners}
+                      options={learnerDropdown}
+                      getOptionLabel={(x) => x.learner_name}
+                      getOptionValue={(x) => x.learner_id}
+                      placeholder="Select Invitees"
+                      onChange={(selectedOptions) => {
+                        setSelectedLearners(selectedOptions);
+
+                        const selectedIds = (selectedOptions || []).map(
+                          (item) => item.learner_id,
+                        );
+
+                        const payload =
+                          selectedIds.length > 0
+                            ? { learner_id: selectedIds }
+                            : {};
+                      }}
+                      menuPosition="fixed"
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                    />
+                  </Form.Group> */}
+                </>
               )}
+
               {confirmAction === "terminate" && (
-                <p>Are you sure you want to terminate the scenario?</p>
+                <p className="text-muted mb-0">
+                  Are you sure you want to terminate this scenario?
+                </p>
               )}
+
               {confirmAction === "complete" && (
-                <p>Are you sure you want to complete the scenario?</p>
+                <p className="text-muted mb-0">
+                  Are you sure you want to complete this scenario?
+                </p>
               )}
+
               {confirmAction === "delete" && (
-                <p>Are you sure you want to delete this scenario?</p>
+                <p className="text-danger mb-0">
+                  Are you sure you want to delete this scenario?
+                </p>
               )}
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="danger" onClick={handleCancelAction}>
+
+            <Modal.Footer className="border-top">
+              <Button variant="outline-secondary" onClick={handleCancelAction}>
                 Cancel
               </Button>
-              <Button variant="success" onClick={handleConfirm}>
+
+              <Button variant="primary" onClick={handleConfirm}>
                 Confirm
               </Button>
             </Modal.Footer>
           </Modal>
+
+          {/* dropdown modal */}
+
+          <Modal
+            show={showAssignedModal}
+            onHide={() => setShowAssignedModal(false)}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>Select Invitees</Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body>
+              <Form.Group>
+                <Form.Label className="text-success fw-medium">
+                  <i className="fe fe-users me-2"></i>
+                  Select Invitees
+                </Form.Label>
+
+                <Select
+                  isMulti
+                  styles={customStyles()}
+                  theme={(theme) => ({
+                    ...theme,
+                    colors: {
+                      ...theme.colors,
+                      primary25: "var(--primary-bg-color)",
+                      primary: "var(--primary-bg-color)",
+                    },
+                  })}
+                  name="learner_id"
+                  value={selectedLearners}
+                  // options={learnerDropdown}
+                  options={learnerDropdown.filter(
+                    (item) =>
+                      !selectedLearners?.some(
+                        (selected) => selected.learner_id === item.learner_id,
+                      ),
+                  )}
+                  getOptionLabel={(x) => x.learner_name}
+                  getOptionValue={(x) => x.learner_id}
+                  placeholder="Select Invitees"
+                  onChange={(selectedOptions) => {
+                    setSelectedLearners(selectedOptions);
+
+                    const selectedIds = (selectedOptions || []).map(
+                      (item) => item.learner_id,
+                    );
+
+                    const payload =
+                      selectedIds.length > 0 ? { learner_id: selectedIds } : {};
+                  }}
+                  menuPosition="fixed"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
+              </Form.Group>
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button
+                variant="outline-secondary"
+                onClick={() => setShowAssignedModal(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button variant="primary" onClick={handleAssignSubmit}>
+                Save
+              </Button>
+            </Modal.Footer>
+          </Modal>
+
+          {/* <Modal
+            show={showConfirm}
+            onHide={handleCancelAction}
+            centered
+            size="md"
+          >
+            <Modal.Header closeButton className="border-bottom">
+              <Modal.Title className="fw-semibold">Start Scenario</Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body className="pt-6 pb-6">
+              <Form.Group className="mb-2">
+                <Form.Label className="fw-medium mb-2  text-success ">
+                  Select Invitees
+                </Form.Label>
+
+                <Select
+                  isMulti
+                  styles={customStyles()}
+                  theme={(theme) => ({
+                    ...theme,
+                    colors: {
+                      ...theme.colors,
+                      primary25: "var(--primary-bg-color)",
+                      primary: "var(--primary-bg-color)",
+                    },
+                  })}
+                  name="learner_id"
+                  value={selectedLearners}
+                  options={learnerDropdown}
+                  getOptionLabel={(x) => x.learner_name}
+                  getOptionValue={(x) => x.learner_id}
+                  placeholder="Select Invitees"
+                  onChange={(selectedOptions) => {
+                    setSelectedLearners(selectedOptions);
+
+                    const selectedIds = (selectedOptions || []).map(
+                      (item) => item.learner_id,
+                    );
+
+                    const payload =
+                      selectedIds.length > 0 ? { learner_id: selectedIds } : {};
+                  }}
+                  menuPosition="fixed"
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
+              </Form.Group>
+            </Modal.Body>
+
+            <Modal.Footer className="border-top">
+              <Button variant="outline-secondary" onClick={handleCancelAction}>
+                Cancel
+              </Button>
+
+              <Button variant="primary" onClick={handleConfirm}>
+                Confirm
+              </Button>
+            </Modal.Footer>
+          </Modal> */}
 
           <Modal
             show={showFailureModal}
@@ -1592,6 +2042,61 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
                 OK
               </Button>
             </Modal.Footer>
+          </Modal>
+
+          <Modal
+            show={showLearnerModal}
+            onHide={() => setShowLearnerModal(false)}
+            centered
+            size="md"
+          >
+            <Modal.Header closeButton className="border-bottom shadow-sm">
+              <Modal.Title className="text-success fw-bold">
+                <i className="fe fe-users me-2"></i>
+                View Invitees
+              </Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body className="p-3">
+              <Table className="table table-hover table-bordered align-middle text-center shadow-sm">
+                <thead className="table-secondary">
+                  <tr>
+                    <th style={{ width: "80px" }}>SR.</th>
+                    <th>Invitees Name</th>
+                    <th style={{ width: "100px" }}>Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {hasGetLearnersByVmRequestDataData?.length > 0 ? (
+                    hasGetLearnersByVmRequestDataData.map((learner, index) => (
+                      <tr key={learner.learner_id}>
+                        <td className="fw-semibold">{index + 1}</td>
+
+                        <td className="text-capitalize fw-semibold">
+                          {learner.learner_name}
+                        </td>
+
+                        <td>
+                          <button
+                            className="btn btn-sm btn-outline-danger rounded-circle"
+                            onClick={() => handleDeletecard(learner)}
+                          >
+                            <i className="fe fe-trash-2"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="text-center text-muted py-3">
+                        No Invitees found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </Modal.Body>
           </Modal>
         </Col>
       </Row>

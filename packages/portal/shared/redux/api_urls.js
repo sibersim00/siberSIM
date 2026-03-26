@@ -439,9 +439,15 @@ const api = {
   //----------license dashboard ----------
   get_license_dashboard_stats: "/licensedashboard/licensedashboardstats",
   //-- running componet list----------
-  get_running_component: "/running_component/get",
-  delete_dropped_component: "/running_component/delete-single-component",
+  // get_running_component: "/running_component/get",
+  get_running_learner: "/running_component/learners-component",
+  get_running_component: "/running_component/running-components",
   stop_single_component: "/running_component/stop-single-component",
+  start_single_component: "/running_component/start-single-component",
+  restart_single_component: "/running_component/restart-single-component",
+  running_senario: "/running_component/running-scenarios",
+  running: "/running_component/running",
+  all_except_running: "/running_component/all-except-running",
 
   //-----------Manipulation url----------
   add_network: "vmconfig/add-vm-network",

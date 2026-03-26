@@ -165,8 +165,6 @@ LIMIT 5
       replacements: { userid },
       type: db.sequelize.QueryTypes.SELECT,
     });
-console.log("runningSessionsrunningSessions",runningSessions);
-
     let runningSessionDetailsQuery = `
   SELECT 
     s.scenariotitle,
@@ -198,8 +196,6 @@ console.log("runningSessionsrunningSessions",runningSessions);
         type: db.sequelize.QueryTypes.SELECT,
       }
     );
-    console.log("useriduseriduserid",userid);
-    console.log("usertypeusertypeusertypeusertype",usertype);
     
     const [sessionStats = { total_sessions: 0, pause_resume_count: 0, running_sessions: 0 }] =
   //     await db.sequelize.query(

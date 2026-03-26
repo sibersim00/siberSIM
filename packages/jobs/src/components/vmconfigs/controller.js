@@ -871,7 +871,6 @@ const ModifyScenarioVmNetwork =
   async (req, res, next) => {
     try {
       const {
-        vmType,
         vmid,
         netKey,
         mode,
@@ -881,12 +880,10 @@ const ModifyScenarioVmNetwork =
         targetHandle,
         label,
       } = req.body;
-      const normalizedVmType = vmType?.toLowerCase();
-
-      if (!vmid || !normalizedVmType || !netKey) {
+      if (!vmid || !netKey) {
         return res.status(400).send({
           statusCode: 400,
-          message: "vmid, vmType and netKey are required.",
+          message: "vmid and netKey are required.",
         });
       }
 
@@ -894,7 +891,6 @@ const ModifyScenarioVmNetwork =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
       const result = await dao.ModifyScenarioVmNetwork({ ipAddress, db })(
-        vmType,
         vmid,
         netKey,
         mode,
@@ -1141,9 +1137,70 @@ const stopComponent =
     }
   };
 
+  const startComponent =
+  ({ dao, db }) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid } = req.body;
+
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+      const result = await dao.startComponent({ ipAddress, db })(
+        vmrequestid,
+        vmid,
+      );
+
+      if (!result.success) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: result.message || "Failed to start component.",
+        });
+      }
+
+      return res.status(200).send({
+        statusCode: 200,
+        message: result.message,
+        data: result.data,
+      });
+    } catch (err) {
+      console.error("Error in start component controller:", err);
+      next(err);
+    }
+  };
 
 
+const restartComponent =
+  ({ dao, db }) =>
+  async (req, res, next) => {
+    try {
+      const { vmrequestid, vmid } = req.body;
 
+      const ipAddress =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+      const result = await dao.restartComponent({ ipAddress, db })(
+        vmrequestid,
+        vmid,
+      );
+
+      if (!result.success) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: result.message || "Failed to restart component.",
+        });
+      }
+
+      return res.status(200).send({
+        statusCode: 200,
+        message: result.message,
+        data: result.data,
+      });
+    } catch (err) {
+      console.error("Error in restart component controller:", err);
+      next(err);
+    }
+  };
 
 
 
@@ -1175,5 +1232,7 @@ module.exports = {
   connectRuntimeNetwork,
   plugRuntimeNetwork,
   unplugRuntimeNetwork,
-  stopComponent
+  stopComponent,
+  restartComponent,
+  startComponent
 };

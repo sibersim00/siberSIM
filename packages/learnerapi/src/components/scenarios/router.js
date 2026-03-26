@@ -15,6 +15,10 @@ module.exports = function (iocContainer) {
   router.get("/get-paused", controller.getPaused(iocContainer));
   router.post("/change-edit-status",controller.changeEditStatus(iocContainer));
   router.post("/release-edit-lock",controller.releaseEditLock(iocContainer));
+  router.post("/learnerlistbyinstructor", controller.learnerlistbyinstructor(iocContainer));
+  router.post("/getLearnersByVmRequest",controller.getLearnersByVmRequest(iocContainer));
+  router.post("/delete-invite-learner",controller.deleteInviteLearnerController(iocContainer));
+  router.post("/saveInviteLearners", controller.saveInviteLearners(iocContainer));
 
   return router;
 };

@@ -1,30 +1,8 @@
-import React, {
-  useRef,
-  useCallback,
-  useState,
-  useMemo,
-  useEffect,
-} from "react";
-import {
-  Button,
-  Card,
-  Row,
-  Col,
-  Modal,
-  OverlayTrigger,
-  Tooltip,
-} from "react-bootstrap";
+import React, { useRef, useCallback, useState, useMemo, useEffect,} from "react";
+import { Button, Card, Row, Col, Modal, OverlayTrigger, Tooltip,} from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Background,
-  Handle,
-  Position,
-  useReactFlow,
+import Swal from "sweetalert2";
+import { ReactFlow, ReactFlowProvider, addEdge, useNodesState, useEdgesState, Background, Handle, Position, useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -32,29 +10,8 @@ import SideBar from "./sidebarFlow";
 import EditableEdge from "../../../../shared/data/manipulation/EditableEdge";
 import {
   saveScenarioFlow,
-  clearsaveScenarioFlow,
-} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-import {
-  getSingleScenarios,
-  addNetworkPort,
-  deleteNetworkPort,
-  saveDraggedComponent,
-  deleteDraggedComponent,
-  clearDraggedComponent,
-  clearDeleteDraggedComponent,
-  clearSaveNetworkPort,
-  clearDeleteNetworkPort,
-  modifyNetworkId,
-  clearModifyNetworkId,
-  plugNetworkPort,
-  unplugNetworkPort,
-  connectNetworkPort,
-  disconnectNetworkPort,
-  changeReleaseEditLock,
-  clearPlugNetworkPort,
-  clearUnplugNetworkPort,
-  clearConnectNetworkPort,
-  clearDisconnectNetworkPort,
+  clearsaveScenarioFlow,} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+import { getSingleScenarios, addNetworkPort, deleteNetworkPort, saveDraggedComponent, deleteDraggedComponent, clearDraggedComponent, clearDeleteDraggedComponent, clearSaveNetworkPort, clearDeleteNetworkPort, modifyNetworkId, clearModifyNetworkId, plugNetworkPort, unplugNetworkPort, connectNetworkPort, disconnectNetworkPort, changeReleaseEditLock, clearPlugNetworkPort, clearUnplugNetworkPort, clearConnectNetworkPort, clearDisconnectNetworkPort,
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -63,6 +20,7 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+
 const NetworkPopover = ({
   nodeId,
   existingPorts,
@@ -77,19 +35,54 @@ const NetworkPopover = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const onAddPort = async (e) => {
-    e.stopPropagation();
-    if (!pendingNets.length) return;
+  const popoverRef = useRef(null);
+  // const onAddPort = async (e) => {
+  //   e.stopPropagation();
+  //   if (!pendingNets.length) return;
 
-    try {
-      setLoading(true);
-      await handleAddNetworkPort(nodeId, pendingNets.join(","));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  //   try {
+  //     setLoading(true);
+  //     await handleAddNetworkPort(nodeId, pendingNets.join(","));
+  //   } catch (err) {
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      popoverRef.current &&
+      !popoverRef.current.contains(event.target)
+    ) {
+      onClose();
     }
   };
+
+  // ✅ USE CAPTURE MODE (3rd param = true)
+  document.addEventListener("mousedown", handleClickOutside, true);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside, true);
+  };
+}, [onClose]);
+  const onAddPort = async (e) => {
+  e.stopPropagation();
+  if (!pendingNets.length) return;
+
+  try {
+    setLoading(true);
+    await handleAddNetworkPort(nodeId, pendingNets.join(","));
+
+    // ✅ CLOSE POPOVER AFTER SUCCESS
+    onClose();
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleDeleteClick = async (e) => {
     e.stopPropagation();
     setDeleteLoading(true);
@@ -101,12 +94,9 @@ const NetworkPopover = ({
       setDeleteLoading(false);
     }
   };
-
-  console.log("loadingloading", loading);
-
-
   return (
   <div
+   ref={popoverRef}
     style={{
       width: 340,
       background: "linear-gradient(180deg,#0f172a,#0b1220)",
@@ -624,6 +614,9 @@ const DnDFlow = ({
   const [bridgeLoading, setBridgeLoading] = useState(false);
   const [portRuntimeState, setPortRuntimeState] = useState({});
   const [hydrated, setHydrated] = useState(false);
+
+  //loading state
+  const [loadingScenario, setLoadingScenario] = useState(false);
   useEffect(() => {
     const saved = localStorage.getItem("portRuntimeState");
 
@@ -657,18 +650,6 @@ const DnDFlow = ({
     return `${window.location.origin}${url}`;
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode, openPopover }) => {
-    // const getPortColor = (portKey) => {
-    //   const state = portRuntimeState?.[`${id}-${portKey}`];
-    //   console.log("statestatestatestate",state);
-
-    //   if (!state) return "#2F80ED";
-    //   console.log("statestate",state)
-    //   if (!state.plugged && !state.connected) return "#ff0000";
-    //   if (state.plugged && !state.connected) return "#2F80ED";
-
-    //   // normal connected
-    //   return "#2F80ED";
-    // };
     const getPortColor = (portKey) => {
       const state = portRuntimeState?.[`${id}-${portKey}`];
 
@@ -759,37 +740,6 @@ const DnDFlow = ({
             boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
           }}
         >
-          {/* <OverlayTrigger
-            placement="top"
-            overlay={<Tooltip id={`tooltip-${id}`}>Add / Delete Node</Tooltip>}
-          >
-            <button
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                openPopover(id, {
-                  x: e.clientX,
-                  y: e.clientY,
-                });
-              }}
-              style={{
-                position: "absolute",
-                top: 2,
-                left: 3,
-                borderRadius: "50%",
-                width: 16,
-                height: 16,
-                fontSize: 8,
-                cursor: "pointer",
-                background: "#fff",
-                zIndex: 10,
-              }}
-            >
-              +
-            </button>
-          </OverlayTrigger> */}
           <OverlayTrigger
   placement="top"
   overlay={<Tooltip id={`tooltip-${id}`}>Add/Delete Node</Tooltip>}
@@ -815,35 +765,7 @@ const DnDFlow = ({
     +
   </button>
 </OverlayTrigger>
-          {/* <OverlayTrigger
-            placement="top"
-            overlay={
-              <Tooltip id={`delete-tooltip-${id}`}>Stop & Destroy VM</Tooltip>
-            }
-          >
-            <button
-              onMouseDown={(e) => e.stopPropagation()} // important for ReactFlow
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteNode(id);
-              }}
-              style={{
-                position: "absolute",
-                top: 2,
-                right: 3,
-                borderRadius: "50%",
-                width: 16,
-                height: 16,
-                fontSize: 8,
-                cursor: "pointer",
-                background: "#fff",
-                zIndex: 10,
-              }}
-            >
-              ×
-            </button>
-          </OverlayTrigger> */}
-          <OverlayTrigger
+<OverlayTrigger
   placement="top"
   overlay={<Tooltip id={`delete-tooltip-${id}`}>Stop & Destroy VM</Tooltip>}
 >
@@ -851,7 +773,26 @@ const DnDFlow = ({
     onMouseDown={(e) => e.stopPropagation()}
     onClick={(e) => {
       e.stopPropagation();
-      deleteNode(id);
+
+      Swal.fire({
+        title: "Are you sure?",
+        html: `
+          Do you really want to <b>Stop & Destroy</b> this VM?<br/><br/>
+          <span style="color:#dc3545;">
+            This will remove it from the scenario diagram.
+          </span>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, Stop & Destroy",
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          deleteNode(id);
+        }
+      });
     }}
     style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: "50%", border: "none", background: "rgba(220, 53, 69, 0.15)", color: "#ff2828", fontSize: 14, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", transition: "all 0.2s ease", zIndex: 10,
     }}
@@ -1057,8 +998,6 @@ const DnDFlow = ({
   const disconnectNetwork = useSelector(
     (state) => state?.scenarios?.disconnectNetworkPort?.data,
   );
-
-  console.log("disconnectNetworkdisconnectNetwork", disconnectNetwork);
   const scenario = getSingleScenariosSucc?.[0] || null;
   const parsedDiagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
@@ -1071,7 +1010,17 @@ const DnDFlow = ({
       return null;
     }
   }, [scenario?.scenariodiagram]);
+  console.log("parsedDiagramparsedDiagramparseddddddddddddddddddDiagram",parsedDiagram);
+  
   const scenarioNodes = parsedDiagram?.nodes || [];
+  const refreshScenario = async () => {
+  setLoadingScenario(true);
+  try {
+    await dispatch(getSingleScenarios(query.slug[0]));
+  } finally {
+    setLoadingScenario(false);
+  }
+};
   useEffect(() => {
     if (query.slug) {
       setRowId(query.slug[0]);
@@ -1143,15 +1092,10 @@ const DnDFlow = ({
 
   useEffect(() => {
     const saved = localStorage.getItem("portRuntimeState");
-    console.log("Savinaaaaaaaaag:a", portRuntimeState);
-    console.log("Loading:", saved);
     if (saved) {
       setPortRuntimeState(JSON.parse(saved));
     }
   }, []);
-
-  console.log("datadataaaaaaaaaaaaaaaa", nodes);
-
   const nodeMap = useMemo(() => {
     if (!diagram?.nodes) return {};
 
@@ -1198,6 +1142,7 @@ const DnDFlow = ({
 
   const [dragStart, setDragStart] = useState(null);
   const onConnectStart = useCallback((event, params) => {
+     connectingRef.current = true;
     setDragStart({
       nodeId: params.nodeId,
       handleId: params.handleId,
@@ -1250,6 +1195,8 @@ const DnDFlow = ({
           (e.source === corrected.source || e.target === corrected.source) &&
           e.data?.label,
       );
+      console.log("sourceEdgesourceEdge",sourceEdge);
+      
       //  normalize handle types (THIS WAS MISSING)
       corrected.sourceHandle = normalizeHandle(
         corrected.sourceHandle,
@@ -1288,14 +1235,33 @@ const DnDFlow = ({
     [edges, dragStart],
   );
   const ConnectionPopover = ({ data, onSelect, onClose }) => {
+      const popoverRef = useRef(null);
     const labelMap = {
       static: "Static Network",
       existing: "Use Existing Network",
       new: "Create New Network",
     };
+      useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target)
+      ) {
+        onClose(); // close popover
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
 
     return (
       <div
+       ref={popoverRef}
         id="connection-popover"
         style={{
           minWidth: 200,
@@ -1305,7 +1271,7 @@ const DnDFlow = ({
           padding: 14,
           boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
           color: "#fff",
-          transform: "translate(-50%, -120%)",
+          // transform: "translate(-50%, -120%)",
           animation: "popIn 0.18s ease-out",
           position: "relative",
         }}
@@ -1372,6 +1338,8 @@ const DnDFlow = ({
       setShowBridgeModal(true);
       setBridgeLoading(true);
       await dispatch(modifyNetworkId(apiPayload));
+      console.log("connectPopoverconnectPopover",connectPopover);
+      
       // ---------------- EDGE LABEL ----------------
       let label = "";
       if (type === "static") label = "Network Id";
@@ -1387,7 +1355,6 @@ const DnDFlow = ({
         data: { label },
       };
       setEdges((eds) => addEdge(newEdge, eds));
-      // ✅ CLOSE MODAL AFTER SHORT DELAY
       setTimeout(() => {
         setShowBridgeModal(false);
         setBridgeLoading(false);
@@ -1416,13 +1383,26 @@ const DnDFlow = ({
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
+console.log("draggedNodedraggedNodedraggedNode",draggedNode);
+
+const connectingRef = useRef(false);
+
+// const onConnectStart = () => {
+//   connectingRef.current = true;
+// };
+
+const onConnectEnd = () => {
+  connectingRef.current = false;
+};
 
   const onDrop = useCallback(
     (event) => {
       setShowCloneProgress(true);
       setVmStep("Cloning");
 
-      event.preventDefault();
+      event.preventDefault(); 
+      connectingRef.current = false;
+      document.dispatchEvent(new MouseEvent("mouseup"));
       let id = `dndnode_${0 + 1}`;
       if (nodes.length > 0) {
         id = nodes[nodes.length - 1].id;
@@ -1437,7 +1417,6 @@ const DnDFlow = ({
         x: event.clientX,
         y: event.clientY,
       });
-
       const newNode = {
         id: `dndnode_${number + 1}`,
         type: "imageNode",
@@ -1452,6 +1431,9 @@ const DnDFlow = ({
           duration: draggedNode.duration,
         },
       };
+
+      console.log("newNodesssssssssssnewNodenewNodenewNode",newNode);
+      
 
       setNodes((nds) => nds.concat(newNode));
       setDraggedComponent((prev) => [...prev, draggedNode]);
@@ -1565,6 +1547,8 @@ const DnDFlow = ({
     if (!node) {
       return null;
     }
+    console.log("nodenodenodeworkingnodenodenodenode",node);
+    
     const payload = {
       vmrequestid: scenario?.vmrequestid,
       vmid: node?.data?.vmid,
@@ -1751,18 +1735,9 @@ const DnDFlow = ({
   }, [saveScenarioFlowChart]);
   useEffect(() => {
     if (addDraggedCompSucc?.statusCode === 200) {
-      toast.success(
-        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          {addDraggedCompSucc?.message}
-        </p>,
-        {
-          position: toast.POSITION.TOP_RIGHT,
-          hideProgressBar: false,
-          theme: "colored",
-        },
-      );
       dispatch(clearDraggedComponent());
       dispatch(getSingleScenarios(query.slug[0]));
+      // refreshScenario();
       // dispatch(getScenarioList());
       setNodes([]);
       setEdges([]);
@@ -1770,18 +1745,9 @@ const DnDFlow = ({
   }, [addDraggedCompSucc]);
   useEffect(() => {
     if (deleteDraggedCompSucc?.statusCode === 200) {
-      // toast.success(
-      //   <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-      //     {deleteDraggedCompSucc?.message}
-      //   </p>,
-      //   {
-      //     position: toast.POSITION.TOP_RIGHT,
-      //     hideProgressBar: false,
-      //     theme: "colored",
-      //   },
-      // );
       dispatch(clearDeleteDraggedComponent());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1799,7 +1765,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearSaveNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1817,7 +1784,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearDeleteNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1835,7 +1803,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearModifyNetworkId());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1853,7 +1822,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearPlugNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1871,7 +1841,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearUnplugNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1889,7 +1860,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearConnectNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1907,7 +1879,8 @@ const DnDFlow = ({
         },
       );
       dispatch(clearDisconnectNetworkPort());
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
       setNodes([]);
       setEdges([]);
     }
@@ -1977,12 +1950,17 @@ const DnDFlow = ({
   const nextNet = getNextNetName(activeNode?.data?.networkport || []);
   const getVmDetailsByNodeId = (nodeId) => {
     const node = scenarioNodes.find((n) => n.id === nodeId);
+
+    console.log("nodenodenodenodenodenodenode",node);
+    
     if (!node) return null;
     return {
       vmid: node.data.vmid,
       vmType: node.data.vmType,
     };
   };
+  console.log("getVmDetailsByNodeIdgetVmDetailsByNodeIdgetVmDetailsByNodeId",getVmDetailsByNodeId);
+  
   const handleConfirmDelete = async (nodeId, portKey) => {
     const vmDetails = getVmDetailsByNodeId(nodeId);
     if (!vmDetails) {
@@ -2020,7 +1998,11 @@ const DnDFlow = ({
   };
 
   const handleAddNetworkPort = async (nodeId, netName) => {
+    console.log("nodeIdnodeIdnodeIdnodeIdnodeIdnodeId",nodeId);
+    
     const vmDetails = getVmDetailsByNodeId(nodeId);
+    console.log("vmDetailsvmDetailsvmDetailsvmDetails",vmDetails);
+    
     if (!vmDetails) return;
 
     const payload = {
@@ -2028,11 +2010,8 @@ const DnDFlow = ({
       vmType: vmDetails.vmType,
       netKey: netName,
     };
-
     const res = await dispatch(addNetworkPort(payload));
-
     const ok = res?.data?.data?.statusCode === 200;
-
     if (ok) {
       setActivePopover(null); // CLOSE POPOVER
       setPendingNets([]); // optional cleanup
@@ -2077,7 +2056,7 @@ const DnDFlow = ({
 
   const getPopoverPosition = (anchor) => {
   const popoverWidth = 340;
-  const margin = 20;
+  const margin = 80;
 
   let left = anchor.x;
   let top = anchor.y;
@@ -2094,6 +2073,12 @@ const DnDFlow = ({
   }
 
   return { left, top };
+};
+const getPopoverConnectionPosition = () => {
+  return {
+    left: window.innerWidth / 2,
+    top: window.innerHeight / 2,
+  };
 };
   return (
     <>
@@ -2188,6 +2173,16 @@ const DnDFlow = ({
             borderRadius: "8px",
           }}
         >
+          {loadingScenario && (
+            <div className="scenario-loader-overlay">
+              <div className="vertical-bounce-loader">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <p className="loader-text">Updating scenario...</p>
+            </div>
+          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -2203,6 +2198,7 @@ const DnDFlow = ({
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
+             onConnectEnd={onConnectEnd}
           >
             <Background />
           </ReactFlow>
@@ -2214,11 +2210,11 @@ const DnDFlow = ({
               //   left: activePopover.anchor.x,
               //   zIndex: 9999,
               // }}
-                style={{
-      position: "fixed",
-      ...getPopoverPosition(activePopover.anchor),
-      zIndex: 9999,
-    }}
+              style={{
+                position: "fixed",
+                ...getPopoverPosition(activePopover.anchor),
+                zIndex: 9999,
+              }}
             >
               <NetworkPopover
                 nodeId={activePopover.nodeId}
@@ -2237,11 +2233,17 @@ const DnDFlow = ({
           )}
           {connectPopover && (
             <div
+              // style={{
+              //   position: "fixed",
+              //   top: connectPopover.y,
+              //   left: connectPopover.x,
+              //   zIndex: 9999,
+              // }}
               style={{
                 position: "fixed",
-                top: connectPopover.y,
-                left: connectPopover.x,
+                ...getPopoverConnectionPosition(),
                 zIndex: 9999,
+                transform: "translate(-50%, -50%)",
               }}
             >
               <ConnectionPopover

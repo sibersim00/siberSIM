@@ -20,10 +20,28 @@ axiosInstance.interceptors.request.use((request) => {
 axiosInstance.interceptors.response.use(
   (response) => {
     try {
-    if (response && response.data && typeof(response?.data?.data) == "string") {
-      const decryptedBytes = CryptoJS.AES.decrypt(response.data.data, secretKey);
-      const decryptedPayload = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      response.data.data = JSON.parse(decryptedPayload);
+    // if (response && response.data && typeof(response?.data?.data) == "string") {
+     if (response && response.data && typeof response.data.data === "string" && response.data.data.startsWith("U2FsdGVkX1")  ) {
+      // const decryptedBytes = CryptoJS.AES.decrypt(response.data.data, secretKey);
+      // const decryptedPayload = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      // response.data.data = JSON.parse(decryptedPayload);
+
+       const decryptedBytes = CryptoJS.AES.decrypt(response.data.data,secretKey,);
+       const decryptedPayload = decryptedBytes.toString(CryptoJS.enc.Utf8);
+       if (decryptedPayload && decryptedPayload.trim() !== "") {
+         try {
+           response.data.data = JSON.parse(decryptedPayload);
+         } catch (e) {
+           console.error("Invalid JSON after decrypt:", decryptedPayload);
+           // keep original response.data.data (DON’T override)
+         }
+       } else {
+         console.warn("Empty decrypted payload");
+         // keep original response.data.data
+       }
+
+       
+
       isSwalOpen401=false;
       if(response.data.data?.accessToken){
         localStorage.setItem("accessToken",JSON.stringify(response.data.data.accessToken));
@@ -94,7 +112,7 @@ axiosInstance.interceptors.response.use(
       if (Router.pathname !== '/404') {
           Router.push('/404');
       }
-    } else if (error?.response?.status === 500) {
+    } else if (error?.response?.status === 500 ||error?.response?.status === 400 ) {
       //Requested Resource Not Found OR Server Side Wrror
       if(error?.response?.data.error){
         toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{error?.response?.data.error}</p>, {
@@ -109,7 +127,8 @@ axiosInstance.interceptors.response.use(
             width:'330px',
           }
         });
-      }else{
+      }
+      else{
         toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{error?.response?.data.message}</p>, {
           position: toast.POSITION.TOP_RIGHT,
           theme: "colored",
