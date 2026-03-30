@@ -18,6 +18,7 @@ import {
   Handle,
   Position,
   useReactFlow,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -1601,37 +1602,36 @@ const DnDFlow = ({
       setRowId(query.slug[0]);
       // dispatch(getSingleScenarios(query.slug[0]));
       dispatch(getSingleUserSession(query.slug[0]));
+      // refreshScenario();
     }
   }, [query.slug]);
+    const updateNodeInternals = useUpdateNodeInternals();
   useEffect(() => {
-    if (!scenario?.scenariodiagram) return;
-    try {
-      const parsedData =
-        typeof scenario.scenariodiagram === "string"
-          ? JSON.parse(scenario.scenariodiagram)
-          : scenario.scenariodiagram;
+  if (!scenario?.scenariodiagram) return;
 
-      if (parsedData?.nodes && parsedData?.edges) {
-        setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
-      }
-    } catch (err) {
-      console.error("Invalid scenariodiagram JSON", err);
-    }
-    if (scenario?.digramcomponent) {
-      try {
-        const parsedComponentData =
-          typeof scenario.digramcomponent === "string"
-            ? JSON.parse(scenario.digramcomponent)
-            : scenario.digramcomponent;
-        setImageNodeData(parsedComponentData);
-        setDroppedImages(parsedComponentData.map((comp) => comp.id));
-        setDraggedComponent(parsedComponentData);
-      } catch (err) {
-        console.error("Invalid digramcomponent JSON", err);
-      }
-    }
-  }, [scenario]);
+  try {
+    const parsedData =
+      typeof scenario.scenariodiagram === "string"
+        ? JSON.parse(scenario.scenariodiagram)
+        : scenario.scenariodiagram;
+
+    const newNodes = parsedData.nodes || [];
+
+    setNodes(newNodes);
+    setEdges([]);
+
+    requestAnimationFrame(() => {
+      // update ALL node internals (handles)
+      newNodes.forEach((node) => {
+        updateNodeInternals(node.id);
+      });
+      // then set edges
+      setEdges(parsedData.edges || []);
+    });
+  } catch (err) {
+    console.error("Invalid scenariodiagram JSON", err);
+  }
+}, [scenario]);
 
   const diagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
@@ -2303,8 +2303,8 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
       dispatch(getScenarioList());
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [saveScenarioFlowChart]);
   useEffect(() => {
@@ -2324,8 +2324,8 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       dispatch(getSingleUserSession(query.slug[0]));
       // refreshScenario();
       // dispatch(getScenarioList());
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addDraggedCompSucc]);
   useEffect(() => {
@@ -2343,8 +2343,8 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       dispatch(clearDeleteDraggedComponent());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [deleteDraggedCompSucc]);
   useEffect(() => {
@@ -2362,8 +2362,8 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       dispatch(clearSaveNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addNetwork]);
 
@@ -2382,8 +2382,8 @@ useEffect(() => {
       dispatch(clearSaveNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [bridgeremove]);
 
@@ -2402,8 +2402,8 @@ useEffect(() => {
       dispatch(clearDeleteNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [removeNetwork]);
   console.log("addNetwordIdaddNetwordIdaddNetwordId",addNetwordId);
@@ -2423,8 +2423,8 @@ useEffect(() => {
       dispatch(clearModifyNetworkId());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addNetwordId]);
   useEffect(() => {
@@ -2442,8 +2442,8 @@ useEffect(() => {
       dispatch(clearPlugNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [plugNetwork]);
   useEffect(() => {
@@ -2461,8 +2461,8 @@ useEffect(() => {
       dispatch(clearUnplugNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [unplugNetwork]);
   useEffect(() => {
@@ -2480,8 +2480,8 @@ useEffect(() => {
       dispatch(clearConnectNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [connectNetwork]);
   useEffect(() => {
@@ -2499,8 +2499,8 @@ useEffect(() => {
       dispatch(clearDisconnectNetworkPort());
       // dispatch(getSingleUserSession(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [disconnectNetwork]);
 
@@ -2861,6 +2861,7 @@ const handleEdgeClick = async (event, edge) => {
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            key={nodes.length} 
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnectStart={onConnectStart}

@@ -173,6 +173,8 @@ const ScenariosView = () => {
     errorData: state?.scenarios?.error,
   }));
 
+  console.log("hasGetLearnersByVmRequestDataData",hasGetLearnersByVmRequestDataData?.length > 0);
+  
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData,
   );
@@ -416,7 +418,7 @@ const hasInvitees =
 
   const handleStart = () => {
     setShowAssignedBtn(false);
-    setShowInviteesBtn(false);
+    // setShowInviteesBtn(false);
     setIsScenarioError400(false);
     setConfirmAction("initializing");
     setShowConfirm(true);
@@ -524,7 +526,7 @@ const hasInvitees =
         handleConfirmAction();
       }
       setShowAssignedBtn(false); // hide Assigned
-      setShowInviteesBtn(false); // hide Invitees
+      // setShowInviteesBtn(false); // hide Invitees
     } catch (err) {
       alert("Something went wrong while confirming the action.");
     }
@@ -866,7 +868,7 @@ const hasInvitees =
       );
       setShowAssignedModal(false);
       setShowAssignedBtn(false);
-      setShowInviteesBtn(true);
+      // setShowInviteesBtn(true);
     } catch (err) {
       console.error(err);
     }
@@ -1452,32 +1454,38 @@ const hasInvitees =
                                             </Col>
                                           )} */}
 
-                                          {!isLearnerLoading &&
-  hasInvitees &&
-  !["Completed", "Terminated", "Deleted"].includes(scenarioStatus) && (
-    <Col md={3}>
-      <div className="d-flex align-items-start gap-3">
-        <i className="fe fe-user-plus text-secondary fs-4 mt-1"></i>
-        <div>
-          <Button
-            size="sm"
-            className="rounded-pill d-flex align-items-center gap-1 px-3 btn-transparent"
-            onClick={handleShowLearnerModal}
-          >
-            <i className="fe fe-eye"></i>
-            Invitees
-          </Button>
+                                        {/* {!isLearnerLoading &&
+                                          hasInvitees &&
+                                          ![
+                                            "Completed",
+                                            "Terminated",
+                                            "Deleted",
+                                          ].includes(scenarioStatus) && ( */}
+                                         {hasGetLearnersByVmRequestDataData?.length > 0 &&  ["Start", "Pause", "Resume"].includes(getSingleScenariosSucc?.[0]?.status) && (
+                                            <Col md={3}>
+                                              <div className="d-flex align-items-start gap-3">
+                                                <i className="fe fe-user-plus text-secondary fs-4 mt-1"></i>
+                                                <div>
+                                                  <Button
+                                                    size="sm"
+                                                    className="rounded-pill d-flex align-items-center gap-1 px-3 btn-transparent"
+                                                    onClick={
+                                                      handleShowLearnerModal
+                                                    }
+                                                  >
+                                                    <i className="fe fe-eye"></i>
+                                                    Invitees
+                                                  </Button>
 
-          <small className="text-muted">
-            Assigned Invitees
-          </small>
-        </div>
-      </div>
-    </Col>
-)}
+                                                  <small className="text-muted">
+                                                    Assigned Invitees
+                                                  </small>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                          )}
 
-
-                                        {showAssignedBtn && (
+                                     {hasGetLearnersByVmRequestDataData?.length == 0 && ["Start", "Pause", "Resume"].includes(getSingleScenariosSucc?.[0]?.status) && (
                                           <Col md={3}>
                                             <div className="d-flex align-items-start gap-3">
                                               <i className="fe fe-check-circle me-2 text-primary fs-4 mt-1"></i>
@@ -1979,7 +1987,7 @@ const hasInvitees =
               </Button>
             </Modal.Footer>
           </Modal>
-  
+
           {/*  View Invitees */}
           <Modal
             show={showLearnerModal}

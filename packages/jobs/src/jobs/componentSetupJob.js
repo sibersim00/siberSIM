@@ -93,8 +93,18 @@ async function componentSetupJob(
     );
     const proxmoxService = ProxMoxService(db,{}, ipAddress);
     const tokenResult = await proxmoxService.generateAccessTicket();
+    console.log("tokenResulttokenResulttokenResult",tokenResult);
+    
     if (!tokenResult || tokenResult.status != "200") {
       sendProxmoxDownAlerts(db, requestedby_id);
+      await handleComponentFailure(
+        db,
+        scenarioid,
+        requestedby_id,
+        vmrequestid,
+        statusVal,
+        ERROR_MESSAGES.PROXMOX_FAILURE,
+      );
       return {
         success: false,
         message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,

@@ -106,6 +106,15 @@ await db.sequelize.query(
   const proxmoxService = ProxMoxService(db,{}, ipAddress);
     const tokenResult = await proxmoxService.generateAccessTicket();
     if (!tokenResult || tokenResult.status != "200") {
+      await handleComponentFailure(
+        db,
+        scenarioid,
+        learnerid,
+        eventlearnerid,
+        statusVal,
+        vmrequestid,
+        ERROR_MESSAGES.PROXMOX_FAILURE
+      );
       return {
         success: false,
         message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,

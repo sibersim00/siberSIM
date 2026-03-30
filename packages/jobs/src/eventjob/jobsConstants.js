@@ -2,6 +2,7 @@ const ERROR_MESSAGES = {
   VM_CONFIG_INIT: "Component setup initiated for Scenario.",
   VM_CONFIG_SUCCESS: "Set Configurations Successfully.",
   CONFIG_NOT_FOUND: "Component configuration not found.",
+  PROXMOX_FAILURE: "Error generating the access token,please try after some time.",
   CONFIG_NOT_FOUND_SCENARIO: "Component configuration not found of scenario.",
   LEARNER_NOT_FOUND: "Learner data not found.",
   NETWORK_BRIDGES: "Not enough available network bridges.",

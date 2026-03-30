@@ -3362,7 +3362,8 @@ console.log("netValuenetValuenetValuenetValue",netValue);
       /* =========================================================
            EDGE ID
         ========================================================= */
-      const edgeId = `xy-edge__${source}${sourceHandle}-${target}${targetHandle}`;
+      // const edgeId = `xy-edge__${source}${sourceHandle}-${target}${targetHandle}`;
+      const edgeId = `xy-edge__${source}-${sourceHandle}-${target}-${targetHandle}`;
 
       /* =========================================================
            BUILD EDGE
@@ -3487,6 +3488,13 @@ const addRuntimeComponent =
       /* ---------------- BUILD BRIDGE JSON ---------------- */
       const prefixMap = JSON.parse(componentInfo.network_bridge_name || "{}");
       const network_bridge_json = {};
+      if (newNode.data.networkport) {
+  newNode.data.networkport = newNode.data.networkport.sort((a, b) => {
+    const keyA = Object.keys(a)[0];
+    const keyB = Object.keys(b)[0];
+    return keyA.localeCompare(keyB);
+  });
+}
       newNode.data.networkport?.forEach((port, i) => {
         const key = Object.keys(port)[0];
         const prefix = prefixMap[key];

@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useState, useMemo, useEffect,} from "react"
 import { Button, Card, Row, Col, Modal, OverlayTrigger, Tooltip,} from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
-import { ReactFlow, ReactFlowProvider, addEdge, useNodesState, useEdgesState, Background, Handle, Position, useReactFlow,
+import { ReactFlow, ReactFlowProvider,useUpdateNodeInternals , addEdge, useNodesState, useEdgesState, Background, Handle, Position, useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -1011,7 +1011,7 @@ const DnDFlow = ({
       return null;
     }
   }, [scenario?.scenariodiagram]);
-  console.log("parsedDiagramparsedDiagramparseddddddddddddddddddDiagram",parsedDiagram);
+  console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
   
   const scenarioNodes = parsedDiagram?.nodes || [];
   const refreshScenario = async () => {
@@ -1025,39 +1025,103 @@ const DnDFlow = ({
   useEffect(() => {
     if (query.slug) {
       setRowId(query.slug[0]);
-      dispatch(getSingleScenarios(query.slug[0]));
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
     }
   }, [query.slug]);
-  useEffect(() => {
-    if (!scenario?.scenariodiagram) return;
-    try {
-      const parsedData =
-        typeof scenario.scenariodiagram === "string"
-          ? JSON.parse(scenario.scenariodiagram)
-          : scenario.scenariodiagram;
+  const updateNodeInternals = useUpdateNodeInternals();
+  // useEffect(() => {
+  //   if (!scenario?.scenariodiagram) return;
+  //   try {
+  //     const parsedData =
+  //       typeof scenario.scenariodiagram === "string"
+  //         ? JSON.parse(scenario.scenariodiagram)
+  //         : scenario.scenariodiagram;
 
-      if (parsedData?.nodes && parsedData?.edges) {
-        setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
-      }
-    } catch (err) {
-      console.error("Invalid scenariodiagram JSON", err);
-    }
-    if (scenario?.digramcomponent) {
-      try {
-        const parsedComponentData =
-          typeof scenario.digramcomponent === "string"
-            ? JSON.parse(scenario.digramcomponent)
-            : scenario.digramcomponent;
-        setImageNodeData(parsedComponentData);
-        setDroppedImages(parsedComponentData.map((comp) => comp.id));
-        setDraggedComponent(parsedComponentData);
-      } catch (err) {
-        console.error("Invalid digramcomponent JSON", err);
-      }
-    }
-  }, [scenario]);
+  //     if (parsedData?.nodes && parsedData?.edges) {
+  //       setNodes(parsedData.nodes);
+  //       setEdges(parsedData.edges);
+  //     }
+  //   } catch (err) {
+  //     console.error("Invalid scenariodiagram JSON", err);
+  //   }
+  //   if (scenario?.digramcomponent) {
+  //     try {
+  //       const parsedComponentData =
+  //         typeof scenario.digramcomponent === "string"
+  //           ? JSON.parse(scenario.digramcomponent)
+  //           : scenario.digramcomponent;
+  //       setImageNodeData(parsedComponentData);
+  //       setDroppedImages(parsedComponentData.map((comp) => comp.id));
+  //       setDraggedComponent(parsedComponentData);
+  //     } catch (err) {
+  //       console.error("Invalid digramcomponent JSON", err);
+  //     }
+  //   }
+  // }, [scenario]);
+// useEffect(() => {
+//   if (!scenario?.scenariodiagram) return;
 
+//   try {
+//     const parsedData =
+//       typeof scenario.scenariodiagram === "string"
+//         ? JSON.parse(scenario.scenariodiagram)
+//         : scenario.scenariodiagram;
+
+//     if (parsedData?.nodes) {
+//       setNodes(parsedData.nodes);
+//       setTimeout(() => {
+//         setEdges(parsedData.edges || []);
+//       }, 0);
+//     }
+//   } catch (err) {
+//     console.error("Invalid scenariodiagram JSON", err);
+//   }
+
+//   // component data stays same
+//   if (scenario?.digramcomponent) {
+//     try {
+//       const parsedComponentData =
+//         typeof scenario.digramcomponent === "string"
+//           ? JSON.parse(scenario.digramcomponent)
+//           : scenario.digramcomponent;
+
+//       setImageNodeData(parsedComponentData);
+//       setDroppedImages(parsedComponentData.map((comp) => comp.id));
+//       setDraggedComponent(parsedComponentData);
+//     } catch (err) {
+//       console.error("Invalid digramcomponent JSON", err);
+//     }
+//   }
+// }, [scenario]);
+useEffect(() => {
+  if (!scenario?.scenariodiagram) return;
+
+  try {
+    const parsedData =
+      typeof scenario.scenariodiagram === "string"
+        ? JSON.parse(scenario.scenariodiagram)
+        : scenario.scenariodiagram;
+
+    const newNodes = parsedData.nodes || [];
+
+    setNodes(newNodes);
+    setEdges([]);
+
+    // 🔥 THIS IS THE FIX
+    requestAnimationFrame(() => {
+      // update ALL node internals (handles)
+      newNodes.forEach((node) => {
+        updateNodeInternals(node.id);
+      });
+
+      // then set edges
+      setEdges(parsedData.edges || []);
+    });
+  } catch (err) {
+    console.error("Invalid scenariodiagram JSON", err);
+  }
+}, [scenario]);
   const diagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
     return JSON.parse(scenario.scenariodiagram);
@@ -1355,7 +1419,7 @@ const DnDFlow = ({
         type: "custom",
         data: { label },
       };
-      setEdges((eds) => addEdge(newEdge, eds));
+      // setEdges((eds) => addEdge(newEdge, eds));
       setTimeout(() => {
         setShowBridgeModal(false);
         setBridgeLoading(false);
@@ -1717,8 +1781,8 @@ const onConnectEnd = () => {
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
       dispatch(getScenarioList());
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [saveScenarioFlowChart]);
   useEffect(() => {
@@ -1727,8 +1791,8 @@ const onConnectEnd = () => {
       dispatch(getSingleScenarios(query.slug[0]));
       // refreshScenario();
       // dispatch(getScenarioList());
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addDraggedCompSucc]);
   useEffect(() => {
@@ -1736,8 +1800,8 @@ const onConnectEnd = () => {
       dispatch(clearDeleteDraggedComponent());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [deleteDraggedCompSucc]);
   useEffect(() => {
@@ -1755,8 +1819,8 @@ const onConnectEnd = () => {
       dispatch(clearSaveNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addNetwork]);
   console.log("bridgeremovebridgeremovebridgeremovebridgeremove",bridgeremove);
@@ -1776,8 +1840,8 @@ const onConnectEnd = () => {
       dispatch(clearSaveNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [bridgeremove]);
   useEffect(() => {
@@ -1795,8 +1859,8 @@ const onConnectEnd = () => {
       dispatch(clearDeleteNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [removeNetwork]);
   useEffect(() => {
@@ -1814,8 +1878,8 @@ const onConnectEnd = () => {
       dispatch(clearModifyNetworkId());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [addNetwordId]);
   useEffect(() => {
@@ -1833,8 +1897,8 @@ const onConnectEnd = () => {
       dispatch(clearPlugNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [plugNetwork]);
   useEffect(() => {
@@ -1852,8 +1916,8 @@ const onConnectEnd = () => {
       dispatch(clearUnplugNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [unplugNetwork]);
   useEffect(() => {
@@ -1871,8 +1935,8 @@ const onConnectEnd = () => {
       dispatch(clearConnectNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [connectNetwork]);
   useEffect(() => {
@@ -1890,8 +1954,8 @@ const onConnectEnd = () => {
       dispatch(clearDisconnectNetworkPort());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      setNodes([]);
-      setEdges([]);
+      // setNodes([]);
+      // setEdges([]);
     }
   }, [disconnectNetwork]);
 
@@ -2231,6 +2295,7 @@ const handleEdgeClick = async (event, edge) => {
           )}
           <ReactFlow
             nodes={nodes}
+            key={nodes.length}   // 👈 IMPORTANT
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
