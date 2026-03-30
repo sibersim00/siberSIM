@@ -37,7 +37,9 @@ import {
   resumescenario,
   canresumescenario,
   Learnerlistbyinstructor,
+  clearLearnerlistbyinstructor,  
   getLearnersByVmRequest,
+  cleargetLearnersByVmRequest,    
   DeleteInviteLearnerController,
   clearDeleteInviteLearnerController,
   saveInviteLearners,
@@ -88,8 +90,8 @@ const ScenariosView = () => {
   const [learnerDropdown, setLearnerDropdown] = useState([]);
   const [selectedLearners, setSelectedLearners] = useState([]);
   const [showLearnerModal, setShowLearnerModal] = useState(false);
-  const [showAssignedBtn, setShowAssignedBtn] = useState(false);
   const [showAssignedModal, setShowAssignedModal] = useState(false);
+  const [showAssignedBtn, setShowAssignedBtn] = useState(false);
   const [showInviteesBtn, setShowInviteesBtn] = useState(false);
   const { t } = useTranslation();
 
@@ -175,6 +177,14 @@ const ScenariosView = () => {
     (state) => state?.localData?.getLocalData,
   );
   const learnerId = getUserDataFromLocal?.learner_id;
+
+  const isLearnerLoading =
+  hasGetLearnersByVmRequestDataData === undefined ||
+  hasGetLearnersByVmRequestDataData === null;
+
+const hasInvitees =
+  Array.isArray(hasGetLearnersByVmRequestDataData) &&
+  hasGetLearnersByVmRequestDataData.length > 0;
 
   useEffect(() => {
     dispatch(getTabList());
@@ -461,8 +471,6 @@ const ScenariosView = () => {
       const payload = {
         scenarioid: scenarioData?.scenarioid,
         learner_id: getUserDataFromLocal?.learner_id,
-        // invited_by_learner_id: getUserDataFromLocal?.learner_id,
-        // invitelearnerids: selectedLearners?.map((item) => item.learner_id),
         status: mappedStatus[confirmAction],
         timer:
           confirmAction === "initializing"
@@ -630,6 +638,13 @@ const ScenariosView = () => {
   };
 
   useEffect(() => {
+  if (query.slug?.[0]) {
+    dispatch(cleargetLearnersByVmRequest());
+    dispatch(getSingleScenarios(query.slug[0]));
+  }
+}, [query.slug]);
+
+  useEffect(() => {
     if (scenarioStatus === "Pause") {
       setTimerActive(false);
       setTimerPaused(true);
@@ -711,10 +726,6 @@ const ScenariosView = () => {
       setTimerActive(true);
       setTimerPaused(false);
       dispatch(getSingleScenarios(query.slug[0]));
-      //   const learnerPayload = {
-      //     vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
-      //   };
-      //   dispatch(getLearnersByVmRequest(getSingleScenariosSucc?.[0]?.vmrequestid));
     }
 
     return () => clearInterval(timer);
@@ -838,8 +849,6 @@ const ScenariosView = () => {
 
     try {
       await dispatch(saveInviteLearners(payload));
-
-      // SUCCESS TOAST
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
           Invitees Assigned Successfully.
@@ -850,7 +859,6 @@ const ScenariosView = () => {
           theme: "colored",
         },
       );
-
       dispatch(
         getLearnersByVmRequest({
           vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
@@ -1412,7 +1420,7 @@ const ScenariosView = () => {
                                           </div>
                                         </Col>
 
-                                        {hasGetLearnersByVmRequestDataData?.length >
+                                        {/* {hasGetLearnersByVmRequestDataData?.length >
                                           0 &&
                                           ![
                                             "Completed",
@@ -1442,7 +1450,33 @@ const ScenariosView = () => {
                                                 </div>
                                               </div>
                                             </Col>
-                                          )}
+                                          )} */}
+
+                                          {!isLearnerLoading &&
+  hasInvitees &&
+  !["Completed", "Terminated", "Deleted"].includes(scenarioStatus) && (
+    <Col md={3}>
+      <div className="d-flex align-items-start gap-3">
+        <i className="fe fe-user-plus text-secondary fs-4 mt-1"></i>
+        <div>
+          <Button
+            size="sm"
+            className="rounded-pill d-flex align-items-center gap-1 px-3 btn-transparent"
+            onClick={handleShowLearnerModal}
+          >
+            <i className="fe fe-eye"></i>
+            Invitees
+          </Button>
+
+          <small className="text-muted">
+            Assigned Invitees
+          </small>
+        </div>
+      </div>
+    </Col>
+)}
+
+
                                         {showAssignedBtn && (
                                           <Col md={3}>
                                             <div className="d-flex align-items-start gap-3">
@@ -1460,6 +1494,10 @@ const ScenariosView = () => {
                                                   <i className="fe fe-users"></i>{" "}
                                                   Assign Invitees
                                                 </Button>
+
+                                                <small className="text-muted">
+                                                  Select Invitees
+                                                </small>
                                               </div>
                                             </div>
                                           </Col>
@@ -1814,46 +1852,6 @@ const ScenariosView = () => {
                   <p className="text-muted mb-3">
                     Are you sure you want to start this scenario?
                   </p>
-
-                  {/* <Form.Group className="mb-2">
-                    <Form.Label className="fw-medium mb-2  text-success ">
-                      Select Invitees
-                    </Form.Label>
-
-                    <Select
-                      isMulti
-                      styles={customStyles()}
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: {
-                          ...theme.colors,
-                          primary25: "var(--primary-bg-color)",
-                          primary: "var(--primary-bg-color)",
-                        },
-                      })}
-                      name="learner_id"
-                      value={selectedLearners}
-                      options={learnerDropdown}
-                      getOptionLabel={(x) => x.learner_name}
-                      getOptionValue={(x) => x.learner_id}
-                      placeholder="Select Invitees"
-                      onChange={(selectedOptions) => {
-                        setSelectedLearners(selectedOptions);
-
-                        const selectedIds = (selectedOptions || []).map(
-                          (item) => item.learner_id,
-                        );
-
-                        const payload =
-                          selectedIds.length > 0
-                            ? { learner_id: selectedIds }
-                            : {};
-                      }}
-                      menuPosition="fixed"
-                      className="react-select-container"
-                      classNamePrefix="react-select"
-                    />
-                  </Form.Group> */}
                 </>
               )}
 
@@ -1888,7 +1886,6 @@ const ScenariosView = () => {
           </Modal>
 
           {/* dropdown modal */}
-
           <Modal
             show={showAssignedModal}
             onHide={() => setShowAssignedModal(false)}
@@ -1959,67 +1956,6 @@ const ScenariosView = () => {
             </Modal.Footer>
           </Modal>
 
-          {/* <Modal
-            show={showConfirm}
-            onHide={handleCancelAction}
-            centered
-            size="md"
-          >
-            <Modal.Header closeButton className="border-bottom">
-              <Modal.Title className="fw-semibold">Start Scenario</Modal.Title>
-            </Modal.Header>
-
-            <Modal.Body className="pt-6 pb-6">
-              <Form.Group className="mb-2">
-                <Form.Label className="fw-medium mb-2  text-success ">
-                  Select Invitees
-                </Form.Label>
-
-                <Select
-                  isMulti
-                  styles={customStyles()}
-                  theme={(theme) => ({
-                    ...theme,
-                    colors: {
-                      ...theme.colors,
-                      primary25: "var(--primary-bg-color)",
-                      primary: "var(--primary-bg-color)",
-                    },
-                  })}
-                  name="learner_id"
-                  value={selectedLearners}
-                  options={learnerDropdown}
-                  getOptionLabel={(x) => x.learner_name}
-                  getOptionValue={(x) => x.learner_id}
-                  placeholder="Select Invitees"
-                  onChange={(selectedOptions) => {
-                    setSelectedLearners(selectedOptions);
-
-                    const selectedIds = (selectedOptions || []).map(
-                      (item) => item.learner_id,
-                    );
-
-                    const payload =
-                      selectedIds.length > 0 ? { learner_id: selectedIds } : {};
-                  }}
-                  menuPosition="fixed"
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                />
-              </Form.Group>
-            </Modal.Body>
-
-            <Modal.Footer className="border-top">
-              <Button variant="outline-secondary" onClick={handleCancelAction}>
-                Cancel
-              </Button>
-
-              <Button variant="primary" onClick={handleConfirm}>
-                Confirm
-              </Button>
-            </Modal.Footer>
-          </Modal> */}
-
           <Modal
             show={showFailureModal}
             onHide={() => setShowFailureModal(false)}
@@ -2043,7 +1979,8 @@ const ScenariosView = () => {
               </Button>
             </Modal.Footer>
           </Modal>
-
+  
+          {/*  View Invitees */}
           <Modal
             show={showLearnerModal}
             onHide={() => setShowLearnerModal(false)}

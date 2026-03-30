@@ -18,6 +18,7 @@ module.exports = function (iocContainer) {
   router.post("/restart-scenario-learner", controller.restartscenarioLearner(iocContainer));
   router.post("/change-edit-status", controller.changeEditStatus(iocContainer));
   router.post("/release-edit-lock", controller.releaseEditLock(iocContainer));
+  router.post("/delete-bridge", controller.deleteBridgeFromScenario(iocContainer));
 
 
 

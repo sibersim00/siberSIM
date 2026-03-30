@@ -462,6 +462,7 @@ const api = {
   disconnect_networkPort: "vmconfig/disconnect-single-network",
   change_edit_status: "/usersession/change-edit-status",
   release_edit_lock: "/usersession/release-edit-lock",
+  delete_bridge: "/usersession/delete-bridge",
 
 };
 

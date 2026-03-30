@@ -36,6 +36,8 @@ const initialState = {
   disconnectNetworkPort: [],
   modifyEditStatus: [],
   changeReleaseEditLock: [],
+  gethasdeletebridge:[],
+
 };
 
 const slice = createSlice({
@@ -145,6 +147,10 @@ const slice = createSlice({
     haschangeReleaseEditLock(state, action) {
       state.isLoading = false;
       state.changeReleaseEditLock = action.payload;
+    },
+     hasdeletebridge(state, action) {
+      ((state.isLoading = false),
+        (state.gethasdeletebridge = action.payload));
     },
 
     //HAS ERROR
@@ -855,4 +861,17 @@ export function clearHasError() {
   };
 }
 
+
+export function deletebridge(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_bridge}`, payload);
+      console.log("responseresponseresponseresponse",response);
+      dispatch(slice.actions.hasdeletebridge(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 //----------------------------------------------------------------------

@@ -113,21 +113,38 @@ const InviteLearnerView = () => {
             },
           );
       dispatch(clearHasError());
+
+    //   router.push({
+    //   pathname: "/invitescenarios",
+    //   query: { view: currentView },
+    // });
     }
   }, [errorData]);
 
   useEffect(() => {
     if (!router.isReady) return;
+  // dispatch(clearHasError());
+  // dispatch(clearSingleScenarios());
      setActionLoading(true);
     dispatch(getInviteScenarioByID(slug));
     setRowId(slug?.[0]);
   }, [router.isReady, slug]);
+
 
   useEffect(() => {
     if (router.isReady && getSingleScenariosSucc === null) {
       router.push("/invitescenarios");
     }
   }, [getSingleScenariosSucc]);
+
+//   useEffect(() => {
+//   if (!actionLoading && !getSingleScenariosSucc) {
+//     router.push({
+//       pathname: "/invitescenarios",
+//       query: { view: currentView },
+//     });
+//   }
+// }, [getSingleScenariosSucc, actionLoading]);
 
   useEffect(() => {
     if (getSingleScenariosSucc) {

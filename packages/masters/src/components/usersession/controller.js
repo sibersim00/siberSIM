@@ -320,6 +320,36 @@ const changeEditStatus =
       });
     }
   };
+
+    const deleteBridgeFromScenario =
+  ({ dao,db }) =>
+  async (req, res) => {
+    try {
+      const payload = req.body;
+
+
+      if (!payload.vmrequestid || !payload.edgeId) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Required fields missing",
+        });
+      }
+
+      const result = await dao.deleteBridgeFromScenario({db})(payload);
+
+      res.status(200).json({
+        statusCode: 200,
+        message: "Bridge removed successfully",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Delete bridge error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "Internal server error",
+      });
+    }
+  };
 module.exports = {
   listScenarios,
   getMessagesByScenario,
@@ -332,5 +362,6 @@ module.exports = {
   startScenarioLearner,
   restartscenarioLearner,
   changeEditStatus,
-  releaseEditLock
+  releaseEditLock,
+  deleteBridgeFromScenario
 };

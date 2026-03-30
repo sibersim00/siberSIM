@@ -406,6 +406,80 @@ const releaseEditLock =
       message: "Edit lock released",
     };
   };
+
+
+  const deleteBridgeFromScenario = ({ db }) => async (payload) => { 
+  const {
+    vmrequestid,
+    edgeId,
+    bridge,
+    sourceNodeId,
+    targetNodeId,
+    sourceHandle,
+    targetHandle,
+  } = payload;
+
+  // Get existing diagram
+  const [vmRequest] = await db.sequelize.query(
+    `SELECT scenariodiagram FROM vm_request WHERE vmrequestid = :vmrequestid`,
+    {
+      replacements: { vmrequestid },
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  if (!vmRequest?.scenariodiagram) {
+    throw new Error("Scenario diagram not found");
+  }
+
+  let diagram = JSON.parse(vmRequest.scenariodiagram);
+
+  // Remove edge
+  diagram.edges = diagram.edges.filter((e) => e.id !== edgeId);
+
+  // Remove bridge from nodes
+  diagram.nodes = diagram.nodes.map((node) => {
+    if (
+      node.id === sourceNodeId ||
+      node.id === targetNodeId
+    ) {
+      if (node.data?.networkport) {
+        node.data.networkport = node.data.networkport.map((portObj) => {
+          const key = Object.keys(portObj)[0]; // net0, net1
+
+          if (key === sourceHandle.replace("-source", "") ||
+              key === targetHandle.replace("-target", "")) {
+
+            // remove bridge from string
+            return {
+              [key]: portObj[key].replace(`,bridge=${bridge}`, ""),
+            };
+          }
+
+          return portObj;
+        });
+      }
+    }
+
+    return node;
+  });
+
+  // Update DB
+  await db.sequelize.query(
+    `UPDATE vm_request 
+     SET scenariodiagram = :diagram, modifiedon = NOW()
+     WHERE vmrequestid = :vmrequestid`,
+    {
+      replacements: {
+        diagram: JSON.stringify(diagram),
+        vmrequestid,
+      },
+    }
+  );
+
+  return diagram;
+};
+
 module.exports = {
   listScenarios,
   getMessagesByScenario,
@@ -416,5 +490,6 @@ module.exports = {
   getUserSessionById,
   getLogs,
   changeEditStatus,
-  releaseEditLock
+  releaseEditLock,
+  deleteBridgeFromScenario
 };

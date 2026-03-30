@@ -48,7 +48,8 @@ import {
   clearPlugNetworkPort,
   clearUnplugNetworkPort,
   clearConnectNetworkPort,
-  clearDisconnectNetworkPort
+  clearDisconnectNetworkPort,
+  deletebridge
 } from "../../../../shared/redux/slices/usersession/usersessionManage";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -1545,6 +1546,8 @@ const DnDFlow = ({
   const getSingleScenariosSucc = useSelector(
     (state) => state?.usersessionManage?.singleUserSession?.data,
   );
+    const bridgeremove = useSelector((state) => state?.usersessionManage?.gethasdeletebridge);
+  
   const addDraggedCompSucc = useSelector(
     (state) => state?.usersessionManage?.saveDraggedComponentData?.data,
   );
@@ -2363,6 +2366,27 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       setEdges([]);
     }
   }, [addNetwork]);
+
+useEffect(() => {
+    if (bridgeremove?.statusCode === 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {bridgeremove?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+      dispatch(clearSaveNetworkPort());
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [bridgeremove]);
+
   useEffect(() => {
     if (removeNetwork?.statusCode === 200) {
       toast.success(
@@ -2694,6 +2718,42 @@ const getPopoverConnectionPosition = () => {
     top: window.innerHeight / 2,
   };
 };
+const handleEdgeClick = async (event, edge) => {
+  console.log("edgeedgeedgeedgeedgeedgeedgeedge", edge);
+
+  event.stopPropagation();
+
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "Do you want to remove this network bridge?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const payload = {
+        vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+        edgeId: edge.id,
+        bridge: edge.data?.label,
+        sourceNodeId: edge.source,
+        targetNodeId: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+      };
+
+      //Redux API call
+      await dispatch(deletebridge(payload));
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    } catch (error) {
+      console.error("Delete bridge error:", error);
+
+      Swal.fire("Error", "Failed to remove bridge", "error");
+    }
+  }
+};
 
   return (
     <>
@@ -2813,7 +2873,9 @@ const getPopoverConnectionPosition = () => {
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
-             onConnectEnd={onConnectEnd}
+            onConnectEnd={onConnectEnd}
+            onEdgeClick={handleEdgeClick} 
+
 
           >
             <Background />

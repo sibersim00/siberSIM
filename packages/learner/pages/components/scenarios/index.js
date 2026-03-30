@@ -113,7 +113,7 @@ const Scenarios = () => {
           .map((item) => [item.scenariosubcategory_name, item])
       ).values()
     ).sort((a, b) =>
-      a.scenariosubcategory_name.localeCompare(b.scenariosubcategory_name)
+      a.scenariosubcategory_name?.localeCompare(b.scenariosubcategory_name)
     )
     : [];
 

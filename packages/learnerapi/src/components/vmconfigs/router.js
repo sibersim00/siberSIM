@@ -30,5 +30,6 @@ module.exports = function (iocContainer) {
   router.post("/connect-single-network",controller.connectRuntimeNetwork(iocContainer));
   router.post("/plug-single-network",controller.plugRuntimeNetwork(iocContainer));
   router.post("/unplug-single-network",controller.unplugRuntimeNetwork(iocContainer));
+  router.post("/delete-bridge", controller.deleteBridgeFromScenario(iocContainer));
   return router;
 };

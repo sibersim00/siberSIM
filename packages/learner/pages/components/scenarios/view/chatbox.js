@@ -36,17 +36,36 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
 
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
-    let scenarioId = rowValues?.scenarioid;
-    if (showChat && rowValues?.learner_id || rowValues?.scenarioid) {
-      dispatch(
-        getChatMessages({
-          learner_id: learner_id,
-          scenarioid: scenarioId,
-        })
-      );
-    }
-  }, [showChat, rowValues, dispatch]);
+
+  // useEffect(() => {
+  //   let scenarioId = rowValues?.scenarioid;
+  //   if (showChat && rowValues?.learner_id || rowValues?.scenarioid) {
+  //     dispatch(
+  //       getChatMessages({
+  //         learner_id: learner_id,
+  //         scenarioid: scenarioId,
+  //       })
+  //     );
+  //   }
+  // }, [showChat, rowValues, dispatch]);
+
+    useEffect(() => {
+  const scenarioId = rowValues?.scenarioid;
+  const learnerId = rowValues?.learner_id;
+  const requestedbyId = rowValues?.requestedby_id;
+
+  const finalLearnerId = learnerId || requestedbyId;
+  if (showChat && finalLearnerId && scenarioId) {
+    dispatch(
+      getChatMessages({
+        learner_id: finalLearnerId, 
+        scenarioid: scenarioId,
+      })
+    );
+  } 
+}, [showChat, rowValues, dispatch]);
+
+
 
   useEffect(() => {
     setChatMessages(

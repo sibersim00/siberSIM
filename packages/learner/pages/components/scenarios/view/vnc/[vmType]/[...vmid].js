@@ -29,6 +29,7 @@ import {
   restoresnapshot,
   getSingleVMDetail,
   clearCustomComponent,
+  clearSaveComponent,
   qemuconfig,
   stopVm,
   rejectStoppedVm,

@@ -53,6 +53,8 @@ const initialState = {
   getLearnersByVmRequestData: [],
   deleteInviteLearnerController: [],
   getsaveInviteLearners:[],
+  gethasdeletebridge:[],
+
 };
 
 const slice = createSlice({
@@ -229,6 +231,10 @@ const slice = createSlice({
      hasGetsaveInviteLearnersData(state, action) {
       ((state.isLoading = false),
         (state.getsaveInviteLearners = action.payload));
+    },
+     hasdeletebridge(state, action) {
+      ((state.isLoading = false),
+        (state.gethasdeletebridge = action.payload));
     },
     // HAS ERROR
     hasError(state, action) {
@@ -1269,12 +1275,34 @@ export function Learnerlistbyinstructor(payload) {
   };
 }
 
+export function clearLearnerlistbyinstructor() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetlearnerlistbyinstructorData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
 export function getLearnersByVmRequest(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.learnersByVmRequest}`, payload);
       dispatch(slice.actions.hasGetLearnersByVmRequestDataData(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function cleargetLearnersByVmRequest() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetLearnersByVmRequestDataData([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -1312,6 +1340,18 @@ export function DeleteInviteLearnerController(payload) {
       dispatch(
         slice.actions.hasdeleteInviteLearnerControllerData(response.data),
       );
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deletebridge(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_bridge}`, payload);
+      console.log("responseresponseresponseresponse",response);
+      dispatch(slice.actions.hasdeletebridge(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

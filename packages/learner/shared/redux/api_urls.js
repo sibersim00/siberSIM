@@ -140,6 +140,7 @@ const api = {
   unplug_networkPort: "vmconfigs/unplug-single-network",
   connect_networkPort: "vmconfigs/connect-single-network",
   disconnect_networkPort: "vmconfigs/disconnect-single-network",
+  delete_bridge: "vmconfigs/delete-bridge",
 
   // --------------invite scenario---------------
   running_invite_learners: "/invitescenarios/running-invite-learners",

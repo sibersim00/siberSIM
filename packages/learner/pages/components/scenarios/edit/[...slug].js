@@ -11,7 +11,7 @@ import EditableEdge from "../../../../shared/data/manipulation/EditableEdge";
 import {
   saveScenarioFlow,
   clearsaveScenarioFlow,} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-import { getSingleScenarios, addNetworkPort, deleteNetworkPort, saveDraggedComponent, deleteDraggedComponent, clearDraggedComponent, clearDeleteDraggedComponent, clearSaveNetworkPort, clearDeleteNetworkPort, modifyNetworkId, clearModifyNetworkId, plugNetworkPort, unplugNetworkPort, connectNetworkPort, disconnectNetworkPort, changeReleaseEditLock, clearPlugNetworkPort, clearUnplugNetworkPort, clearConnectNetworkPort, clearDisconnectNetworkPort,
+import { getSingleScenarios, addNetworkPort, deleteNetworkPort, saveDraggedComponent, deleteDraggedComponent, clearDraggedComponent, clearDeleteDraggedComponent, clearSaveNetworkPort, clearDeleteNetworkPort, modifyNetworkId, clearModifyNetworkId, plugNetworkPort, unplugNetworkPort, connectNetworkPort, disconnectNetworkPort, changeReleaseEditLock, clearPlugNetworkPort, clearUnplugNetworkPort, clearConnectNetworkPort, clearDisconnectNetworkPort,deletebridge
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -980,6 +980,7 @@ const DnDFlow = ({
     (state) => state?.scenarios?.deleteDraggedComponentData?.data,
   );
   const addNetwork = useSelector((state) => state?.scenarios?.addNetwork?.data);
+  const bridgeremove = useSelector((state) => state?.scenarios?.gethasdeletebridge);
   const removeNetwork = useSelector(
     (state) => state?.scenarios?.deleteNetwork?.data,
   );
@@ -1358,7 +1359,7 @@ const DnDFlow = ({
       setTimeout(() => {
         setShowBridgeModal(false);
         setBridgeLoading(false);
-      }, 1200);
+      }, 200);
 
       // cleanup
       setPendingConnection(null);
@@ -1383,14 +1384,8 @@ const DnDFlow = ({
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
-console.log("draggedNodedraggedNodedraggedNode",draggedNode);
 
 const connectingRef = useRef(false);
-
-// const onConnectStart = () => {
-//   connectingRef.current = true;
-// };
-
 const onConnectEnd = () => {
   connectingRef.current = false;
 };
@@ -1399,7 +1394,6 @@ const onConnectEnd = () => {
     (event) => {
       setShowCloneProgress(true);
       setVmStep("Cloning");
-
       event.preventDefault(); 
       connectingRef.current = false;
       document.dispatchEvent(new MouseEvent("mouseup"));
@@ -1488,7 +1482,7 @@ const onConnectEnd = () => {
       setStopStep("Destroying");
       setTimeout(() => {
         setShowStopDestroyModal(false);
-      }, 2000);
+      }, 100);
       setNodes((nds) => nds.filter((node) => node.id !== nodeId));
       setEdges((eds) =>
         eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
@@ -1538,17 +1532,11 @@ const onConnectEnd = () => {
     return "text-muted";
   };
 
-  const getNodePortKeys = (node) => {
-    if (!node?.data?.networkport) return [];
-    return node.data.networkport.flatMap((obj) => Object.keys(obj));
-  };
   const buildPayload = (nodeId, portKey) => {
     const node = scenarioNodes.find((n) => n.id === nodeId);
     if (!node) {
       return null;
     }
-    console.log("nodenodenodeworkingnodenodenodenode",node);
-    
     const payload = {
       vmrequestid: scenario?.vmrequestid,
       vmid: node?.data?.vmid,
@@ -1771,6 +1759,27 @@ const onConnectEnd = () => {
       setEdges([]);
     }
   }, [addNetwork]);
+  console.log("bridgeremovebridgeremovebridgeremovebridgeremove",bridgeremove);
+  
+  useEffect(() => {
+    if (bridgeremove?.statusCode === 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {bridgeremove?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+      dispatch(clearSaveNetworkPort());
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [bridgeremove]);
   useEffect(() => {
     if (removeNetwork?.statusCode === 200) {
       toast.success(
@@ -2080,6 +2089,43 @@ const getPopoverConnectionPosition = () => {
     top: window.innerHeight / 2,
   };
 };
+const handleEdgeClick = async (event, edge) => {
+  console.log("edgeedgeedgeedgeedgeedgeedgeedge", edge);
+
+  event.stopPropagation();
+
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "Do you want to remove this network bridge?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const payload = {
+        // vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+        vmrequestid : getSingleScenariosSucc?.[0]?.vmrequestid,
+        edgeId: edge.id,
+        bridge: edge.data?.label,
+        sourceNodeId: edge.source,
+        targetNodeId: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+      };
+
+      //Redux API call
+      await dispatch(deletebridge(payload));
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    } catch (error) {
+      console.error("Delete bridge error:", error);
+
+      Swal.fire("Error", "Failed to remove bridge", "error");
+    }
+  }
+};
   return (
     <>
       <ToastContainer />
@@ -2193,12 +2239,14 @@ const getPopoverConnectionPosition = () => {
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
+            deleteKeyCode={null}  
             defaultEdgeOptions={defaultEdgeOptions}
             connectionLineType="floating" //  This makes the connection line float
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
-             onConnectEnd={onConnectEnd}
+            onConnectEnd={onConnectEnd}
+            onEdgeClick={handleEdgeClick} 
           >
             <Background />
           </ReactFlow>
