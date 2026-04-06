@@ -1308,17 +1308,14 @@ const buildNetworkPayload = (type, staticValue) => {
   sourceEdge?.data?.label || targetEdge?.data?.label || null;
       // const options = ["static", "existing", "new"];
       let options = [];
-      console.log("existingNetworkexistingNetworkexistingNetwork",existingNetwork);
-      
-
-if (!hasSourceLink && !hasTargetLink) {
-  // ❌ both no link
+if (existingNetwork) {
+  // FORCE existing if already available
+  options = ["existing"];
+} else if (!hasSourceLink && !hasTargetLink) {
   options = ["static", "new"];
 } else if (hasSourceLink && hasTargetLink) {
-  // ✅ both have link
   options = ["static", "existing"];
 } else {
-  // ⚡ one side has link
   options = ["existing"];
 }
       const handleEl = document.querySelector(

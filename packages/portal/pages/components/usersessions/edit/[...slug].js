@@ -1326,15 +1326,14 @@ const onHandleMouseDown = (event, portKey, nodeId) => {
   sourceEdge?.data?.label || targetEdge?.data?.label || null;
       // const options = ["static", "existing", "new"];
       let options = [];
-
-if (!hasSourceLink && !hasTargetLink) {
-  // both no link
+if (existingNetwork) {
+  // FORCE existing if already available
+  options = ["existing"];
+} else if (!hasSourceLink && !hasTargetLink) {
   options = ["static", "new"];
 } else if (hasSourceLink && hasTargetLink) {
-  // both have link
   options = ["static", "existing"];
 } else {
-  // one side has link
   options = ["existing"];
 }
       const handleEl = document.querySelector(
@@ -1454,6 +1453,8 @@ if (!hasSourceLink && !hasTargetLink) {
 //   };
 
 const ConnectionPopover = ({ data, onSelect, onClose }) => {
+  console.log("onSelectonSelectonSelectonSelect",data);
+  
   const popoverRef = useRef(null);
 
   const [selectedType, setSelectedType] = useState(null);
@@ -1692,6 +1693,8 @@ const iconMap = {
 
 
     const handleConnectionType = async (type,staticValue = null) => {
+      console.log("typetypetypetypetypetypetype",type);
+      
       if (!pendingConnection) return;
       const connection = { ...pendingConnection };
       const apiPayload = buildNetworkPayload(type,staticValue);
