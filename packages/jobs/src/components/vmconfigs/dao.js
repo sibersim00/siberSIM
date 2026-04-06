@@ -466,7 +466,7 @@ const updateCompleteTerminatelearner =
         return {
           success: false,
           message:
-            "Could not connect to the Proxmox server while destroying components.",
+            "Could not connect to the server while destroying components.",
         };
       }
 
@@ -720,7 +720,7 @@ const deleteScenarioLearner =
         if (!tokenResult || tokenResult.status !== "200") {
           return {
             success: false,
-            message: "Could not connect to Proxmox server.",
+            message: "We couldn't authenticate with the server.Please try after some time",
           };
         }
 
@@ -977,7 +977,7 @@ const startScenarioLearner =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+          message: `We couldn't authenticate with the server.Please try after some time.`,
         };
       }
       const startResult = await proxmoxService.startVM(
@@ -1035,7 +1035,7 @@ const restartscenarioLearner =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+          message: `We couldn't authenticate with the server.Please try after some time`,
         };
       }
       const stopResult = await proxmoxService.stopVM(
@@ -1146,7 +1146,7 @@ const createSnapshot =
       );
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: `Proxmox connection failed.` };
+        return { success: false, message: `We couldn't authenticate with the server.Please try after some time` };
       }
       let snapshotResult;
       if (vmType.toLowerCase() === "lxc") {
@@ -1201,7 +1201,7 @@ const deleteSnapshot =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+          message: `We couldn't authenticate with the server.Please try after some time`,
         };
       }
       let deleteResult;
@@ -1274,7 +1274,7 @@ const restoreSnapshot =
       // Generate Proxmox Token
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: `Failed to connect to Proxmox.` };
+        return { success: false, message: `We couldn't authenticate with the server.Please try after some time` };
       }
       // If selected snapshot IS the latest → restore directly
       if (snapname === latestSnapshot) {
@@ -1373,7 +1373,7 @@ async function performRestore(
   );
   const tokenResult = await proxmoxService.generateAccessTicket();
   if (!tokenResult || tokenResult.status !== "200") {
-    return { success: false, message: `Failed to connect to Proxmox.` };
+    return { success: false, message: `We couldn't authenticate with the server.Please try after some time` };
   }
   let restoreResult;
   if (vmType.toLowerCase() === "lxc") {
@@ -1463,7 +1463,7 @@ const pauseScenarioLearner =
           results.push({
             vmid,
             status: "failed",
-            message: `Proxmox connection failed for VM ${vmid}`,
+            message: `We couldn't authenticate with the server.Please try after some time`,
           });
           break;
         }
@@ -1620,7 +1620,7 @@ const resumeScenarioLearner =
           results.push({
             vmid,
             status: "failed",
-            message: `Proxmox connection failed for VM ${vmid}`,
+            message: `We couldn't authenticate with the server.Please try after some time`,
           });
           break;
         }
@@ -1790,7 +1790,7 @@ const getScenarioById =
           const proxmoxService = ProxMoxService(db, {}, ipAddress);
           const tokenResult = await proxmoxService.generateAccessTicket();
           if (!tokenResult || tokenResult.status !== "200") {
-            return { success: false, message: "Failed to connect to Proxmox." };
+            return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
           }
 
           const backup = await proxmoxService.takeBackup(vmid);
@@ -1887,7 +1887,7 @@ const checkBackupStatus =
         try {
           const tokenResult = await proxmoxService.generateAccessTicket();
           if (!tokenResult || tokenResult.status !== "200") {
-            console.log("Failed to authenticate with Proxmox");
+            console.log("We couldn't authenticate with the server.Please try after some time");
             continue;
           }
 
@@ -2178,7 +2178,7 @@ const save =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Failed to connect to Proxmox." };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       let snapshotName, cloneResult, templateResult;
       const cleanupLXCOnCloneFail = async () => {
@@ -2550,7 +2550,7 @@ const save =
       return {
         success: true,
         statusCode: 200,
-        message: "Proxmox clone & template completed successfully.",
+        message: "Clone & template completed successfully.",
         sourceVmid,
         newVmid,
       };
@@ -2655,7 +2655,7 @@ const getVmConfig =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
+          message: `We couldn't authenticate with the server.Please try after some time`,
         };
       }
       let result;
@@ -2723,7 +2723,7 @@ const stopScenarioVM =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: "Could not connect to Proxmox server.",
+          message: "We couldn't authenticate with the server.Please try after some time",
         };
       }
       const stopRes = await proxmoxService.stopVM(vmid, normalizedVmType);
@@ -2842,7 +2842,7 @@ const addScenarioVmNetwork =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: "Could not connect to Proxmox server.",
+          message: "We couldn't authenticate with the server.Please try after some time",
         };
       }
       /* -------------------- FETCH EXISTING BRIDGE JSON -------------------- */
@@ -3016,7 +3016,7 @@ const deleteScenarioVmNetwork =
       if (!tokenResult || tokenResult.status !== "200") {
         return {
           success: false,
-          message: "Could not connect to Proxmox server.",
+          message: "We couldn't authenticate with the server.Please try after some time",
         };
       }
       /* -------------------- DELETE NETWORK IN PROXMOX -------------------- */
@@ -3139,6 +3139,7 @@ const ModifyScenarioVmNetwork =
   ({ ipAddress, db }) =>
   async (
     vmid,
+    Targetvmid,
     netKey,
     mode,
     source,
@@ -3146,8 +3147,9 @@ const ModifyScenarioVmNetwork =
     target,
     targetHandle,
     label,
+    staticVmbr
   ) => {
-    console.log("labellabellabellabel", label);
+    console.log("TargetvmidTargetvmidTargetvmid", Targetvmid);
 
     const [vmTypeRow] = await db.sequelize.query(
       `SELECT componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
@@ -3170,19 +3172,84 @@ const ModifyScenarioVmNetwork =
       /* =========================================================
            MODE: NEW
         ========================================================= */
+      // if (mode === "new") {
+      //   const [availableNetwork] = await db.sequelize.query(
+      //     `SELECT networkid, networkname FROM networks WHERE status='Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT 1`,
+      //     { type: db.sequelize.QueryTypes.SELECT },
+      //   );
+
+      //   if (!availableNetwork) {
+      //     return { success: false, message: "No free networks." };
+      //   }
+      //   networkid = availableNetwork.networkid;
+      //   networkname = availableNetwork.networkname;
+      //   const ethIndex = netKey.replace("net", "");
+      //   /* ---------- BUILD NET VALUE ---------- */
+      //   if (normalizedVmType === "qemu") {
+      //     netValue = `virtio,bridge=${networkname}`;
+      //   } else if (normalizedVmType === "lxc") {
+      //     netValue = `name=eth${ethIndex},bridge=${networkname}`;
+      //   } else {
+      //     return { success: false, message: "Unsupported VM type" };
+      //   }
+
+      //   finalLabel = networkname;
+
+      //   /* ---------- PROXMOX ---------- */
+      //   const proxmoxService = ProxMoxService(
+      //     db,
+      //     { vmType: normalizedVmType },
+      //     ipAddress,
+      //   );
+
+      //   const token = await proxmoxService.generateAccessTicket();
+      //   if (!token || token.status !== "200") {
+      //     return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
+      //   }
+      //   const addNet = await proxmoxService.addVmNetwork(
+      //     vmid,
+      //     normalizedVmType,
+      //     netKey,
+      //     netValue,
+      //   );
+      //   console.log("addNetaddNetaddNetaddNetaddNet", addNet);
+
+      //   // if (addNet?.status !== 200) {
+      //   //   return { success: false, message: "Proxmox add net failed" };
+      //   // }
+      //   if (addNet?.status !== 200) {
+      //   return { success: false, message: "Failed to add network bridge. Please try again." };
+      //   }
+      //   /* ---------- MARK OCCUPIED ---------- */
+      //   await db.sequelize.query(
+      //     `UPDATE networks
+      //      SET status='In Use', modifiedon=NOW()
+      //      WHERE networkid=?`,
+      //     {
+      //       replacements: [networkid],
+      //       type: db.sequelize.QueryTypes.UPDATE,
+      //     },
+      //   );
+      // }
       if (mode === "new") {
         const [availableNetwork] = await db.sequelize.query(
-          `SELECT networkid, networkname FROM networks WHERE status='Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT 1`,
+          `SELECT networkid, networkname FROM networks 
+           WHERE status='Available' AND deletedon IS NULL 
+           ORDER BY networkid ASC LIMIT 1`,
           { type: db.sequelize.QueryTypes.SELECT },
         );
 
         if (!availableNetwork) {
           return { success: false, message: "No free networks." };
         }
+
         networkid = availableNetwork.networkid;
         networkname = availableNetwork.networkname;
+        finalLabel = networkname;
+
         const ethIndex = netKey.replace("net", "");
-        /* ---------- BUILD NET VALUE ---------- */
+
+        // ---------- SOURCE NET VALUE ----------
         if (normalizedVmType === "qemu") {
           netValue = `virtio,bridge=${networkname}`;
         } else if (normalizedVmType === "lxc") {
@@ -3191,9 +3258,35 @@ const ModifyScenarioVmNetwork =
           return { success: false, message: "Unsupported VM type" };
         }
 
-        finalLabel = networkname;
+        // ---------- TARGET VM FETCH ----------
+        const [targetVmRow] = await db.sequelize.query(
+          `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+          {
+            replacements: [Targetvmid], // ⚠️ ensure this maps correctly
+            type: db.sequelize.QueryTypes.SELECT,
+          },
+        );
 
-        /* ---------- PROXMOX ---------- */
+        if (!targetVmRow) {
+          return { success: false, message: "Target VM not found" };
+        }
+
+        const targetVmType = targetVmRow.componenttype.toLowerCase();
+
+        const targetNetKey = targetHandle
+          .replace("-target", "")
+          .replace("-source", "");
+
+        let targetNetValue;
+
+        if (targetVmType === "qemu") {
+          targetNetValue = `virtio,bridge=${networkname}`;
+        } else if (targetVmType === "lxc") {
+          const targetEthIndex = targetNetKey.replace("net", "");
+          targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
+        }
+
+        // ---------- PROXMOX ----------
         const proxmoxService = ProxMoxService(
           db,
           { vmType: normalizedVmType },
@@ -3202,29 +3295,130 @@ const ModifyScenarioVmNetwork =
 
         const token = await proxmoxService.generateAccessTicket();
         if (!token || token.status !== "200") {
-          return { success: false, message: "Proxmox auth failed" };
+          return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
         }
-        const addNet = await proxmoxService.addVmNetwork(
+
+        // 👉 APPLY TO SOURCE
+        const addNetSource = await proxmoxService.addVmNetwork(
           vmid,
           normalizedVmType,
           netKey,
           netValue,
         );
-        console.log("addNetaddNetaddNetaddNetaddNet", addNet);
 
-        // if (addNet?.status !== 200) {
-        //   return { success: false, message: "Proxmox add net failed" };
-        // }
-        if (addNet?.status !== 200) {
-        return { success: false, message: "Failed to add network bridge. Please try again." };
+        // 👉 APPLY TO TARGET
+        const proxmoxServiceTarget = ProxMoxService(
+          db,
+          { vmType: targetVmType },
+          ipAddress,
+        );
+
+        console.log("addNetSourceaddNetSource",addNetSource);
+        console.log("targetNetKeytargetNetKey",targetNetKey);
+        console.log("targetNetValuetargetNetValuetargetNetValue",targetNetValue);
+        
+
+        const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+          targetVmRow.vmid,
+          targetVmType,
+          targetNetKey,
+          targetNetValue,
+        );
+
+        console.log("addNetTargetaddNetTargetaddNetTarget",addNetTarget);
+
+
+        if (
+          addNetSource?.status !== 200 ||
+          addNetTarget?.status !== 200
+        ) {
+          return {
+            success: false,
+            message: "Failed to apply network bridge to both VMs",
+          };
         }
-        /* ---------- MARK OCCUPIED ---------- */
+
+        // ---------- MARK NETWORK USED ----------
         await db.sequelize.query(
           `UPDATE networks
            SET status='In Use', modifiedon=NOW()
            WHERE networkid=?`,
           {
             replacements: [networkid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
+
+        /* ---------- UPDATE SOURCE JSON ---------- */
+        const [sourceVmRow] = await db.sequelize.query(
+          `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+          {
+            replacements: [vmid],
+            type: db.sequelize.QueryTypes.SELECT,
+          },
+        );
+
+        let sourceBridgeJson = {};
+        if (sourceVmRow?.network_bridge_json) {
+          try {
+            sourceBridgeJson = JSON.parse(
+              sourceVmRow.network_bridge_json,
+            );
+          } catch {}
+        }
+
+        sourceBridgeJson[netKey] = {
+          networkid,
+          networkname,
+          value: netValue,
+        };
+
+        await db.sequelize.query(
+          `UPDATE vm_config 
+           SET network_bridge_json=?, modifiedon=NOW() 
+           WHERE vmid=?`,
+          {
+            replacements: [
+              JSON.stringify(sourceBridgeJson),
+              vmid,
+            ],
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
+
+        /* ---------- UPDATE TARGET JSON ---------- */
+        const [targetVmConfig] = await db.sequelize.query(
+          `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+          {
+            replacements: [targetVmRow.vmid],
+            type: db.sequelize.QueryTypes.SELECT,
+          },
+        );
+
+        let targetBridgeJson = {};
+        if (targetVmConfig?.network_bridge_json) {
+          try {
+            targetBridgeJson = JSON.parse(
+              targetVmConfig.network_bridge_json,
+            );
+          } catch {}
+        }
+
+        targetBridgeJson[targetNetKey] = {
+          networkid,
+          networkname,
+          value: targetNetValue,
+        };
+
+        await db.sequelize.query(
+          `UPDATE vm_config 
+           SET network_bridge_json=?, modifiedon=NOW() 
+           WHERE vmid=?`,
+          {
+            replacements: [
+              JSON.stringify(targetBridgeJson),
+              targetVmRow.vmid,
+            ],
             type: db.sequelize.QueryTypes.UPDATE,
           },
         );
@@ -3243,7 +3437,58 @@ const ModifyScenarioVmNetwork =
       //   }
       //   finalLabel = label;
       // }
-      if (mode === "existing") {
+//       if (mode === "existing") {
+//   if (!label) {
+//     return {
+//       success: false,
+//       message:
+//         "No existing network found. Unable to add a network bridge.",
+//     };
+//   }
+
+//   networkname = label; // existing bridge like vmbr1010
+//   finalLabel = label;
+// console.log("networknamenetworknamenetworkname",networkname);
+
+//   const ethIndex = netKey.replace("net", "");
+
+//   /* ---------- BUILD NET VALUE ---------- */
+//   if (normalizedVmType === "qemu") {
+//     netValue = `virtio,bridge=${networkname}`;
+//   } else if (normalizedVmType === "lxc") {
+//     netValue = `name=eth${ethIndex},bridge=${networkname}`;
+//   } else {
+//     return { success: false, message: "Unsupported VM type" };
+//   }
+// console.log("netKeynetKeynetKeynetKey",netKey);
+// console.log("netValuenetValuenetValuenetValue",netValue);
+
+//   /* ---------- PROXMOX ---------- */
+//   const proxmoxService = ProxMoxService(
+//     db,
+//     { vmType: normalizedVmType },
+//     ipAddress,
+//   );
+
+//   const token = await proxmoxService.generateAccessTicket();
+//   if (!token || token.status !== "200") {
+//     return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
+//   }
+
+//   const addNet = await proxmoxService.addVmNetwork(
+//     vmid,
+//     normalizedVmType,
+//     netKey,
+//     netValue,
+//   );
+
+//   console.log("existing addNet response:", addNet);
+
+//   if (addNet?.status !== 200) {
+//     return { success: false, message: "Failed to add network bridge. Please try again." };
+//   }
+// }
+if (mode === "existing") {
   if (!label) {
     return {
       success: false,
@@ -3252,13 +3497,12 @@ const ModifyScenarioVmNetwork =
     };
   }
 
-  networkname = label; // existing bridge like vmbr1010
+  networkname = label;
   finalLabel = label;
-console.log("networknamenetworknamenetworkname",networkname);
 
   const ethIndex = netKey.replace("net", "");
 
-  /* ---------- BUILD NET VALUE ---------- */
+  // ---------- SOURCE NET VALUE ----------
   if (normalizedVmType === "qemu") {
     netValue = `virtio,bridge=${networkname}`;
   } else if (normalizedVmType === "lxc") {
@@ -3266,10 +3510,36 @@ console.log("networknamenetworknamenetworkname",networkname);
   } else {
     return { success: false, message: "Unsupported VM type" };
   }
-console.log("netKeynetKeynetKeynetKey",netKey);
-console.log("netValuenetValuenetValuenetValue",netValue);
 
-  /* ---------- PROXMOX ---------- */
+  // ---------- TARGET VM FETCH ----------
+  const [targetVmRow] = await db.sequelize.query(
+    `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+    {
+      replacements: [Targetvmid],
+      type: db.sequelize.QueryTypes.SELECT,
+    },
+  );
+
+  if (!targetVmRow) {
+    return { success: false, message: "Target VM not found" };
+  }
+
+  const targetVmType = targetVmRow.componenttype.toLowerCase();
+
+  const targetNetKey = targetHandle
+    .replace("-target", "")
+    .replace("-source", "");
+
+  let targetNetValue;
+
+  if (targetVmType === "qemu") {
+    targetNetValue = `virtio,bridge=${networkname}`;
+  } else if (targetVmType === "lxc") {
+    const targetEthIndex = targetNetKey.replace("net", "");
+    targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
+  }
+
+  // ---------- PROXMOX ----------
   const proxmoxService = ProxMoxService(
     db,
     { vmType: normalizedVmType },
@@ -3278,29 +3548,119 @@ console.log("netValuenetValuenetValuenetValue",netValue);
 
   const token = await proxmoxService.generateAccessTicket();
   if (!token || token.status !== "200") {
-    return { success: false, message: "Proxmox auth failed" };
+    return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
   }
 
-  const addNet = await proxmoxService.addVmNetwork(
+  // 👉 SOURCE
+  const addNetSource = await proxmoxService.addVmNetwork(
     vmid,
     normalizedVmType,
     netKey,
     netValue,
   );
 
-  console.log("existing addNet response:", addNet);
+  // 👉 TARGET
+  const proxmoxServiceTarget = ProxMoxService(
+    db,
+    { vmType: targetVmType },
+    ipAddress,
+  );
 
-  if (addNet?.status !== 200) {
-    return { success: false, message: "Failed to add network bridge. Please try again." };
+  const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+    targetVmRow.vmid,
+    targetVmType,
+    targetNetKey,
+    targetNetValue,
+  );
+
+  if (
+    addNetSource?.status !== 200 ||
+    addNetTarget?.status !== 200
+  ) {
+    return {
+      success: false,
+      message: "Failed to apply existing network to both VMs",
+    };
   }
 }
 
       /* =========================================================
            MODE: STATIC
         ========================================================= */
-      if (mode === "static") {
-        finalLabel = label || "Network Id";
+     if (mode === "static") {
+  finalLabel = label || "Network Id";
+
+  // 👇 ONLY if user entered vmbr
+  if (staticVmbr) {
+    const match = staticVmbr.match(/^vmbr(\d+)$/);
+
+    if (!match) {
+      return { success: false, message: "Invalid vmbr format" };
+    }
+
+    const num = parseInt(match[1], 10);
+
+    if (num < 50 || num > 999) {
+      return { success: false, message: "vmbr must be between 700–1000" };
+    }
+
+    networkname = staticVmbr; 
+  } else {
+    networkname = null;
+  }
+}
+console.log("staticVmbrstaticVmbrstaticVmbr",staticVmbr);
+
+
+if (mode === "static" && staticVmbr) {
+  // 1. CHECK IF EXISTS
+  const [existing] = await db.sequelize.query(
+    `SELECT tempnetworkid, lock_status 
+     FROM temp_networks 
+     WHERE networkname = ? 
+     LIMIT 1`,
+    {
+      replacements: [staticVmbr],
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  if (existing) {
+    // 2A. IF FREE → REUSE
+    if (existing.lock_status === "Free") {
+      await db.sequelize.query(
+        `UPDATE temp_networks
+         SET lock_status='Locked',
+             locked_at=NOW(),
+             modifiedon=NOW()
+         WHERE tempnetworkid=?`,
+        {
+          replacements: [existing.tempnetworkid],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+    } 
+    // 2B. IF ALREADY LOCKED → THROW ERROR
+    else {
+      return {
+        success: false,
+        message: `Network ${staticVmbr} is already in use. Please choose a different bridge.`,
+      };
+    }
+  } 
+  // 3. IF NOT EXISTS → INSERT NEW
+  else {
+    await db.sequelize.query(
+      `INSERT INTO temp_networks 
+       (networkname, lock_status, locked_at, createdon)
+       VALUES (?, 'Locked', NOW(), NOW())`,
+      {
+        replacements: [staticVmbr],
+        type: db.sequelize.QueryTypes.INSERT,
       }
+    );
+  }
+}
 
       /* =========================================================
            FETCH VM CONFIG
@@ -3429,6 +3789,26 @@ console.log("netValuenetValuenetValuenetValue",netValue);
     }
   };
 
+
+  const getCloningDelay = async (db) => {
+  try {
+    const [settings] = await db.sequelize.query(
+      `SELECT cloning_delay FROM web_settings WHERE status = 1 LIMIT 1`,
+      { type: db.sequelize.QueryTypes.SELECT },
+    );
+
+    const delaySeconds =
+      settings?.cloning_delay && Number.isFinite(settings.cloning_delay)
+        ? settings.cloning_delay
+        : 10;
+
+    return delaySeconds * 1000; // convert to ms
+  } catch (err) {
+    console.error("Error fetching Termination Delay:", err);
+    return 10000; // fallback to 10 sec
+  }
+};
+
 const addRuntimeComponent =
   ({ db, ipAddress }) =>
   async (vmrequestid, scenarioid, newNode) => {
@@ -3543,7 +3923,7 @@ const addRuntimeComponent =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       /* ---------------- CLONE ---------------- */
       const cloneRes = await proxmoxService.cloneVM(
@@ -3559,6 +3939,9 @@ const addRuntimeComponent =
         );
         return { success: false, message: "Clone failed" };
       }
+      const delay = await getCloningDelay(db);
+      await sleep(delay);
+
       /* ---------------- START ---------------- */
       const startVM = await proxmoxService.startVM(newVmid, vmType);
       if (!startVM || startVM.status !== 200) {
@@ -3625,7 +4008,9 @@ const addRuntimeComponent =
 
 const stopDestroySingleComponent =
   ({ db, ipAddress }) =>
-  async (vmrequestid, vmid) => {
+  async (vmrequestid, vmid,vmbrList) => {
+    console.log("oooooooooooooooooooppppppppp",vmbrList);
+    
     try {
       /* ---------------- GET COMPONENT ---------------- */
       const [vmConfig] = await db.sequelize.query(
@@ -3647,7 +4032,7 @@ const stopDestroySingleComponent =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
 
       /* ---------------- STOP ---------------- */
@@ -3747,6 +4132,20 @@ const stopDestroySingleComponent =
             { replacements: { bridges } },
           );
         }
+      
+if (vmbrList && vmbrList.length > 0) {
+  await db.sequelize.query(
+    `UPDATE temp_networks
+     SET lock_status='Free',
+         released_at=NOW(),
+         modifiedon=NOW()
+     WHERE networkname IN (:bridges)`,
+    {
+      replacements: { bridges: vmbrList },
+    }
+  );
+}
+
       }
       /* ---------------- UPDATE DIAGRAM ---------------- */
       const [vmRequest] = await db.sequelize.query(
@@ -3875,7 +4274,7 @@ const disconnectRuntimeNetworks =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
       if (!vmInfo?.data) {
@@ -4053,7 +4452,7 @@ const connectRuntimeNetwork =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       /* ---------------- GET LIVE NETWORK INFO ---------------- */
       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
@@ -4249,7 +4648,7 @@ const unplugRuntimeNetwork =
       /* ---------------- AUTH ---------------- */
       const token = await proxmoxService.generateAccessTicket();
       if (!token || token.status !== "200")
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
       if (!vmInfo?.data?.[netKey])
         return { success: false, message: `${netKey} not found` };
@@ -4389,7 +4788,7 @@ const plugRuntimeNetwork =
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const token = await proxmoxService.generateAccessTicket();
       if (!token || token.status !== "200")
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
       if (!vmInfo?.data?.[netKey])
         return { success: false, message: `${netKey} not found` };
@@ -4559,7 +4958,7 @@ const stopComponent =
       const tokenResult = await proxmoxService.generateAccessTicket();
 
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
 
       /* ---------------- STOP VM ---------------- */
@@ -4672,7 +5071,7 @@ const startComponent =
       const tokenResult = await proxmoxService.generateAccessTicket();
 
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
 
       /* -------- START VM -------- */
@@ -4782,7 +5181,7 @@ const restartComponent =
       const tokenResult = await proxmoxService.generateAccessTicket();
 
       if (!tokenResult || tokenResult.status !== "200") {
-        return { success: false, message: "Proxmox auth failed" };
+        return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
 
       /* -------- STOP VM -------- */

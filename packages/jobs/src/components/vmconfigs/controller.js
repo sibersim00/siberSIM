@@ -872,6 +872,7 @@ const ModifyScenarioVmNetwork =
     try {
       const {
         vmid,
+        Targetvmid,
         netKey,
         mode,
         source,
@@ -879,6 +880,7 @@ const ModifyScenarioVmNetwork =
         target,
         targetHandle,
         label,
+        staticVmbr
       } = req.body;
       if (!vmid || !netKey) {
         return res.status(400).send({
@@ -892,6 +894,7 @@ const ModifyScenarioVmNetwork =
 
       const result = await dao.ModifyScenarioVmNetwork({ ipAddress, db })(
         vmid,
+        Targetvmid,
         netKey,
         mode,
         source,
@@ -899,6 +902,7 @@ const ModifyScenarioVmNetwork =
         target,
         targetHandle,
         label,
+        staticVmbr 
       );
 
       if (!result.success) {
@@ -954,13 +958,14 @@ const stopDestroySingleComponent =
   ({ dao, db }) =>
   async (req, res, next) => {
     try {
-      const { vmrequestid, vmid } = req.body;
+      const { vmrequestid, vmid,vmbrList } = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
       const result = await dao.stopDestroySingleComponent({ ipAddress, db })(
         vmrequestid,
         vmid,
+        vmbrList
       );
 
       if (!result.success) {

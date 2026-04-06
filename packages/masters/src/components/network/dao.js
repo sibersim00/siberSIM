@@ -21,16 +21,6 @@ const fetchAndStoreOVSNetworks =
             0,
             'siberSIM Service is down. Please try again later.'
           );
-           new MailTemplate(db, "proxmox_down_alert", {
-          downdatetime: new Date().toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-        });
 
           return {
             statusCode: 500,
@@ -49,17 +39,6 @@ const fetchAndStoreOVSNetworks =
           0,
           'siberSIM Service is down. Please try again later.'
         );
-         new MailTemplate(db, "proxmox_down_alert", {
-          downdatetime: new Date().toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-        });
-
         return {
           statusCode: 500,
           message: "Unable to reach the siberSIM server. Please ensure the server is online and accessible.",
@@ -69,6 +48,8 @@ const fetchAndStoreOVSNetworks =
 
       // Step 2: Get node network info
       const response = await proxmoxService.GetNodeNetworkInfo();
+      console.log("responseresponseresponseresponse",response);
+      
       if (!response || !response.data) {
         return {
           statusCode: 500,
@@ -77,7 +58,19 @@ const fetchAndStoreOVSNetworks =
       }
 
       // Step 3: Process and sync networks
-      const ovsBridges = response.data.filter((net) => net.type === "OVSBridge");
+      // const ovsBridges = response.data.filter((net) => net.type === "OVSBridge");
+      const ovsBridges = response.data.filter((net) => {
+        if (!(net.type === "OVSBridge" || net.ovs_type === "OVSBridge")) {
+          return false;
+        }
+
+        const match = net.iface?.match(/^vmbr(\d+)$/);
+        if (!match) return false;
+
+        const vmbrNumber = parseInt(match[1], 10);
+
+        return vmbrNumber > 1000;
+      });
       await db.sequelize.query(
         `UPDATE networks SET issync = 'No' WHERE deletedon IS NULL AND status != 'Destroyed' AND issync = 'Yes';`
       );
@@ -143,16 +136,6 @@ const fetchAndStoreOVSNetworks =
         0,
         'siberSIM Service is down. Please try again later.'
       );
-       new MailTemplate(db, "proxmox_down_alert", {
-          downdatetime: new Date().toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-        });
 
       return {
         statusCode: 500,

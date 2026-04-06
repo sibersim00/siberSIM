@@ -575,6 +575,17 @@ const rejectPendingCustomComponentIfVmStopped =
       },
     }
   );
+   await db.sequelize.query(
+        `UPDATE temp_networks
+         SET lock_status = 'Free',
+             released_at = NOW(),
+             modifiedon = NOW()
+         WHERE networkname = :bridge
+           AND lock_status = 'Locked'`,
+        {
+          replacements: { bridge },
+        }
+      );
 
   return diagram;
 };

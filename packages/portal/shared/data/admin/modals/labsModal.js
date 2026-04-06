@@ -23,7 +23,6 @@ const LabsAdd = ({
     { label: "Sim Master", value: "simMaster" },
   ];
   const dispatch = useDispatch();
-
   const { getUserTypeWiseListData, hasGetStudentListSuccreport } = useSelector(
     (state) => {
       return {
@@ -32,20 +31,35 @@ const LabsAdd = ({
           state.commonMaster &&
           state.commonMaster.getUserTypeWiseListData &&
           state.commonMaster.getUserTypeWiseListData,
-
         hasGetStudentListSuccreport:
           state &&
           state.commonMaster &&
           state.commonMaster.getStudentListDatareport.data,
       };
-    }
+    },
   );
-
-  console.log("rowValuesrowValuesrddddddddowValues", rowValues);
 
   useEffect(() => {
     dispatch(getStudentListreport());
   }, []);
+
+  const formatToLocal = (date) => {
+    if (!date) return null;
+    const pad = (n) => (n < 10 ? "0" + n : n);
+    return (
+      date.getFullYear() +
+      "-" +
+      pad(date.getMonth() + 1) +
+      "-" +
+      pad(date.getDate()) +
+      " " +
+      pad(date.getHours()) +
+      ":" +
+      pad(date.getMinutes()) +
+      ":" +
+      pad(date.getSeconds())
+    );
+  };
 
   const userOptions =
     getUserTypeWiseListData?.map((u) => ({
@@ -84,6 +98,10 @@ const LabsAdd = ({
       .typeError("Reserved seats must be a number")
       .min(1, "Minimum 1 seat required")
       .required("Required"),
+    allowedusers: yup
+      .array()
+      .min(1, "Minimum 1 user is required")
+      .required("Required"),
   });
 
   // ------------------ useFormik Hook ------------------
@@ -99,31 +117,30 @@ const LabsAdd = ({
       allowedusers: Array.isArray(rowValues?.allowedusers)
         ? rowValues.allowedusers
         : typeof rowValues?.allowedusers === "string"
-        ? (() => {
-            try {
-              const parsed = JSON.parse(rowValues.allowedusers);
-              return parsed.map((u) => ({
-                label: u.name,
-                value: Number(u.learner_id),
-              }));
-            } catch (e) {
-              return [];
-            }
-          })()
-        : [],
+          ? (() => {
+              try {
+                const parsed = JSON.parse(rowValues.allowedusers);
+                return parsed.map((u) => ({
+                  label: u.name,
+                  value: Number(u.learner_id),
+                }));
+              } catch (e) {
+                return [];
+              }
+            })()
+          : [],
     },
     validationSchema: schema,
     onSubmit: async (data) => {
       const payload = {
         lab_id: data.lab_id,
         bookingname: data.bookingname,
-        datetime: data.datetime,
+        datetime: formatToLocal(data.datetime),
         duration: Number(data.duration),
         accesslevel: data.accesslevel,
         personincharge: Number(data.personincharge),
         reservedseats: Number(data.reservedseats),
         allowedusers: data.allowedusers.map((u) => String(u.value)),
-
       };
       handleOneClick(true);
 
@@ -140,24 +157,24 @@ const LabsAdd = ({
 
       handleOneClick(false);
 
-      if (result.meta.requestStatus === "fulfilled") {
-        toast.success(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {rowValues
-              ? "Lab session updated successfully!"
-              : "Lab session saved successfully!"}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: false,
-            theme: "colored",
-          }
-        );
+      // if (result.meta.requestStatus === "fulfilled") {
+      //   toast.success(
+      //     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+      //       {rowValues
+      //         ? "Lab session updated successfully!"
+      //         : "Lab session saved successfully!"}
+      //     </p>,
+      //     {
+      //       position: toast.POSITION.TOP_RIGHT,
+      //       hideProgressBar: false,
+      //       theme: "colored",
+      //     }
+      //   );
 
-        handleFormModal(false);
-      } else {
-        alert(result.payload?.errors?.[0] || "Failed to save.");
-      }
+      //   handleFormModal(false);
+      // } else {
+      //   alert(result.payload?.errors?.[0] || "Failed to save.");
+      // }
     },
   });
 
@@ -165,47 +182,52 @@ const LabsAdd = ({
   const { values, errors, touched, handleChange, handleSubmit, setFieldValue } =
     formik;
 
-  
   const customStyles = () => {
-  return {
-    control: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--dark-bg-color)",
-      borderColor: "#ced4da",
-      minHeight: "38px",
-    }),
-    multiValue: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--primary-bg-color)",
-    }),
-    multiValueLabel: (styles) => ({
-      ...styles,
-       color: "#fff",
-    }),
-    multiValueRemove: (styles) => ({
-      ...styles,
-      color: "#fff",
-      ":hover": {
-        backgroundColor: "#EB5757",
-        color: "white",
-      },
-    }),
-    input: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    singleValue: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    placeholder: (styles) => ({
-      ...styles,
-      color: "#aaa",
-    }),
+    return {
+      control: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--dark-bg-color)",
+        borderColor: "#ced4da",
+        minHeight: "38px",
+      }),
+      multiValue: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--primary-bg-color)",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: "#fff",
+      }),
+      multiValueRemove: (styles) => ({
+        ...styles,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "#EB5757",
+          color: "white",
+        },
+      }),
+      input: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      singleValue: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      placeholder: (styles) => ({
+        ...styles,
+        color: "#aaa",
+      }),
+    };
   };
-};
   const getSelectStyles = (fieldName) => {
-    const error = !values[fieldName] && errors[fieldName] && touched[fieldName];
+    // const error = !values[fieldName] && errors[fieldName] && touched[fieldName];
+    const error =
+      touched[fieldName] &&
+      errors[fieldName] &&
+      (Array.isArray(values[fieldName])
+        ? values[fieldName].length === 0
+        : !values[fieldName]);
 
     return {
       ...customStyles,
@@ -238,14 +260,32 @@ const LabsAdd = ({
     };
   };
 
+  // useEffect(() => {
+  //   const reserved = Number(formik.values.reservedseats || 0);
+
+  //   if (reserved > 0 && formik.values.allowedusers.length > reserved) {
+  //     const trimmed = formik.values.allowedusers.slice(0, reserved);
+  //     formik.setFieldValue("allowedusers", trimmed);
+  //   }
+  // }, [openFlag]);
+
   useEffect(() => {
     const reserved = Number(formik.values.reservedseats || 0);
-
     if (reserved > 0 && formik.values.allowedusers.length > reserved) {
       const trimmed = formik.values.allowedusers.slice(0, reserved);
+      //  YOUR REQUIRED TOAST FORMAT
+      // toast.error(
+      //   // `Only ${reserved} users allowed. Extra users removed.`,
+      //   `Allowed users cannot exceed the number of reserved seats.`,
+      //   {
+      //     position: toast.POSITION.TOP_RIGHT,
+      //     hideProgressBar: true,
+      //     theme: "colored",
+      //   }
+      // );
       formik.setFieldValue("allowedusers", trimmed);
     }
-  }, [openFlag]);
+  }, [formik.values.reservedseats]);
 
   return (
     <Fragment>
@@ -341,7 +381,7 @@ const LabsAdd = ({
                   styles={getSelectStyles("accesslevel")}
                   value={
                     accessLevelOptions.find(
-                      (opt) => opt.value === values.accesslevel
+                      (opt) => opt.value === values.accesslevel,
                     ) || null
                   }
                   options={accessLevelOptions}
@@ -379,7 +419,7 @@ const LabsAdd = ({
                   styles={getSelectStyles("personincharge")}
                   value={
                     userOptions.find(
-                      (opt) => opt.value === values.personincharge
+                      (opt) => opt.value === values.personincharge,
                     ) || null
                   }
                   options={userOptions}
@@ -429,56 +469,14 @@ const LabsAdd = ({
                 <Form.Label>
                   Allowed Users <span className="text-danger">*</span>
                 </Form.Label>
-
-                {/* <Select
-                  isMulti
-                  name="allowedusers"
-                  theme={(theme) => ({
-                    ...theme,
-                    colors: {
-                      ...theme.colors,
-                      primary25: "var(--primary-bg-color)",
-                      primary: "var(--primary-bg-color)",
-                    },
-                  })}
-                  styles={getSelectStyles("allowedusers")}
-                  options={studentOptions}
-                  value={studentOptions.filter((opt) =>
-                    values.allowedusers?.includes(String(opt.value))
-                  )}
-                  onChange={(selectedList) => {
-                    const reserved = Number(values.reservedseats || 0);
-
-                    if (selectedList.length > reserved) {
-                      toast.error(
-                        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                          You can select only {reserved} users!
-                        </p>,
-                        {
-                          position: toast.POSITION.TOP_RIGHT,
-                          hideProgressBar: false,
-                          theme: "colored",
-                        }
-                      );
-
-                      return;
-                    }
-
-                    setFieldValue(
-                      "allowedusers",
-                      selectedList.map((s) => String(s.value))
-                    );
-                  }}
-                  placeholder="Select Allowed Users"
-                  menuPosition="fixed"
-                /> */}
-
                 <Select
                   isMulti
                   name="allowedusers"
                   options={studentOptions}
                   value={values.allowedusers}
-                  styles={customStyles()}
+                  // styles={customStyles()}
+                  styles={getSelectStyles("allowedusers")}
+                  onBlur={() => formik.setFieldTouched("allowedusers", true)}
                   theme={(theme) => ({
                     ...theme,
                     colors: {
@@ -499,7 +497,7 @@ const LabsAdd = ({
                           position: toast.POSITION.TOP_RIGHT,
                           hideProgressBar: false,
                           theme: "colored",
-                        }
+                        },
                       );
                       return;
                     }
@@ -508,6 +506,7 @@ const LabsAdd = ({
                   }}
                   placeholder="Select Allowed Users"
                   menuPosition="fixed"
+                  isInvalid={touched.allowedusers && errors.allowedusers}
                 />
 
                 {touched.allowedusers && errors.allowedusers && (
@@ -515,6 +514,10 @@ const LabsAdd = ({
                     {errors.allowedusers}
                   </div>
                 )}
+
+                <Form.Control.Feedback type="invalid">
+                  {errors.allowedusers}
+                </Form.Control.Feedback>
               </Form.Group>
             </Row>
           </Modal.Body>

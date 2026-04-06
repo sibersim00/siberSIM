@@ -874,20 +874,8 @@ const ModifyScenarioVmNetwork =
   async (req, res, next) => {
     try {
       const {
-        vmid,
-        netKey,
-        mode,
-        source,
-        sourceHandle,
-        target,
-        targetHandle,
-        label,
-      } = req.body;
-      try {
-        const response = await axios.post(
-          `${EVENTLEARNER_API_URL}/vmconfigs/modify-vm-network`,
-          {
             vmid,
+            Targetvmid,
             netKey,
             mode,
             source,
@@ -895,6 +883,22 @@ const ModifyScenarioVmNetwork =
             target,
             targetHandle,
             label,
+            staticVmbr // 👈 NEW
+      } = req.body;
+      try {
+        const response = await axios.post(
+          `${EVENTLEARNER_API_URL}/vmconfigs/modify-vm-network`,
+          {
+            vmid,
+            Targetvmid,
+            netKey,
+            mode,
+            source,
+            sourceHandle,
+            target,
+            targetHandle,
+            label,
+            staticVmbr // 👈 NEW
           },
         );
 
@@ -969,11 +973,11 @@ const stopDestroySingleComponent =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { vmrequestid, vmid } = req.body;
+      const { vmrequestid, vmid, vmbrList } = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmconfigs/delete-single-network`,
-          { vmrequestid, vmid },
+          { vmrequestid, vmid, vmbrList },
         );
 
         return res.status(200).send({

@@ -8,17 +8,7 @@ import React, {
 import { Button, Card, Row, Col, Modal,OverlayTrigger,Tooltip  } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Background,
-  Handle,
-  Position,
-  useReactFlow,
-  useUpdateNodeInternals,
+import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Background,Handle,Position,useReactFlow,useUpdateNodeInternals,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,29 +18,7 @@ import {
   saveScenarioFlow,
   clearsaveScenarioFlow,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-import {
-  getSingleScenarios,
-  getSingleUserSession,
-  addNetworkPort,
-  deleteNetworkPort,
-  saveDraggedComponent,
-  deleteDraggedComponent,
-  clearDraggedComponent,
-  clearDeleteDraggedComponent,
-  clearSaveNetworkPort,
-  clearDeleteNetworkPort,
-  modifyNetworkId,
-  clearModifyNetworkId,
-  plugNetworkPort,
-  unplugNetworkPort,
-  connectNetworkPort,
-  disconnectNetworkPort,
-  changeReleaseEditLock,
-  clearPlugNetworkPort,
-  clearUnplugNetworkPort,
-  clearConnectNetworkPort,
-  clearDisconnectNetworkPort,
-  deletebridge
+import {getSingleScenarios,getSingleUserSession,addNetworkPort,deleteNetworkPort,saveDraggedComponent,deleteDraggedComponent,clearDraggedComponent,clearDeleteDraggedComponent,clearSaveNetworkPort,clearDeleteNetworkPort,modifyNetworkId,clearModifyNetworkId,plugNetworkPort,unplugNetworkPort,connectNetworkPort,disconnectNetworkPort,changeReleaseEditLock,clearPlugNetworkPort,clearUnplugNetworkPort,clearConnectNetworkPort,clearDisconnectNetworkPort,deletebridge
 } from "../../../../shared/redux/slices/usersession/usersessionManage";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -59,315 +27,6 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-
-// const NetworkPopover = ({
-//   nodeId,
-//   existingPorts,
-//   pendingNets,
-//   handleAddMore,
-//   handleRemovePendingNet,
-//   handleAddNetworkPort,
-//   handleConfirmDelete,
-//   confirmDelete,
-//   setConfirmDelete,
-//   onClose,
-// }) => {
-//   const [loading, setLoading] = useState(false);
-//   const [deleteLoading, setDeleteLoading] = useState(false);
-//   const onAddPort = async (e) => {
-//     e.stopPropagation();
-//     if (!pendingNets.length) return;
-
-//     try {
-//       setLoading(true);
-//       await handleAddNetworkPort(nodeId, pendingNets.join(","));
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-//   const handleDeleteClick = async (e) => {
-//     e.stopPropagation();
-//     setDeleteLoading(true);
-
-//     try {
-//       await handleConfirmDelete(nodeId, confirmDelete.port);
-//       setConfirmDelete({ open: false, port: null });
-//     } finally {
-//       setDeleteLoading(false);
-//     }
-//   };
-//   return (
-//   <div
-//     style={{
-//       width: 340,
-//       background: "linear-gradient(180deg,#0f172a,#0b1220)",
-//       borderRadius: 18,
-//       padding: 18,
-//       boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-//       color: "#e5e7eb",
-//       fontSize: 13,
-//       border: "1px solid rgba(255,255,255,0.05)",
-//     }}
-//     onMouseDown={(e) => e.stopPropagation()}
-//     onClick={(e) => e.stopPropagation()}
-//   >
-//     {/* HEADER */}
-//     <div
-//       style={{
-//         display: "flex",
-//         justifyContent: "space-between",
-//         alignItems: "center",
-//         marginBottom: 16,
-//       }}
-//     >
-//       <div style={{ fontSize: 16, fontWeight: 600 }}>Manage Ports</div>
-//       <div
-//         onClick={onClose}
-//         style={{ cursor: "pointer", opacity: 0.6, fontSize: 16 }}
-//       >
-//         ✕
-//       </div>
-//     </div>
-
-//     {/* EXISTING PORTS LABEL */}
-//     <div
-//       style={{
-//         fontSize: 11,
-//         letterSpacing: 1,
-//         color: "#9cafc9",
-//         marginBottom: 8,
-//       }}
-//     >
-//       EXISTING PORTS
-//     </div>
-
-//     {/* SCROLL ONLY PORT LIST */}
-//     <div
-//       className="existing-scroll"
-//       style={{
-//         maxHeight: 150,
-//         overflowY: "auto",
-//         paddingRight: 6,
-//         marginBottom: 12,
-//         display: "flex",
-//         flexDirection: "column",
-//         gap: 10,
-//       }}
-//     >
-//       {existingPorts.map((port) => (
-//         <div
-//           key={port}
-//           style={{
-//             display: "flex",
-//             justifyContent: "space-between",
-//             alignItems: "center",
-//             background: "rgba(255,255,255,0.03)",
-//             padding: "10px 12px",
-//             borderRadius: 12,
-//             border: "1px solid rgba(255,255,255,0.04)",
-//           }}
-//         >
-//           <span style={{ fontWeight: 500 }}>{port}</span>
-
-//           <span
-//             onClick={(e) => {
-//               e.stopPropagation();
-//               setConfirmDelete({ open: true, port });
-//             }}
-//             style={{
-//               cursor: "pointer",
-//               color: "#ef4444",
-//               fontSize: 14,
-//               opacity: 0.8,
-//             }}
-//           >
-//             ✕
-//           </span>
-//         </div>
-//       ))}
-//     </div>
-
-//     {/* ✅ CONFIRM DELETE OUTSIDE SCROLL */}
-//     {confirmDelete?.open && (
-//       <div
-//         style={{
-//           background: "rgba(239,68,68,0.08)",
-//           border: "1px solid rgba(239,68,68,0.2)",
-//           borderRadius: 12,
-//           padding: 12,
-//           marginBottom: 18,
-//         }}
-//       >
-//         <div style={{ marginBottom: 10 }}>
-//           Delete <b>{confirmDelete.port}</b> ?
-//         </div>
-
-//         <div style={{ display: "flex", gap: 8 }}>
-//           <button
-//             disabled={deleteLoading}
-//             onClick={handleDeleteClick}
-//             style={{
-//               flex: 1,
-//               padding: 8,
-//               borderRadius: 10,
-//               border: "none",
-//               background: "#ef4444",
-//               color: "#fff",
-//               cursor: deleteLoading ? "not-allowed" : "pointer",
-//               opacity: deleteLoading ? 0.6 : 1,
-//             }}
-//           >
-//             {deleteLoading ? "Deleting..." : "Yes"}
-//           </button>
-
-//           <button
-//             onClick={() =>
-//               !deleteLoading &&
-//               setConfirmDelete({ open: false, port: null })
-//             }
-//             style={{
-//               flex: 1,
-//               padding: 8,
-//               borderRadius: 10,
-//               background: "rgba(255,255,255,0.05)",
-//               border: "1px solid rgba(255,255,255,0.08)",
-//               color: "#fff",
-//               cursor: "pointer",
-//             }}
-//           >
-//             No
-//           </button>
-//         </div>
-//       </div>
-//     )}
-
-//     {/* ---------------- FIXED BELOW ---------------- */}
-
-//     {/* PENDING PORTS */}
-//     {pendingNets.length > 0 && (
-//       <>
-//         <div
-//           style={{
-//             marginBottom: 8,
-//             fontSize: 11,
-//             letterSpacing: 1,
-//             color: "#a0b0c7",
-//           }}
-//         >
-//           NEW PORTS (PENDING)
-//         </div>
-
-//         <div
-//           style={{
-//             display: "flex",
-//             flexWrap: "wrap",
-//             gap: 8,
-//             background: "rgba(37,99,235,0.06)",
-//             padding: 10,
-//             borderRadius: 14,
-//             border: "1px solid rgba(37,99,235,0.15)",
-//             marginBottom: 16,
-//           }}
-//         >
-//           {pendingNets.map((net) => (
-//             <div
-//               key={net}
-//               style={{
-//                 display: "flex",
-//                 alignItems: "center",
-//                 padding: "6px 10px",
-//                 background: "rgba(37,99,235,0.15)",
-//                 borderRadius: 20,
-//                 fontSize: 12,
-//                 color: "#60a5fa",
-//               }}
-//             >
-//               {net}
-//               <span
-//                 onClick={(e) => handleRemovePendingNet(e, net)}
-//                 style={{
-//                   marginLeft: 6,
-//                   cursor: "pointer",
-//                   color: "#ef4444",
-//                 }}
-//               >
-//                 ✕
-//               </span>
-//             </div>
-//           ))}
-//         </div>
-//       </>
-//     )}
-
-//     {/* NEW PORT NUMBER */}
-//     <div style={{ marginBottom: 18 }}>
-//       <div
-//         style={{
-//           fontSize: 11,
-//           letterSpacing: 1,
-//           color: "#acb8c9",
-//           marginBottom: 6,
-//         }}
-//       >
-//         NEW PORT NUMBER
-//       </div>
-
-//       <input
-//         value={pendingNets.join(",")}
-//         disabled
-//         style={{
-//           width: "100%",
-//           padding: "10px 12px",
-//           borderRadius: 12,
-//           border: "1px solid rgba(255,255,255,0.08)",
-//           background: "rgba(255,255,255,0.03)",
-//           color: "#fff",
-//           fontSize: 13,
-//         }}
-//       />
-//     </div>
-
-//     {/* BUTTONS */}
-//     <div style={{ display: "flex", gap: 10 }}>
-//       <button
-//         onClick={handleAddMore}
-//         style={{
-//           flex: 1,
-//           padding: 10,
-//           borderRadius: 12,
-//           border: "1px solid rgba(255,255,255,0.1)",
-//           background: "rgba(255,255,255,0.05)",
-//           color: "#fff",
-//           cursor: "pointer",
-//         }}
-//       >
-//         + Add More
-//       </button>
-
-//       <button
-//         onClick={onAddPort}
-//         disabled={loading}
-//         style={{
-//           flex: 1,
-//           padding: 10,
-//           borderRadius: 12,
-//           border: "none",
-//           background: "#2563eb",
-//           color: "#fff",
-//           fontWeight: 500,
-//           cursor: loading ? "not-allowed" : "pointer",
-//           opacity: loading ? 0.6 : 1,
-//         }}
-//       >
-//         {loading ? "Adding..." : "Add Port"}
-//       </button>
-//     </div>
-//   </div>
-// );
-
-// };
 
 
 const NetworkPopover = ({
@@ -724,7 +383,7 @@ const blockEvent = (e) => {
 
 const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
   const { nodeId, portKey } = data;
-  const { plugged = false, connected = false } = runtimeState || {};
+  const { plugged = true, connected = true } = runtimeState || {};
   const [loading, setLoading] = useState(null);
   const handleAction = async (type, fn, e) => {
     blockEvent(e);
@@ -754,7 +413,7 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
       </div>
 
       {/* Row 1 */}
-      <div className="mb-2">
+      {/* <div className="mb-2">
         {!plugged ? (
           <button
             className="btn plug"
@@ -784,17 +443,47 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
             )}
           </button>
         )}
-      </div>
+      </div> */}
+      <div className="mb-2">
+  {plugged ? (
+    <button
+      className="btn unplug"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("unplug", actions.unplug, e)}
+    >
+      {loading === "unplug" ? (
+        <>
+          Unpluging... <span className="spinneredit" />
+        </>
+      ) : (
+        "Unplug"
+      )}
+    </button>
+  ) : (
+    <button
+      className="btn plug"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("plug", actions.plug, e)}
+    >
+      {loading === "plug" ? (
+        <>
+          Plugging... <span className="spinneredit" />
+        </>
+      ) : (
+        "Plug"
+      )}
+    </button>
+  )}
+</div>
 
       {/* Row 2 */}
-      <div className="mb-2">
+      {/* <div className="mb-2">
         {!connected ? (
           <button
             className="btn connect"
             disabled={loading}
             onPointerUp={(e) => handleAction("connect", actions.connect, e)}
           >
-            {/* {loading === "connect" ? "Conncting..." : "Connect"} */}
             {loading === "connect" ? (
               <>
                 Conncting... <span className="spinneredit" />
@@ -820,8 +509,40 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
             )}
           </button>
         )}
-      </div>
-
+      </div> */}
+<div className="mb-2">
+  {connected ? (
+    <button
+      className="btn disconnect"
+      disabled={loading}
+      onPointerUp={(e) =>
+        handleAction("disconnect", actions.disconnect, e)
+      }
+    >
+      {loading === "disconnect" ? (
+        <>
+          Disconnecting... <span className="spinneredit" />
+        </>
+      ) : (
+        "Disconnect"
+      )}
+    </button>
+  ) : (
+    <button
+      className="btn connect"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("connect", actions.connect, e)}
+    >
+      {loading === "connect" ? (
+        <>
+          Conncting... <span className="spinneredit" />
+        </>
+      ) : (
+        "Connect"
+      )}
+    </button>
+  )}
+</div>
       {/* Row 3 */}
       {/* <button className="btn advanced">⚙ Advanced Options</button> */}
 
@@ -918,6 +639,7 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
     </div>
   );
 };
+
 const DnDFlow = ({
   numLans,
   toBeDragComponent,
@@ -1006,29 +728,11 @@ const DnDFlow = ({
     return `${window.location.origin}${url}`;
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode, openPopover }) => {
-    // const getPortColor = (portKey) => {
-    //   const state = portRuntimeState?.[`${id}-${portKey}`];
-    //   console.log("statestatestatestate",state);
-
-    //   if (!state) return "#2F80ED";
-    //   console.log("statestate",state)
-    //   if (!state.plugged && !state.connected) return "#ff0000";
-    //   if (state.plugged && !state.connected) return "#2F80ED";
-
-    //   // normal connected
-    //   return "#2F80ED";
-    // };
     const getPortColor = (portKey) => {
       const state = portRuntimeState?.[`${id}-${portKey}`];
-
       if (!state) return "#2F80ED";
-
       return state.plugged ? "#2F80ED" : "#ff0000";
     };
-
-
-
-
     let portKeys = [];
     if (Array.isArray(data.networkport)) {
       portKeys = data.networkport
@@ -1078,218 +782,12 @@ const DnDFlow = ({
       return `net${nums.length ? Math.max(...nums) + 1 : 0}`;
     };
     const nextNet = getNextNetName(data.networkport);
-    const getStepClass = (step) => {
-      if (vmStep === step) return "text-warning";
-      if (vmStep === "Starting" && step === "Cloning") return "text-success";
-      return "text-muted";
-    };
-
     useEffect(() => {
       if (showPopover) {
         setPendingNets(nextNet ? [nextNet] : []);
       }
     }, [nextNet]);
     return (
-      // <div
-      //   style={{
-      //     position: "relative",
-      //     display: "flex",
-      //     flexDirection: "column",
-      //     alignItems: "center",
-      //   }}
-      // >
-      //   <div
-      //     style={{
-      //       width: nodeSize,
-      //       height: nodeSize,
-      //       position: "relative",
-      //       borderRadius: "8px",
-      //       border: "2px solid #ccc",
-      //       display: "flex",
-      //       alignItems: "center",
-      //       justifyContent: "center",
-      //       boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-      //     }}
-      //   >
-      //     <button
-      //       onMouseDown={(e) => {
-      //         e.stopPropagation(); // REQUIRED for ReactFlow
-      //       }}
-      //       onClick={(e) => {
-      //         e.stopPropagation();
-      //         openPopover(id, {
-      //           x: e.clientX,
-      //           y: e.clientY,
-      //         });
-      //       }}
-      //       style={{
-      //         position: "absolute",
-      //         top: 2,
-      //         left: 3,
-      //         borderRadius: "50%",
-      //         width: 16,
-      //         height: 16,
-      //         fontSize: 8,
-      //         cursor: "pointer",
-      //         background: "#fff",
-      //         zIndex: 10,
-      //       }}
-      //     >
-      //       +
-      //     </button>
-      //     <button
-      //       onClick={() => deleteNode(id)}
-      //       style={{
-      //         position: "absolute",
-      //         top: 2,
-      //         right: 3,
-      //         borderRadius: "50%",
-      //         width: 16,
-      //         height: 16,
-      //         fontSize: 8,
-      //         cursor: "pointer",
-      //         background: "#fff",
-      //         zIndex: 10,
-      //       }}
-      //     >
-      //       ×
-      //     </button>
-      //     <div
-      //       style={{
-      //         width: nodeSize * 0.6,
-      //         height: nodeSize * 0.6,
-      //         backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-      //         backgroundSize: "contain",
-      //         backgroundPosition: "center",
-      //         backgroundRepeat: "no-repeat",
-      //       }}
-      //     />
-      //     {portKeys.map((port, index) => {
-      //       const sideIndex = Math.floor(index / portsPerSide);
-      //       const side = sides[sideIndex];
-      //       const positionIndex = index % portsPerSide;
-      //       let offsetPercent;
-      //       if (side === "Right" || side === "Top") {
-      //         offsetPercent = (positionIndex + 1) * spacingRatio;
-      //       } else {
-      //         offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-      //       }
-      //       const baseHandleStyle = {
-      //         position: "absolute",
-      //         width: 10,
-      //         height: 10,
-      //         borderRadius: "50%",
-      //         background: "#005eff",
-      //         border: "1px solid white",
-      //         zIndex: 2,
-      //       };
-      //       const labelStyle = {
-      //         position: "absolute",
-      //         fontSize: 6,
-      //         padding: "1px 3px",
-      //         whiteSpace: "nowrap",
-      //         zIndex: 5,
-      //       };
-      //       let handleStyle = {};
-      //       let labelPosition = {};
-      //       switch (side) {
-      //         case "Top":
-      //           handleStyle = {
-      //             ...baseHandleStyle,
-      //             top: -5,
-      //             left: `${offsetPercent}%`,
-      //             transform: "translateX(-50%)",
-      //           };
-      //           labelPosition = {
-      //             ...labelStyle,
-      //             top: -20,
-      //             left: `${offsetPercent}%`,
-      //             transform: "translateX(-50%)",
-      //           };
-      //           break;
-      //         case "Right":
-      //           handleStyle = {
-      //             ...baseHandleStyle,
-      //             right: -5,
-      //             top: `${offsetPercent}%`,
-      //             transform: "translateY(-50%)",
-      //           };
-      //           labelPosition = {
-      //             ...labelStyle,
-      //             right: -60,
-      //             top: `${offsetPercent}%`,
-      //             transform: "translateY(-10%)",
-      //           };
-      //           break;
-      //         case "Bottom":
-      //           handleStyle = {
-      //             ...baseHandleStyle,
-      //             bottom: -5,
-      //             left: `${offsetPercent}%`,
-      //             transform: "translateX(-50%)",
-      //           };
-      //           labelPosition = {
-      //             ...labelStyle,
-      //             bottom: -20,
-      //             left: `${offsetPercent}%`,
-      //             transform: "translateX(-50%)",
-      //           };
-      //           break;
-      //         case "Left":
-      //           handleStyle = {
-      //             ...baseHandleStyle,
-      //             left: -5,
-      //             top: `${offsetPercent}%`,
-      //             transform: "translateY(-50%)",
-      //           };
-      //           labelPosition = {
-      //             ...labelStyle,
-      //             left: -60,
-      //             top: `${offsetPercent}%`,
-      //             transform: "translateY(-10%)",
-      //           };
-      //           break;
-      //         default:
-      //           break;
-      //       }
-      //       return (
-      //         <React.Fragment key={port.key}>
-      //           <Handle
-      //             type="source"
-      //             position={Position[side]}
-      //             id={`${port.key}-source`}
-      //             onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-      //             // style={handleStyle}
-      //             style={{ ...handleStyle, background: getPortColor(port.key) }}
-      //           // isConnectable={isConnectable}
-      //           />
-
-      //           <Handle
-      //             type="target"
-      //             position={Position[side]}
-      //             id={`${port.key}-target`}
-      //             onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-      //             // style={handleStyle}
-      //             style={{ ...handleStyle, background: getPortColor(port.key) }}
-      //           // isConnectable={isConnectable}
-      //           />
-
-      //           <div style={labelPosition}>{port.label}</div>
-      //         </React.Fragment>
-      //       );
-      //     })}
-      //   </div>
-      //   <div
-      //     style={{
-      //       marginTop: 18,
-      //       fontSize: 10,
-      //       textAlign: "center",
-      //       width: "100%",
-      //     }}
-      //   >
-      //     {data.label || "Unnamed"}
-      //   </div>
-      // </div>
        <div
               style={{
                 position: "relative",
@@ -1299,16 +797,7 @@ const DnDFlow = ({
               }}
             >
               <div
-                style={{
-                  width: nodeSize,
-                  height: nodeSize,
-                  position: "relative",
-                  borderRadius: "8px",
-                  border: "2px solid #ccc",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                style={{width: nodeSize,height: nodeSize,position: "relative",borderRadius: "8px",border: "2px solid #ccc",display: "flex",alignItems: "center",justifyContent: "center",boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
                 }}
               >
                 <OverlayTrigger
@@ -1378,13 +867,7 @@ const DnDFlow = ({
                   </button>
                 </OverlayTrigger>
                 <div
-                  style={{
-                    width: nodeSize * 0.6,
-                    height: nodeSize * 0.6,
-                    backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-                    backgroundSize: "contain",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
+                  style={{width: nodeSize * 0.6,height: nodeSize * 0.6,backgroundImage: `url("${resolveImageUrl(data.image)}")`,backgroundSize: "contain",backgroundPosition: "center",backgroundRepeat: "no-repeat",
                   }}
                 />
                 {portKeys.map((port, index) => {
@@ -1397,21 +880,9 @@ const DnDFlow = ({
                   } else {
                     offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
                   }
-                  const baseHandleStyle = {
-                    position: "absolute",
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#005eff",
-                    border: "1px solid white",
-                    zIndex: 2,
+                  const baseHandleStyle = {position: "absolute",width: 10,height: 10,borderRadius: "50%",background: "#005eff",border: "1px solid white",zIndex: 2,
                   };
-                  const labelStyle = {
-                    position: "absolute",
-                    fontSize: 6,
-                    padding: "1px 3px",
-                    whiteSpace: "nowrap",
-                    zIndex: 5,
+                  const labelStyle = {position: "absolute",fontSize: 6,padding: "1px 3px",whiteSpace: "nowrap",zIndex: 5,
                   };
                   let handleStyle = {};
                   let labelPosition = {};
@@ -1516,7 +987,6 @@ const DnDFlow = ({
     );
   };
   const idRef = useRef(0);
-  const getId = () => `dndnode_${idRef.current++}`;
   const { saveScenarioFlowChart, getScenarioFlowchart } = useSelector(
     (state) => ({
       saveScenarioFlowChart: state?.customScenario?.saveflowchartData,
@@ -1540,10 +1010,6 @@ const DnDFlow = ({
       setImageNodeData(temp);
     }
   }, [toBeDragComponent]);
-
-  // const getSingleScenariosSucc = useSelector(
-  //   (state) => state?.scenarios?.singleScenarios?.data,
-  // );
   const getSingleScenariosSucc = useSelector(
     (state) => state?.usersessionManage?.singleUserSession?.data,
   );
@@ -1556,7 +1022,6 @@ const DnDFlow = ({
     (state) => state?.usersessionManage?.deleteDraggedComponentData?.data,
   );
   const addNetwork = useSelector((state) => state?.usersessionManage?.addNetwork?.data);
-  console.log("addNetworkaddNetwork", addNetwork)
 
   const removeNetwork = useSelector(
     (state) => state?.usersessionManage?.deleteNetwork?.data,
@@ -1564,8 +1029,6 @@ const DnDFlow = ({
   const addNetwordId = useSelector(
     (state) => state?.usersessionManage?.modifyNetworkIdData?.data,
   );
-
-  console.log("addNetwordIdaddNetwordId", addNetwordId)
   const plugNetwork = useSelector(
     (state) => state?.usersessionManage?.plugNetworkPort?.data,
   );
@@ -1579,9 +1042,7 @@ const DnDFlow = ({
     (state) => state?.usersessionManage?.disconnectNetworkPort?.data,
   );
 
-  console.log("disconnectNetworkdisconnectNetwork", disconnectNetwork)
   const scenario = getSingleScenariosSucc?.[0] || null;
-  console.log("scenarioscenarioscenarioscenario", scenario)
 
   const parsedDiagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
@@ -1595,7 +1056,6 @@ const DnDFlow = ({
     }
   }, [scenario?.scenariodiagram]);
   const scenarioNodes = parsedDiagram?.nodes || [];
-  console.log("scenarioNodesscenarioNodesscenarioNodes",scenarioNodes);
   
   useEffect(() => {
     if (query.slug) {
@@ -1637,20 +1097,6 @@ const DnDFlow = ({
     if (!scenario?.scenariodiagram) return null;
     return JSON.parse(scenario.scenariodiagram);
   }, [scenario]);
-
-  // useEffect(() => {
-  //   setNodes((nds) =>
-  //     nds.map((node) => ({
-  //       ...node,
-  //       data: {
-  //         ...node.data,
-  //         portRuntimeState,
-  //       },
-  //     })),
-  //   );
-
-
-  // }, [portRuntimeState]);
   useEffect(() => {
     if (!hydrated) return;
 
@@ -1672,15 +1118,10 @@ const DnDFlow = ({
 
   useEffect(() => {
     const saved = localStorage.getItem("portRuntimeState");
-    console.log("Savinaaaaaaaaag:a", portRuntimeState);
-    console.log("Loading:", saved);
     if (saved) {
       setPortRuntimeState(JSON.parse(saved));
     }
   }, []);
-
-  console.log("datadataaaaaaaaaaaaaaaa", nodes)
-
   const nodeMap = useMemo(() => {
     if (!diagram?.nodes) return {};
 
@@ -1695,36 +1136,71 @@ const DnDFlow = ({
     return map;
   }, [diagram]);
   const getNetKey = (handle) => handle?.split("-")[0];
-  const buildNetworkPayload = (type) => {
-    if (!pendingConnection) return null;
+//   const buildNetworkPayload = (type) => {
+//     if (!pendingConnection) return null;
 
-    const sourceNode = nodeMap[pendingConnection.source];
-    const targetNode = nodeMap[pendingConnection.target];
-console.log("sourceNodesourceNodesourceNode",sourceNode);
+//     const sourceNode = nodeMap[pendingConnection.source];
+//     const targetNode = nodeMap[pendingConnection.target];
+// console.log("sourceNodesourceNodesourceNode",sourceNode);
 
-    if (!sourceNode || !targetNode) return null;
+//     if (!sourceNode || !targetNode) return null;
 
-    const netKey = getNetKey(pendingConnection.sourceHandle);
+//     const netKey = getNetKey(pendingConnection.sourceHandle);
 
-    let payload = {
-      vmid: sourceNode.vmid,
-      vmType: sourceNode.vmType,
-      netKey,
-      mode: type,
-      source: pendingConnection.source,
-      sourceHandle: pendingConnection.sourceHandle,
-      target: pendingConnection.target,
-      targetHandle: pendingConnection.targetHandle,
-    };
-    // LABEL RULES
-    if (type === "static") {
-      payload.label = "Network Id";
-    }
-    if (type === "existing") {
-      payload.label = connectPopover?.existingNetwork || null;
-    }
-    return payload;
+//     let payload = {
+//       vmid: sourceNode.vmid,
+//       vmType: sourceNode.vmType,
+//       netKey,
+//       mode: type,
+//       source: pendingConnection.source,
+//       sourceHandle: pendingConnection.sourceHandle,
+//       target: pendingConnection.target,
+//       targetHandle: pendingConnection.targetHandle,
+//     };
+//     // LABEL RULES
+//     if (type === "static") {
+//       payload.label = "Network Id";
+//     }
+//     if (type === "existing") {
+//       payload.label = connectPopover?.existingNetwork || null;
+//     }
+//     return payload;
+//   };
+
+const buildNetworkPayload = (type, staticValue) => {
+  if (!pendingConnection) return null;
+
+  const sourceNode = nodeMap[pendingConnection.source];
+  const targetNode = nodeMap[pendingConnection.target];
+
+  if (!sourceNode || !targetNode) return null;
+
+  const netKey = getNetKey(pendingConnection.sourceHandle);
+
+  let payload = {
+    vmid: sourceNode.vmid,
+    Targetvmid: targetNode.vmid,
+    vmType: sourceNode.vmType,
+    netKey,
+    mode: type,
+    source: pendingConnection.source,
+    sourceHandle: pendingConnection.sourceHandle,
+    target: pendingConnection.target,
+    targetHandle: pendingConnection.targetHandle,
   };
+
+  // ONLY CHANGE HERE
+  if (type === "static") {
+    payload.label = staticValue || "Network Id";
+    payload.staticVmbr = staticValue || null;
+  }
+
+  if (type === "existing") {
+    payload.label = connectPopover?.existingNetwork || null;
+  }
+
+  return payload;
+};
 
   const [dragStart, setDragStart] = useState(null);
   const onConnectStart = useCallback((event, params) => {
@@ -1738,32 +1214,71 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
   const clickTimer = useRef(null);
   const isDragging = useRef(false);
 
-  const onHandleMouseDown = (event, portKey, nodeId) => {
-    event.stopPropagation();
-    isDragging.current = false;
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const moveListener = (e) => {
-      if (
-        Math.abs(e.clientX - startX) > 5 ||
-        Math.abs(e.clientY - startY) > 5
-      ) {
-        isDragging.current = true;
-      }
-    };
-    document.addEventListener("mousemove", moveListener);
-    clickTimer.current = setTimeout(() => {
-      document.removeEventListener("mousemove", moveListener);
-      if (!isDragging.current) {
-        setPortPopover({
-          nodeId,
-          portKey,
-          x: startX,
-          y: startY,
-        });
-      }
-    }, 160); // <-- MAGIC NUMBER (must be small)
+  // const onHandleMouseDown = (event, portKey, nodeId) => {
+  //   event.stopPropagation();
+  //   isDragging.current = false;
+  //   const startX = event.clientX;
+  //   const startY = event.clientY;
+  //   const moveListener = (e) => {
+  //     if (
+  //       Math.abs(e.clientX - startX) > 5 ||
+  //       Math.abs(e.clientY - startY) > 5
+  //     ) {
+  //       isDragging.current = true;
+  //     }
+  //   };
+  //   document.addEventListener("mousemove", moveListener);
+  //   clickTimer.current = setTimeout(() => {
+  //     document.removeEventListener("mousemove", moveListener);
+  //     if (!isDragging.current) {
+  //       setPortPopover({
+  //         nodeId,
+  //         portKey,
+  //         x: startX,
+  //         y: startY,
+  //       });
+  //     }
+  //   }, 160); // <-- MAGIC NUMBER (must be small)
+  // };
+const onHandleMouseDown = (event, portKey, nodeId) => {
+  event.stopPropagation();
+
+  isDragging.current = false;
+
+  const startX = event.clientX;
+  const startY = event.clientY;
+
+  // ✅ SAVE element reference BEFORE timeout
+  const targetElement = event.currentTarget;
+
+  const moveListener = (e) => {
+    if (
+      Math.abs(e.clientX - startX) > 5 ||
+      Math.abs(e.clientY - startY) > 5
+    ) {
+      isDragging.current = true;
+    }
   };
+
+  document.addEventListener("mousemove", moveListener);
+
+  clickTimer.current = setTimeout(() => {
+    document.removeEventListener("mousemove", moveListener);
+
+    if (!isDragging.current && targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+
+      setPortPopover({
+        nodeId,
+        portKey,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      });
+    }
+  }, 160);
+};
+  
+  
   const onConnect = useCallback(
     (params) => {
       let corrected = { ...params };
@@ -1781,6 +1296,21 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
           (e.source === corrected.source || e.target === corrected.source) &&
           e.data?.label,
       );
+      const targetEdge = edges.find(
+        (e) =>
+          (e.source === corrected.target || e.target === corrected.target) &&
+          e.data?.label,
+      );
+      const hasTargetLink = edges.some(
+        (e) =>
+          (e.source === corrected.target || e.target === corrected.target) &&
+          e.data?.label
+      );
+      const hasSourceLink = edges.some(
+        (e) =>
+          (e.source === corrected.source || e.source === corrected.source) &&
+          e.data?.label
+      );
       //  normalize handle types (THIS WAS MISSING)
       corrected.sourceHandle = normalizeHandle(
         corrected.sourceHandle,
@@ -1790,8 +1320,23 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
         corrected.targetHandle,
         "target",
       );
-      const existingNetwork = sourceEdge?.data?.label || null;
-      const options = ["static", "existing", "new"];
+      // const existingNetwork = sourceEdge?.data?.label || null;
+      // const options = ["static", "existing", "new"];
+        const existingNetwork =
+  sourceEdge?.data?.label || targetEdge?.data?.label || null;
+      // const options = ["static", "existing", "new"];
+      let options = [];
+
+if (!hasSourceLink && !hasTargetLink) {
+  // both no link
+  options = ["static", "new"];
+} else if (hasSourceLink && hasTargetLink) {
+  // both have link
+  options = ["static", "existing"];
+} else {
+  // one side has link
+  options = ["existing"];
+}
       const handleEl = document.querySelector(
         `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
       );
@@ -1818,14 +1363,116 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
     },
     [edges, dragStart],
   );
- const ConnectionPopover = ({ data, onSelect, onClose }) => {
-      const popoverRef = useRef(null);
+//  const ConnectionPopover = ({ data, onSelect, onClose }) => {
+//       const popoverRef = useRef(null);
+//     const labelMap = {
+//       static: "Static Network",
+//       existing: "Use Existing Network",
+//       new: "Create New Network",
+//     };
+//       useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (
+//         popoverRef.current &&
+//         !popoverRef.current.contains(event.target)
+//       ) {
+//         onClose(); // close popover
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, [onClose]);
+
+
+//     return (
+//       <div
+//        ref={popoverRef}
+//         id="connection-popover"
+//         style={{
+//           minWidth: 200,
+//           background: "linear-gradient(145deg,#141428,#1c1c3a)",
+//           border: "1px solid rgba(255,255,255,0.12)",
+//           borderRadius: 14,
+//           padding: 14,
+//           boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
+//           color: "#fff",
+//           // transform: "translate(-50%, -120%)",
+//           animation: "popIn 0.18s ease-out",
+//           position: "relative",
+//         }}
+//       >
+//         {/* Close Button */}
+//         <div
+//         onClick={onClose}
+//         style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%", zIndex: 10, pointerEvents: "auto",
+//         }}
+//         >
+//         ✕
+//         </div>
+
+//         <div
+//           style={{
+//             fontSize: 12,
+//             marginBottom: 12,
+//             opacity: 0.75,
+//             fontWeight: 600,
+//             textAlign: "center",
+//           }}
+//         >
+//           Choose Network Type
+//         </div>
+
+//         {data.options.map((opt) => (
+//           <div
+//             key={opt}
+//             onClick={() => {
+//               onSelect(opt);
+//               onClose();
+//             }}
+//             style={{
+//               padding: "10px 12px",
+//               borderRadius: 10,
+//               cursor: "pointer",
+//               marginBottom: 8,
+//               background: "#202048",
+//               transition: "0.15s",
+//               fontSize: 12,
+//               textAlign: "center",
+//             }}
+//             onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
+//             onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
+//           >
+//             {labelMap[opt]}
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   };
+
+const ConnectionPopover = ({ data, onSelect, onClose }) => {
+  const popoverRef = useRef(null);
+
+  const [selectedType, setSelectedType] = useState(null);
+  const [staticInput, setStaticInput] = useState("");
+
+  const isValidVmbr = (val) => {
+    if (!val) return true;
+    const match = val.match(/^vmbr(\d+)$/);
+    if (!match) return false;
+    const num = parseInt(match[1], 10);
+    return num >= 50 && num <= 999;
+  };
+      // const popoverRef = useRef(null);
     const labelMap = {
       static: "Static Network",
       existing: "Use Existing Network",
       new: "Create New Network",
     };
-      useEffect(() => {
+    useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         popoverRef.current &&
@@ -1841,119 +1488,248 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [onClose]);
+const iconMap = {
+  static: <i className="fe fe-link" />,
+  existing: <i className="fe fe-refresh-cw" />,
+  new: <i className="fe fe-plus-circle" />,
+};
 
-
-    return (
-      <div
-       ref={popoverRef}
-        id="connection-popover"
-        style={{
-          minWidth: 200,
-          background: "linear-gradient(145deg,#141428,#1c1c3a)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 14,
-          padding: 14,
-          boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
-          color: "#fff",
-          // transform: "translate(-50%, -120%)",
-          animation: "popIn 0.18s ease-out",
-          position: "relative",
-        }}
-      >
-        {/* ❌ Close Button */}
+  return (
+    <div
+      ref={popoverRef}
+      style={{ width: 320, background: "linear-gradient(180deg,#0b1220,#0f1b2e)", borderRadius: 16, padding: 16, color: "#fff", boxShadow: "0 25px 50px rgba(0,0,0,0.6)", position: "relative",
+      }}
+    >
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>
+          Choose Network Type
+        </div>
         <div
           onClick={onClose}
-          style={{
-            position: "absolute",
-            top: 6,
-            right: 10,
-            cursor: "pointer",
-            fontSize: 14,
-            opacity: 0.7,
-          }}
+          style={{ cursor: "pointer", opacity: 0.7 }}
         >
           ✕
         </div>
+      </div>
 
+      {/* SECTION LABEL */}
+      <div
+        style={{ fontSize: 10, opacity: 0.6, marginTop: 12, marginBottom: 9, letterSpacing: 1,}}
+      >
+        DEPLOYMENT MODE
+      </div>
+
+      {/* STATIC NETWORK BUTTON */}
+      {data.options.includes("static") && (
         <div
+  onClick={() => setSelectedType("static")}
+  style={{
+    padding: "12px",
+    borderRadius: 10,
+    background:
+      selectedType === "static"
+        ? "rgba(80,200,120,0.15)"
+        : "#162235",
+    cursor: "pointer",
+    marginBottom: 10,
+    border:
+      selectedType === "static"
+        ? "1px solid #4ade80"
+        : "1px solid transparent",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <span>{iconMap.static}</span>
+  <span>Static Network</span>
+</div>
+      )}
+
+      {/* INPUT FIELD (ONLY WHEN STATIC CLICKED) */}
+      {selectedType === "static" && (
+        <>
+          <div
+            style={{ fontSize: 10, opacity: 0.6, marginBottom: 6, letterSpacing: 1,
+            }}
+          >
+            BRIDGE RANGE IDENTIFIER
+          </div>
+
+          <div
+            style={{ display: "flex", alignItems: "center", background: "#0b1220", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(255,255,255,0.1)", marginBottom: 14,
+            }}
+          >
+            <input
+              type="text"
+              placeholder="vmbr50 - vmbr999"
+              value={staticInput}
+              onChange={(e) => setStaticInput(e.target.value)}
+              style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: 12,
+              }}
+            />
+            <span
+              style={{ fontSize: 9, background: "#1f3b2d", color: "#4ade80", padding: "3px 6px", borderRadius: 6,
+              }}
+            >
+              RANGE
+            </span>
+          </div>
+        </>
+      )}
+
+        {data.options
+  .filter((opt) => opt !== "static")
+  .map((opt) => (
+    <div
+      key={opt}
+      onClick={() => {
+        onSelect(opt);
+        onClose();
+      }}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        background: "#162235",
+        cursor: "pointer",
+        marginBottom: 8,
+        fontSize: 12,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <span>{iconMap[opt]}</span>
+
+      <span>
+        {opt === "existing"
+          ? "Use Existing Network"
+          : "Create New Network"}
+      </span>
+    </div>
+  ))}
+
+      {/* SUBMIT BUTTON */}
+      {selectedType === "static" && (
+        <div
+          onClick={() => {
+            if (!isValidVmbr(staticInput)) {
+              // alert("Enter valid vmbr (700–1000)");
+              toast.error(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+              Enter valid vmbr (50–999)
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: false,
+              theme: "colored",
+            },
+          );
+              return;
+            }
+
+            onSelect("static", staticInput);
+            onClose();
+          }}
           style={{
-            fontSize: 12,
-            marginBottom: 12,
-            opacity: 0.75,
-            fontWeight: 600,
+            marginTop: 10,
+            padding: "12px",
+            borderRadius: 10,
             textAlign: "center",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            background: "linear-gradient(90deg,#34d399,#22c55e)",
+            color: "#000",
           }}
         >
-          Choose Network Type
+          Submit Node
         </div>
+      )}
+    </div>
+  );
+};
+  // const handleConnectionType = async (type) => {
+  //   if (!pendingConnection) return;
+  //   const connection = { ...pendingConnection };
+  //   const apiPayload = buildNetworkPayload(type,staticValue);
+  //   try {
+  //     setShowBridgeModal(true);
+  //     setBridgeLoading(true);
+  //     await dispatch(modifyNetworkId(apiPayload));
+  //     // ---------------- EDGE LABEL ----------------
+  //     let label = "";
+  //     if (type === "static") label = "Network Id";
+  //     if (type === "existing") label = connectPopover?.existingNetwork || "";
+  //     if (type === "new") label = "";
+  //     const newEdge = {
+  //       id: `e-${connection.source}-${connection.sourceHandle}-${connection.target}-${connection.targetHandle}-${Date.now()}`,
+  //       source: connection.source,
+  //       sourceHandle: connection.sourceHandle,
+  //       target: connection.target,
+  //       targetHandle: connection.targetHandle,
+  //       type: "custom",
+  //       data: { label },
+  //     };
+  //     // setEdges((eds) => addEdge(newEdge, eds));
+  //     // ✅ CLOSE MODAL AFTER SHORT DELAY
+  //     setTimeout(() => {
+  //       setShowBridgeModal(false);
+  //       setBridgeLoading(false);
+  //     }, 1200);
 
-        {data.options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => {
-              onSelect(opt);
-              onClose();
-            }}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 8,
-              background: "#202048",
-              transition: "0.15s",
-              fontSize: 12,
-              textAlign: "center",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
-          >
-            {labelMap[opt]}
-          </div>
-        ))}
-      </div>
-    );
-  };
+  //     // cleanup
+  //     setPendingConnection(null);
+  //     setConnectPopover(null);
+  //     setDragStart(null);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setShowBridgeModal(false);
+  //     setBridgeLoading(false);
+  //   }
+  // };
 
-  const handleConnectionType = async (type) => {
-    if (!pendingConnection) return;
-    const connection = { ...pendingConnection };
-    const apiPayload = buildNetworkPayload(type);
-    try {
-      setShowBridgeModal(true);
-      setBridgeLoading(true);
-      await dispatch(modifyNetworkId(apiPayload));
-      // ---------------- EDGE LABEL ----------------
-      let label = "";
-      if (type === "static") label = "Network Id";
-      if (type === "existing") label = connectPopover?.existingNetwork || "";
-      if (type === "new") label = "";
-      const newEdge = {
-        id: `e-${connection.source}-${connection.sourceHandle}-${connection.target}-${connection.targetHandle}-${Date.now()}`,
-        source: connection.source,
-        sourceHandle: connection.sourceHandle,
-        target: connection.target,
-        targetHandle: connection.targetHandle,
-        type: "custom",
-        data: { label },
-      };
-      setEdges((eds) => addEdge(newEdge, eds));
-      // ✅ CLOSE MODAL AFTER SHORT DELAY
-      setTimeout(() => {
+
+    const handleConnectionType = async (type,staticValue = null) => {
+      if (!pendingConnection) return;
+      const connection = { ...pendingConnection };
+      const apiPayload = buildNetworkPayload(type,staticValue);
+      try {
+        setShowBridgeModal(true);
+        setBridgeLoading(true);
+        await dispatch(modifyNetworkId(apiPayload));
+        // ---------------- EDGE LABEL ----------------
+        let label = "";
+        // if (type === "static") label = "Network Id";
+        if (type === "static") label = staticValue || "Network Id";
+        if (type === "existing") label = connectPopover?.existingNetwork || "";
+        if (type === "new") label = "";
+        const newEdge = {
+          id: `e-${connection.source}-${connection.sourceHandle}-${connection.target}-${connection.targetHandle}-${Date.now()}`,
+          source: connection.source,
+          sourceHandle: connection.sourceHandle,
+          target: connection.target,
+          targetHandle: connection.targetHandle,
+          type: "custom",
+          data: { label },
+        };
+        // setEdges((eds) => addEdge(newEdge, eds));
+        setTimeout(() => {
+          setShowBridgeModal(false);
+          setBridgeLoading(false);
+        }, 200);
+  
+        // cleanup
+        setPendingConnection(null);
+        setConnectPopover(null);
+        setDragStart(null);
+      } catch (err) {
+        console.error(err);
         setShowBridgeModal(false);
         setBridgeLoading(false);
-      }, 1200);
-
-      // cleanup
-      setPendingConnection(null);
-      setConnectPopover(null);
-      setDragStart(null);
-    } catch (err) {
-      console.error(err);
-      setShowBridgeModal(false);
-      setBridgeLoading(false);
-    }
-  };
-
+      }
+    };
   const normalizeHandle = (handle, expectedType) => {
     if (!handle) return handle;
     const [port, type] = handle.split("-");
@@ -1970,9 +1746,6 @@ console.log("sourceNodesourceNodesourceNode",sourceNode);
   const onConnectEnd = () => {
   connectingRef.current = false;
 };
-
-console.log("draggedNodedraggedNodedraggedNode",draggedNode);
-
   const onDrop = useCallback(
     (event) => {
       setShowCloneProgress(true);
@@ -2050,48 +1823,95 @@ console.log("draggedNodedraggedNodedraggedNode",draggedNode);
       dispatch,
     ],
   );
-  const deleteNode = async (nodeId) => {
-    const nodeToDelete = nodes.find((node) => node.id === nodeId);
-    if (!nodeToDelete) return;
-    const vmid = nodeToDelete?.data?.vmid;
-    const vmrequestid = scenario?.vmrequestid;
-    try {
-      setShowStopDestroyModal(true);
-      setStopStep("Stopping");
-      if (vmid && vmrequestid) {
-        await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
-      }
-      setStopStep("Destroying");
-      setTimeout(() => {
-        setShowStopDestroyModal(false);
-      }, 2000);
-      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-      setEdges((eds) =>
-        eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+  // const deleteNode = async (nodeId) => {
+  //   const nodeToDelete = nodes.find((node) => node.id === nodeId);
+  //   if (!nodeToDelete) return;
+  //   const vmid = nodeToDelete?.data?.vmid;
+  //   const vmrequestid = scenario?.vmrequestid;
+  //   try {
+  //     setShowStopDestroyModal(true);
+  //     setStopStep("Stopping");
+  //     if (vmid && vmrequestid) {
+  //       await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
+  //     }
+  //     setStopStep("Destroying");
+  //     setTimeout(() => {
+  //       setShowStopDestroyModal(false);
+  //     }, 2000);
+  //     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+  //     setEdges((eds) =>
+  //       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+  //     );
+  //     if (nodeToDelete?.data?.componentId) {
+  //       const imageComponent = nodeToDelete.data.componentId;
+  //       const imageNode = imageNodeData.find(
+  //         (item) => item.id === imageComponent,
+  //       );
+
+  //       if (imageNode) {
+  //         const imageId = imageNode.id;
+
+  //         setDroppedImages((prev) => prev.filter((id) => id !== imageId));
+  //         setDraggedComponent((prev) =>
+  //           prev.filter((item) => item.id !== imageId),
+  //         );
+  //         setImageNodeData((prev) =>
+  //           prev.filter((item) => item.id !== imageId),
+  //         );
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error("Delete VM failed", err);
+  //     setShowStopDestroyModal(false);
+  //   }
+  // };
+
+
+const deleteNode = async (nodeId) => {
+  const nodeToDelete = nodes.find((node) => node.id === nodeId);
+  if (!nodeToDelete) return;
+
+  const vmid = nodeToDelete?.data?.vmid;
+  const vmrequestid = scenario?.vmrequestid;
+  const vmbrList = edges
+    .filter(
+      (e) => e.source === nodeId || e.target === nodeId
+    )
+    .map((e) => e?.data?.label)
+    .filter(Boolean);
+  try {
+    setShowStopDestroyModal(true);
+    setStopStep("Stopping");
+
+    if (vmid && vmrequestid) {
+      await dispatch(
+        deleteDraggedComponent({
+          vmid,
+          vmrequestid,
+          vmbrList,
+        })
       );
-      if (nodeToDelete?.data?.componentId) {
-        const imageComponent = nodeToDelete.data.componentId;
-        const imageNode = imageNodeData.find(
-          (item) => item.id === imageComponent,
-        );
-
-        if (imageNode) {
-          const imageId = imageNode.id;
-
-          setDroppedImages((prev) => prev.filter((id) => id !== imageId));
-          setDraggedComponent((prev) =>
-            prev.filter((item) => item.id !== imageId),
-          );
-          setImageNodeData((prev) =>
-            prev.filter((item) => item.id !== imageId),
-          );
-        }
-      }
-    } catch (err) {
-      console.error("Delete VM failed", err);
-      setShowStopDestroyModal(false);
     }
-  };
+
+    setStopStep("Destroying");
+
+    setTimeout(() => {
+      setShowStopDestroyModal(false);
+    }, 100);
+
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+
+    setEdges((eds) =>
+      eds.filter(
+        (edge) => edge.source !== nodeId && edge.target !== nodeId
+      )
+    );
+
+  } catch (err) {
+    console.error("Delete VM failed", err);
+    setShowStopDestroyModal(false);
+  }
+};
 
   useEffect(() => {
     return () => {
@@ -2406,8 +2226,6 @@ useEffect(() => {
       // setEdges([]);
     }
   }, [removeNetwork]);
-  console.log("addNetwordIdaddNetwordIdaddNetwordId",addNetwordId);
-  
   useEffect(() => {
     if (addNetwordId?.statusCode === 200) {
       toast.success(
@@ -2568,8 +2386,6 @@ useEffect(() => {
   const nextNet = getNextNetName(activeNode?.data?.networkport || []);
   const getVmDetailsByNodeId = (nodeId) => {
     const node = scenarioNodes.find((n) => n.id === nodeId);
-    console.log("nodenodenodenodenodenodenode",node);
-
     if (!node) return null;
     return {
       vmid: node.data.vmid,
@@ -2636,8 +2452,6 @@ useEffect(() => {
   // };
   const handleAddNetworkPort = async (nodeId, netName) => {
     const vmDetails = getVmDetailsByNodeId(nodeId);
-    console.log("vmDetailsvmDetailsvmDetailsvmDetails",vmDetails);
-    
     if (!vmDetails) return;
 
     const payload = {
@@ -2718,11 +2532,40 @@ const getPopoverConnectionPosition = () => {
     top: window.innerHeight / 2,
   };
 };
+const getPopoverplugPosition = (popover) => {
+  const popWidth = 260;
+  const popHeight = 180;
+  if (
+    !popover ||
+    typeof popover.x !== "number" ||
+    typeof popover.y !== "number" ||
+    popover.x === 0 ||
+    popover.y === 0
+  ) {
+    return {
+      left: window.innerWidth / 2 - popWidth / 2,
+      top: window.innerHeight / 2 - popHeight / 2,
+    };
+  }
+
+  let left = popover.x;
+  let top = popover.y;
+  left += 10;
+  top += 10;
+  if (left + popWidth > window.innerWidth) {
+    left = left - popWidth - 20;
+  }
+  if (top + popHeight > window.innerHeight) {
+    top = top - popHeight - 20;
+  }rt
+  left = Math.max(10, left);
+  top = Math.max(10, top);
+
+  return { left, top };
+};
+
 const handleEdgeClick = async (event, edge) => {
-  console.log("edgeedgeedgeedgeedgeedgeedgeedge", edge);
-
   event.stopPropagation();
-
   const result = await Swal.fire({
     title: "Are you sure?",
     text: "Do you want to remove this network bridge?",
@@ -2734,22 +2577,21 @@ const handleEdgeClick = async (event, edge) => {
 
   if (result.isConfirmed) {
     try {
+      const bridge = edge?.data?.label;
       const payload = {
         vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
         edgeId: edge.id,
-        bridge: edge.data?.label,
+        bridge,
         sourceNodeId: edge.source,
         targetNodeId: edge.target,
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
       };
-
       //Redux API call
       await dispatch(deletebridge(payload));
       setEdges((eds) => eds.filter((e) => e.id !== edge.id));
     } catch (error) {
       console.error("Delete bridge error:", error);
-
       Swal.fire("Error", "Failed to remove bridge", "error");
     }
   }
@@ -2883,12 +2725,6 @@ const handleEdgeClick = async (event, edge) => {
           </ReactFlow>
           {activePopover && (
             <div
-              // style={{
-              //   position: "fixed",
-              //   top: activePopover.anchor.y,
-              //   left: activePopover.anchor.x,
-              //   zIndex: 9999,
-              // }}
               style={{
                 position: "fixed",
                 ...getPopoverPosition(activePopover.anchor),
@@ -2912,12 +2748,6 @@ const handleEdgeClick = async (event, edge) => {
           )}
           {connectPopover && (
             <div
-              // style={{
-              //   position: "fixed",
-              //   top: connectPopover.y,
-              //   left: connectPopover.x,
-              //   zIndex: 9999,
-              // }}
               style={{
                 position: "fixed",
                 ...getPopoverConnectionPosition(),
@@ -2927,17 +2757,17 @@ const handleEdgeClick = async (event, edge) => {
             >
               <ConnectionPopover
                 data={connectPopover}
-                onSelect={handleConnectionType}
+                // onSelect={handleConnectionType}
+                onSelect={(opt, value) => handleConnectionType(opt, value)}
                 onClose={closeConnectPopover}
               />
             </div>
           )}
           {portPopover && (
             <div
-              style={{
+               style={{
                 position: "fixed",
-                top: portPopover.y,
-                left: portPopover.x,
+                ...getPopoverplugPosition(portPopover),
                 zIndex: 9999,
               }}
             >
@@ -2976,15 +2806,24 @@ const handleEdgeClick = async (event, edge) => {
 
             try {
               await dispatch(changeReleaseEditLock({ vmrequestid }));
+              toast.success(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+              Scenario edit successfully
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: false,
+              theme: "colored",
+            },
+          );
             } catch (error) {
-              toast.error(error.response?.data?.message || "Falied to save", {
+              toast.error(error.response?.data?.message || "Failed to save", {
                 position: toast.POSITION.TOP_RIGHT,
                 theme: "colored",
               });
             }
             router.push(
-              `/usersession_view/${scenario?.vmrequestuuid}
-                        `,
+              `/usersession_view/${scenario?.vmrequestuuid}    `,
             );
           }}
         >
@@ -3000,7 +2839,6 @@ const handleEdgeClick = async (event, edge) => {
         <Modal.Header>
           <Modal.Title>VM Setup</Modal.Title>
         </Modal.Header>
-
         <Modal.Body>
           <ul className="timeline-1 mb-0">
             {/* CLONING */}
@@ -3019,7 +2857,6 @@ const handleEdgeClick = async (event, edge) => {
                 <i className="fas fa-spinner fa-spin text-warning" />
               )}
             </li>
-
             {/* STARTING */}
             <li className="d-flex justify-content-between align-items-start mt-3">
               <div className="d-flex justify-content-between align-items-center gap-4">
@@ -3046,7 +2883,6 @@ const handleEdgeClick = async (event, edge) => {
         <Modal.Header>
           <Modal.Title>VM Cleanup</Modal.Title>
         </Modal.Header>
-
         <Modal.Body>
           <ul className="timeline-1 mb-0">
             {/* STOPPING */}
@@ -3062,7 +2898,6 @@ const handleEdgeClick = async (event, edge) => {
                   </p>
                 </div>
               </div>
-
               {stopStep === "Stopping" && (
                 <i className="fas fa-spinner fa-spin text-warning" />
               )}

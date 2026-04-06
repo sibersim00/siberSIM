@@ -376,7 +376,7 @@ const blockEvent = (e) => {
 
 const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
   const { nodeId, portKey } = data;
-  const { plugged = false, connected = false } = runtimeState || {};
+  const { plugged = true, connected = true } = runtimeState || {};
   const [loading, setLoading] = useState(null);
   const handleAction = async (type, fn, e) => {
     blockEvent(e);
@@ -406,7 +406,7 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
       </div>
 
       {/* Row 1 */}
-      <div className="mb-2">
+      {/* <div className="mb-2">
         {!plugged ? (
           <button
             className="btn plug"
@@ -436,17 +436,47 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
             )}
           </button>
         )}
-      </div>
+      </div> */}
+      <div className="mb-2">
+  {plugged ? (
+    <button
+      className="btn unplug"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("unplug", actions.unplug, e)}
+    >
+      {loading === "unplug" ? (
+        <>
+          Unpluging... <span className="spinneredit" />
+        </>
+      ) : (
+        "Unplug"
+      )}
+    </button>
+  ) : (
+    <button
+      className="btn plug"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("plug", actions.plug, e)}
+    >
+      {loading === "plug" ? (
+        <>
+          Plugging... <span className="spinneredit" />
+        </>
+      ) : (
+        "Plug"
+      )}
+    </button>
+  )}
+</div>
 
       {/* Row 2 */}
-      <div className="mb-2">
+      {/* <div className="mb-2">
         {!connected ? (
           <button
             className="btn connect"
             disabled={loading}
             onPointerUp={(e) => handleAction("connect", actions.connect, e)}
           >
-            {/* {loading === "connect" ? "Conncting..." : "Connect"} */}
             {loading === "connect" ? (
               <>
                 Conncting... <span className="spinneredit" />
@@ -472,8 +502,40 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
             )}
           </button>
         )}
-      </div>
-
+      </div> */}
+<div className="mb-2">
+  {connected ? (
+    <button
+      className="btn disconnect"
+      disabled={loading}
+      onPointerUp={(e) =>
+        handleAction("disconnect", actions.disconnect, e)
+      }
+    >
+      {loading === "disconnect" ? (
+        <>
+          Disconnecting... <span className="spinneredit" />
+        </>
+      ) : (
+        "Disconnect"
+      )}
+    </button>
+  ) : (
+    <button
+      className="btn connect"
+      disabled={loading}
+      onPointerUp={(e) => handleAction("connect", actions.connect, e)}
+    >
+      {loading === "connect" ? (
+        <>
+          Conncting... <span className="spinneredit" />
+        </>
+      ) : (
+        "Connect"
+      )}
+    </button>
+  )}
+</div>
       {/* Row 3 */}
       {/* <button className="btn advanced">⚙ Advanced Options</button> */}
 
@@ -1011,8 +1073,6 @@ const DnDFlow = ({
       return null;
     }
   }, [scenario?.scenariodiagram]);
-  console.log("getSingleScenariosSuccgetSingleScenariosSucc",getSingleScenariosSucc);
-  
   const scenarioNodes = parsedDiagram?.nodes || [];
   const refreshScenario = async () => {
   setLoadingScenario(true);
@@ -1025,75 +1085,10 @@ const DnDFlow = ({
   useEffect(() => {
     if (query.slug) {
       setRowId(query.slug[0]);
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
     }
   }, [query.slug]);
   const updateNodeInternals = useUpdateNodeInternals();
-  // useEffect(() => {
-  //   if (!scenario?.scenariodiagram) return;
-  //   try {
-  //     const parsedData =
-  //       typeof scenario.scenariodiagram === "string"
-  //         ? JSON.parse(scenario.scenariodiagram)
-  //         : scenario.scenariodiagram;
-
-  //     if (parsedData?.nodes && parsedData?.edges) {
-  //       setNodes(parsedData.nodes);
-  //       setEdges(parsedData.edges);
-  //     }
-  //   } catch (err) {
-  //     console.error("Invalid scenariodiagram JSON", err);
-  //   }
-  //   if (scenario?.digramcomponent) {
-  //     try {
-  //       const parsedComponentData =
-  //         typeof scenario.digramcomponent === "string"
-  //           ? JSON.parse(scenario.digramcomponent)
-  //           : scenario.digramcomponent;
-  //       setImageNodeData(parsedComponentData);
-  //       setDroppedImages(parsedComponentData.map((comp) => comp.id));
-  //       setDraggedComponent(parsedComponentData);
-  //     } catch (err) {
-  //       console.error("Invalid digramcomponent JSON", err);
-  //     }
-  //   }
-  // }, [scenario]);
-// useEffect(() => {
-//   if (!scenario?.scenariodiagram) return;
-
-//   try {
-//     const parsedData =
-//       typeof scenario.scenariodiagram === "string"
-//         ? JSON.parse(scenario.scenariodiagram)
-//         : scenario.scenariodiagram;
-
-//     if (parsedData?.nodes) {
-//       setNodes(parsedData.nodes);
-//       setTimeout(() => {
-//         setEdges(parsedData.edges || []);
-//       }, 0);
-//     }
-//   } catch (err) {
-//     console.error("Invalid scenariodiagram JSON", err);
-//   }
-
-//   // component data stays same
-//   if (scenario?.digramcomponent) {
-//     try {
-//       const parsedComponentData =
-//         typeof scenario.digramcomponent === "string"
-//           ? JSON.parse(scenario.digramcomponent)
-//           : scenario.digramcomponent;
-
-//       setImageNodeData(parsedComponentData);
-//       setDroppedImages(parsedComponentData.map((comp) => comp.id));
-//       setDraggedComponent(parsedComponentData);
-//     } catch (err) {
-//       console.error("Invalid digramcomponent JSON", err);
-//     }
-//   }
-// }, [scenario]);
 useEffect(() => {
   if (!scenario?.scenariodiagram) return;
 
@@ -1127,18 +1122,8 @@ useEffect(() => {
     return JSON.parse(scenario.scenariodiagram);
   }, [scenario]);
 
-  // useEffect(() => {
-  //   setNodes((nds) =>
-  //     nds.map((node) => ({
-  //       ...node,
-  //       data: {
-  //         ...node.data,
-  //         portRuntimeState,
-  //       },
-  //     })),
-  //   );
 
-  // }, [portRuntimeState]);
+ 
   useEffect(() => {
     if (!hydrated) return;
 
@@ -1175,36 +1160,70 @@ useEffect(() => {
     return map;
   }, [diagram]);
   const getNetKey = (handle) => handle?.split("-")[0];
-  const buildNetworkPayload = (type) => {
-    if (!pendingConnection) return null;
+  // const buildNetworkPayload = (type) => {
+  //   if (!pendingConnection) return null;
 
-    const sourceNode = nodeMap[pendingConnection.source];
-    const targetNode = nodeMap[pendingConnection.target];
+  //   const sourceNode = nodeMap[pendingConnection.source];
+  //   const targetNode = nodeMap[pendingConnection.target];
 
-    if (!sourceNode || !targetNode) return null;
+  //   if (!sourceNode || !targetNode) return null;
 
-    const netKey = getNetKey(pendingConnection.sourceHandle);
+  //   const netKey = getNetKey(pendingConnection.sourceHandle);
 
-    let payload = {
-      vmid: sourceNode.vmid,
-      vmType: sourceNode.vmType,
-      netKey,
-      mode: type,
-      source: pendingConnection.source,
-      sourceHandle: pendingConnection.sourceHandle,
-      target: pendingConnection.target,
-      targetHandle: pendingConnection.targetHandle,
-    };
-    // LABEL RULES
-    if (type === "static") {
-      payload.label = "Network Id";
-    }
-    if (type === "existing") {
-      payload.label = connectPopover?.existingNetwork || null;
-    }
-    return payload;
+  //   let payload = {
+  //     vmid: sourceNode.vmid,
+  //     Targetvmid: targetNode.vmid,
+  //     vmType: sourceNode.vmType,
+  //     netKey,
+  //     mode: type,
+  //     source: pendingConnection.source,
+  //     sourceHandle: pendingConnection.sourceHandle,
+  //     target: pendingConnection.target,
+  //     targetHandle: pendingConnection.targetHandle,
+  //   };
+  //   // LABEL RULES
+  //   if (type === "static") {
+  //     payload.label = "Network Id";
+  //   }
+  //   if (type === "existing") {
+  //     payload.label = connectPopover?.existingNetwork || null;
+  //   }
+  //   return payload;
+  // };
+const buildNetworkPayload = (type, staticValue) => {
+  if (!pendingConnection) return null;
+
+  const sourceNode = nodeMap[pendingConnection.source];
+  const targetNode = nodeMap[pendingConnection.target];
+
+  if (!sourceNode || !targetNode) return null;
+
+  const netKey = getNetKey(pendingConnection.sourceHandle);
+
+  let payload = {
+    vmid: sourceNode.vmid,
+    Targetvmid: targetNode.vmid,
+    vmType: sourceNode.vmType,
+    netKey,
+    mode: type,
+    source: pendingConnection.source,
+    sourceHandle: pendingConnection.sourceHandle,
+    target: pendingConnection.target,
+    targetHandle: pendingConnection.targetHandle,
   };
 
+  // ✅ ONLY CHANGE HERE
+  if (type === "static") {
+    payload.label = staticValue || "Network Id";
+    payload.staticVmbr = staticValue || null; // 👈 NEW FIELD
+  }
+
+  if (type === "existing") {
+    payload.label = connectPopover?.existingNetwork || null;
+  }
+
+  return payload;
+};
   const [dragStart, setDragStart] = useState(null);
   const onConnectStart = useCallback((event, params) => {
      connectingRef.current = true;
@@ -1216,8 +1235,7 @@ useEffect(() => {
 
   const clickTimer = useRef(null);
   const isDragging = useRef(false);
-
-  const onHandleMouseDown = (event, portKey, nodeId) => {
+   const onHandleMouseDown = (event, portKey, nodeId) => {
     event.stopPropagation();
     isDragging.current = false;
     const startX = event.clientX;
@@ -1241,8 +1259,9 @@ useEffect(() => {
           y: startY,
         });
       }
-    }, 160); // <-- MAGIC NUMBER (must be small)
+    }, 160);
   };
+ 
   const onConnect = useCallback(
     (params) => {
       let corrected = { ...params };
@@ -1260,8 +1279,21 @@ useEffect(() => {
           (e.source === corrected.source || e.target === corrected.source) &&
           e.data?.label,
       );
-      console.log("sourceEdgesourceEdge",sourceEdge);
-      
+      const targetEdge = edges.find(
+        (e) =>
+          (e.source === corrected.target || e.target === corrected.target) &&
+          e.data?.label,
+      );
+      const hasTargetLink = edges.some(
+        (e) =>
+          (e.source === corrected.target || e.target === corrected.target) &&
+          e.data?.label
+      );
+      const hasSourceLink = edges.some(
+        (e) =>
+          (e.source === corrected.source || e.source === corrected.source) &&
+          e.data?.label
+      );
       //  normalize handle types (THIS WAS MISSING)
       corrected.sourceHandle = normalizeHandle(
         corrected.sourceHandle,
@@ -1271,8 +1303,24 @@ useEffect(() => {
         corrected.targetHandle,
         "target",
       );
-      const existingNetwork = sourceEdge?.data?.label || null;
-      const options = ["static", "existing", "new"];
+      // const existingNetwork = sourceEdge?.data?.label || null;
+      const existingNetwork =
+  sourceEdge?.data?.label || targetEdge?.data?.label || null;
+      // const options = ["static", "existing", "new"];
+      let options = [];
+      console.log("existingNetworkexistingNetworkexistingNetwork",existingNetwork);
+      
+
+if (!hasSourceLink && !hasTargetLink) {
+  // ❌ both no link
+  options = ["static", "new"];
+} else if (hasSourceLink && hasTargetLink) {
+  // ✅ both have link
+  options = ["static", "existing"];
+} else {
+  // ⚡ one side has link
+  options = ["existing"];
+}
       const handleEl = document.querySelector(
         `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
       );
@@ -1299,14 +1347,230 @@ useEffect(() => {
     },
     [edges, dragStart],
   );
-  const ConnectionPopover = ({ data, onSelect, onClose }) => {
-      const popoverRef = useRef(null);
+//   const ConnectionPopover = ({ data, onSelect, onClose }) => {
+
+//     // User input vmbr
+//     const [staticInput, setStaticInput] = useState("");
+//     const [selectedType, setSelectedType] = useState(null);
+
+//     const isValidVmbr = (val) => {
+//       if (!val) return true; // allow empty (fallback case)
+
+//       const match = val.match(/^vmbr(\d+)$/);
+//       if (!match) return false;
+
+//       const num = parseInt(match[1], 10);
+//       return num >= 700 && num <= 1000;
+//     };
+//     const popoverRef = useRef(null);
+//     const labelMap = {
+//       static: "Static Network",
+//       existing: "Use Existing Network",
+//       new: "Create New Network",
+//     };
+//     useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (
+//         popoverRef.current &&
+//         !popoverRef.current.contains(event.target)
+//       ) {
+//         onClose(); // close popover
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, [onClose]);
+
+
+//     return (
+//       <div
+//        ref={popoverRef}
+//         id="connection-popover"
+//         style={{
+//           minWidth: 200,
+//           background: "linear-gradient(145deg,#141428,#1c1c3a)",
+//           border: "1px solid rgba(255,255,255,0.12)",
+//           borderRadius: 14,
+//           padding: 14,
+//           boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
+//           color: "#fff",
+//           // transform: "translate(-50%, -120%)",
+//           animation: "popIn 0.18s ease-out",
+//           position: "relative",
+//         }}
+//       >
+//         {/* ❌ Close Button */}
+//         <div
+//           onClick={onClose}
+//           style={{
+//             position: "absolute",
+//             top: 6,
+//             right: 10,
+//             cursor: "pointer",
+//             fontSize: 14,
+//             opacity: 0.7,
+//           }}
+//         >
+//           ✕
+//         </div>
+
+//         <div
+//           style={{
+//             fontSize: 12,
+//             marginBottom: 12,
+//             opacity: 0.75,
+//             fontWeight: 600,
+//             textAlign: "center",
+//           }}
+//         >
+//           Choose Network Type
+//         </div>
+
+//         {/* {data.options.map((opt) => (
+//           <div
+//             key={opt}
+//             onClick={() => {
+//               onSelect(opt);
+//               onClose();
+//             }}
+//             style={{
+//               padding: "10px 12px",
+//               borderRadius: 10,
+//               cursor: "pointer",
+//               marginBottom: 8,
+//               background: "#202048",
+//               transition: "0.15s",
+//               fontSize: 12,
+//               textAlign: "center",
+//             }}
+//             onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
+//             onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
+//           >
+//             {labelMap[opt]}
+//           </div>
+//         ))} */}
+//         {data.options.map((opt) => (
+//   <div key={opt}>
+//     {/* <div
+//       onClick={() => {
+//         if (opt === "static" && !isValidVmbr(staticInput)) {
+//           alert("Enter valid vmbr (700–1000)");
+//           return;
+//         }
+
+//         onSelect(opt, staticInput); // 👈 pass value
+//         onClose();
+//       }}
+//       style={{
+//         padding: "10px 12px",
+//         borderRadius: 10,
+//         cursor: "pointer",
+//         marginBottom: 8,
+//         background: "#202048",
+//         textAlign: "center",
+//       }}
+//     >
+//       {labelMap[opt]}
+//     </div> */}
+//     <div
+//   onClick={() => {
+//     if (opt === "static") {
+//       setSelectedType("static"); // 👈 don't submit yet
+//       return;
+//     }
+
+//     // other types → direct submit
+//     onSelect(opt);
+//     onClose();
+//   }}
+//   style={{
+//     padding: "10px 12px",
+//     borderRadius: 10,
+//     cursor: "pointer",
+//     marginBottom: 8,
+//     background: "#202048",
+//     textAlign: "center",
+//   }}
+// >
+//   {labelMap[opt]}
+// </div>
+
+//     {/* 👇 INPUT ONLY FOR STATIC */}
+//     {opt === "static" && selectedType === "static" && (
+//   <>
+//     <input
+//       type="text"
+//       placeholder="vmbr50 - vmbr999"
+//       value={staticInput}
+//       onChange={(e) => setStaticInput(e.target.value)}
+//       style={{
+//         width: "100%",
+//         padding: "6px",
+//         marginBottom: "8px",
+//         borderRadius: "6px",
+//         border: "1px solid #444",
+//         background: "#111",
+//         color: "#fff",
+//         fontSize: "12px",
+//       }}
+//     />
+
+//     {/* ✅ SUBMIT BUTTON */}
+//     <div
+//       onClick={() => {
+//         if (!isValidVmbr(staticInput)) {
+//           alert("Enter valid vmbr (700–1000)");
+//           return;
+//         }
+
+//         onSelect("static", staticInput);
+//         onClose();
+//       }}
+//       style={{
+//         padding: "8px",
+//         borderRadius: 8,
+//         cursor: "pointer",
+//         background: "#4CAF50",
+//         textAlign: "center",
+//         fontSize: 12,
+//         fontWeight: 600,
+//       }}
+//     >
+//       Submit
+//     </div>
+//   </>
+// )}
+//   </div>
+// ))}
+//       </div>
+//     );
+//   };
+
+
+const ConnectionPopover = ({ data, onSelect, onClose }) => {
+  const popoverRef = useRef(null);
+
+  const [selectedType, setSelectedType] = useState(null);
+  const [staticInput, setStaticInput] = useState("");
+
+  const isValidVmbr = (val) => {
+    if (!val) return true;
+    const match = val.match(/^vmbr(\d+)$/);
+    if (!match) return false;
+    const num = parseInt(match[1], 10);
+    return num >= 50 && num <= 999;
+  };
+      // const popoverRef = useRef(null);
     const labelMap = {
       static: "Static Network",
       existing: "Use Existing Network",
       new: "Create New Network",
     };
-      useEffect(() => {
+    useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         popoverRef.current &&
@@ -1323,91 +1587,221 @@ useEffect(() => {
     };
   }, [onClose]);
 
+//   const iconMap = {
+//   static: "🔗",
+//   existing: "🔄",
+//   new: "✨",
+// };
+const iconMap = {
+  static: <i className="fe fe-link" />,
+  existing: <i className="fe fe-refresh-cw" />,
+  new: <i className="fe fe-plus-circle" />,
+};
 
-    return (
-      <div
-       ref={popoverRef}
-        id="connection-popover"
-        style={{
-          minWidth: 200,
-          background: "linear-gradient(145deg,#141428,#1c1c3a)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 14,
-          padding: 14,
-          boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
-          color: "#fff",
-          // transform: "translate(-50%, -120%)",
-          animation: "popIn 0.18s ease-out",
-          position: "relative",
-        }}
-      >
-        {/* ❌ Close Button */}
+  return (
+    <div
+      ref={popoverRef}
+      style={{
+        width: 320,
+        background: "linear-gradient(180deg,#0b1220,#0f1b2e)",
+        borderRadius: 16,
+        padding: 16,
+        color: "#fff",
+        boxShadow: "0 25px 50px rgba(0,0,0,0.6)",
+        position: "relative",
+      }}
+    >
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 14, fontWeight: 600 }}>
+          Choose Network Type
+        </div>
         <div
           onClick={onClose}
-          style={{
-            position: "absolute",
-            top: 6,
-            right: 10,
-            cursor: "pointer",
-            fontSize: 14,
-            opacity: 0.7,
-          }}
+          style={{ cursor: "pointer", opacity: 0.7 }}
         >
           ✕
         </div>
+      </div>
 
+      {/* SECTION LABEL */}
+      <div
+        style={{
+          fontSize: 10,
+          opacity: 0.6,
+          marginTop: 12,
+          marginBottom: 9,
+          letterSpacing: 1,
+        }}
+      >
+        DEPLOYMENT MODE
+      </div>
+
+      {/* STATIC NETWORK BUTTON */}
+      {data.options.includes("static") && (
         <div
+  onClick={() => setSelectedType("static")}
+  style={{
+    padding: "12px",
+    borderRadius: 10,
+    background:
+      selectedType === "static"
+        ? "rgba(80,200,120,0.15)"
+        : "#162235",
+    cursor: "pointer",
+    marginBottom: 10,
+    border:
+      selectedType === "static"
+        ? "1px solid #4ade80"
+        : "1px solid transparent",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <span>{iconMap.static}</span>
+  <span>Static Network</span>
+</div>
+      )}
+
+      {/* INPUT FIELD (ONLY WHEN STATIC CLICKED) */}
+      {selectedType === "static" && (
+        <>
+          <div
+            style={{
+              fontSize: 10,
+              opacity: 0.6,
+              marginBottom: 6,
+              letterSpacing: 1,
+            }}
+          >
+            BRIDGE RANGE IDENTIFIER
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: "#0b1220",
+              borderRadius: 10,
+              padding: "8px 10px",
+              border: "1px solid rgba(255,255,255,0.1)",
+              marginBottom: 14,
+            }}
+          >
+            <input
+              type="text"
+              placeholder="vmbr50 - vmbr999"
+              value={staticInput}
+              onChange={(e) => setStaticInput(e.target.value)}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "#fff",
+                fontSize: 12,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 9,
+                background: "#1f3b2d",
+                color: "#4ade80",
+                padding: "3px 6px",
+                borderRadius: 6,
+              }}
+            >
+              RANGE
+            </span>
+          </div>
+        </>
+      )}
+
+        {data.options
+  .filter((opt) => opt !== "static")
+  .map((opt) => (
+    <div
+      key={opt}
+      onClick={() => {
+        onSelect(opt);
+        onClose();
+      }}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        background: "#162235",
+        cursor: "pointer",
+        marginBottom: 8,
+        fontSize: 12,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <span>{iconMap[opt]}</span>
+
+      <span>
+        {opt === "existing"
+          ? "Use Existing Network"
+          : "Create New Network"}
+      </span>
+    </div>
+  ))}
+
+      {/* SUBMIT BUTTON */}
+      {selectedType === "static" && (
+        <div
+          onClick={() => {
+            if (!isValidVmbr(staticInput)) {
+              // alert("Enter valid vmbr (700–1000)");
+              toast.error(
+                          <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+                            Enter valid vmbr (50–999)
+                          </p>,
+                          {
+                            position: toast.POSITION.TOP_RIGHT,
+                            hideProgressBar: false,
+                            theme: "colored",
+                          },
+                        );
+              return;
+            }
+
+            onSelect("static", staticInput);
+            onClose();
+          }}
           style={{
-            fontSize: 12,
-            marginBottom: 12,
-            opacity: 0.75,
-            fontWeight: 600,
+            marginTop: 10,
+            padding: "12px",
+            borderRadius: 10,
             textAlign: "center",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            background: "linear-gradient(90deg,#34d399,#22c55e)",
+            color: "#000",
           }}
         >
-          Choose Network Type
+          Submit Node
         </div>
+      )}
+    </div>
+  );
+};
 
-        {data.options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => {
-              onSelect(opt);
-              onClose();
-            }}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 8,
-              background: "#202048",
-              transition: "0.15s",
-              fontSize: 12,
-              textAlign: "center",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
-          >
-            {labelMap[opt]}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const handleConnectionType = async (type) => {
+  const handleConnectionType = async (type,staticValue = null) => {
     if (!pendingConnection) return;
     const connection = { ...pendingConnection };
-    const apiPayload = buildNetworkPayload(type);
+    const apiPayload = buildNetworkPayload(type,staticValue);
     try {
       setShowBridgeModal(true);
       setBridgeLoading(true);
       await dispatch(modifyNetworkId(apiPayload));
-      console.log("connectPopoverconnectPopover",connectPopover);
-      
       // ---------------- EDGE LABEL ----------------
       let label = "";
-      if (type === "static") label = "Network Id";
+      // if (type === "static") label = "Network Id";
+      if (type === "static") label = staticValue || "Network Id";
       if (type === "existing") label = connectPopover?.existingNetwork || "";
       if (type === "new") label = "";
       const newEdge = {
@@ -1489,10 +1883,6 @@ const onConnectEnd = () => {
           duration: draggedNode.duration,
         },
       };
-
-      console.log("newNodesssssssssssnewNodenewNodenewNode",newNode);
-      
-
       setNodes((nds) => nds.concat(newNode));
       setDraggedComponent((prev) => [...prev, draggedNode]);
       setDroppedImages((prev) => [...prev, draggedNode.id]); // Add to dropped images
@@ -1532,49 +1922,99 @@ const onConnectEnd = () => {
       dispatch,
     ],
   );
+  // const deleteNode = async (nodeId) => {
+  //   const nodeToDelete = nodes.find((node) => node.id === nodeId);
+  //   if (!nodeToDelete) return;
+  //   const vmid = nodeToDelete?.data?.vmid;
+  //   const vmrequestid = scenario?.vmrequestid;
+  //   try {
+  //     setShowStopDestroyModal(true);
+  //     setStopStep("Stopping");
+  //     if (vmid && vmrequestid) {
+  //       await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
+  //     }
+  //     setStopStep("Destroying");
+  //     setTimeout(() => {
+  //       setShowStopDestroyModal(false);
+  //     }, 100);
+  //     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+  //     setEdges((eds) =>
+  //       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+  //     );
+  //     if (nodeToDelete?.data?.componentId) {
+  //       const imageComponent = nodeToDelete.data.componentId;
+  //       const imageNode = imageNodeData.find(
+  //         (item) => item.id === imageComponent,
+  //       );
+
+  //       if (imageNode) {
+  //         const imageId = imageNode.id;
+
+  //         setDroppedImages((prev) => prev.filter((id) => id !== imageId));
+  //         setDraggedComponent((prev) =>
+  //           prev.filter((item) => item.id !== imageId),
+  //         );
+  //         setImageNodeData((prev) =>
+  //           prev.filter((item) => item.id !== imageId),
+  //         );
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error("Delete VM failed", err);
+  //     setShowStopDestroyModal(false);
+  //   }
+  // };
+
+
+
   const deleteNode = async (nodeId) => {
-    const nodeToDelete = nodes.find((node) => node.id === nodeId);
-    if (!nodeToDelete) return;
-    const vmid = nodeToDelete?.data?.vmid;
-    const vmrequestid = scenario?.vmrequestid;
-    try {
-      setShowStopDestroyModal(true);
-      setStopStep("Stopping");
-      if (vmid && vmrequestid) {
-        await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
-      }
-      setStopStep("Destroying");
-      setTimeout(() => {
-        setShowStopDestroyModal(false);
-      }, 100);
-      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-      setEdges((eds) =>
-        eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+  const nodeToDelete = nodes.find((node) => node.id === nodeId);
+  if (!nodeToDelete) return;
+
+  const vmid = nodeToDelete?.data?.vmid;
+  const vmrequestid = scenario?.vmrequestid;
+  const vmbrList = edges
+    .filter(
+      (e) => e.source === nodeId || e.target === nodeId
+    )
+    .map((e) => e?.data?.label)
+    .filter(Boolean);
+
+  console.log("VMBR LIST", vmbrList);
+
+  try {
+    setShowStopDestroyModal(true);
+    setStopStep("Stopping");
+
+    if (vmid && vmrequestid) {
+      await dispatch(
+        deleteDraggedComponent({
+          vmid,
+          vmrequestid,
+          vmbrList,
+        })
       );
-      if (nodeToDelete?.data?.componentId) {
-        const imageComponent = nodeToDelete.data.componentId;
-        const imageNode = imageNodeData.find(
-          (item) => item.id === imageComponent,
-        );
-
-        if (imageNode) {
-          const imageId = imageNode.id;
-
-          setDroppedImages((prev) => prev.filter((id) => id !== imageId));
-          setDraggedComponent((prev) =>
-            prev.filter((item) => item.id !== imageId),
-          );
-          setImageNodeData((prev) =>
-            prev.filter((item) => item.id !== imageId),
-          );
-        }
-      }
-    } catch (err) {
-      console.error("Delete VM failed", err);
-      setShowStopDestroyModal(false);
     }
-  };
 
+    setStopStep("Destroying");
+
+    setTimeout(() => {
+      setShowStopDestroyModal(false);
+    }, 100);
+
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+
+    setEdges((eds) =>
+      eds.filter(
+        (edge) => edge.source !== nodeId && edge.target !== nodeId
+      )
+    );
+
+  } catch (err) {
+    console.error("Delete VM failed", err);
+    setShowStopDestroyModal(false);
+  }
+};
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
@@ -1823,8 +2263,6 @@ const onConnectEnd = () => {
       // setEdges([]);
     }
   }, [addNetwork]);
-  console.log("bridgeremovebridgeremovebridgeremovebridgeremove",bridgeremove);
-  
   useEffect(() => {
     if (bridgeremove?.statusCode === 200) {
       toast.success(
@@ -2023,17 +2461,12 @@ const onConnectEnd = () => {
   const nextNet = getNextNetName(activeNode?.data?.networkport || []);
   const getVmDetailsByNodeId = (nodeId) => {
     const node = scenarioNodes.find((n) => n.id === nodeId);
-
-    console.log("nodenodenodenodenodenodenode",node);
-    
     if (!node) return null;
     return {
       vmid: node.data.vmid,
       vmType: node.data.vmType,
     };
   };
-  console.log("getVmDetailsByNodeIdgetVmDetailsByNodeIdgetVmDetailsByNodeId",getVmDetailsByNodeId);
-  
   const handleConfirmDelete = async (nodeId, portKey) => {
     const vmDetails = getVmDetailsByNodeId(nodeId);
     if (!vmDetails) {
@@ -2071,11 +2504,8 @@ const onConnectEnd = () => {
   };
 
   const handleAddNetworkPort = async (nodeId, netName) => {
-    console.log("nodeIdnodeIdnodeIdnodeIdnodeIdnodeId",nodeId);
-    
     const vmDetails = getVmDetailsByNodeId(nodeId);
-    console.log("vmDetailsvmDetailsvmDetailsvmDetails",vmDetails);
-    
+
     if (!vmDetails) return;
 
     const payload = {
@@ -2153,9 +2583,52 @@ const getPopoverConnectionPosition = () => {
     top: window.innerHeight / 2,
   };
 };
-const handleEdgeClick = async (event, edge) => {
-  console.log("edgeedgeedgeedgeedgeedgeedgeedge", edge);
 
+
+const getPopoverplugPosition = (popover) => {
+  const popWidth = 260;
+  const popHeight = 180;
+  if (
+    !popover ||
+    typeof popover.x !== "number" ||
+    typeof popover.y !== "number" ||
+    popover.x === 0 ||
+    popover.y === 0
+  ) {
+    return {
+      left: window.innerWidth / 2 - popWidth / 2,
+      top: window.innerHeight / 2 - popHeight / 2,
+    };
+  }
+
+  let left = popover.x;
+  let top = popover.y;
+  console.log("leftleftleftleft",left);
+  
+
+  // 👉 Offset (so it doesn't stick to cursor)
+  left += 10;
+  top += 10;
+
+  // 👉 Right edge
+  if (left + popWidth > window.innerWidth) {
+    left = left - popWidth - 20;
+  }
+
+  // 👉 Bottom edge
+  if (top + popHeight > window.innerHeight) {
+    top = top - popHeight - 20;
+  }
+
+  // 👉 Clamp inside viewport
+  left = Math.max(10, left);
+  top = Math.max(10, top);
+
+  return { left, top };
+};
+const handleEdgeClick = async (event, edge) => {
+  console.log("edgeedgeedgeedgeedge",edge);
+  
   event.stopPropagation();
 
   const result = await Swal.fire({
@@ -2169,16 +2642,28 @@ const handleEdgeClick = async (event, edge) => {
 
   if (result.isConfirmed) {
     try {
+      const bridge = edge?.data?.label;
       const payload = {
-        // vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
-        vmrequestid : getSingleScenariosSucc?.[0]?.vmrequestid,
+        vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
         edgeId: edge.id,
-        bridge: edge.data?.label,
+        bridge,
         sourceNodeId: edge.source,
         targetNodeId: edge.target,
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
       };
+      // const payload = {
+      //   // vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
+      //   vmrequestid : getSingleScenariosSucc?.[0]?.vmrequestid,
+      //   edgeId: edge.id,
+      //   bridge: edge.data?.label,
+      //   sourceNodeId: edge.source,
+      //   targetNodeId: edge.target,
+      //   sourceHandle: edge.sourceHandle,
+      //   targetHandle: edge.targetHandle,
+      // };
+      console.log("payloadpayloadpayload",payload);
+      
 
       //Redux API call
       await dispatch(deletebridge(payload));
@@ -2361,7 +2846,8 @@ const handleEdgeClick = async (event, edge) => {
             >
               <ConnectionPopover
                 data={connectPopover}
-                onSelect={handleConnectionType}
+                // onSelect={handleConnectionType}
+                onSelect={(opt, value) => handleConnectionType(opt, value)}
                 onClose={closeConnectPopover}
               />
             </div>
@@ -2370,9 +2856,9 @@ const handleEdgeClick = async (event, edge) => {
             <div
               style={{
                 position: "fixed",
-                top: portPopover.y,
-                left: portPopover.x,
+                ...getPopoverplugPosition(portPopover),
                 zIndex: 9999,
+                // transform: "translate(-50%, -50%)",
               }}
             >
               <PortActionPopover
