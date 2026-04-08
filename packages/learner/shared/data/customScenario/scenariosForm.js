@@ -402,7 +402,8 @@ const ScenarioForm = (props) => {
         ) || null,
       status: rowValues?.status || "",
       image_url: rowValues?.instruction_file || "",
-      duration: rowValues?.duration || "",
+      // duration: rowValues?.duration || "",
+      duration: data?.duration || null,
       scenariocategoryids:
         catDropDownData.find(
           (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid,
@@ -499,7 +500,8 @@ const ScenarioForm = (props) => {
         instructor_id: data?.instructor_id?.instructor_id || null,
         learner_id: data?.learner_id?.learner_id || null,
         instruction_file: data?.image_url,
-        duration: data?.duration,
+        // duration: data?.duration,
+        duration: data?.duration || null,
         scenariostatus: "Draft",
         scenarioimage:
           data.scenarioimage !== undefined

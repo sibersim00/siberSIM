@@ -11,7 +11,7 @@ import EditableEdge from "../../../../shared/data/manipulation/EditableEdge";
 import {
   saveScenarioFlow,
   clearsaveScenarioFlow,} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-import { getSingleScenarios, addNetworkPort, deleteNetworkPort, saveDraggedComponent, deleteDraggedComponent, clearDraggedComponent, clearDeleteDraggedComponent, clearSaveNetworkPort, clearDeleteNetworkPort, modifyNetworkId, clearModifyNetworkId, plugNetworkPort, unplugNetworkPort, connectNetworkPort, disconnectNetworkPort, changeReleaseEditLock, clearPlugNetworkPort, clearUnplugNetworkPort, clearConnectNetworkPort, clearDisconnectNetworkPort,deletebridge
+import { getSingleScenarios, addNetworkPort, deleteNetworkPort, saveDraggedComponent, deleteDraggedComponent, clearDraggedComponent, clearDeleteDraggedComponent, clearSaveNetworkPort, clearDeleteNetworkPort, modifyNetworkId, clearModifyNetworkId, plugNetworkPort, unplugNetworkPort, connectNetworkPort, disconnectNetworkPort, changeReleaseEditLock, clearPlugNetworkPort, clearUnplugNetworkPort, clearConnectNetworkPort, clearDisconnectNetworkPort,deletebridge,cleardeletebridge
 } from "../../../../shared/redux/slices/scenarios/scenarios";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -2279,6 +2279,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearSaveNetworkPort());
+      dispatch(cleardeletebridge());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
       // setNodes([]);

@@ -874,4 +874,14 @@ export function deletebridge(payload) {
     }
   };
 }
+export function cleardeletebridge() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletebridge([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 //----------------------------------------------------------------------

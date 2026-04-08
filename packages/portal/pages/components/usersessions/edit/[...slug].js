@@ -18,7 +18,7 @@ import {
   saveScenarioFlow,
   clearsaveScenarioFlow,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
-import {getSingleScenarios,getSingleUserSession,addNetworkPort,deleteNetworkPort,saveDraggedComponent,deleteDraggedComponent,clearDraggedComponent,clearDeleteDraggedComponent,clearSaveNetworkPort,clearDeleteNetworkPort,modifyNetworkId,clearModifyNetworkId,plugNetworkPort,unplugNetworkPort,connectNetworkPort,disconnectNetworkPort,changeReleaseEditLock,clearPlugNetworkPort,clearUnplugNetworkPort,clearConnectNetworkPort,clearDisconnectNetworkPort,deletebridge
+import {getSingleScenarios,getSingleUserSession,addNetworkPort,deleteNetworkPort,saveDraggedComponent,deleteDraggedComponent,clearDraggedComponent,clearDeleteDraggedComponent,clearSaveNetworkPort,clearDeleteNetworkPort,modifyNetworkId,clearModifyNetworkId,plugNetworkPort,unplugNetworkPort,connectNetworkPort,disconnectNetworkPort,changeReleaseEditLock,clearPlugNetworkPort,clearUnplugNetworkPort,clearConnectNetworkPort,clearDisconnectNetworkPort,deletebridge,cleardeletebridge
 } from "../../../../shared/redux/slices/usersession/usersessionManage";
 import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
@@ -2202,6 +2202,7 @@ useEffect(() => {
         },
       );
       dispatch(clearSaveNetworkPort());
+      dispatch(cleardeletebridge());
       // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
       // setNodes([]);
