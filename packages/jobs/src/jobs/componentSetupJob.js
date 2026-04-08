@@ -130,14 +130,14 @@ async function componentSetupJob(
         );
         throw new Error(cloneResult.message);
       }
-      if (component.componenttype?.toLowerCase() === "lxc") {
-        console.log(
-          `Waiting ${
-            cloningDelayMs / 1000
-          } seconds before cloning next LXC component...`,
-        );
+      // if (component.componenttype?.toLowerCase() === "lxc") {
+      //   console.log(
+      //     `Waiting ${
+      //       cloningDelayMs / 1000
+      //     } seconds before cloning next LXC component...`,
+      //   );
         await sleep(cloningDelayMs);
-      }
+      // }
     }
 
     await db.sequelize.query(

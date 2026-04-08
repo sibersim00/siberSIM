@@ -477,7 +477,7 @@ const releaseEditLock =
     }
   );
      await db.sequelize.query(
-        `UPDATE temp_networks
+        `UPDATE static_networks
          SET lock_status = 'Free',
              released_at = NOW(),
              modifiedon = NOW()

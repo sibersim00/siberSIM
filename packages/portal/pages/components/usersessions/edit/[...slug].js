@@ -2560,7 +2560,7 @@ const getPopoverplugPosition = (popover) => {
   }
   if (top + popHeight > window.innerHeight) {
     top = top - popHeight - 20;
-  }
+  }rt
   left = Math.max(10, left);
   top = Math.max(10, top);
 

@@ -16,21 +16,21 @@ const schema = joi.object({
     "any.required": `level is required.`,
   }),
 
-  description: joi.string().trim().strict().required().messages({
-    "any.required": `Description is required.`,
-    "string.empty": `Description cannot be empty`
-  }),
+  // description: joi.string().trim().strict().required().messages({
+  //   "any.required": `Description is required.`,
+  //   "string.empty": `Description cannot be empty`
+  // }),
 
-  instruction_file: joi.string().trim().strict().required().messages({
-    "any.required": `Instruction file is a required.`,
-    "string.empty": `Instruction file cannot be empty`,
-  }),
+  // instruction_file: joi.string().trim().strict().required().messages({
+  //   "any.required": `Instruction file is a required.`,
+  //   "string.empty": `Instruction file cannot be empty`,
+  // }),
 
-  duration: joi.number().strict(true).required().messages({
-    "number.base": `Duration should be a integer`,
-    "number.empty": `Duration cannot be empty`,
-    "any.required": `Duration is required.`,
-  }),
+  // duration: joi.number().strict(true).required().messages({
+  //   "number.base": `Duration should be a integer`,
+  //   "number.empty": `Duration cannot be empty`,
+  //   "any.required": `Duration is required.`,
+  // }),
 
   instructor_id: joi.alternatives().try(
     joi.number().strict().messages({
@@ -58,10 +58,10 @@ const updateSchema = joi.object({
     "string.empty": `Title cannot be empty`,
   }),
 
-  description: joi.string().trim().strict().required().messages({
-    "any.required": `Description is required.`,
-    "string.empty": `Description cannot be empty`
-  }),
+  // description: joi.string().trim().strict().required().messages({
+  //   "any.required": `Description is required.`,
+  //   "string.empty": `Description cannot be empty`
+  // }),
   level: joi.string().trim().required().messages({
     "string.empty": `Level cannot be empty`,
     "any.required": `Level is required.`,
@@ -72,16 +72,16 @@ const updateSchema = joi.object({
     joi.valid(null).messages({ "any.only": `"SIMManager Id" must be null or a number` }), // Can be null
   ),
 
-  instruction_file: joi.string().trim().strict().required().messages({
-    "any.required": `Instruction file is a required.`,
-    "string.empty": `Instruction file cannot be empty`,
-  }),
+  // instruction_file: joi.string().trim().strict().required().messages({
+  //   "any.required": `Instruction file is a required.`,
+  //   "string.empty": `Instruction file cannot be empty`,
+  // }),
 
-  duration: joi.number().strict(true).required().messages({
-    "number.base": `Duration should be a integer`,
-    "number.empty": `Duration cannot be empty`,
-    "any.required": `Duration is required.`,
-  }),
+  // duration: joi.number().strict(true).required().messages({
+  //   "number.base": `Duration should be a integer`,
+  //   "number.empty": `Duration cannot be empty`,
+  //   "any.required": `Duration is required.`,
+  // }),
 
   diagram: joi.string().allow('').required().messages({
     "any.required": `Diagram is required.`,

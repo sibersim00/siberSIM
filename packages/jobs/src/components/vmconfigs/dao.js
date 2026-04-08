@@ -3616,7 +3616,7 @@ if (mode === "static" && staticVmbr) {
   // 1. CHECK IF EXISTS
   const [existing] = await db.sequelize.query(
     `SELECT tempnetworkid, lock_status 
-     FROM temp_networks 
+     FROM static_networks 
      WHERE networkname = ? 
      LIMIT 1`,
     {
@@ -3629,7 +3629,7 @@ if (mode === "static" && staticVmbr) {
     // 2A. IF FREE → REUSE
     if (existing.lock_status === "Free") {
       await db.sequelize.query(
-        `UPDATE temp_networks
+        `UPDATE static_networks
          SET lock_status='Locked',
              locked_at=NOW(),
              modifiedon=NOW()
@@ -3651,7 +3651,7 @@ if (mode === "static" && staticVmbr) {
   // 3. IF NOT EXISTS → INSERT NEW
   else {
     await db.sequelize.query(
-      `INSERT INTO temp_networks 
+      `INSERT INTO static_networks 
        (networkname, lock_status, locked_at, createdon)
        VALUES (?, 'Locked', NOW(), NOW())`,
       {
@@ -4135,7 +4135,7 @@ const stopDestroySingleComponent =
       
 if (vmbrList && vmbrList.length > 0) {
   await db.sequelize.query(
-    `UPDATE temp_networks
+    `UPDATE static_networks
      SET lock_status='Free',
          released_at=NOW(),
          modifiedon=NOW()

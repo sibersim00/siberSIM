@@ -433,9 +433,9 @@ const ScenarioForm = (props) => {
           "No leading or trailing spaces allowed",
           (value) => value === value?.trim(),
         ),
-      description: Yup.string().test("non-empty", error?.required, (value) => {
-        return value && value.trim() !== "";
-      }),
+      // description: Yup.string().test("non-empty", error?.required, (value) => {
+      //   return value && value.trim() !== "";
+      // }),
       scenariolevel: Yup.object()
         .nullable()
         .required("Required")
@@ -455,24 +455,24 @@ const ScenarioForm = (props) => {
           (value) => value && Object.keys(value).length > 0,
         ),
 
-      duration: Yup.string()
-        .required("Required")
-        .matches(/^\d+$/, "Duration must be in minutes")
-        .test(
-          "is-valid-minute",
-          "Duration must be between 1 and 1440 minutes",
-          (value) => {
-            const minutes = parseInt(value, 10);
-            return minutes >= 1 && minutes <= 1440;
-          },
-        ),
-      image_url: Yup.string()
-        .required("Required")
-        .test("is-pdf", "Only PDF files are allowed", (value) => {
-          if (!value) return false;
-          const files = value.split(",");
-          return files.every((file) => file.toLowerCase().endsWith(".pdf"));
-        }),
+      // duration: Yup.string()
+      //   .required("Required")
+      //   .matches(/^\d+$/, "Duration must be in minutes")
+      //   .test(
+      //     "is-valid-minute",
+      //     "Duration must be between 1 and 1440 minutes",
+      //     (value) => {
+      //       const minutes = parseInt(value, 10);
+      //       return minutes >= 1 && minutes <= 1440;
+      //     },
+      //   ),
+      // image_url: Yup.string()
+      //   .required("Required")
+      //   .test("is-pdf", "Only PDF files are allowed", (value) => {
+      //     if (!value) return false;
+      //     const files = value.split(",");
+      //     return files.every((file) => file.toLowerCase().endsWith(".pdf"));
+      //   }),
       scenarioimage: Yup.string().required(error?.required),
     }),
 
