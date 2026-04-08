@@ -403,7 +403,7 @@ const ScenarioForm = (props) => {
       status: rowValues?.status || "",
       image_url: rowValues?.instruction_file || "",
       // duration: rowValues?.duration || "",
-      duration: data?.duration || null,
+      duration: rowValues?.duration || null,
       scenariocategoryids:
         catDropDownData.find(
           (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid,
