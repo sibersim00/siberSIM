@@ -1138,9 +1138,6 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     Duration
-                                                    <span className="text-danger">
-                                                      *
-                                                    </span>{" "}
                                                     <small>(In Minutes)</small>
                                                   </Form.Label>
                                                   <Form.Control
@@ -1182,9 +1179,6 @@ const ScenarioForm = (props) => {
                                                     <div className="position-relative">
                                                       <Form.Label>
                                                         {t("Instruction File")}
-                                                        <span className="text-danger">
-                                                          *
-                                                        </span>
                                                       </Form.Label>
 
                                                       {rowValues?.id !== 0 && (
@@ -1380,9 +1374,7 @@ const ScenarioForm = (props) => {
                                                 >
                                                   <Form.Label>
                                                     Description
-                                                    <span className="text-danger">
-                                                      *
-                                                    </span>
+                                                   
                                                   </Form.Label>
                                                   <EditorComponent
                                                     name="description"

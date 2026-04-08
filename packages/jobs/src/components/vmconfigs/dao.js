@@ -3587,32 +3587,32 @@ if (mode === "existing") {
       /* =========================================================
            MODE: STATIC
         ========================================================= */
-     if (mode === "static") {
-  finalLabel = label || "Network Id";
-
-  // 👇 ONLY if user entered vmbr
+        console.log("labellabellabellabellabel",label);
+        
+if (mode === "static") {
   if (staticVmbr) {
-    const match = staticVmbr.match(/^vmbr(\d+)$/);
+    const num = parseInt(staticVmbr, 10);
 
-    if (!match) {
-      return { success: false, message: "Invalid vmbr format" };
+    if (isNaN(num)) {
+      return { success: false, message: "Invalid number format" };
     }
-
-    const num = parseInt(match[1], 10);
 
     if (num < 50 || num > 999) {
-      return { success: false, message: "vmbr must be between 700–1000" };
+      return { success: false, message: "Value must be between 50–999" };
     }
 
-    networkname = staticVmbr; 
+    networkname = `vmbr${num}`;
+    finalLabel = networkname; // instead of label
   } else {
     networkname = null;
+    finalLabel = "Network Id";
   }
 }
 console.log("staticVmbrstaticVmbrstaticVmbr",staticVmbr);
 
-
 if (mode === "static" && staticVmbr) {
+  const bridgeName = networkname;
+
   // 1. CHECK IF EXISTS
   const [existing] = await db.sequelize.query(
     `SELECT tempnetworkid, lock_status 
@@ -3620,13 +3620,12 @@ if (mode === "static" && staticVmbr) {
      WHERE networkname = ? 
      LIMIT 1`,
     {
-      replacements: [staticVmbr],
+      replacements: [bridgeName],
       type: db.sequelize.QueryTypes.SELECT,
     }
   );
 
   if (existing) {
-    // 2A. IF FREE → REUSE
     if (existing.lock_status === "Free") {
       await db.sequelize.query(
         `UPDATE static_networks
@@ -3639,23 +3638,19 @@ if (mode === "static" && staticVmbr) {
           type: db.sequelize.QueryTypes.UPDATE,
         }
       );
-    } 
-    // 2B. IF ALREADY LOCKED → THROW ERROR
-    else {
+    } else {
       return {
         success: false,
-        message: `Network ${staticVmbr} is already in use. Please choose a different bridge.`,
+        message: `Network ${bridgeName} is already in use.`,
       };
     }
-  } 
-  // 3. IF NOT EXISTS → INSERT NEW
-  else {
+  } else {
     await db.sequelize.query(
       `INSERT INTO static_networks 
        (networkname, lock_status, locked_at, createdon)
        VALUES (?, 'Locked', NOW(), NOW())`,
       {
-        replacements: [staticVmbr],
+        replacements: [bridgeName],
         type: db.sequelize.QueryTypes.INSERT,
       }
     );

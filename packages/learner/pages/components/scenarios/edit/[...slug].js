@@ -1554,13 +1554,18 @@ const ConnectionPopover = ({ data, onSelect, onClose }) => {
   const [selectedType, setSelectedType] = useState(null);
   const [staticInput, setStaticInput] = useState("");
 
+  // const isValidVmbr = (val) => {
+  //   if (!val) return true;
+  //   const match = val.match(/^vmbr(\d+)$/);
+  //   if (!match) return false;
+  //   const num = parseInt(match[1], 10);
+  //   return num >= 50 && num <= 999;
+  // };
   const isValidVmbr = (val) => {
-    if (!val) return true;
-    const match = val.match(/^vmbr(\d+)$/);
-    if (!match) return false;
-    const num = parseInt(match[1], 10);
-    return num >= 50 && num <= 999;
-  };
+  if (!val) return true;
+  const num = parseInt(val, 10);
+  return !isNaN(num) && num >= 50 && num <= 999;
+};
       // const popoverRef = useRef(null);
     const labelMap = {
       static: "Static Network",
@@ -1688,7 +1693,7 @@ const iconMap = {
           >
             <input
               type="text"
-              placeholder="vmbr50 - vmbr999"
+              placeholder="Please enter a valid number(50-999)"
               value={staticInput}
               onChange={(e) => setStaticInput(e.target.value)}
               style={{
@@ -1754,7 +1759,7 @@ const iconMap = {
               // alert("Enter valid vmbr (700–1000)");
               toast.error(
                           <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-                            Enter valid vmbr (50–999)
+                            Enter valid number (50–999)
                           </p>,
                           {
                             position: toast.POSITION.TOP_RIGHT,
@@ -1798,7 +1803,8 @@ const iconMap = {
       // ---------------- EDGE LABEL ----------------
       let label = "";
       // if (type === "static") label = "Network Id";
-      if (type === "static") label = staticValue || "Network Id";
+      // if (type === "static") label = staticValue || "Network Id";
+      if (type === "static") label = staticValue ? `vmbr${staticValue}` : "Network Id";
       if (type === "existing") label = connectPopover?.existingNetwork || "";
       if (type === "new") label = "";
       const newEdge = {

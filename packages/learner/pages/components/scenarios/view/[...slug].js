@@ -331,13 +331,13 @@ const hasInvitees =
       setActionLoading(false); // Remove loading
       dispatch(clearUpdateCompletedTerminated());
       dispatch(getSingleScenarios(query.slug[0]));
-      const payload = {
-        vmrequestid:
-          getSingleScenariosSucc &&
-          getSingleScenariosSucc?.[0] &&
-          getSingleScenariosSucc?.[0].vmrequestid,
-      };
-      dispatch(getLearnersByVmRequest(payload));
+      // const payload = {
+      //   vmrequestid:
+      //     getSingleScenariosSucc &&
+      //     getSingleScenariosSucc?.[0] &&
+      //     getSingleScenariosSucc?.[0].vmrequestid,
+      // };
+      // dispatch(getLearnersByVmRequest(payload));
     }
   }, [hasUpdateCompletedTerminatedSucc, errorData]);
 
