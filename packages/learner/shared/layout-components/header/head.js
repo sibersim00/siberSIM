@@ -54,17 +54,15 @@ console.log("getUserDataFromLocal",getUserDataFromLocal)
     }
   }, []);
 
-  // useEffect(() => {
-  //   dispatch(getNotification("Learner"));
-  // }, []);
+useEffect(() => {
+  if (getUserDataFromLocal) {
+    setUser(getUserDataFromLocal);
 
-
-  useEffect(() => {
-    if (getUserDataFromLocal && getUserDataFromLocal != undefined) {
-      setUser(getUserDataFromLocal);
-      dispatch(getNotification(getUserDataFromLocal?.type))
+    if (getUserDataFromLocal?.type) {
+      dispatch(getNotification(getUserDataFromLocal.type));
     }
-  }, [getUserDataFromLocal])
+  }
+}, [getUserDataFromLocal, dispatch]);
 
   useEffect(() => {
     if (theme === "dark") {

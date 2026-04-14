@@ -270,14 +270,14 @@ const frameworkComponents = {
 
       <Row>
         <Col sm={12}>
-          <div className="ag-theme-alpine" style={{ height: "600px", width: "100%" }}>
+          <div className="ag-theme-alpine" style={{ height: "50em", width: "100%" }}>
             <AgGridReact
               rowData={logs}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
               pagination={true}
-              paginationPageSize={10}
-              frameworkComponents={frameworkComponents}
+              paginationPageSize={20}
+              components={frameworkComponents}
             />
           </div>
         </Col>

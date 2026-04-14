@@ -74,7 +74,7 @@ const getCompanyWebSetting = ({ db }) => async (hostname) => {
     }
   }
   else {
-    return { status: true, message: "", data: null, redirect: false };
+    return { status: true, message: "", data: null, redirect: true };
   }
 };
 
@@ -136,13 +136,11 @@ const checklogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
   }
 };
 
-const verifylogin = ({ db }) => async ({ loginid, password, orgid, otp }) => {
-
+const verifylogin = ({ db,keys }) => async ({ loginid, password, orgid, otp }) => {
   loginid = loginid.trim();
   password = password.trim();
 
-
-  const [user] = await db.sequelize.query(`select userid,useruuid,orgid,loginid,firstname,lastname,email,mobile,profile,password,usertype from ad_users au where status ='Active' AND usertype='Admin' AND BINARY loginid = ?  and orgid = ? and otp= '${otp}' and otptimeout >= now() `,
+  let [user] = await db.sequelize.query(`select userid,useruuid,orgid,loginid,firstname,lastname,email,mobile,profile,password,usertype from ad_users au where status ='Active' AND usertype='Admin' AND BINARY loginid = ?  and orgid = ? and otp= '${otp}' and otptimeout >= now() `,
     { replacements: [loginid, orgid, otp], type: db.sequelize.QueryTypes.SELECT });
 
   if (!user) {
@@ -150,8 +148,10 @@ const verifylogin = ({ db }) => async ({ loginid, password, orgid, otp }) => {
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (isMatch == true) {
-    delete user.password;
     await db.sequelize.query(`UPDATE ad_users set otp=null, otptimeout=null where userid = ? and usertype='Admin' AND status ='Active'`, { replacements: [user.userid] });
+    let [checksuper] = await db.sequelize.query(`select userrolemapid from ad_userrolemap where userid = ? and roleid in (${keys.SUPER_ROLE_ID}) `, { replacements: [user.userid], type: db.sequelize.QueryTypes.SELECT });
+    if(checksuper){ user.issuper=true; }
+    delete user.password;
     return { statusCode: 200, user };
   } else {
     return { statusCode: 401, message: "Invalid credentials" };
@@ -159,12 +159,11 @@ const verifylogin = ({ db }) => async ({ loginid, password, orgid, otp }) => {
 
 }
 
-const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
+const verifyDirectLogin = ({ db, keys }) => async ({ loginid, password, orgid }) => {
   loginid = loginid.trim();
   password = password.trim();
 
-
-  const [user] = await db.sequelize.query(`select userid,useruuid,orgid,loginid,firstname,lastname,email,mobile,profile,password,usertype from ad_users au where status ='Active' AND usertype='Admin' AND BINARY loginid = ?  and orgid = ?  `,
+  let [user] = await db.sequelize.query(`select userid,useruuid,orgid,loginid,firstname,lastname,email,mobile,profile,password,usertype from ad_users au where status ='Active' AND usertype='Admin' AND BINARY loginid = ?  and orgid = ?  `,
     { replacements: [loginid, orgid], type: db.sequelize.QueryTypes.SELECT });
 
   if (!user) {
@@ -172,8 +171,9 @@ const verifyDirectLogin = ({ db }) => async ({ loginid, password, orgid }) => {
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (isMatch == true) {
+    let [checksuper] = await db.sequelize.query(`select userrolemapid from ad_userrolemap where userid = ? and roleid in (${keys.SUPER_ROLE_ID}) `, { replacements: [user.userid], type: db.sequelize.QueryTypes.SELECT });
+    if(checksuper){ user.issuper=true; }
     delete user.password;
-
     return { statusCode: 200, user };
   } else {
     return { statusCode: 401, message: "Invalid credentials" };

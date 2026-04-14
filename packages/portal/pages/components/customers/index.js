@@ -160,7 +160,7 @@ const Customers = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -927,7 +927,7 @@ resendLicenseButtonRenderer: function (props) {
                     rowData={rowData}
                     columnDefs={columnDefs}
                     pagination={true}
-                    paginationPageSize={10}
+                    paginationPageSize={20}
                     onGridReady={onGridReady}
                     components={frameworkComponents}
                     defaultColDef={defaultColDef}

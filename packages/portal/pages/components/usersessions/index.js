@@ -810,6 +810,7 @@ const footerStyle = {
                         columnDefs={columnDefs}
                         pagination={true}
                         onGridReady={onGridReady}
+                        paginationPageSize={20}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
                       ></AgGridReact>

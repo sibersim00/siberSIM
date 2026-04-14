@@ -32,11 +32,16 @@ axiosInstance.interceptors.request.use(
 );
 
 axiosInstance.interceptors.response.use(
-  (response) => {
+  (response) =>
+    
+    {
     try{
     if (response && response.data && typeof(response?.data?.data) === "string") {
       const decryptedBytes = CryptoJS.AES.decrypt(response.data.data, secretKey);
       const decryptedPayload = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      if (!decryptedPayload || decryptedPayload.trim() === "" || !decryptedPayload.startsWith("{")) {
+        return response;
+      }
       response.data.data = JSON.parse(decryptedPayload);
       isSwalOpen401 = false;
       if (response.data.data?.accessToken) {

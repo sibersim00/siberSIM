@@ -4109,6 +4109,9 @@ body.dark-theme .ag-row-drag {
   accent-color: #04973C !important; /* Bright green */
 }
 
+.dark-theme .ag-theme-alpine .ag-paging-button .ag-icon {
+  color: #ffffff !important;
+}
 
 
 // Calender
@@ -4587,17 +4590,6 @@ body.dark-theme .ag-row-drag {
   color: #28a745; 
   border-bottom: none;
 }
-.custom-card {
-  background-color: #0b0b2e;
-  padding: 12px;
-  border-radius: 12px;
-  color: white;
-  transition: 0.2s ease;
-}
-.custom-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-}
 .label-text {
   font-weight: 500;
   color: #28a745; 
@@ -4609,3 +4601,26 @@ body.dark-theme .ag-row-drag {
 .text-danger {
   font-size: 16px;
 }
+
+
+// ---------------upgrade button---------------
+
+// .upgrade-btn {
+//   background: linear-gradient(135deg, #4facfe, #00f2fe);
+//   border: none;
+//   color: #fff;
+//   padding: 6px 16px;
+//   font-size: 11px;
+//   font-weight: 500;
+//   border-radius: 20px;
+//   display: inline-flex;
+//   align-items: center;
+//   transition: all 0.3s ease;
+//   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+// }
+
+// .upgrade-btn:hover {
+//   transform: translateY(-2px);
+//   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+//   background: linear-gradient(135deg, #00f2fe,  #4facfe);
+// }

@@ -1211,8 +1211,6 @@ const buildNetworkPayload = (type, staticValue) => {
     target: pendingConnection.target,
     targetHandle: pendingConnection.targetHandle,
   };
-
-  // ✅ ONLY CHANGE HERE
   if (type === "static") {
     payload.label = staticValue || "Network Id";
     payload.staticVmbr = staticValue || null; // 👈 NEW FIELD
@@ -1224,330 +1222,97 @@ const buildNetworkPayload = (type, staticValue) => {
 
   return payload;
 };
-  const [dragStart, setDragStart] = useState(null);
-  const onConnectStart = useCallback((event, params) => {
-     connectingRef.current = true;
-    setDragStart({
-      nodeId: params.nodeId,
-      handleId: params.handleId,
-    });
+          const [dragStart, setDragStart] = useState(null);
+const onConnectStart = useCallback((event, params) => {
+            connectingRef.current = true;
+            setDragStart({
+              nodeId: params.nodeId,
+              handleId: params.handleId,
+            });
   }, []);
 
-  const clickTimer = useRef(null);
-  const isDragging = useRef(false);
-   const onHandleMouseDown = (event, portKey, nodeId) => {
-    event.stopPropagation();
-    isDragging.current = false;
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const moveListener = (e) => {
-      if (
-        Math.abs(e.clientX - startX) > 5 ||
-        Math.abs(e.clientY - startY) > 5
-      ) {
-        isDragging.current = true;
-      }
-    };
-    document.addEventListener("mousemove", moveListener);
-    clickTimer.current = setTimeout(() => {
-      document.removeEventListener("mousemove", moveListener);
-      if (!isDragging.current) {
-        setPortPopover({
-          nodeId,
-          portKey,
-          x: startX,
-          y: startY,
-        });
-      }
-    }, 160);
+const clickTimer = useRef(null);
+const isDragging = useRef(false);
+const onHandleMouseDown = (event, portKey, nodeId) => {
+  event.stopPropagation();
+  isDragging.current = false;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const moveListener = (e) => {
+    if (
+      Math.abs(e.clientX - startX) > 5 ||
+      Math.abs(e.clientY - startY) > 5
+    ) {
+      isDragging.current = true;
+    }
   };
- 
-  const onConnect = useCallback(
-    (params) => {
-      let corrected = { ...params };
-      if (dragStart && params.target === dragStart.nodeId) {
-        corrected = {
-          ...params,
-          source: params.target,
-          sourceHandle: params.targetHandle,
-          target: params.source,
-          targetHandle: params.sourceHandle,
-        };
-      }
-      const sourceEdge = edges.find(
-        (e) =>
-          (e.source === corrected.source || e.target === corrected.source) &&
-          e.data?.label,
-      );
-      const targetEdge = edges.find(
-        (e) =>
-          (e.source === corrected.target || e.target === corrected.target) &&
-          e.data?.label,
-      );
-      const hasTargetLink = edges.some(
-        (e) =>
-          (e.source === corrected.target || e.target === corrected.target) &&
-          e.data?.label
-      );
-      const hasSourceLink = edges.some(
-        (e) =>
-          (e.source === corrected.source || e.source === corrected.source) &&
-          e.data?.label
-      );
-      //  normalize handle types (THIS WAS MISSING)
-      corrected.sourceHandle = normalizeHandle(
-        corrected.sourceHandle,
-        "source",
-      );
-      corrected.targetHandle = normalizeHandle(
-        corrected.targetHandle,
-        "target",
-      );
-      // const existingNetwork = sourceEdge?.data?.label || null;
-      const existingNetwork =
-  sourceEdge?.data?.label || targetEdge?.data?.label || null;
-      // const options = ["static", "existing", "new"];
-      let options = [];
-if (existingNetwork) {
-  // FORCE existing if already available
-  options = ["existing"];
-} else if (!hasSourceLink && !hasTargetLink) {
-  options = ["static", "new"];
-} else if (hasSourceLink && hasTargetLink) {
-  options = ["static", "existing"];
-} else {
-  options = ["existing"];
-}
-      const handleEl = document.querySelector(
-        `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
-      );
-      let pos = {
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      };
-
-      if (handleEl) {
-        const rect = handleEl.getBoundingClientRect();
-        pos = {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        };
-      }
-      setPendingConnection(corrected);
-
-      setConnectPopover({
-        x: pos.x,
-        y: pos.y,
-        options,
-        existingNetwork,
+  document.addEventListener("mousemove", moveListener);
+  clickTimer.current = setTimeout(() => {
+    document.removeEventListener("mousemove", moveListener);
+    if (!isDragging.current) {
+      setPortPopover({
+        nodeId,
+        portKey,
+        x: startX,
+        y: startY,
       });
+    }
+  }, 160);
+};
+        
+  const  onConnect = useCallback(
+    (params) => {
+  let corrected = { ...params };
+  let activeNode = dragStart?.nodeId;
+  let activeHandle = normalizeHandle(dragStart?.handleId);
+  corrected.sourceHandle = params.sourceHandle;
+  let options = [];const getEdgeMatch = (e) => {
+  const edgeSourceHandle = normalizeHandle(e.sourceHandle);
+  const edgeTargetHandle = normalizeHandle(e.targetHandle);
+
+  return (
+    (e.source === activeNode &&
+      edgeSourceHandle === activeHandle) ||
+    (e.target === activeNode &&
+      edgeTargetHandle === activeHandle)
+  );
+};
+  const matchingEdges = edges.filter(getEdgeMatch);
+  const hasSourceLink = matchingEdges.length > 0;
+  const sourceEdge = matchingEdges[0];
+
+  const existingNetwork = sourceEdge?.data?.label || null;
+  if (hasSourceLink) {
+    options = ["existing"];
+  } else {
+    options = ["static", "new"];
+  }
+  const handleEl = document.querySelector(
+    `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
+  );
+  let pos = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  };
+
+  if (handleEl) {
+    const rect = handleEl.getBoundingClientRect();
+    pos = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  }
+  setPendingConnection(corrected);
+
+  setConnectPopover({
+    x: pos.x,
+    y: pos.y,
+    options,
+    existingNetwork,
+  });
     },
     [edges, dragStart],
   );
-//   const ConnectionPopover = ({ data, onSelect, onClose }) => {
-
-//     // User input vmbr
-//     const [staticInput, setStaticInput] = useState("");
-//     const [selectedType, setSelectedType] = useState(null);
-
-//     const isValidVmbr = (val) => {
-//       if (!val) return true; // allow empty (fallback case)
-
-//       const match = val.match(/^vmbr(\d+)$/);
-//       if (!match) return false;
-
-//       const num = parseInt(match[1], 10);
-//       return num >= 700 && num <= 1000;
-//     };
-//     const popoverRef = useRef(null);
-//     const labelMap = {
-//       static: "Static Network",
-//       existing: "Use Existing Network",
-//       new: "Create New Network",
-//     };
-//     useEffect(() => {
-//     const handleClickOutside = (event) => {
-//       if (
-//         popoverRef.current &&
-//         !popoverRef.current.contains(event.target)
-//       ) {
-//         onClose(); // close popover
-//       }
-//     };
-
-//     document.addEventListener("mousedown", handleClickOutside);
-
-//     return () => {
-//       document.removeEventListener("mousedown", handleClickOutside);
-//     };
-//   }, [onClose]);
-
-
-//     return (
-//       <div
-//        ref={popoverRef}
-//         id="connection-popover"
-//         style={{
-//           minWidth: 200,
-//           background: "linear-gradient(145deg,#141428,#1c1c3a)",
-//           border: "1px solid rgba(255,255,255,0.12)",
-//           borderRadius: 14,
-//           padding: 14,
-//           boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
-//           color: "#fff",
-//           // transform: "translate(-50%, -120%)",
-//           animation: "popIn 0.18s ease-out",
-//           position: "relative",
-//         }}
-//       >
-//         {/* ❌ Close Button */}
-//         <div
-//           onClick={onClose}
-//           style={{
-//             position: "absolute",
-//             top: 6,
-//             right: 10,
-//             cursor: "pointer",
-//             fontSize: 14,
-//             opacity: 0.7,
-//           }}
-//         >
-//           ✕
-//         </div>
-
-//         <div
-//           style={{
-//             fontSize: 12,
-//             marginBottom: 12,
-//             opacity: 0.75,
-//             fontWeight: 600,
-//             textAlign: "center",
-//           }}
-//         >
-//           Choose Network Type
-//         </div>
-
-//         {/* {data.options.map((opt) => (
-//           <div
-//             key={opt}
-//             onClick={() => {
-//               onSelect(opt);
-//               onClose();
-//             }}
-//             style={{
-//               padding: "10px 12px",
-//               borderRadius: 10,
-//               cursor: "pointer",
-//               marginBottom: 8,
-//               background: "#202048",
-//               transition: "0.15s",
-//               fontSize: 12,
-//               textAlign: "center",
-//             }}
-//             onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
-//             onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
-//           >
-//             {labelMap[opt]}
-//           </div>
-//         ))} */}
-//         {data.options.map((opt) => (
-//   <div key={opt}>
-//     {/* <div
-//       onClick={() => {
-//         if (opt === "static" && !isValidVmbr(staticInput)) {
-//           alert("Enter valid vmbr (700–1000)");
-//           return;
-//         }
-
-//         onSelect(opt, staticInput); // 👈 pass value
-//         onClose();
-//       }}
-//       style={{
-//         padding: "10px 12px",
-//         borderRadius: 10,
-//         cursor: "pointer",
-//         marginBottom: 8,
-//         background: "#202048",
-//         textAlign: "center",
-//       }}
-//     >
-//       {labelMap[opt]}
-//     </div> */}
-//     <div
-//   onClick={() => {
-//     if (opt === "static") {
-//       setSelectedType("static"); // 👈 don't submit yet
-//       return;
-//     }
-
-//     // other types → direct submit
-//     onSelect(opt);
-//     onClose();
-//   }}
-//   style={{
-//     padding: "10px 12px",
-//     borderRadius: 10,
-//     cursor: "pointer",
-//     marginBottom: 8,
-//     background: "#202048",
-//     textAlign: "center",
-//   }}
-// >
-//   {labelMap[opt]}
-// </div>
-
-//     {/* 👇 INPUT ONLY FOR STATIC */}
-//     {opt === "static" && selectedType === "static" && (
-//   <>
-//     <input
-//       type="text"
-//       placeholder="vmbr50 - vmbr999"
-//       value={staticInput}
-//       onChange={(e) => setStaticInput(e.target.value)}
-//       style={{
-//         width: "100%",
-//         padding: "6px",
-//         marginBottom: "8px",
-//         borderRadius: "6px",
-//         border: "1px solid #444",
-//         background: "#111",
-//         color: "#fff",
-//         fontSize: "12px",
-//       }}
-//     />
-
-//     {/* ✅ SUBMIT BUTTON */}
-//     <div
-//       onClick={() => {
-//         if (!isValidVmbr(staticInput)) {
-//           alert("Enter valid vmbr (700–1000)");
-//           return;
-//         }
-
-//         onSelect("static", staticInput);
-//         onClose();
-//       }}
-//       style={{
-//         padding: "8px",
-//         borderRadius: 8,
-//         cursor: "pointer",
-//         background: "#4CAF50",
-//         textAlign: "center",
-//         fontSize: 12,
-//         fontWeight: 600,
-//       }}
-//     >
-//       Submit
-//     </div>
-//   </>
-// )}
-//   </div>
-// ))}
-//       </div>
-//     );
-//   };
-
-
 const ConnectionPopover = ({ data, onSelect, onClose }) => {
   const popoverRef = useRef(null);
 
@@ -1832,14 +1597,28 @@ const iconMap = {
       setBridgeLoading(false);
     }
   };
+// const normalizeHandle = (handle, expectedType) => {
+//   if (!handle) return handle;
+//   const [port, type] = handle.split("-");
+//   if (!type) {
+//     return `${port}-${expectedType}`;
+//   }
+//   if (expectedType === "source" && type !== "source") {
+//     return `${port}-source`;
+//   }
+//   if (expectedType === "target" && type !== "target") {
+//     return `${port}-target`;
+//   }
+//   return handle;
+// };
+const normalizeHandle = (handle) => {
+  if (!handle) return handle;
 
-  const normalizeHandle = (handle, expectedType) => {
-    if (!handle) return handle;
-    const [port, type] = handle.split("-");
-    if (expectedType === "source" && type === "target") return `${port}-source`;
-    if (expectedType === "target" && type === "source") return `${port}-target`;
-    return handle;
-  };
+  return handle
+    .replace("-source", "")
+    .replace("-target", "")
+    .trim();
+};
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -1925,51 +1704,6 @@ const onConnectEnd = () => {
       dispatch,
     ],
   );
-  // const deleteNode = async (nodeId) => {
-  //   const nodeToDelete = nodes.find((node) => node.id === nodeId);
-  //   if (!nodeToDelete) return;
-  //   const vmid = nodeToDelete?.data?.vmid;
-  //   const vmrequestid = scenario?.vmrequestid;
-  //   try {
-  //     setShowStopDestroyModal(true);
-  //     setStopStep("Stopping");
-  //     if (vmid && vmrequestid) {
-  //       await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
-  //     }
-  //     setStopStep("Destroying");
-  //     setTimeout(() => {
-  //       setShowStopDestroyModal(false);
-  //     }, 100);
-  //     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-  //     setEdges((eds) =>
-  //       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
-  //     );
-  //     if (nodeToDelete?.data?.componentId) {
-  //       const imageComponent = nodeToDelete.data.componentId;
-  //       const imageNode = imageNodeData.find(
-  //         (item) => item.id === imageComponent,
-  //       );
-
-  //       if (imageNode) {
-  //         const imageId = imageNode.id;
-
-  //         setDroppedImages((prev) => prev.filter((id) => id !== imageId));
-  //         setDraggedComponent((prev) =>
-  //           prev.filter((item) => item.id !== imageId),
-  //         );
-  //         setImageNodeData((prev) =>
-  //           prev.filter((item) => item.id !== imageId),
-  //         );
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error("Delete VM failed", err);
-  //     setShowStopDestroyModal(false);
-  //   }
-  // };
-
-
-
   const deleteNode = async (nodeId) => {
   const nodeToDelete = nodes.find((node) => node.id === nodeId);
   if (!nodeToDelete) return;
@@ -1982,9 +1716,6 @@ const onConnectEnd = () => {
     )
     .map((e) => e?.data?.label)
     .filter(Boolean);
-
-  console.log("VMBR LIST", vmbrList);
-
   try {
     setShowStopDestroyModal(true);
     setStopStep("Stopping");
@@ -2324,6 +2055,27 @@ const onConnectEnd = () => {
       // setEdges([]);
     }
   }, [addNetwordId]);
+  console.log("addNetwordIdaddNetwordIdaddNetwordIdaddNetwordId",addNetwordId);
+  
+  useEffect(() => {
+    if (addNetwordId?.statusCode === 400) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          Ggggggggggggggggggggggg
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        },
+      );
+      dispatch(clearModifyNetworkId());
+      // dispatch(getSingleScenarios(query.slug[0]));
+      refreshScenario();
+      // setNodes([]);
+      // setEdges([]);
+    }
+  }, [addNetwordId]);
   useEffect(() => {
     if (plugNetwork?.statusCode === 200) {
       toast.success(
@@ -2607,34 +2359,28 @@ const getPopoverplugPosition = (popover) => {
 
   let left = popover.x;
   let top = popover.y;
-  console.log("leftleftleftleft",left);
-  
-
-  // 👉 Offset (so it doesn't stick to cursor)
+  // Offset (so it doesn't stick to cursor)
   left += 10;
   top += 10;
 
-  // 👉 Right edge
+  // Right edge
   if (left + popWidth > window.innerWidth) {
     left = left - popWidth - 20;
   }
 
-  // 👉 Bottom edge
+  // Bottom edge
   if (top + popHeight > window.innerHeight) {
     top = top - popHeight - 20;
   }
 
-  // 👉 Clamp inside viewport
+  // Clamp inside viewport
   left = Math.max(10, left);
   top = Math.max(10, top);
 
   return { left, top };
 };
 const handleEdgeClick = async (event, edge) => {
-  console.log("edgeedgeedgeedgeedge",edge);
-  
   event.stopPropagation();
-
   const result = await Swal.fire({
     title: "Are you sure?",
     text: "Do you want to remove this network bridge?",
@@ -2656,19 +2402,6 @@ const handleEdgeClick = async (event, edge) => {
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
       };
-      // const payload = {
-      //   // vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
-      //   vmrequestid : getSingleScenariosSucc?.[0]?.vmrequestid,
-      //   edgeId: edge.id,
-      //   bridge: edge.data?.label,
-      //   sourceNodeId: edge.source,
-      //   targetNodeId: edge.target,
-      //   sourceHandle: edge.sourceHandle,
-      //   targetHandle: edge.targetHandle,
-      // };
-      console.log("payloadpayloadpayload",payload);
-      
-
       //Redux API call
       await dispatch(deletebridge(payload));
       setEdges((eds) => eds.filter((e) => e.id !== edge.id));

@@ -218,7 +218,7 @@ const Widgets = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 20, // use state variable for page size
   };
 
   const onGridReady = (params) => {

@@ -391,7 +391,7 @@ const Dashboard = () => {
 
                         <div
                           className="position-relative overflow-hidden border rounded"
-                          style={{ height: "300px" }}
+                          style={{ height: "900px" }}
                         >
                           <iframe
                             src={

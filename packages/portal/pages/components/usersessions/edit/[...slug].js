@@ -1214,33 +1214,8 @@ const buildNetworkPayload = (type, staticValue) => {
   const clickTimer = useRef(null);
   const isDragging = useRef(false);
 
-  // const onHandleMouseDown = (event, portKey, nodeId) => {
-  //   event.stopPropagation();
-  //   isDragging.current = false;
-  //   const startX = event.clientX;
-  //   const startY = event.clientY;
-  //   const moveListener = (e) => {
-  //     if (
-  //       Math.abs(e.clientX - startX) > 5 ||
-  //       Math.abs(e.clientY - startY) > 5
-  //     ) {
-  //       isDragging.current = true;
-  //     }
-  //   };
-  //   document.addEventListener("mousemove", moveListener);
-  //   clickTimer.current = setTimeout(() => {
-  //     document.removeEventListener("mousemove", moveListener);
-  //     if (!isDragging.current) {
-  //       setPortPopover({
-  //         nodeId,
-  //         portKey,
-  //         x: startX,
-  //         y: startY,
-  //       });
-  //     }
-  //   }, 160); // <-- MAGIC NUMBER (must be small)
-  // };
-const onHandleMouseDown = (event, portKey, nodeId) => {
+
+  const onHandleMouseDown = (event, portKey, nodeId) => {
   event.stopPropagation();
 
   isDragging.current = false;
@@ -1279,182 +1254,61 @@ const onHandleMouseDown = (event, portKey, nodeId) => {
 };
   
   
-  const onConnect = useCallback(
+  const  onConnect = useCallback(
     (params) => {
-      let corrected = { ...params };
-      if (dragStart && params.target === dragStart.nodeId) {
-        corrected = {
-          ...params,
-          source: params.target,
-          sourceHandle: params.targetHandle,
-          target: params.source,
-          targetHandle: params.sourceHandle,
-        };
-      }
-      const sourceEdge = edges.find(
-        (e) =>
-          (e.source === corrected.source || e.target === corrected.source) &&
-          e.data?.label,
-      );
-      const targetEdge = edges.find(
-        (e) =>
-          (e.source === corrected.target || e.target === corrected.target) &&
-          e.data?.label,
-      );
-      const hasTargetLink = edges.some(
-        (e) =>
-          (e.source === corrected.target || e.target === corrected.target) &&
-          e.data?.label
-      );
-      const hasSourceLink = edges.some(
-        (e) =>
-          (e.source === corrected.source || e.source === corrected.source) &&
-          e.data?.label
-      );
-      //  normalize handle types (THIS WAS MISSING)
-      corrected.sourceHandle = normalizeHandle(
-        corrected.sourceHandle,
-        "source",
-      );
-      corrected.targetHandle = normalizeHandle(
-        corrected.targetHandle,
-        "target",
-      );
-      // const existingNetwork = sourceEdge?.data?.label || null;
-      // const options = ["static", "existing", "new"];
-        const existingNetwork =
-  sourceEdge?.data?.label || targetEdge?.data?.label || null;
-      // const options = ["static", "existing", "new"];
-      let options = [];
-if (existingNetwork) {
-  // FORCE existing if already available
-  options = ["existing"];
-} else if (!hasSourceLink && !hasTargetLink) {
-  options = ["static", "new"];
-} else if (hasSourceLink && hasTargetLink) {
-  options = ["static", "existing"];
-} else {
-  options = ["existing"];
-}
-      const handleEl = document.querySelector(
-        `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
-      );
-      let pos = {
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      };
+  let corrected = { ...params };
+  let activeNode = dragStart?.nodeId;
+  let activeHandle = normalizeHandle(dragStart?.handleId);
+  corrected.sourceHandle = params.sourceHandle;
+  let options = [];const getEdgeMatch = (e) => {
+  const edgeSourceHandle = normalizeHandle(e.sourceHandle);
+  const edgeTargetHandle = normalizeHandle(e.targetHandle);
 
-      if (handleEl) {
-        const rect = handleEl.getBoundingClientRect();
-        pos = {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        };
-      }
-      setPendingConnection(corrected);
+  return (
+    (e.source === activeNode &&
+      edgeSourceHandle === activeHandle) ||
+    (e.target === activeNode &&
+      edgeTargetHandle === activeHandle)
+  );
+};
+  const matchingEdges = edges.filter(getEdgeMatch);
+  const hasSourceLink = matchingEdges.length > 0;
+  const sourceEdge = matchingEdges[0];
 
-      setConnectPopover({
-        x: pos.x,
-        y: pos.y,
-        options,
-        existingNetwork,
-      });
+  const existingNetwork = sourceEdge?.data?.label || null;
+  if (hasSourceLink) {
+    options = ["existing"];
+  } else {
+    options = ["static", "new"];
+  }
+  const handleEl = document.querySelector(
+    `.react-flow__handle[data-nodeid="${corrected.target}"][data-handleid="${corrected.targetHandle}"]`,
+  );
+  let pos = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  };
+
+  if (handleEl) {
+    const rect = handleEl.getBoundingClientRect();
+    pos = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  }
+  setPendingConnection(corrected);
+
+  setConnectPopover({
+    x: pos.x,
+    y: pos.y,
+    options,
+    existingNetwork,
+  });
     },
     [edges, dragStart],
   );
-//  const ConnectionPopover = ({ data, onSelect, onClose }) => {
-//       const popoverRef = useRef(null);
-//     const labelMap = {
-//       static: "Static Network",
-//       existing: "Use Existing Network",
-//       new: "Create New Network",
-//     };
-//       useEffect(() => {
-//     const handleClickOutside = (event) => {
-//       if (
-//         popoverRef.current &&
-//         !popoverRef.current.contains(event.target)
-//       ) {
-//         onClose(); // close popover
-//       }
-//     };
 
-//     document.addEventListener("mousedown", handleClickOutside);
-
-//     return () => {
-//       document.removeEventListener("mousedown", handleClickOutside);
-//     };
-//   }, [onClose]);
-
-
-//     return (
-//       <div
-//        ref={popoverRef}
-//         id="connection-popover"
-//         style={{
-//           minWidth: 200,
-//           background: "linear-gradient(145deg,#141428,#1c1c3a)",
-//           border: "1px solid rgba(255,255,255,0.12)",
-//           borderRadius: 14,
-//           padding: 14,
-//           boxShadow: "0 20px 40px rgba(0,0,0,0.7)",
-//           color: "#fff",
-//           // transform: "translate(-50%, -120%)",
-//           animation: "popIn 0.18s ease-out",
-//           position: "relative",
-//         }}
-//       >
-//         {/* Close Button */}
-//         <div
-//         onClick={onClose}
-//         style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%", zIndex: 10, pointerEvents: "auto",
-//         }}
-//         >
-//         ✕
-//         </div>
-
-//         <div
-//           style={{
-//             fontSize: 12,
-//             marginBottom: 12,
-//             opacity: 0.75,
-//             fontWeight: 600,
-//             textAlign: "center",
-//           }}
-//         >
-//           Choose Network Type
-//         </div>
-
-//         {data.options.map((opt) => (
-//           <div
-//             key={opt}
-//             onClick={() => {
-//               onSelect(opt);
-//               onClose();
-//             }}
-//             style={{
-//               padding: "10px 12px",
-//               borderRadius: 10,
-//               cursor: "pointer",
-//               marginBottom: 8,
-//               background: "#202048",
-//               transition: "0.15s",
-//               fontSize: 12,
-//               textAlign: "center",
-//             }}
-//             onMouseEnter={(e) => (e.currentTarget.style.background = "#2d2d66")}
-//             onMouseLeave={(e) => (e.currentTarget.style.background = "#202048")}
-//           >
-//             {labelMap[opt]}
-//           </div>
-//         ))}
-//       </div>
-//     );
-//   };
-
-const ConnectionPopover = ({ data, onSelect, onClose }) => {
-  console.log("onSelectonSelectonSelectonSelect",data);
-  
+const ConnectionPopover = ({ data, onSelect, onClose }) => {  
   const popoverRef = useRef(null);
 
   const [selectedType, setSelectedType] = useState(null);
@@ -1732,14 +1586,14 @@ const iconMap = {
         setBridgeLoading(false);
       }
     };
-  const normalizeHandle = (handle, expectedType) => {
-    if (!handle) return handle;
-    const [port, type] = handle.split("-");
-    if (expectedType === "source" && type === "target") return `${port}-source`;
-    if (expectedType === "target" && type === "source") return `${port}-target`;
-    return handle;
-  };
+  const normalizeHandle = (handle) => {
+  if (!handle) return handle;
 
+  return handle
+    .replace("-source", "")
+    .replace("-target", "")
+    .trim();
+};
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";

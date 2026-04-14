@@ -327,7 +327,7 @@ const handleExport = () => {
             <Col md={12}>
               <div
                 className="ag-theme-alpine mt-2"
-                style={{ height: "40em", width: "100%" }}
+                style={{ height: "55em", width: "100%" }}
               >
                 <AgGridReact
                   id="cat_grid"
@@ -336,9 +336,9 @@ const handleExport = () => {
                   rowData={rowData}
                   columnDefs={columnDefs}
                   pagination={true}
-                  paginationPageSize={10}
+                  paginationPageSize={20}
                   onGridReady={onGridReady}
-                  frameworkComponents={frameworkComponents}
+                  components={frameworkComponents}
                   defaultColDef={defaultColDef}
                   enableBrowserTooltips={true} 
                 />

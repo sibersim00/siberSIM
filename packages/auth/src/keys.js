@@ -14,6 +14,7 @@ module.exports = {
     ADMIN_ROLE_ID:process.env.ADMIN_ROLE_ID || 1,
     INSTRUCTOR_ROLE_ID:process.env.INSTRUCTOR_ROLE_ID || 2,
     ADMIN_USER_ID:process.env.ADMIN_USER_ID || 2,
+    SUPER_ROLE_ID:process.env.SUPER_ROLE_ID,
     WEB_ORIGIN:process.env.WEB_ORIGIN 
   };
 

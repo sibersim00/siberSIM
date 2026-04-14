@@ -448,7 +448,7 @@ const columnDefs = useMemo(() => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 20, // use state variable for page size
   };
 
   const onGridReady = (params) => {
@@ -1057,7 +1057,7 @@ const columnDefs = useMemo(() => {
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                      style={{ height: "40em", width: "100%" }}
+                      style={{ height: "50em", width: "100%" }}
                     >
                       <AgGridReact
                         id="cat_grid"

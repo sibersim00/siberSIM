@@ -31,7 +31,7 @@ const ManageComponent = () => {
       hasFetchNetworkSuccess: state?.networkManage?.networkData,
       hasFetchNetworkSuccesslist: state?.networkManage?.networkDatalist?.data,
     }));
-  console.log("rowData", rowData);
+  console.log("hasFetchNetworkSuccesshasFetchNetworkSuccesshasFetchNetworkSuccess", hasFetchNetworkSuccesslist);
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -174,80 +174,6 @@ const ManageComponent = () => {
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
 
-
-
-    // const handleExport = () => {
-    //   const filteredData = listFaqsData.filter((row) => {
-    //     if (compStatus === "") return true; // All
-    //     return row.status === compStatus;
-    //   });
-    //   const exportData = filteredData.map((row) => {
-    //     const createdDate = row.createdon ? new Date(row.createdon) : null;
-    //     const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
-  
-    //     const createdDateOnly =
-    //       createdDate && !isNaN(createdDate)
-    //         ? createdDate.toLocaleDateString()
-    //         : "N/A";
-    //     const createdTime =
-    //       createdDate && !isNaN(createdDate)
-    //         ? createdDate.toLocaleTimeString()
-    //         : "N/A";
-  
-    //     const modifiedDateOnly =
-    //       modifiedDate && !isNaN(modifiedDate)
-    //         ? modifiedDate.toLocaleDateString()
-    //         : " ";
-    //     const modifiedTime =
-    //       modifiedDate && !isNaN(modifiedDate)
-    //         ? modifiedDate.toLocaleTimeString()
-    //         : " ";
-  
-    //     return [
-    //       row.faq_id,
-    //       row.question,
-    //       row.answer,
-    //       row.order_by,
-    //       row.type,
-    //       row.status === "true" ? "Active" : "Inactive",
-    //       createdDateOnly,
-    //       createdTime,
-    //       modifiedDateOnly,
-    //       modifiedTime,
-    //     ];
-    //   });
-  
-    //   const header = [
-    //     "FAQs Id",
-    //     "Title",
-    //     "Description",
-    //     "Order",
-    //     "Type",
-    //     "Status",
-    //     "Created Date",
-    //     "Created Time",
-    //     "Modified Date",
-    //     "Modified Time",
-    //   ];
-  
-    //   const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
-    //   const workbook = XLSX.utils.book_new();
-    //   XLSX.utils.book_append_sheet(workbook, worksheet, "FAQs");
-    //   const timestamp = new Date()
-    //     .toISOString()
-    //     .replace(/[-T:\.]/g, "")
-    //     .slice(0, 15); // YYYYMMDD_HHMMSS
-  
-    //   const filePrefix =
-    //     compStatus === ""
-    //       ? "FAQs_All"
-    //       : compStatus === "true"
-    //       ? "FAQs_Active"
-    //       : "FAQs_Inactive";
-  
-    //   XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
-    // };
-
   useEffect(() => {
     dispatch(fetchNetworlist());
   }, []);
@@ -340,23 +266,6 @@ const ManageComponent = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
-
-  // const handleStatusSwitch = (data) => {
-  //   Swal.fire({
-  //     title: "Are you sure?",
-  //     text: "Do you really want to change the status?",
-  //     icon: "warning",
-  //     showCancelButton: true,
-  //     confirmButtonColor: "var(--primary-bg-color)",
-  //     cancelButtonColor: "var(--secondary)",
-  //     confirmButtonText: "Yes, change it!",
-  //     allowOutsideClick: false,
-  //   }).then((result) => {
-  //     if (result.isConfirmed) {
-  //     }
-  //   });
-  // };
-
   const handleSync = () => {
     dispatch(fetchNetwork());
     dispatch(clearfetchNetwork());
@@ -453,9 +362,9 @@ const ManageComponent = () => {
                     rowData={rowData}
                     columnDefs={columnDefs}
                     pagination={true}
-                    paginationPageSize={10}
+                    paginationPageSize={20}
                     onGridReady={onGridReady}
-                    frameworkComponents={frameworkComponents}
+                    components={frameworkComponents}
                     defaultColDef={defaultColDef}
                   />
                 </div>

@@ -244,7 +244,7 @@ const ManageLearner = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {
@@ -620,7 +620,7 @@ const ManageLearner = () => {
               {view == "list" ? (
                 <div
                   className="ag-theme-alpine mg-t-20"
-                  style={{ height: "40.2em", width: "100%" }}
+                  style={{ height: "40em", width: "100%" }}
                 >
                   <AgGridReact
                     id="staff_grid"

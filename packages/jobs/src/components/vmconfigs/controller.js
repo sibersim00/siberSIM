@@ -731,7 +731,6 @@ const getVmConfig =
           vmType,
           mustStopVM: result.mustStopVM || false,
           stopMessage: result.stopMessage || null,
-
           approvalFlag: result.approvalFlag,
           approvalMessage: result.approvalMessage,
         });
@@ -752,7 +751,7 @@ const stopScenarioVM =
   async (req, res, next) => {
     try {
       const { vmid, vmType } = req.body;
-      const normalizedVmType = vmType?.toLowerCase(); // ✅ FIX
+      const normalizedVmType = vmType?.toLowerCase();
 
       if (!vmid || !normalizedVmType) {
         return res.status(400).send({
@@ -772,7 +771,7 @@ const stopScenarioVM =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to stop VM.",
+          message: result.message || "Failed to stop the VM.",
         });
       }
 
@@ -852,7 +851,7 @@ const deleteScenarioVmNetwork =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to add network interface.",
+          message: result.message || "Failed to delete network interface.",
         });
       }
 
@@ -908,7 +907,7 @@ const ModifyScenarioVmNetwork =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to add network interface.",
+          message: result.message || "Failed to modify the network interface.",
         });
       }
 
@@ -940,7 +939,7 @@ const addRuntimeComponent =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to add network interface.",
+          message: result.message || "Failed to add component.",
         });
       }
 
@@ -954,6 +953,7 @@ const addRuntimeComponent =
       next(err);
     }
   };
+
 const stopDestroySingleComponent =
   ({ dao, db }) =>
   async (req, res, next) => {
@@ -971,7 +971,7 @@ const stopDestroySingleComponent =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to add network interface.",
+          message: result.message || "Failed to stop and destroy the single component.",
         });
       }
 
@@ -1034,7 +1034,7 @@ const connectRuntimeNetwork =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to disconnect network interface.",
+          message: result.message || "Failed to connect network interface.",
         });
       }
 
@@ -1065,7 +1065,7 @@ const plugRuntimeNetwork =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to disconnect network interface.",
+          message: result.message || "Failed to plug network interface.",
         });
       }
 
@@ -1096,7 +1096,7 @@ const unplugRuntimeNetwork =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to network network interface.",
+          message: result.message || "Failed to unplug the network.",
         });
       }
 
@@ -1127,7 +1127,7 @@ const stopComponent =
       if (!result.success) {
         return res.status(400).send({
           statusCode: 400,
-          message: result.message || "Failed to add network interface.",
+          message: result.message || "Failed to stop the component.",
         });
       }
 

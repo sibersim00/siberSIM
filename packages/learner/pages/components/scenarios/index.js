@@ -23,7 +23,7 @@ const Scenarios = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { scenariosListData } = useSelector((state) => ({
-    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? [],
+    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? null,
   }));
 
   const [view, setView] = useState("card");
@@ -433,7 +433,6 @@ const Scenarios = () => {
                         <Nav.Link
                           eventKey="tab1"
                           className="masterlist"
-                          exclusive
                           style={{
                             color: indexId === "tab1" ? "#007bff" : "gray",
                             fontWeight: indexId === "tab1" ? "bold" : "normal",
@@ -447,7 +446,6 @@ const Scenarios = () => {
                         <Nav.Link
                           eventKey="tab2"
                           className="masterlist"
-                          exclusive
                           style={{
                             color: indexId === "tab2" ? "#007bff" : "gray",
                             fontWeight: indexId === "tab2" ? "bold" : "normal",

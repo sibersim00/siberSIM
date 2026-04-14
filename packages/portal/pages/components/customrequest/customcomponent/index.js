@@ -195,7 +195,7 @@ const ManageCustomComponent = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {
@@ -501,7 +501,7 @@ const ManageCustomComponent = () => {
                 {view == "list" ? (
                   <div
                     className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                    style={{ height: "50em", width: "100%" }}
                   >
                     <AgGridReact
                       id="cat_grid"

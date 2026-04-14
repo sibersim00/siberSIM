@@ -92,8 +92,9 @@ const authenticateToken = (routeslug) => {
           });
         }
         const userData = JSON.parse(tokenRow.token_json || "{}");
+        userData.user_count_limit  =0;
         // License check
-        if (userData.license_key) {
+        if (!userData.issuper && userData.license_key) {
           const hostname = req.hostname;
           const licenseStatus = serialLicense.validateJWTLicense(
             hostname,
@@ -183,9 +184,7 @@ const authenticateTokenold = async (req, res, next) => {
       }
 
       const userData = JSON.parse(tokenRow.token_json || "{}");
-      console.log("userDatauserDatauserDatauserData",userData);
-      
-      if(userData.license_key){
+      if(!userData.issuper && userData.license_key){
         let hostname = req.hostname;
         const licenseStatus = serialLicense.validateJWTLicense(hostname,userData.license_key);
         if (!licenseStatus) { 
