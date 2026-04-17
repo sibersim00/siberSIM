@@ -243,6 +243,16 @@ const learnermenu =
           title: "Custom Components",
           sub_path: "/components/customcomponent/view/[...slug]"
         },
+        {
+          source: "/invitescenarios",
+          path: "/components/invitescenarios",
+          icon: "fa fa-cubes",
+          type: "link",
+          active: false,
+          selected: false,
+          title: "Assigned Scenario",
+          sub_path: "/components/invitescenarios/view/[...slug]"
+        },
       ];
     };
 
