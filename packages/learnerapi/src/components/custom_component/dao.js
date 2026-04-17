@@ -6,50 +6,7 @@ const getAll =
   ({ db }) =>
     async (learnerId) => {
       try {
-        const query = `
-        SELECT 
-    cc.customcomponentid,
-    cc.customcomponentuuid,
-    cc.componentname,
-    cc.componentcategoryid,
-    cc.master_vmid,
-    cc.clone_vmid,
-    cc.vmid,
-    cc.componenttype,
-    cc.duration,
-    cc.componentimage,
-    cc.status,
-    mcc.categoryname,
-    DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-    DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-
-    comp.componentid AS main_componentid,
-    comp.componentname AS main_componentname,
-    comp.network_ports AS main_network_ports,
-    comp.cores AS main_cores,
-    comp.memory AS main_memory,
-    comp.storage AS main_storage
-
-FROM custom_component cc
-LEFT JOIN component_categories mcc 
-    ON mcc.componentcategoryid = cc.componentcategoryid
-LEFT JOIN components comp 
-    ON comp.componentid = (
-        SELECT c2.componentid
-        FROM components c2
-        WHERE c2.vmid =
-            CASE 
-                WHEN cc.status = 'approved' THEN cc.vmid
-                ELSE cc.master_vmid
-            END
-          AND c2.status = 'Active'
-          AND c2.deletedon IS NULL
-        ORDER BY c2.createdon DESC
-        LIMIT 1
-    )
-WHERE cc.learner_id = :learnerId
-ORDER BY cc.customcomponentid DESC
-`;
+        const query = ` SELECT  cc.customcomponentid, cc.customcomponentuuid, cc.componentname, cc.componentcategoryid, cc.master_vmid, cc.clone_vmid, cc.vmid, cc.componenttype, cc.duration, cc.componentimage, cc.status, mcc.categoryname, DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, comp.componentid AS main_componentid, comp.componentname AS main_componentname, comp.network_ports AS main_network_ports, comp.cores AS main_cores, comp.memory AS main_memory, comp.storage AS main_storage FROM custom_component cc LEFT JOIN component_categories mcc  ON mcc.componentcategoryid = cc.componentcategoryid LEFT JOIN components comp  ON comp.componentid = ( SELECT c2.componentid FROM components c2 WHERE c2.vmid = CASE  WHEN cc.status = 'approved' THEN cc.vmid ELSE cc.master_vmid END AND c2.status = 'Active' AND c2.deletedon IS NULL ORDER BY c2.createdon DESC LIMIT 1 ) WHERE cc.learner_id = :learnerId AND cc.deletedon IS Null ORDER BY cc.customcomponentid DESC `;
         const rows = await db.sequelize.query(query, {
           replacements: { learnerId },
           type: db.sequelize.QueryTypes.SELECT,
@@ -66,49 +23,14 @@ const getById =
   ({ db }) =>
     async (customUUID) => {
       try {
-        let result = await db.sequelize.query(
-          `SELECT 
-            cc.customcomponentid,
-            cc.customcomponentuuid,
-            cc.componentname,
-            cc.componentcategoryid,
-            cc.clone_vmid,
-            cc.vmid,
-            cc.master_vmid,
-            cc.componenttype,
-            cc.duration,
-            cc.componentimage,
-            cc.status,
-             mcc.categoryname,
-            DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-            DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-
-            -- Main Component details
-            comp.componentid AS main_componentid,
-              comp.componentname AS vmid_name,
-            comp.componenttype AS main_componenttype,
-            comp.network_ports AS main_network_ports,
-            comp.componentimage As main_componentimage,
-            comp.cores AS main_cores,
-            comp.memory AS main_memory,
-            comp.storage AS main_storage
-
-        FROM custom_component cc
-            LEFT JOIN component_categories mcc 
-        ON mcc.componentcategoryid = cc.componentcategoryid
-        LEFT JOIN components comp ON comp.vmid = cc.master_vmid
-        WHERE cc.customcomponentuuid = :uuid
-        LIMIT 1`,
+        let result = await db.sequelize.query( `SELECT  cc.customcomponentid, cc.customcomponentuuid, cc.componentname, cc.componentcategoryid, cc.clone_vmid, cc.vmid, cc.master_vmid, cc.componenttype, cc.duration, cc.componentimage, cc.status, mcc.categoryname, DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, comp.componentid AS main_componentid, comp.componentname AS vmid_name, comp.componenttype AS main_componenttype, comp.network_ports AS main_network_ports, comp.componentimage As main_componentimage, comp.cores AS main_cores, comp.memory AS main_memory, comp.storage AS main_storage FROM custom_component cc LEFT JOIN component_categories mcc  ON mcc.componentcategoryid = cc.componentcategoryid LEFT JOIN components comp ON comp.vmid = cc.master_vmid WHERE cc.customcomponentuuid = :uuid LIMIT 1`,
           {
             replacements: { uuid: customUUID },
             type: db.sequelize.QueryTypes.SELECT,
           }
         );
-
         if (!result || result.length === 0) return null;
-
         let record = result[0];
-
         // Convert JSON ports to readable format
         if (record.main_network_ports) {
           try {
@@ -120,7 +42,6 @@ const getById =
             console.warn("Invalid JSON in network_ports");
           }
         }
-
         return record;
       } catch (error) {
         console.error("Error fetching custom component by ID:", error);

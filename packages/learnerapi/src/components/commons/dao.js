@@ -62,22 +62,7 @@ const theme =
   };
 const scenariocomponentcategorylist = async (db, componentcategoryid) => {
   try {
-    const [rows] = await db.sequelize.query(`
-      SELECT 
-        componentid,
-        network_ports,
-        vmid,
-        vmid_name AS vmname,
-        componentimage AS imageurl,
-        storage,
-        memory,
-        duration
-      FROM components
-      WHERE status = 'Active'
-        AND deletedon IS NULL
-        AND componentcategoryid = :componentcategoryid
-        ORDER BY vmname;
-    `, {
+    const [rows] = await db.sequelize.query(` SELECT  componentid, network_ports, vmid, componenttype,componentname, vmid_name AS vmname, componentimage AS imageurl, storage, memory, duration FROM components WHERE status = 'Active' AND deletedon IS NULL AND componentcategoryid = :componentcategoryid ORDER BY vmname; `, {
       replacements: { componentcategoryid },
     });
 
@@ -103,8 +88,10 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         networkport: parsedPorts,
         imageurl: row.imageurl || null,
         vmid: row.vmid || 0,
+        componenttype: row.componenttype || 0,
         vmname: row.vmname || "",
         storage: row.storage || "",
+        componentname: row.componentname || "",
         memory: row.memory || 0,
         duration: row.duration || 0
       });
@@ -128,54 +115,18 @@ const scenariocategorylist = ({ db }) => async () => {
     throw error;
   }
 };
-
-// const scenariosubcategorylist = ({ db, body }) => async () => {
-//   let scenariocategoryid = body.scenariocategoryid;
-//   try {
-//     let [result] = await db.sequelize
-//       .query(`select sc.scenariocategoryid,sc.parentscenariocategoryid,sc.categoryname as scenariocategory,scc.categoryname as parentscenariocategory from scenario_categories sc left join  scenario_categories scc on scc.scenariocategoryid= sc.parentscenariocategoryid
-// where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
-//     return result;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
-// const scenariosubcategorylist = ({ db }) => async () => {
-//   try {
-//     const [result] = await db.sequelize.query(`
-//       SELECT 
-//         sc.scenariocategoryid,
-//         sc.parentscenariocategoryid,
-//         sc.categoryname AS scenariocategory,
-//         scc.categoryname AS parentscenariocategory
-//       FROM scenario_categories sc
-//       LEFT JOIN scenario_categories scc 
-//         ON scc.scenariocategoryid = sc.parentscenariocategoryid
-//       WHERE sc.status = 'Active'
-//         AND sc.deletedon IS NULL
-//       ORDER BY sc.categoryname
-//     `);
-//     return result;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
 const scenariosubcategorylist = ({ db }) => async (body) => {
   let scenariocategoryid = body.scenariocategoryid;
 
   try {
     let [result] = await db.sequelize
       .query(`select sc.scenariocategoryid,sc.parentscenariocategoryid,sc.categoryname as scenariocategory,scc.categoryname as parentscenariocategory from scenario_categories sc left join  scenario_categories scc on scc.scenariocategoryid= sc.parentscenariocategoryid
-where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
+      where sc.status = 'Active' and sc.parentscenariocategoryid!='0' and sc.parentscenariocategoryid="${scenariocategoryid}"  and sc.deletedon is NULL ORDER by sc.categoryname`);
     return result;
   }  catch (error) {
     throw error;
   }
 };
-
-
 
 module.exports = {
   theme,

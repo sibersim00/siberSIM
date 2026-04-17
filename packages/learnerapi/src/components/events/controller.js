@@ -67,7 +67,6 @@ const canResumeScenario = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
       const user_count_limit = req.learneruser.user_count_limit;
-      console.log("tttttttttttttttttttt",user_count_limit)
     const result = await dao.canResumeScenario({ db, validation })(body,user_count_limit);
 
     return res.status(result.statusCode).send({

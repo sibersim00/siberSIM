@@ -5,42 +5,7 @@ const list =
   ({ db }) =>
   async (learnerId) => {
     try {
-      const query = `
-      SELECT 
-        s.custom_scenarioid,
-        s.custom_scenariouuid,
-        s.scenarioidentification,
-        s.scenariotitle,
-        s.scenariodescription,
-        s.scenariolevel,
-        s.scenariocategoryid,
-        s.scenariosubcategoryid,
-        s.approval_status,
-        s.scenariodiagram,
-        s.components,
-        s.component_config,
-        s.instruction_file,
-        s.duration,
-        s.scenariostatus,
-        s.scenarioimage,
-        CASE 
-          WHEN s.status = 'Active' THEN 'true' 
-          ELSE 'false' 
-        END AS status,
-        sc.categoryname AS scenariocategory,
-        scc.categoryname AS scenariosubcategory,
-        DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-      FROM custom_scenarios s
-      INNER JOIN scenario_categories sc 
-        ON sc.scenariocategoryid = s.scenariocategoryid
-      INNER JOIN scenario_categories scc 
-        ON scc.scenariocategoryid = s.scenariosubcategoryid
-        WHERE s.learner_id = :learnerId
-         AND s.approval_status != 'Approve'
-          AND s.deletedon IS NULL
-      ORDER BY s.scenariotitle;
-    `;
+      const query = ` SELECT  s.custom_scenarioid, s.custom_scenariouuid, s.scenarioidentification, s.scenariotitle, s.scenariodescription, s.scenariolevel, s.scenariocategoryid, s.scenariosubcategoryid, s.approval_status, s.scenariodiagram, s.components, s.component_config, s.instruction_file, s.duration, s.scenariostatus, s.scenarioimage, CASE  WHEN s.status = 'Active' THEN 'true'  ELSE 'false'  END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM custom_scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE s.learner_id = :learnerId AND s.approval_status != 'Approve' AND s.deletedon IS NULL ORDER BY s.scenariotitle; `;
 
       const res = await db.sequelize.query(query, {
         replacements: { learnerId },
@@ -53,75 +18,97 @@ const list =
       throw new Error("Failed to fetch scenario list");
     }
   };
+  // const getApproved =
+  //   ({ db }) =>
+  //     async (learner_sessionid) => {
+  //       try {
+  //         let result = await db.sequelize.query( `SELECT  s.scenarioid, s.scenariouuid, s.scenarioidentification, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, sc.categoryname AS scenariocategory, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE  s.deletedon IS NULL AND s.scenariostatus = 'Publish' AND s.status = 'Active' AND s.scenario_type = 'Private' AND s.learner_id = ? ORDER BY  CASE  WHEN s.modifiedon IS NOT NULL THEN s.modifiedon  ELSE s.createdon  END DESC; `,
+  //           {
+  //             replacements: [learner_sessionid],
+  //             type: db.sequelize.QueryTypes.SELECT,
+  //           }
+  //         );
+  //         return result;
+  //       } catch (error) {
+  //         console.log("sceanrios err==>", error);
+  //       }
+  //     };
+
   const getApproved =
-    ({ db }) =>
-      async (learner_sessionid) => {
-        try {
-          let result = await db.sequelize.query(
-            `SELECT 
-  s.scenarioid,
-  s.scenariouuid,
-  s.scenarioidentification,
-  s.scenariotitle,
-  s.scenariolevel,
-  s.scenarioimage,
-  s.duration,
-  s.status,
-  s.scenariostatus,
-  sc.categoryname AS scenariocategory,
-  sc.scenariocategoryid AS scenariocategoryid,
-  sc.categoryimage AS category_image,
-  scc.scenariocategoryid AS scenariosubcategoryid,
-  scc.categoryname AS scenariosubcategory,
-  scc.categoryimage AS subcategory_image,
-  scc.parentscenariocategoryid AS parentscenariocategoryid
-FROM scenarios s
-INNER JOIN scenario_categories sc 
-  ON sc.scenariocategoryid = s.scenariocategoryid
-LEFT JOIN scenario_categories scc 
-  ON scc.scenariocategoryid = s.scenariosubcategoryid
-WHERE 
-  s.deletedon IS NULL
-  AND s.scenariostatus = 'Publish'
-  AND s.status = 'Active'
-  AND s.scenario_type = 'Private'
-  AND s.learner_id = ?
-ORDER BY 
-  CASE 
-    WHEN s.modifiedon IS NOT NULL THEN s.modifiedon 
-    ELSE s.createdon 
-  END DESC;
-`,
-            {
-              replacements: [learner_sessionid],
-              type: db.sequelize.QueryTypes.SELECT,
-            }
-          );
-          return result;
-        } catch (error) {
-          console.log("sceanrios err==>", error);
+  ({ db }) =>
+  async (learner_sessionid) => {
+    try {
+      let result = await db.sequelize.query(
+        `
+        SELECT  
+          s.scenarioid,
+          s.scenariouuid,
+          s.scenarioidentification,
+          s.scenariotitle,
+          s.scenariolevel,
+          s.scenarioimage,
+          s.duration,
+          s.status,
+          s.scenariostatus,
+
+          sc.categoryname AS scenariocategory,
+          sc.scenariocategoryid AS scenariocategoryid,
+          sc.categoryimage AS category_image,
+
+          scc.scenariocategoryid AS scenariosubcategoryid,
+          scc.categoryname AS scenariosubcategory,
+          scc.categoryimage AS subcategory_image,
+          scc.parentscenariocategoryid AS parentscenariocategoryid,
+
+          vr.status AS vm_status
+        FROM scenarios s
+
+        INNER JOIN scenario_categories sc  
+          ON sc.scenariocategoryid = s.scenariocategoryid
+
+        LEFT JOIN scenario_categories scc  
+          ON scc.scenariocategoryid = s.scenariosubcategoryid
+
+        LEFT JOIN vm_request vr 
+          ON vr.vmrequestid = (
+              SELECT v2.vmrequestid
+              FROM vm_request v2
+              WHERE v2.scenarioid = s.scenarioid
+              ORDER BY v2.createdon DESC
+              LIMIT 1
+          )
+
+        WHERE  
+          s.deletedon IS NULL
+          AND s.scenariostatus = 'Publish'
+          AND s.status = 'Active'
+          AND s.scenario_type = 'Private'
+          AND s.learner_id = ?
+
+        ORDER BY  
+          CASE  
+            WHEN s.modifiedon IS NOT NULL THEN s.modifiedon
+            ELSE s.createdon
+          END DESC
+        `,
+        {
+          replacements: [learner_sessionid],
+          type: db.sequelize.QueryTypes.SELECT,
         }
-      };
+      );
+
+      return result;
+    } catch (error) {
+      console.log("scenarios err==>", error);
+    }
+  };
+
 
 const getById =
   ({ db }) =>
   async (uuid) => {
     try {
-      const res = await db.sequelize.query(
-        `SELECT s.custom_scenarioid, s.scenarioidentification, s.custom_scenariouuid, s.scenariotitle, s.scenariodescription,
-              s.scenariolevel, s.scenariocategoryid,s.reject_reason, s.scenariosubcategoryid, s.scenariodiagram, s.components,
-              s.component_config, s.network_config, s.instruction_file, s.scenarioimage, s.instructor_id,
-              s.duration, s.scenariostatus, s.publishedon,
-              CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status,
-              sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory,
-              CONCAT(user.firstname, ' ', user.lastname) AS instructor_name,
-              DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon,
-              DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-       FROM custom_scenarios s
-       INNER JOIN scenario_categories sc  ON sc.scenariocategoryid  = s.scenariocategoryid
-       INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid
-       LEFT  JOIN ad_users user ON user.userid = s.instructor_id
-       WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid`,
+      const res = await db.sequelize.query(  `SELECT s.custom_scenarioid, s.scenarioidentification, s.custom_scenariouuid, s.scenariotitle, s.scenariodescription,  s.scenariolevel, s.scenariocategoryid,s.reject_reason, s.scenariosubcategoryid, s.scenariodiagram, s.components,  s.component_config, s.network_config, s.instruction_file, s.scenarioimage, s.instructor_id,  s.duration, s.scenariostatus, s.publishedon,  CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status,  sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory,  CONCAT(user.firstname, ' ', user.lastname) AS instructor_name,  DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon,  DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon  FROM custom_scenarios s  INNER JOIN scenario_categories sc  ON sc.scenariocategoryid  = s.scenariocategoryid  INNER JOIN scenario_categories scc ON scc.scenariocategoryid = s.scenariosubcategoryid  LEFT  JOIN ad_users user ON user.userid = s.instructor_id  WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid`,
         {
           replacements: { _uuid: uuid },
           type: db.sequelize.QueryTypes.SELECT,
@@ -269,29 +256,8 @@ const create =
         };
       }
 
-      const insertQuery = `
-        INSERT INTO custom_scenarios (
-          custom_scenariouuid,
-          scenarioidentification,
-          scenariotitle,
-          scenariodescription,
-          scenariolevel,
-          scenariocategoryid,
-          scenariosubcategoryid,
-          instruction_file,
-          scenariostatus,
-          duration,
-          scenarioimage,
-          approval_status,
-          learner_id,
-          createdby,
-          createdon,
-          publishedon
-        )
-        VALUES (
-          UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NOW()
-        )
-      `;
+      const insertQuery = ` INSERT INTO custom_scenarios ( custom_scenariouuid, scenarioidentification, scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, approval_status, learner_id, createdby, createdon, publishedon ) VALUES ( UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NOW() )
+          `;
 
       const queryParams = [
         body.identification,
@@ -338,17 +304,9 @@ const create =
 const update =
   ({ db }) =>
   async (body, learner_id) => {
-    console.log("vvvvvvvvvvvvvvvvvvvvfffffffffvvvvvv", body);
-
     try {
       // CHECK DUPLICATE IDENTIFICATION (EXCEPT CURRENT SCENARIO)
-      const [existing] = await db.sequelize.query(
-        `
-        SELECT custom_scenarioid 
-        FROM custom_scenarios 
-        WHERE scenarioidentification = ?
-          AND custom_scenarioid != ?
-          AND status = 'Active'
+      const [existing] = await db.sequelize.query( ` SELECT custom_scenarioid  FROM custom_scenarios  WHERE scenarioidentification = ? AND custom_scenarioid != ? AND status = 'Active'
         LIMIT 1;
         `,
         {
@@ -365,24 +323,7 @@ const update =
       }
 
       // UPDATE QUERY
-      const updateQuery = `
-        UPDATE custom_scenarios 
-        SET 
-          scenarioidentification = ?, 
-          scenariotitle = ?, 
-          scenariodescription = ?, 
-          scenariolevel = ?, 
-          scenariocategoryid = ?, 
-          scenariosubcategoryid = ?, 
-          instruction_file = ?, 
-          scenariostatus = ?, 
-          duration = ?, 
-          scenarioimage = ?, 
-          approval_status = ?, 
-          modifiedby = ?, 
-          modifiedon = CURRENT_TIMESTAMP 
-        WHERE custom_scenarioid = ?
-      `;
+      const updateQuery = ` UPDATE custom_scenarios  SET  scenarioidentification = ?,  scenariotitle = ?,  scenariodescription = ?,  scenariolevel = ?,  scenariocategoryid = ?,  scenariosubcategoryid = ?,  instruction_file = ?,  scenariostatus = ?,  duration = ?,  scenarioimage = ?,  approval_status = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP  WHERE custom_scenarioid = ? `;
 
       const queryParams = [
         body.identification,
@@ -416,90 +357,242 @@ const update =
     }
   };
 
+// const saveDiagram =
+//   ({ db, validation }) =>
+//   async (body, session_userid) => {
+//     console.log("bodyddddddddddddddd",body);
+    
+//     const updateQuery = ` UPDATE custom_scenarios  SET scenariodiagram = ?,  components = ?,  component_config = ?,  network_config = ?,  scenariostatus = ?,  approval_status = ?,     modifiedon = CURRENT_TIMESTAMP,  modifiedby = ?  WHERE custom_scenariouuid = ?`;
+//     const updateParams = [
+//       JSON.stringify(body.scenariodiagram),
+//       JSON.stringify(body.components),
+//       JSON.stringify(body.component_config),
+//       JSON.stringify(body.network_config || {}),
+//       body.scenariostatus,
+//       body.approval_status || "Pending",
+//       session_userid,
+//       body.scenarioid,
+//     ];
+
+//     try {
+//       await db.sequelize.query(updateQuery, {
+//         replacements: updateParams,
+//         type: db.sequelize.QueryTypes.UPDATE,
+//       });
+//       const [scenarioDetails] = await db.sequelize.query( `SELECT  cs.scenariotitle, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, l.learner_id FROM custom_scenarios cs JOIN learners l ON l.learner_id = cs.learner_id WHERE cs.custom_scenariouuid = ?`,
+//         {
+//           replacements: [body.scenarioid],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       if (scenarioDetails) {
+//         new NotiTemplate(
+//           db,
+//           "scenario_approval",
+//           {
+//             scenariotitle: scenarioDetails.scenariotitle,
+//             learner_name: scenarioDetails.learner_name,
+//             learner_id: scenarioDetails.learner_id,
+//             scenarioid: body.scenarioid,
+//             userid: 0,
+//           },
+//           "Admin",
+//           0
+//         );
+//       }
+
+//       return { statusCode: 200, message: validation.messages.save_diagram };
+//     } catch (error) {
+//       console.error("Error Scenario Update:", error);
+//       throw error;
+//     }
+//   };
+
+
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
-    const updateQuery = `
-  UPDATE custom_scenarios 
-  SET scenariodiagram = ?, 
-      components = ?, 
-      component_config = ?, 
-      network_config = ?, 
-      scenariostatus = ?, 
-      approval_status = ?,    
-      modifiedon = CURRENT_TIMESTAMP, 
-      modifiedby = ? 
-  WHERE custom_scenariouuid = ?`;
-
-    const updateParams = [
-      JSON.stringify(body.scenariodiagram),
-      JSON.stringify(body.components),
-      JSON.stringify(body.component_config),
-      JSON.stringify(body.network_config || {}),
-      body.scenariostatus,
-      body.approval_status || "Pending", // ✅ default to Pending
-      session_userid,
-      body.scenarioid,
-    ];
-
+    console.log("bodybodybodybodybodybodybody",body);
+    
     try {
-      // ✅ Step 1: Update the scenario
-      await db.sequelize.query(updateQuery, {
-        replacements: updateParams,
-        type: db.sequelize.QueryTypes.UPDATE,
-      });
-      const [scenarioDetails] = await db.sequelize.query(
-        `SELECT 
-      cs.scenariotitle,
-      CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-      l.learner_id
-   FROM custom_scenarios cs
-   JOIN learners l ON l.learner_id = cs.learner_id
-   WHERE cs.custom_scenariouuid = ?`,
+      /* -------------------- GET SCENARIO APPROVAL FLAG -------------------- */
+      const [settings] = await db.sequelize.query(
+        `SELECT scenario_approval FROM web_settings WHERE status = 1 LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+
+      const isScenarioApprovalEnabled =
+        settings?.scenario_approval === "true";
+
+       //  CASE 1: SCENARIO APPROVAL DISABLED 
+
+      if (!isScenarioApprovalEnabled) {
+        const updateQuery = `
+          UPDATE custom_scenarios
+          SET scenariodiagram = ?,
+              components = ?,
+              component_config = ?,
+              network_config = ?,
+              scenariostatus = ?,
+              approval_status = ?,
+              modifiedon = CURRENT_TIMESTAMP,
+              modifiedby = ?
+          WHERE custom_scenariouuid = ?
+        `;
+
+        await db.sequelize.query(updateQuery, {
+          replacements: [
+            JSON.stringify(body.scenariodiagram),
+            JSON.stringify(body.components),
+            JSON.stringify(body.component_config),
+            JSON.stringify(body.network_config || {}),
+            body.scenariostatus,
+            body.approval_status || "Pending",
+            session_userid,
+            body.scenarioid,
+          ],
+          type: db.sequelize.QueryTypes.UPDATE,
+        });
+
+        /* Notification to Admin */
+        const [scenarioDetails] = await db.sequelize.query(
+          `SELECT cs.scenariotitle,
+                  CONCAT(l.firstname,' ',l.lastname) AS learner_name,
+                  l.learner_id
+           FROM custom_scenarios cs
+           JOIN learners l ON l.learner_id = cs.learner_id
+           WHERE cs.custom_scenariouuid = ?`,
+          {
+            replacements: [body.scenarioid],
+            type: db.sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        if (scenarioDetails) {
+          new NotiTemplate(
+            db,
+            "scenario_approval",
+            {
+              scenariotitle: scenarioDetails.scenariotitle,
+              learner_name: scenarioDetails.learner_name,
+              learner_id: scenarioDetails.learner_id,
+              scenarioid: body.scenarioid,
+              userid: 0,
+            },
+            "Admin",
+            0
+          );
+        }
+
+        return {
+          statusCode: 200,
+          message: validation.messages.save_diagram,
+        };
+      }
+
+       // CASE 2: SCENARIO APPROVAL ENABLED
+
+      /* -------------------- CHECK IDENTIFICATION DUPLICATE -------------------- */
+            const [customScenario] = await db.sequelize.query(
+        `SELECT * FROM custom_scenarios WHERE custom_scenariouuid = ?`,
         {
           replacements: [body.scenarioid],
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
 
-      if (scenarioDetails) {
-        // ✅ Step 3: Fire notification after successful update
-        new NotiTemplate(
-          db,
-          "scenario_approval",
-          {
-            scenariotitle: scenarioDetails.scenariotitle,
-            learner_name: scenarioDetails.learner_name,
-            learner_id: scenarioDetails.learner_id,
-            scenarioid: body.scenarioid,
-            userid: 0,
-          },
-          "Admin",
-          0
-        );
+      if (!customScenario) {
+        return { statusCode: 404, message: "Custom scenario not found" };
+      }
+      const [existingScenario] = await db.sequelize.query(
+        `SELECT scenarioid FROM scenarios
+         WHERE scenarioidentification = ?
+         LIMIT 1`,
+        {
+          replacements: [customScenario.scenarioidentification],
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (existingScenario) {
+        return {
+          statusCode: 409,
+          message:
+            "Scenario identification already exists. Cannot publish scenario.",
+        };
       }
 
-      return { statusCode: 200, message: validation.messages.save_diagram };
+      await db.sequelize.query(
+        `UPDATE custom_scenarios
+        SET scenariodiagram = ?, components = ?, component_config = ?, network_config = ?, scenariostatus = 'Publish', approval_status = 'Approve', modifiedon = CURRENT_TIMESTAMP, modifiedby = ?
+        WHERE custom_scenariouuid = ? `,
+        {
+          replacements: [
+            JSON.stringify(body.scenariodiagram),
+            JSON.stringify(body.components),
+            JSON.stringify(body.component_config),
+            JSON.stringify(body.network_config || {}),
+            session_userid,
+            body.scenarioid,
+          ],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+
+      /* -------------------- FETCH UPDATED CUSTOM SCENARIO -------------------- */
+
+
+
+      /* -------------------- INSERT INTO MAIN SCENARIOS TABLE -------------------- */
+      const insertQuery = `
+        INSERT INTO scenarios ( scenariouuid, scenariotitle, scenarioidentification, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type, scenarioimage, scenariodiagram, components, component_config, network_config, instruction_file, duration, scenariostatus, status, publishedon, createdby, createdon, modifiedby, modifiedon
+        )
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                'Publish',?,CURRENT_TIMESTAMP,?,?,
+                ?,CURRENT_TIMESTAMP)
+      `;
+
+      const [insertResult] = await db.sequelize.query(insertQuery, {
+        replacements: [ customScenario.custom_scenariouuid, customScenario.scenariotitle, customScenario.scenarioidentification, customScenario.scenariodescription, customScenario.scenariolevel, customScenario.scenariocategoryid, customScenario.scenariosubcategoryid, customScenario.instructor_id, customScenario.learner_id, "Private", customScenario.scenarioimage,JSON.stringify(body.scenariodiagram), JSON.stringify(body.components),JSON.stringify(body.component_config),JSON.stringify(body.network_config || {}), customScenario.instruction_file, customScenario.duration, customScenario.status, customScenario.createdby, customScenario.createdon, session_userid,
+        ],
+        type: db.sequelize.QueryTypes.INSERT,
+      });
+      const insertedScenarioId = insertResult;
+
+      /* -------------------- UPDATE CUSTOM SCENARIO WITH SCENARIOID -------------------- */
+      await db.sequelize.query(
+        `UPDATE custom_scenarios
+         SET scenarioid = ?
+         WHERE custom_scenariouuid = ?`,
+        {
+          replacements: [insertedScenarioId, body.scenarioid],
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+
+      return {
+        statusCode: 200,
+        message: "Scenario approved and published successfully",
+      };
     } catch (error) {
-      console.error("Error Scenario Update:", error);
-      throw error;
+      console.error("Error in saveDiagram:", error);
+      return {
+        statusCode: 500,
+        message: "Internal server error while saving diagram",
+      };
     }
   };
+
+
+
 
 const scenariodigramlist =
   ({ db }) =>
   async (scenarioid) => {
     try {
-      let query = `
-      SELECT 
-        s.custom_scenarioid,
-        s.scenariotitle,
-        s.scenarioidentification,
-        s.scenariodiagram,
-        s.duration
-      FROM custom_scenarios s
-      WHERE s.deletedon IS NULL
-    `;
+      let query = ` SELECT  s.custom_scenarioid, s.scenariotitle, s.scenarioidentification, s.scenariodiagram, s.duration FROM custom_scenarios s WHERE s.deletedon IS NULL
+      `;
       if (scenarioid) {
         query += ` AND s.scenarioid = :_custom_scenarioid`;
       }

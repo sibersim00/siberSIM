@@ -48,7 +48,6 @@ const generateProxmoxAccessToken =
 
 async function setScenarioLearnerConfigurationOnFailure({
   db,
-  ipAddress,
   scenarioid,
   learnerid,
   vmrequestid,
@@ -243,16 +242,7 @@ const getOperationFailedLogs =
   ({ db }) =>
   async () => {
     try {
-      const result = await db.sequelize.query(
-        `SELECT vrl.remark, vrl.status AS log_status, vrl.type, DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS log_date, vr.status AS session_status,
-         CASE WHEN vr.status = 'Completed' THEN DATE_FORMAT(vr.completedon, '%Y-%m-%d %H:%i:%s')
-              WHEN vr.status = 'Terminated' THEN DATE_FORMAT(vr.terminatedon, '%Y-%m-%d %H:%i:%s')
-              ELSE NULL END AS session_status_date
-         FROM vm_request_logs vrl
-         INNER JOIN scenarios s ON s.scenarioid = vrl.scenarioid
-         INNER JOIN vm_request vr ON vr.vmrequestid = vrl.vmrequestid
-         WHERE vrl.status = 'Operation Failed'
-         ORDER BY vrl.createdon DESC`,
+      const result = await db.sequelize.query( `SELECT vrl.remark, vrl.status AS log_status, vrl.type, DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS log_date, vr.status AS session_status,  CASE WHEN vr.status = 'Completed' THEN DATE_FORMAT(vr.completedon, '%Y-%m-%d %H:%i:%s')  WHEN vr.status = 'Terminated' THEN DATE_FORMAT(vr.terminatedon, '%Y-%m-%d %H:%i:%s')  ELSE NULL END AS session_status_date  FROM vm_request_logs vrl  INNER JOIN scenarios s ON s.scenarioid = vrl.scenarioid  INNER JOIN vm_request vr ON vr.vmrequestid = vrl.vmrequestid  WHERE vrl.status = 'Operation Failed'  ORDER BY vrl.createdon DESC`,
         {
           type: db.sequelize.QueryTypes.SELECT,
         }
@@ -264,100 +254,11 @@ const getOperationFailedLogs =
     }
   };
 
-
-const vncProxyConsole =
-  ({ db }) =>
-    async (body, ipAddress) => {
-      try {
-        const { vmid, vmType } = body;
-        const proxmoxService = ProxMoxService(db, body, ipAddress);
-
-        let proxyResponse, consoleResponse;
-
-        try {
-          // Step 1: Auth
-          await proxmoxService.generateAccessTicket();
-
-          // Step 2: Create VNC Proxy
-          proxyResponse = await proxmoxService.createVNCProxy(vmid, vmType);
-
-          if (!proxyResponse?.data) {
-            throw new Error("Failed to create VNC proxy");
-          }
-
-          // Step 3: Build NoVNC URL
-          const { port, ticket } = proxyResponse.data; // adjust based on API response
-          const vncUrl = `${constants.endpoint}/?port=${port}&ticket=${encodeURIComponent(ticket)}`;
-
-          // Step 4: Open VNC Console
-          // consoleResponse = await proxmoxService.openVNCConsole(vncUrl);
-          // Remove this
-          // consoleResponse = await proxmoxService.openVNCConsole(vncUrl);
-
-          // Instead, only return proxy data
-          return {
-            statusCode: 200,
-            message: "VNC Console opened successfully",
-            data: {
-              proxy: proxyResponse?.data || null
-            }
-          };
-
-        } catch (proxmoxErr) {
-          console.error("siberSIM Error:", proxmoxErr);
-
-          new NotiTemplate(db, "proxmox_down", { learner_id: 0, userid: 0 }, "System", 0);
-          new MailTemplate(db, "proxmox_down_alert", {
-            downdatetime: new Date().toLocaleString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-          });
-
-          return {
-            statusCode: 500,
-            message: "siberSIM is unreachable",
-            data: null,
-          };
-        }
-      } catch (err) {
-        console.error("Error in DAO vncProxyConsole:", err);
-        return {
-          statusCode: 500,
-          message: "Internal server error while generating VNC Console",
-          data: null,
-        };
-      }
-    };
-
 const getSnapshotsByVmid =
   ({ db }) =>
     async (vmid) => {
       try {
-        const rows = await db.sequelize.query(
-          `
-        SELECT 
-            sd.snapshotid,
-            sd.vmid,
-            sd.snapshot_name,
-            sd.snapshot_status,
-            sd.createdon,
-            vc.componentname,
-            vc.componenttype,
-            s.scenariotitle
-        FROM vm_snapshots sd
-        LEFT JOIN vm_config vc 
-            ON sd.vmid = vc.vmid
-        LEFT JOIN scenarios s
-            ON vc.scenarioid = s.scenarioid
-        WHERE sd.vmid = ?
-          AND sd.deletedon IS NULL
-        ORDER BY sd.createdon ASC;
-        `,
+        const rows = await db.sequelize.query( ` SELECT  sd.snapshotid, sd.vmid, sd.snapshot_name, sd.snapshot_status, sd.createdon, vc.componentname, vc.componenttype, s.scenariotitle FROM vm_snapshots sd LEFT JOIN vm_config vc  ON sd.vmid = vc.vmid LEFT JOIN scenarios s ON vc.scenarioid = s.scenarioid WHERE sd.vmid = ? AND sd.deletedon IS NULL ORDER BY sd.createdon ASC; `,
           {
             replacements: [vmid],
             type: db.sequelize.QueryTypes.SELECT,
@@ -404,34 +305,7 @@ const getSnapshotsByVmid =
     };
 
 const getComponentByVmid = ({ db }) => async (vmid) => {
-  const [res] = await db.sequelize.query(
-    ` SELECT
-      c.componentid,
-      c.componentname,
-      c.componenttype,
-      c.vmid,
-      c.componentcategoryid,
-      c.network_ports,
-      c.cores,
-      c.memory,
-      c.storage,
-      c.vmid_name,
-      v.scenarioid,
-      v.status AS vm_status,
-      vr.requestedby_id AS learner_id,
-      cc.status AS custom_request_status
-      FROM components c
-      INNER JOIN vm_config v
-      ON c.vmid = v.master_vmid
-      INNER JOIN vm_request vr
-      ON vr.vmrequestid = v.vmrequestid
-      LEFT JOIN custom_component cc
-      ON cc.clone_vmid = v.vmid
-      AND cc.status = 'pending'
-      WHERE v.vmid = :vmid
-      AND v.status != 'Destroyed'
-      AND c.deletedon IS NULL
-      LIMIT 1
+  const [res] = await db.sequelize.query( ` SELECT c.componentid, c.componentname, c.componenttype, c.vmid, c.componentcategoryid, c.network_ports, c.cores, c.memory, c.storage, c.vmid_name, v.scenarioid, v.status AS vm_status, vr.requestedby_id AS learner_id, cc.status AS custom_request_status FROM components c INNER JOIN vm_config v ON c.vmid = v.master_vmid INNER JOIN vm_request vr ON vr.vmrequestid = v.vmrequestid LEFT JOIN custom_component cc ON cc.clone_vmid = v.vmid AND cc.status = 'pending' WHERE v.vmid = :vmid AND v.status != 'Destroyed' AND c.deletedon IS NULL LIMIT 1
     `,
     {
       replacements: { vmid },
@@ -456,7 +330,6 @@ const getComponentByVmid = ({ db }) => async (vmid) => {
 
 
 const getNextVmid = ({ db }) => async (transaction) => {
-  // 1️⃣ Base VMID from web_settings (read-only)
   const [webSetting] = await db.sequelize.query(
     `
       SELECT template_clone_vmid
@@ -475,8 +348,6 @@ const getNextVmid = ({ db }) => async (transaction) => {
   }
 
   const baseVmid = Number(webSetting.template_clone_vmid);
-
-  // 2️⃣ Get last used vmid from custom_component
   const [lastComponent] = await db.sequelize.query(
     `
       SELECT MAX(vmid) AS lastVmid
@@ -488,12 +359,6 @@ const getNextVmid = ({ db }) => async (transaction) => {
       transaction,
     }
   );
-
-  // 3️⃣ Decide next vmid
-  // const nextVmid = lastComponent?.lastVmid
-  //   ? Number(lastComponent.lastVmid) + 1
-  //   : baseVmid;
-  // 3 Decide next vmid
   const nextVmid = lastComponent?.lastVmid
     ? Number(lastComponent.lastVmid) + 1
     : baseVmid + 1;   //  IMPORTANT CHANGE
@@ -510,14 +375,13 @@ const saveCustomComponent = ({ db }) => async (data) => {
       componentname,
       componentcategoryid,
       duration,
-      clone_vmid,        // from frontend (11494)
+      clone_vmid,     
       componentimage,
       scenarioid,
       learner_id,
       componenttype,
       createdby
     } = data;
-    console.log("dataaaaaaaaaaaaaaa", data)
 
     //  Generate ONLY vmid
     const vmid = await getNextVmid({ db })(transaction);
@@ -559,31 +423,7 @@ const saveCustomComponent = ({ db }) => async (data) => {
       throw new Error("Master VMID not found in vm_configuration");
     }
     const master_vmid = vmConfig.master_vmid;
-    const [insertResult] = await db.sequelize.query(
-      `
-    INSERT INTO custom_component 
-    (
-      customcomponentuuid,
-      componentname,
-      scenarioid,
-      learner_id,
-      componentcategoryid,
-      master_vmid,
-      clone_vmid,
-      vmid,
-      componenttype,
-      duration,
-      componentimage,
-      status,
-      componentStatus,
-      createdby,
-      createdon
-    )
-    VALUES
-    (
-      UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW()
-    )
-  `,
+    const [insertResult] = await db.sequelize.query( ` INSERT INTO custom_component  ( customcomponentuuid, componentname, scenarioid, learner_id, componentcategoryid, master_vmid, clone_vmid, vmid, componenttype, duration, componentimage, status, componentStatus, createdby, createdon ) VALUES ( UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', ?, NOW() ) `,
       {
         replacements: [
           componentname,
@@ -648,16 +488,7 @@ const rejectPendingCustomComponentIfVmStopped =
         }
 
         // 2️⃣ Reject pending custom components
-        const [result] = await db.sequelize.query(
-          `
-          UPDATE custom_component
-          SET
-            status = 'reject',
-            reject_reason = 'VM was stopped. Request automatically rejected.',
-            modifiedon = NOW()
-          WHERE clone_vmid = :vmid
-            AND status = 'pending'
-          `,
+        const [result] = await db.sequelize.query( ` UPDATE custom_component SET status = 'reject', reject_reason = 'VM was stopped. Request automatically rejected.', modifiedon = NOW() WHERE clone_vmid = :vmid AND status = 'pending' `,
           {
             replacements: { vmid },
           }
@@ -676,15 +507,98 @@ const rejectPendingCustomComponentIfVmStopped =
       }
     };
 
+  const deleteBridgeFromScenario = ({ db }) => async (payload) => { 
+  const {
+    vmrequestid,
+    edgeId,
+    bridge,
+    sourceNodeId,
+    targetNodeId,
+    sourceHandle,
+    targetHandle,
+  } = payload;
+
+  // Get existing diagram
+  const [vmRequest] = await db.sequelize.query(
+    `SELECT scenariodiagram FROM vm_request WHERE vmrequestid = :vmrequestid`,
+    {
+      replacements: { vmrequestid },
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  if (!vmRequest?.scenariodiagram) {
+    throw new Error("Scenario diagram not found");
+  }
+
+  let diagram = JSON.parse(vmRequest.scenariodiagram);
+
+  // Remove edge
+  diagram.edges = diagram.edges.filter((e) => e.id !== edgeId);
+
+  // Remove bridge from nodes
+  diagram.nodes = diagram.nodes.map((node) => {
+    if (
+      node.id === sourceNodeId ||
+      node.id === targetNodeId
+    ) {
+      if (node.data?.networkport) {
+        node.data.networkport = node.data.networkport.map((portObj) => {
+          const key = Object.keys(portObj)[0]; // net0, net1
+
+          if (key === sourceHandle.replace("-source", "") ||
+              key === targetHandle.replace("-target", "")) {
+
+            // remove bridge from string
+            return {
+              [key]: portObj[key].replace(`,bridge=${bridge}`, ""),
+            };
+          }
+
+          return portObj;
+        });
+      }
+    }
+
+    return node;
+  });
+
+  // Update DB
+  await db.sequelize.query(
+    `UPDATE vm_request 
+     SET scenariodiagram = :diagram, modifiedon = NOW()
+     WHERE vmrequestid = :vmrequestid`,
+    {
+      replacements: {
+        diagram: JSON.stringify(diagram),
+        vmrequestid,
+      },
+    }
+  );
+   await db.sequelize.query(
+        `UPDATE static_networks
+         SET lock_status = 'Free',
+             released_at = NOW(),
+             modifiedon = NOW()
+         WHERE networkname = :bridge
+           AND lock_status = 'Locked'`,
+        {
+          replacements: { bridge },
+        }
+      );
+
+  return diagram;
+};
+
 module.exports = {
   generateProxmoxAccessToken,
   setScenarioLearnerConfigurationOnFailure,
   stopAndDestroyFailedScenarios,
   getOperationFailedLogs,
-  vncProxyConsole,
   getSnapshotsByVmid,
   getComponentByVmid,
   getNextVmid,
   saveCustomComponent,
   rejectPendingCustomComponentIfVmStopped,
+  deleteBridgeFromScenario
 };

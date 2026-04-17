@@ -1,12 +1,12 @@
-const controller = require('./controller');
+const controller = require("./controller");
 const dao = require("./dao");
 const router = require("./router");
 
-const getRouter = iocContainer => {
+const getRouter = (iocContainer) => {
   return router({
     ...iocContainer,
     controller,
-    dao,
+    dao
   });
 };
 
