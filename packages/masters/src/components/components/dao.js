@@ -279,86 +279,221 @@ const save =
       }
     };
 
+// const update =
+//   ({ db, validation }) =>
+//     async (body, session_userid, ipAddress) => {
+//       try {
+//         if (!body.vmType && body.subcategoryTypeid) {
+//           body.vmType = body.subcategoryTypeid.toLowerCase(); // 'QEMU' -> 'qemu'
+//         }
+
+//         // Get updated siberSIM VM details
+//         const vmDetailResponse = await vmDetails( db ,body, ipAddress);
+
+//         const proxmoxData = vmDetailResponse?.data || {};
+//         const vmConfig = proxmoxData.data || {};
+
+//         // Extract storage
+//         const extractStorage = () => {
+//           if (!vmConfig || typeof vmConfig !== "object") return null;
+
+//           const qemuStorageKeys = [
+//             "sata0",
+//             "scsi0",
+//             "ide0",
+//             "virtio0",
+//             "nvme0",
+//             "usb0",
+//           ];
+//           const lxcStorageKey = "rootfs";
+
+//           const allKeys = [...qemuStorageKeys, lxcStorageKey];
+//           const foundKey = allKeys.find((key) =>
+//             Object.keys(vmConfig).some((k) => k.toLowerCase() === key)
+//           );
+
+//           if (foundKey && vmConfig[foundKey]) {
+//             const value = vmConfig[foundKey];
+//             const sizeMatch = value.match(/size=(\d+)([MG])/i);
+//             if (sizeMatch) {
+//               return parseInt(sizeMatch[1], 10); // return size in MB or GB as number
+//             }
+//           }
+
+//           return null;
+//         };
+//         const extractNetworkPorts = () => {
+//           const ports = {};
+//           Object.entries(vmConfig).forEach(([key, value]) => {
+//             if (key.startsWith("net")) {
+//               ports[key] = value;
+//             }
+//           });
+//           return ports;
+//         };
+
+//         // Extract ports prefix for network_bridge_name
+//         const extractPortsPrefix = () => {
+//           const prefix = {};
+//           Object.entries(vmConfig).forEach(([key, value]) => {
+//             if (!key.startsWith("net")) return;
+
+//             if (body.vmType.toLowerCase() === "qemu") {
+//               const typeMatch = value.match(/^(\w+)=/);
+//               if (typeMatch && typeMatch[1]) {
+//                 prefix[key] = typeMatch[1]; // e.g., virtio, e1000
+//               }
+//             } else if (body.vmType.toLowerCase() === "lxc") {
+//               const nameMatch = value.match(/name=(eth\d+)/);
+//               if (nameMatch && nameMatch[1]) {
+//                 prefix[key] = `name=${nameMatch[1]}`;
+//               }
+//             }
+//           });
+//           return prefix;
+//         };
+
+//         const cores = vmConfig.cores ? parseInt(vmConfig.cores, 10) : null;
+//         const memory = vmConfig.memory ? parseInt(vmConfig.memory, 10) : null;
+//         const storage = extractStorage();
+//         const network_ports = JSON.stringify(extractNetworkPorts());
+//         const network_bridge_name = JSON.stringify(extractPortsPrefix());
+//         console.log("network_portsnetwork_ports",network_ports);
+        
+
+//         const updateQuery = `
+//         UPDATE components 
+//         SET 
+//           vmid = :vmid,
+//           vmid_name = :vmid_name,
+//           componentimage = :componentimage,
+//           componentname = :componentname,
+//           componentcategoryid = :componentcategoryid,
+//           componenttype = :componenttype,
+//           duration = :duration,
+//           proxmox_json = :proxmox_json,
+//           network_ports = :network_ports,
+//           network_bridge_name = :network_bridge_name,
+//           cores = :cores,
+//           storage = :storage,
+//           memory = :memory,
+//           modifiedby = :modifiedby,
+//           modifiedon = CURRENT_TIMESTAMP
+//         WHERE componentid = :componentid
+//       `;
+
+//         await db.sequelize.query(updateQuery, {
+//           replacements: {
+//             vmid: body.vmid,
+//             vmid_name: body.vmid_name,
+//             componentimage: body.componentimage,
+//             componentname: body.componentname,
+//             componentcategoryid: body.componentcategoryid,
+//             componenttype: body.subcategoryTypeid || null,
+//             duration: body.duration,
+//             proxmox_json: JSON.stringify(vmConfig),
+//             network_ports,
+//             network_bridge_name,
+//             cores,
+//             memory,
+//             storage,
+//             modifiedby: session_userid,
+//             componentid: body.componentid,
+//           },
+//           type: db.sequelize.QueryTypes.UPDATE,
+//         });
+
+//         return {
+//           statusCode: 200,
+//           message: validation.messages.update_success,
+//         };
+//       } catch (error) {
+//         console.error("Error updating component:", error);
+//         throw error;
+//       }
+//     };
+
 const update =
   ({ db, validation }) =>
-    async (body, session_userid, ipAddress) => {
-      try {
-        if (!body.vmType && body.subcategoryTypeid) {
-          body.vmType = body.subcategoryTypeid.toLowerCase(); // 'QEMU' -> 'qemu'
+  async (body, session_userid, ipAddress) => {
+    try {
+      if (!body.vmType && body.subcategoryTypeid) {
+        body.vmType = body.subcategoryTypeid.toLowerCase(); // 'QEMU' -> 'qemu'
+      }
+
+      // Get updated Proxmox VM details
+      const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
+      const proxmoxData = vmDetailResponse?.data || {};
+      const vmConfig = proxmoxData.data || {};
+
+      // Extract storage
+      const extractStorage = () => {
+        if (!vmConfig || typeof vmConfig !== "object") return null;
+
+        const qemuStorageKeys = [
+          "sata0",
+          "scsi0",
+          "ide0",
+          "virtio0",
+          "nvme0",
+          "usb0",
+        ];
+        const lxcStorageKey = "rootfs";
+
+        const allKeys = [...qemuStorageKeys, lxcStorageKey];
+        const foundKey = allKeys.find((key) =>
+          Object.keys(vmConfig).some((k) => k.toLowerCase() === key)
+        );
+
+        if (foundKey && vmConfig[foundKey]) {
+          const value = vmConfig[foundKey];
+          const sizeMatch = value.match(/size=(\d+)([MG])/i);
+          if (sizeMatch) {
+            return parseInt(sizeMatch[1], 10); // return size in MB or GB as number
+          }
         }
 
-        // Get updated siberSIM VM details
-        const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
-        const proxmoxData = vmDetailResponse?.data || {};
-        const vmConfig = proxmoxData.data || {};
+        return null;
+      };
+      const extractNetworkPorts = () => {
+        const ports = {};
+        Object.entries(vmConfig).forEach(([key, value]) => {
+          if (key.startsWith("net")) {
+            ports[key] = value;
+          }
+        });
+        return ports;
+      };
 
-        // Extract storage
-        const extractStorage = () => {
-          if (!vmConfig || typeof vmConfig !== "object") return null;
+      // Extract ports prefix for network_bridge_name
+      const extractPortsPrefix = () => {
+        const prefix = {};
+        Object.entries(vmConfig).forEach(([key, value]) => {
+          if (!key.startsWith("net")) return;
 
-          const qemuStorageKeys = [
-            "sata0",
-            "scsi0",
-            "ide0",
-            "virtio0",
-            "nvme0",
-            "usb0",
-          ];
-          const lxcStorageKey = "rootfs";
-
-          const allKeys = [...qemuStorageKeys, lxcStorageKey];
-          const foundKey = allKeys.find((key) =>
-            Object.keys(vmConfig).some((k) => k.toLowerCase() === key)
-          );
-
-          if (foundKey && vmConfig[foundKey]) {
-            const value = vmConfig[foundKey];
-            const sizeMatch = value.match(/size=(\d+)([MG])/i);
-            if (sizeMatch) {
-              return parseInt(sizeMatch[1], 10); // return size in MB or GB as number
+          if (body.vmType.toLowerCase() === "qemu") {
+            const typeMatch = value.match(/^(\w+)=/);
+            if (typeMatch && typeMatch[1]) {
+              prefix[key] = typeMatch[1]; // e.g., virtio, e1000
+            }
+          } else if (body.vmType.toLowerCase() === "lxc") {
+            const nameMatch = value.match(/name=(eth\d+)/);
+            if (nameMatch && nameMatch[1]) {
+              prefix[key] = `name=${nameMatch[1]}`;
             }
           }
+        });
+        return prefix;
+      };
 
-          return null;
-        };
-        const extractNetworkPorts = () => {
-          const ports = {};
-          Object.entries(vmConfig).forEach(([key, value]) => {
-            if (key.startsWith("net")) {
-              ports[key] = value;
-            }
-          });
-          return ports;
-        };
+      const cores = vmConfig.cores ? parseInt(vmConfig.cores, 10) : null;
+      const memory = vmConfig.memory ? parseInt(vmConfig.memory, 10) : null;
+      const storage = extractStorage();
+      const network_ports = JSON.stringify(extractNetworkPorts());
+      const network_bridge_name = JSON.stringify(extractPortsPrefix());
+console.log("dddddddddddddddddddddddddddddd",network_ports);
 
-        // Extract ports prefix for network_bridge_name
-        const extractPortsPrefix = () => {
-          const prefix = {};
-          Object.entries(vmConfig).forEach(([key, value]) => {
-            if (!key.startsWith("net")) return;
-
-            if (body.vmType.toLowerCase() === "qemu") {
-              const typeMatch = value.match(/^(\w+)=/);
-              if (typeMatch && typeMatch[1]) {
-                prefix[key] = typeMatch[1]; // e.g., virtio, e1000
-              }
-            } else if (body.vmType.toLowerCase() === "lxc") {
-              const nameMatch = value.match(/name=(eth\d+)/);
-              if (nameMatch && nameMatch[1]) {
-                prefix[key] = `name=${nameMatch[1]}`;
-              }
-            }
-          });
-          return prefix;
-        };
-
-        const cores = vmConfig.cores ? parseInt(vmConfig.cores, 10) : null;
-        const memory = vmConfig.memory ? parseInt(vmConfig.memory, 10) : null;
-        const storage = extractStorage();
-        const network_ports = JSON.stringify(extractNetworkPorts());
-        const network_bridge_name = JSON.stringify(extractPortsPrefix());
-
-        const updateQuery = `
+      const updateQuery = `
         UPDATE components 
         SET 
           vmid = :vmid,
@@ -379,36 +514,36 @@ const update =
         WHERE componentid = :componentid
       `;
 
-        await db.sequelize.query(updateQuery, {
-          replacements: {
-            vmid: body.vmid,
-            vmid_name: body.vmid_name,
-            componentimage: body.componentimage,
-            componentname: body.componentname,
-            componentcategoryid: body.componentcategoryid,
-            componenttype: body.subcategoryTypeid || null,
-            duration: body.duration,
-            proxmox_json: JSON.stringify(vmConfig),
-            network_ports,
-            network_bridge_name,
-            cores,
-            memory,
-            storage,
-            modifiedby: session_userid,
-            componentid: body.componentid,
-          },
-          type: db.sequelize.QueryTypes.UPDATE,
-        });
+      await db.sequelize.query(updateQuery, {
+        replacements: {
+          vmid: body.vmid,
+          vmid_name: body.vmid_name,
+          componentimage: body.componentimage,
+          componentname: body.componentname,
+          componentcategoryid: body.componentcategoryid,
+          componenttype: body.subcategoryTypeid || null,
+          duration: body.duration,
+          proxmox_json: JSON.stringify(vmConfig),
+          network_ports,
+          network_bridge_name,
+          cores,
+          memory,
+          storage,
+          modifiedby: session_userid,
+          componentid: body.componentid,
+        },
+        type: db.sequelize.QueryTypes.UPDATE,
+      });
 
-        return {
-          statusCode: 200,
-          message: validation.messages.update_success,
-        };
-      } catch (error) {
-        console.error("Error updating component:", error);
-        throw error;
-      }
-    };
+      return {
+        statusCode: 200,
+        message: validation.messages.update_success,
+      };
+    } catch (error) {
+      console.error("Error updating component:", error);
+      throw error;
+    }
+  };
 
 
 const deleteById =
@@ -627,7 +762,13 @@ const vmDetails =
         let response;
 
         try {
-          await proxmoxService.generateAccessTicket();
+             const tokenResult = await proxmoxService.generateAccessTicket();
+        if (!tokenResult || tokenResult.status !== "200") {
+          return {
+            success: false,
+            message: "Could not connect to Proxmox server.",
+          };
+        }
 
           if (vmType === "lxc") {
             response = await proxmoxService.LXC_Container_detail(vmid);

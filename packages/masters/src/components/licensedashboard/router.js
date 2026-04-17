@@ -5,9 +5,6 @@ module.exports = function (iocContainer) {
     } = iocContainer; 
 
     const router = express.Router();
-
     router.get('/licensedashboardstats', controller.getLicenseDashboardStats(iocContainer));
-  
-    
     return router;
 }

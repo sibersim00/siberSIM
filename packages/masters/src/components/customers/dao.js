@@ -3,21 +3,9 @@ const serialLicense = require("../../middleware/serialLicense");
 const customerList =
   ({ db }) =>
   async () => {
-    const [res] = await db.sequelize.query(`
-        SELECT 
-          customerid AS customer_id,
-          customeruuid,
-          firstname,
-          lastname,
-          email,
-          mobile,
-          CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status,
-          DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-          DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-        FROM customers
-        WHERE deletedon IS NULL
-        ORDER BY firstname ASC;
-      `);
+    const [res] = await db.sequelize.query(
+      ` SELECT  customerid AS customer_id, customeruuid, firstname, lastname, email, mobile, CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM customers WHERE deletedon IS NULL ORDER BY firstname ASC; `,
+    );
     return res;
   };
 
@@ -27,21 +15,7 @@ const getById =
     try {
       //  Get customer details
       const customerQuery = `
-          SELECT 
-            customerid AS customer_id,
-            customeruuid,
-            firstname,
-            lastname,
-            CONCAT(firstname, ' ', lastname) AS customer_name,
-            email,
-            mobile,
-            CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status,
-            DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-            DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-          FROM customers
-          WHERE customeruuid = ? AND deletedon IS NULL
-          LIMIT 1;
-        `;
+            SELECT  customerid AS customer_id, customeruuid, firstname, lastname, CONCAT(firstname, ' ', lastname) AS customer_name, email, mobile, CASE WHEN status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM customers WHERE customeruuid = ? AND deletedon IS NULL LIMIT 1; `;
 
       const [customerResult] = await db.sequelize.query(customerQuery, {
         replacements: [customeruuid],
@@ -73,7 +47,7 @@ const save =
           {
             replacements: { _mobile: body.mobile.trim() },
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
 
         if (existingMobile) {
@@ -88,7 +62,7 @@ const save =
           {
             replacements: { _email: body.email.trim() },
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
 
         if (existingEmail) {
@@ -139,7 +113,7 @@ const update =
         {
           replacements: { _id: body.customer_id },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!existingCustomer) {
@@ -162,7 +136,7 @@ const update =
               _id: body.customer_id,
             },
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
 
         if (existingMobile) {
@@ -180,31 +154,19 @@ const update =
           {
             replacements: { _email: body.email.trim(), _id: body.customer_id },
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
-
         if (existingEmail) {
           errors.push(validation.messages.email_duplicate);
         }
       }
-
       // --- Return errors if any ---
       if (errors.length > 0) {
         return { statusCode: 400, errors, message: "" };
       }
-
       // --- Update Query ---
       const updateQuery = `
-          UPDATE customers
-          SET firstname = :firstname,
-              lastname = :lastname,
-              email = :email,
-              mobile = :mobile,
-              status = :status,
-              modifiedby = :modifiedby,
-              modifiedon = CURRENT_TIMESTAMP
-          WHERE customerid = :customer_id
-        `;
+              UPDATE customers SET firstname = :firstname, lastname = :lastname, email = :email, mobile = :mobile, status = :status, modifiedby = :modifiedby, modifiedon = CURRENT_TIMESTAMP WHERE customerid = :customer_id `;
 
       await db.sequelize.query(updateQuery, {
         replacements: {
@@ -242,7 +204,7 @@ const statusChange =
         {
           replacements: [body.customer_id],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!existingCustomer) {
@@ -252,13 +214,7 @@ const statusChange =
         };
       }
       // --- Update customer status ---
-      const updateQuery = `
-          UPDATE customers 
-          SET status = ?, 
-              modifiedby = ?, 
-              modifiedon = CURRENT_TIMESTAMP
-          WHERE customerid = ?
-        `;
+      const updateQuery = ` UPDATE customers  SET status = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE customerid = ? `;
 
       await db.sequelize.query(updateQuery, {
         replacements: [status, session_userid, body.customer_id],
@@ -281,36 +237,16 @@ const getLicenseByCustomerId =
   ({ db }) =>
   async (customer_id) => {
     try {
-      const query = `
-          SELECT 
-            customer_license_id,
-            customer_license_uuid,
-            customer_id,
-            sim_user_count,
-            DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
-            DATE_FORMAT(expiry_date, '%Y-%m-%d %H:%i:%s') AS expiry_date,
-            license_key,
-            domain_url,
-            created_by,
-            DATE_FORMAT(created_on, '%Y-%m-%d %H:%i:%s') AS created_on,
-            modifiedby,
-            DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-          FROM customer_license
-          WHERE customer_id = ?
-          ORDER BY created_on DESC;
-        `;
-
+      const query = ` SELECT  customer_license_id, customer_license_uuid, customer_id, sim_user_count, DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date, DATE_FORMAT(expiry_date, '%Y-%m-%d %H:%i:%s') AS expiry_date, license_key, domain_url, created_by, DATE_FORMAT(created_on, '%Y-%m-%d %H:%i:%s') AS created_on, modifiedby, DATE_FORMAT(modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM customer_license WHERE customer_id = ? ORDER BY created_on DESC; `;
       const [result] = await db.sequelize.query(query, {
         replacements: [customer_id],
       });
-
       return result;
     } catch (error) {
       console.error("Error fetching customer license:", error.message);
       throw error;
     }
   };
-
 const saveLicense =
   ({ db, validation }) =>
   async (body, session_userid) => {
@@ -318,15 +254,15 @@ const saveLicense =
       let license_key = serialLicense.generateLicense({
         start_date: body.start_date,
         user_count: body.sim_user_count,
+        manipulation: body.manipulation_flag,
         expiry_date: body.expiry_date,
         domain_name: body.domain_url,
       });
-
       const insertQuery = `
       INSERT INTO customer_license 
-      (customer_license_uuid, customer_id, sim_user_count, start_date, expiry_date, license_key, domain_url, created_by, created_on) 
+      (customer_license_uuid, customer_id, sim_user_count, start_date, expiry_date, license_key, domain_url,manipulation_flag, created_by, created_on) 
       VALUES 
-      (UUID(), :customer_id, :sim_user_count, :start_date, :expiry_date, :license_key, :domain_url, :created_by, CURRENT_TIMESTAMP);
+      (UUID(), :customer_id, :sim_user_count, :start_date, :expiry_date, :license_key, :domain_url, :manipulation_flag, :created_by, CURRENT_TIMESTAMP);
     `;
 
       await db.sequelize.query(insertQuery, {
@@ -337,10 +273,10 @@ const saveLicense =
           expiry_date: body.expiry_date || null,
           license_key: license_key,
           domain_url: body.domain_url || null,
+          manipulation_flag: body.manipulation_flag || "False",
           created_by: session_userid,
         },
       });
-
       const [formattedDates] = await db.sequelize.query(
         `SELECT 
             DATE_FORMAT(:start_date, '%d-%m-%Y') AS start_date,
@@ -351,9 +287,8 @@ const saveLicense =
             expiry_date: body.expiry_date,
           },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
-      
       let payload = {
         customerid: body.customer_id,
         start_date: formattedDates.start_date,
@@ -361,7 +296,7 @@ const saveLicense =
         license_key: license_key,
         sim_user_count: body.sim_user_count,
       };
-      
+
       new MailTemplate(db, "customer_license_mail", payload);
 
       return {
@@ -374,7 +309,6 @@ const saveLicense =
       throw error;
     }
   };
-
 const updateLicense =
   ({ db, validation }) =>
   async (body, session_userid) => {
@@ -387,7 +321,7 @@ const updateLicense =
         {
           replacements: [body.customer_license_id],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!existingLicense) {
@@ -404,18 +338,7 @@ const updateLicense =
         domain_name: body.domain_url,
       });
 
-      const updateQuery = `
-      UPDATE customer_license
-      SET 
-        sim_user_count = :sim_user_count,
-        start_date = :start_date,
-        expiry_date = :expiry_date,
-        license_key = :license_key,
-        domain_url = :domain_url,
-        modifiedby = :modifiedby,
-        modifiedon = CURRENT_TIMESTAMP
-      WHERE customer_license_id = :customer_license_id
-    `;
+      const updateQuery = ` UPDATE customer_license SET  sim_user_count = :sim_user_count, start_date = :start_date, expiry_date = :expiry_date, license_key = :license_key, domain_url = :domain_url, modifiedby = :modifiedby, modifiedon = CURRENT_TIMESTAMP WHERE customer_license_id = :customer_license_id `;
 
       await db.sequelize.query(updateQuery, {
         replacements: {
@@ -464,42 +387,17 @@ const dashboardData =
     `);
 
     // 2. Total Active Customers
-    const [active] = await db.sequelize.query(`
-      SELECT COUNT(*) AS total_active_customers
-      FROM customers
-      WHERE status = 'Active' AND deletedon IS NULL;
-    `);
+    const [active] = await db.sequelize.query(
+      ` SELECT COUNT(*) AS total_active_customers FROM customers WHERE status = 'Active' AND deletedon IS NULL; `,
+    );
 
     // 3. Pending Customers
-    const [pending] = await db.sequelize.query(`
-      SELECT COUNT(*) AS pending_customers
-      FROM customers c
-      LEFT JOIN customer_license cl
-        ON c.customerid = cl.customer_id
-      WHERE cl.customer_id IS NULL
-        AND c.deletedon IS NULL;
+    const [pending] = await db.sequelize
+      .query(` SELECT COUNT(*) AS pending_customers FROM customers c LEFT JOIN customer_license cl ON c.customerid = cl.customer_id WHERE cl.customer_id IS NULL AND c.deletedon IS NULL;
     `);
 
     // Always get latest license per customer
-    const latestLicenseQuery = `
-      SELECT
-        c.customerid,
-        CONCAT_WS(' ', c.firstname, c.lastname) AS customer_name,
-        DATE_FORMAT(cl.start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
-        DATE_FORMAT(cl.expiry_date, '%Y-%m-%d %H:%i:%s') AS expiry_date,
-        cl.domain_url,
-        cl.license_key
-      FROM customers c
-      INNER JOIN (
-        SELECT customer_id, MAX(expiry_date) AS latest_expiry
-        FROM customer_license
-        GROUP BY customer_id
-      ) x ON x.customer_id = c.customerid
-      INNER JOIN customer_license cl 
-        ON cl.customer_id = x.customer_id 
-       AND cl.expiry_date = x.latest_expiry
-      WHERE c.deletedon IS NULL
-    `;
+    const latestLicenseQuery = ` SELECT c.customerid, CONCAT_WS(' ', c.firstname, c.lastname) AS customer_name, DATE_FORMAT(cl.start_date, '%Y-%m-%d %H:%i:%s') AS start_date, DATE_FORMAT(cl.expiry_date, '%Y-%m-%d %H:%i:%s') AS expiry_date, cl.domain_url, cl.license_key FROM customers c INNER JOIN ( SELECT customer_id, MAX(expiry_date) AS latest_expiry FROM customer_license GROUP BY customer_id ) x ON x.customer_id = c.customerid INNER JOIN customer_license cl  ON cl.customer_id = x.customer_id  AND cl.expiry_date = x.latest_expiry WHERE c.deletedon IS NULL `;
 
     // 4. Expired Customers Count (based on LATEST expiry)
     const [expired] = await db.sequelize.query(`
@@ -509,21 +407,14 @@ const dashboardData =
     `);
 
     // 5. Next 10 Days Expiring (based on LATEST expiry)
-    const [nextExpiring] = await db.sequelize.query(`
-      SELECT *
-      FROM (${latestLicenseQuery}) ll
-      WHERE ll.expiry_date >= CURDATE()
-        AND ll.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 10 DAY)
-      ORDER BY ll.expiry_date ASC;
-    `);
+    const [nextExpiring] = await db.sequelize.query(
+      ` SELECT * FROM (${latestLicenseQuery}) ll WHERE ll.expiry_date >= CURDATE() AND ll.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 10 DAY) ORDER BY ll.expiry_date ASC; `,
+    );
 
     // 6. Expired List (based on LATEST expiry)
-    const [expiredList] = await db.sequelize.query(`
-      SELECT *
-      FROM (${latestLicenseQuery}) ll
-      WHERE ll.expiry_date < CURDATE()
-      ORDER BY ll.expiry_date DESC;
-    `);
+    const [expiredList] = await db.sequelize.query(
+      ` SELECT * FROM (${latestLicenseQuery}) ll WHERE ll.expiry_date < CURDATE() ORDER BY ll.expiry_date DESC; `,
+    );
 
     return {
       counts: {
@@ -543,20 +434,13 @@ const resendLicenseEmail =
     try {
       // 1. Fetch license details
       const [licenseData] = await db.sequelize.query(
-        `SELECT 
-            customer_id,
-            license_key,
-            DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
-            DATE_FORMAT(expiry_date, '%d-%m-%Y') AS expiry_date, 
-            sim_user_count
-         FROM customer_license
-         WHERE customer_license_id = ?`,
+        `SELECT  customer_id, license_key, DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date, DATE_FORMAT(expiry_date, '%d-%m-%Y') AS expiry_date,  sim_user_count FROM customer_license WHERE customer_license_id = ?`,
         {
           replacements: [customer_license_id],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
-      
+
       // 2. Prepare payload for mail
       const payload = {
         customerid: licenseData.customer_id,
@@ -565,7 +449,7 @@ const resendLicenseEmail =
         license_key: licenseData.license_key,
         sim_user_count: licenseData.sim_user_count,
       };
-      
+
       // 3. Send mail
       new MailTemplate(db, "customer_license_mail", payload);
 

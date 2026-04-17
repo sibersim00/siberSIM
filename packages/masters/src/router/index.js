@@ -111,7 +111,6 @@ module.exports = function (iocContainer) {
   );
   router.use(
     "/web-settings",
-    [authJwt.authenticateToken([""])],
     webSettings(iocContainer)
   );
   router.use(

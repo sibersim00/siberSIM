@@ -11,126 +11,236 @@ const labSessionList =
     }
 
     const [res] = await db.sequelize.query(
-      `
-    SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
+      `SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
       `,
-      { replacements }
+      { replacements },
     );
     return res;
   };
 
+// const save =
+//   ({ db, validation }) =>
+//   async (body, session_userid,user_count_limit) => {
+//     try {
+//       const errors = [];
+//        /* ---------------- USER LIMIT VALIDATION (ADDED) ---------------- */
+//       const limit = Number(user_count_limit || 0);
+
+//       if (limit > 0 && Number(body.reservedseats) > limit) {
+//         errors.push(`User limit exceeded. Maximum allowed is ${limit}.`);
+//       }
+
+//       if (
+//         Array.isArray(body.allowedusers) &&
+//         body.allowedusers.length > limit
+//       ) {
+//         errors.push(`You can only select up to ${limit} users.`);
+//       }
+
+//       const startTime = new Date(body.datetime); // Start datetime
+//       const endTime = new Date(
+//         startTime.getTime() + body.duration * 60 * 60 * 1000
+//       );
+
+//       // -----------------------------------------
+//       // Overlap Seat Calculation
+//       // -----------------------------------------
+//       const MAX_SEATS = 20;
+
+//       const overlappingSessions = await db.sequelize.query(
+//         ` SELECT reservedseats, datetime, duration FROM lab_sessions WHERE deletedon IS NULL AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) AND :new_end > datetime ) `,
+//         {
+//           replacements: { new_start: startTime, new_end: endTime },
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       let alreadyReserved = 0;
+
+//       // Sum seats of overlapping sessions
+//       overlappingSessions.forEach((session) => {
+//         alreadyReserved += session.reservedseats;
+//       });
+
+//       const availableSeats = MAX_SEATS - alreadyReserved;
+
+//       // Check if new request exceeds available seats
+//       if (body.reservedseats > availableSeats) {
+//         errors.push(
+//           `Only ${availableSeats} seats are available in this time slot.`
+//         );
+//       }
+
+//       if (errors.length > 0) {
+//         return { statusCode: 400, errors, message: "" };
+//       }
+
+//       // -------------------------------
+//       // Duplicate Check: bookingname + datetime
+//       // -------------------------------
+//       if (body.bookingname && body.datetime) {
+//         const [existing] = await db.sequelize.query(
+//           `SELECT labid
+//            FROM lab_sessions
+//            WHERE bookingname = :_bookingname
+//              AND datetime = :_datetime
+//              AND deletedon IS NULL`,
+//           {
+//             replacements: {
+//               _bookingname: body.bookingname.trim(),
+//               _datetime: body.datetime,
+//             },
+//             type: db.sequelize.QueryTypes.SELECT,
+//           }
+//         );
+
+//         if (existing) {
+//           errors.push(
+//             validation.messages.duplicate_lab ||
+//               "Lab session already exists for the selected time."
+//           );
+//         }
+//       }
+
+//       // If duplicates found -> return
+//       if (errors.length > 0) {
+//         return { statusCode: 400, errors, message: "" };
+//       }
+
+//       // -------------------------------
+//       // Insert Lab Session
+//       // -------------------------------
+//       const insertQuery = ` INSERT INTO lab_sessions ( labuuid, bookingname, datetime, duration, accesslevel, personincharge, reservedseats, allowedusers, status, createdby, createdon ) VALUES ( UUID(), :bookingname, :datetime, :duration, :accesslevel, :personincharge, :reservedseats, :allowedusers, 'Active', :createdby, CURRENT_TIMESTAMP ) `;
+//       await db.sequelize.query(insertQuery, {
+//         replacements: {
+//           bookingname: body.bookingname?.trim() || null,
+//           datetime: body.datetime || null,
+//           duration: body.duration || null,
+//           accesslevel: body.accesslevel || null,
+//           personincharge: body.personincharge || null,
+//           reservedseats: body.reservedseats || null,
+//           allowedusers: body.allowedusers
+//             ? JSON.stringify(body.allowedusers)
+//             : null,
+//           createdby: session_userid,
+//         },
+//       });
+
+//       return {
+//         statusCode: 200,
+//         message:
+//           validation.messages.add_labsession ||
+//           "Lab session added successfully.",
+//       };
+//     } catch (error) {
+//       console.error("Error saving lab session:", error.message);
+//       throw error;
+//     }
+//   };
+
 const save =
   ({ db, validation }) =>
-  async (body, session_userid) => {
+  async (body, session_userid, user_count_limit) => {
     try {
       const errors = [];
-      const startTime = new Date(body.datetime); // Start datetime
+      const limit = Number(user_count_limit || 0);
+
+      /* ---------------- USER LIMIT VALIDATION ---------------- */
+      if (limit > 0 && Number(body.reservedseats) > limit) {
+        return {
+          statusCode: 400,
+          errors: [`User limit exceeded. Maximum allowed is ${limit}.`],
+          message: `User limit exceeded. Maximum allowed is ${limit}.`,
+        };
+      }
+      if (
+        limit > 0 &&
+        Array.isArray(body.allowedusers) &&
+        body.allowedusers.length > limit
+      ) {
+        return {
+          statusCode: 400,
+          errors: [`You can only select up to ${limit} users.`],
+          message: `You can only select up to ${limit} users.`,
+        };
+      }
+
+      const startTime = new Date(body.datetime);
       const endTime = new Date(
-        startTime.getTime() + body.duration * 60 * 60 * 1000
+        startTime.getTime() + body.duration * 60 * 60 * 1000,
       );
 
-      // -----------------------------------------
-      // Overlap Seat Calculation
-      // -----------------------------------------
+      /* ---------------- SEAT VALIDATION ---------------- */
       const MAX_SEATS = 20;
 
       const overlappingSessions = await db.sequelize.query(
-        `
-  SELECT reservedseats, datetime, duration
-  FROM lab_sessions
-  WHERE deletedon IS NULL
-    AND (
-        :new_start < DATE_ADD(datetime, INTERVAL duration HOUR)
-        AND :new_end > datetime
-    )
-  `,
+        `SELECT reservedseats, datetime, duration 
+         FROM lab_sessions 
+         WHERE deletedon IS NULL 
+         AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) 
+         AND :new_end > datetime )`,
         {
           replacements: { new_start: startTime, new_end: endTime },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       let alreadyReserved = 0;
-
-      // Sum seats of overlapping sessions
       overlappingSessions.forEach((session) => {
         alreadyReserved += session.reservedseats;
       });
 
       const availableSeats = MAX_SEATS - alreadyReserved;
-
-      // Check if new request exceeds available seats
       if (body.reservedseats > availableSeats) {
         errors.push(
-          `Only ${availableSeats} seats are available in this time slot.`
+          `Only ${availableSeats} seats are available in this time slot.`,
         );
       }
-
       if (errors.length > 0) {
-        return { statusCode: 400, errors, message: "" };
+        return {
+          statusCode: 400,
+          errors,
+          message: errors[0] || "",
+        };
       }
 
-      // -------------------------------
-      // Duplicate Check: bookingname + datetime
-      // -------------------------------
+      /* ---------------- DUPLICATE CHECK ---------------- */
       if (body.bookingname && body.datetime) {
         const [existing] = await db.sequelize.query(
           `SELECT labid 
            FROM lab_sessions 
            WHERE bookingname = :_bookingname 
-             AND datetime = :_datetime
-             AND deletedon IS NULL`,
+           AND datetime = :_datetime
+           AND deletedon IS NULL`,
           {
             replacements: {
               _bookingname: body.bookingname.trim(),
               _datetime: body.datetime,
             },
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
-
         if (existing) {
           errors.push(
             validation.messages.duplicate_lab ||
-              "Lab session already exists for the selected time."
+              "Lab session already exists for the selected time.",
           );
         }
       }
-
-      // If duplicates found -> return
       if (errors.length > 0) {
-        return { statusCode: 400, errors, message: "" };
+        return {
+          statusCode: 400,
+          errors,
+          message: errors[0] || "",
+        };
       }
 
-      // -------------------------------
-      // Insert Lab Session
-      // -------------------------------
+      /* ---------------- INSERT ---------------- */
       const insertQuery = `
-        INSERT INTO lab_sessions (
-          labuuid,
-          bookingname,
-          datetime,
-          duration,
-          accesslevel,
-          personincharge,
-          reservedseats,
-          allowedusers,
-          status,
-          createdby,
-          createdon
-        ) VALUES (
-          UUID(),
-          :bookingname,
-          :datetime,
-          :duration,
-          :accesslevel,
-          :personincharge,
-          :reservedseats,
-          :allowedusers,
-          'Active',
-          :createdby,
-          CURRENT_TIMESTAMP
-        )
+        INSERT INTO lab_sessions 
+        (labuuid, bookingname, datetime, duration, accesslevel, personincharge, reservedseats, allowedusers, status, createdby, createdon) 
+        VALUES 
+        (UUID(), :bookingname, :datetime, :duration, :accesslevel, :personincharge, :reservedseats, :allowedusers, 'Active', :createdby, CURRENT_TIMESTAMP)
       `;
 
       await db.sequelize.query(insertQuery, {
@@ -147,12 +257,12 @@ const save =
           createdby: session_userid,
         },
       });
-
       return {
         statusCode: 200,
         message:
           validation.messages.add_labsession ||
           "Lab session added successfully.",
+        errors: [],
       };
     } catch (error) {
       console.error("Error saving lab session:", error.message);
@@ -160,29 +270,191 @@ const save =
     }
   };
 
+// const update =
+//   ({ db, validation }) =>
+//   async (body, session_userid,user_count_limit) => {
+//     try {
+//       const errors = [];
+//         /* ---------------- USER LIMIT VALIDATION (ADDED) ---------------- */
+//       const limit = Number(user_count_limit || 0);
+
+//       if (limit > 0 && Number(body.reservedseats) > limit) {
+//         errors.push(`User limit exceeded. Maximum allowed is ${limit}.`);
+//       }
+
+//       if (
+//         Array.isArray(body.allowedusers) &&
+//         body.allowedusers.length > limit
+//       ) {
+//         errors.push(`You can only select up to ${limit} users.`);
+//       }
+
+//       const startTime = new Date(body.datetime);
+//       const endTime = new Date(
+//         startTime.getTime() + body.duration * 60 * 60 * 1000
+//       );
+
+//       // --------------------------------
+//       // Check if lab session exists
+//       // --------------------------------
+//       const [existingLab] = await db.sequelize.query(
+//         `SELECT labid
+//          FROM lab_sessions
+//          WHERE labid = :_id AND deletedon IS NULL`,
+//         {
+//           replacements: { _id: body.lab_id },
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       if (!existingLab) {
+//         return {
+//           statusCode: 404,
+//           message:
+//             validation.messages.data_not_found || "Lab session not found.",
+//         };
+//       }
+
+//       // -----------------------------------------
+//       // Time Overlap Check excluding current
+//       // -----------------------------------------
+//       const MAX_SEATS = 20;
+
+//       const overlappingSessions = await db.sequelize.query(
+//         ` SELECT reservedseats FROM lab_sessions WHERE deletedon IS NULL AND labid != :_id AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) AND :new_end > datetime ) `,
+//         {
+//           replacements: {
+//             _id: body.lab_id,
+//             new_start: startTime,
+//             new_end: endTime,
+//           },
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       let alreadyReserved = 0;
+
+//       overlappingSessions.forEach((s) => {
+//         alreadyReserved += s.reservedseats;
+//       });
+
+//       const availableSeats = MAX_SEATS - alreadyReserved;
+
+//       if (body.reservedseats > availableSeats) {
+//         errors.push(
+//           `Only ${availableSeats} seats are available in this time slot.`
+//         );
+//       }
+
+//       if (errors.length > 0) {
+//         return { statusCode: 400, errors, message: "" };
+//       }
+
+//       // -----------------------------------------
+//       // Duplicate bookingname + datetime check
+//       // -----------------------------------------
+//       const [existing] = await db.sequelize.query(
+//         `SELECT labid FROM lab_sessions
+//          WHERE bookingname = :_bookingname
+//            AND datetime = :_datetime
+//            AND deletedon IS NULL
+//            AND labid != :_id`,
+//         {
+//           replacements: {
+//             _bookingname: body.bookingname.trim(),
+//             _datetime: body.datetime,
+//             _id: body.lab_id,
+//           },
+//           type: db.sequelize.QueryTypes.SELECT,
+//         }
+//       );
+
+//       if (existing) {
+//         errors.push(
+//           validation.messages.duplicate_lab ||
+//             "Lab session already exists for the selected time."
+//         );
+//       }
+
+//       if (errors.length > 0) {
+//         return { statusCode: 400, errors, message: "" };
+//       }
+
+//       // --------------------------------
+//       // Update Query
+//       // --------------------------------
+//       const updateQuery = ` UPDATE lab_sessions SET bookingname = :bookingname, datetime = :datetime, duration = :duration, accesslevel = :accesslevel, personincharge = :personincharge, reservedseats = :reservedseats, allowedusers = :allowedusers, status = :status, modifiedby = :modifiedby, modifiedon = CURRENT_TIMESTAMP WHERE labid = :lab_id `;
+
+//       await db.sequelize.query(updateQuery, {
+//         replacements: {
+//           lab_id: body.lab_id,
+//           bookingname: body.bookingname?.trim() || null,
+//           datetime: body.datetime || null,
+//           duration: body.duration || null,
+//           accesslevel: body.accesslevel || null,
+//           personincharge: body.personincharge || null,
+//           reservedseats: body.reservedseats || null,
+//           allowedusers: body.allowedusers
+//             ? JSON.stringify(body.allowedusers)
+//             : null,
+//           status: body.status || "Active",
+//           modifiedby: session_userid,
+//         },
+//       });
+
+//       return {
+//         statusCode: 200,
+//         message:
+//           validation.messages.update_labsession ||
+//           "Lab session updated successfully.",
+//       };
+//     } catch (error) {
+//       console.error("Error updating lab session:", error.message);
+//       throw error;
+//     }
+//   };
+
 const update =
   ({ db, validation }) =>
-  async (body, session_userid) => {
+  async (body, session_userid, user_count_limit) => {
     try {
       const errors = [];
+      /* ---------------- USER LIMIT VALIDATION ---------------- */
+      const limit = Number(user_count_limit || 0);
+
+      //  EARLY RETURN (IMPORTANT FIX)
+      if (limit > 0 && Number(body.reservedseats) > limit) {
+        return {
+          statusCode: 400,
+          errors: `User limit exceeded. Maximum allowed is ${limit}.`,
+          message: `User limit exceeded. Maximum allowed is ${limit}.`,
+        };
+      }
+      if (
+        limit > 0 &&
+        Array.isArray(body.allowedusers) &&
+        body.allowedusers.length > limit
+      ) {
+        return {
+          statusCode: 400,
+          errors: [`You can only select up to ${limit} users.`],
+          message: "",
+        };
+      }
       const startTime = new Date(body.datetime);
       const endTime = new Date(
-        startTime.getTime() + body.duration * 60 * 60 * 1000
+        startTime.getTime() + body.duration * 60 * 60 * 1000,
       );
 
-      // --------------------------------
-      // Check if lab session exists
-      // --------------------------------
+      /* ---------------- CHECK EXISTING ---------------- */
       const [existingLab] = await db.sequelize.query(
-        `SELECT labid 
-         FROM lab_sessions 
+        `SELECT labid FROM lab_sessions 
          WHERE labid = :_id AND deletedon IS NULL`,
         {
           replacements: { _id: body.lab_id },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
-
       if (!existingLab) {
         return {
           statusCode: 404,
@@ -191,22 +463,14 @@ const update =
         };
       }
 
-      // -----------------------------------------
-      // Time Overlap Check excluding current
-      // -----------------------------------------
+      /* ---------------- SEAT VALIDATION ---------------- */
       const MAX_SEATS = 20;
-
       const overlappingSessions = await db.sequelize.query(
-        `
-  SELECT reservedseats
-  FROM lab_sessions
-  WHERE deletedon IS NULL
-    AND labid != :_id
-    AND (
-        :new_start < DATE_ADD(datetime, INTERVAL duration HOUR)
-        AND :new_end > datetime
-    )
-  `,
+        `SELECT reservedseats FROM lab_sessions 
+         WHERE deletedon IS NULL 
+         AND labid != :_id 
+         AND ( :new_start < DATE_ADD(datetime, INTERVAL duration HOUR) 
+         AND :new_end > datetime )`,
         {
           replacements: {
             _id: body.lab_id,
@@ -214,36 +478,44 @@ const update =
             new_end: endTime,
           },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       let alreadyReserved = 0;
-
       overlappingSessions.forEach((s) => {
         alreadyReserved += s.reservedseats;
       });
 
       const availableSeats = MAX_SEATS - alreadyReserved;
 
-      if (body.reservedseats > availableSeats) {
-        errors.push(
-          `Only ${availableSeats} seats are available in this time slot.`
-        );
+      if (
+        Array.isArray(body.allowedusers) &&
+        body.allowedusers.length > body.reservedseats
+      ) {
+        return {
+          statusCode: 400,
+          errors: ["Allowed users cannot exceed the number of reserved seats."],
+          message: "Allowed users cannot exceed the number of reserved seats.",
+        };
       }
-
+      if (body.reservedseats > availableSeats) {
+        return {
+          statusCode: 400,
+          errors: `Only ${availableSeats} seats are available in this time slot.`,
+          message: `Only ${availableSeats} seats are available in this time slot.`,
+        };
+      }
       if (errors.length > 0) {
         return { statusCode: 400, errors, message: "" };
       }
 
-      // -----------------------------------------
-      // Duplicate bookingname + datetime check
-      // -----------------------------------------
+      /* ---------------- DUPLICATE CHECK ---------------- */
       const [existing] = await db.sequelize.query(
         `SELECT labid FROM lab_sessions
          WHERE bookingname = :_bookingname
-           AND datetime = :_datetime
-           AND deletedon IS NULL
-           AND labid != :_id`,
+         AND datetime = :_datetime
+         AND deletedon IS NULL
+         AND labid != :_id`,
         {
           replacements: {
             _bookingname: body.bookingname.trim(),
@@ -251,25 +523,21 @@ const update =
             _id: body.lab_id,
           },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
-
       if (existing) {
         errors.push(
           validation.messages.duplicate_lab ||
-            "Lab session already exists for the selected time."
+            "Lab session already exists for the selected time.",
         );
       }
-
       if (errors.length > 0) {
         return { statusCode: 400, errors, message: "" };
       }
 
-      // --------------------------------
-      // Update Query
-      // --------------------------------
+      /* ---------------- UPDATE ---------------- */
       const updateQuery = `
-        UPDATE lab_sessions
+        UPDATE lab_sessions 
         SET bookingname = :bookingname,
             datetime = :datetime,
             duration = :duration,
@@ -299,7 +567,6 @@ const update =
           modifiedby: session_userid,
         },
       });
-
       return {
         statusCode: 200,
         message:
@@ -320,15 +587,12 @@ const deleteById =
 
       // 1. Check if lab session exists & not already deleted
       const [existing] = await db.sequelize.query(
-        `
-        SELECT labid 
-        FROM lab_sessions
-        WHERE labid = :labId AND deletedon IS NULL
+        ` SELECT labid  FROM lab_sessions WHERE labid = :labId AND deletedon IS NULL
         `,
         {
           replacements: { labId },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!existing) {
@@ -340,17 +604,13 @@ const deleteById =
 
       // 2. Soft delete lab session
       await db.sequelize.query(
-        `
-        UPDATE lab_sessions
-        SET deletedon = NOW(), modifiedby = :modifiedBy
-        WHERE labid = :labId
-        `,
+        ` UPDATE lab_sessions SET deletedon = NOW(), modifiedby = :modifiedBy WHERE labid = :labId `,
         {
           replacements: {
             labId,
             modifiedBy: session_userid,
           },
-        }
+        },
       );
 
       return {
@@ -378,7 +638,7 @@ const changeStatus =
         {
           replacements: [body.lab_id],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!existingLab) {
@@ -391,17 +651,11 @@ const changeStatus =
 
       // --- Update lab session status ---
       await db.sequelize.query(
-        `
-        UPDATE lab_sessions 
-        SET status = ?, 
-            modifiedby = ?, 
-            modifiedon = CURRENT_TIMESTAMP
-        WHERE labid = ?
-        `,
+        ` UPDATE lab_sessions  SET status = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE labid = ? `,
         {
           replacements: [status, session_userid, body.lab_id],
           type: db.sequelize.QueryTypes.UPDATE,
-        }
+        },
       );
 
       return {

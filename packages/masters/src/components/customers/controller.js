@@ -18,14 +18,12 @@ const getById = ({ dao, validation, db }) => async (req, res) => {
   try {
     const { id: customeruuid } = req.params;
     const result = await dao.getById({ db })(customeruuid);
-
     if (!result) {
       return res.status(404).json({
         statusCode: 404,
         message: validation.messages.not_found || "Customer not found.",
       });
     }
-
     return res.status(200).json({
       statusCode: 200,
       message: validation.messages.get_success || "Customer fetched successfully.",
@@ -44,9 +42,7 @@ const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.save({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -65,9 +61,7 @@ const update = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.update({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -86,9 +80,7 @@ const statusChange = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user?.userid;
-
     const result = await dao.statusChange({ db, validation })(body, session_userid);
-
     res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -107,9 +99,7 @@ const getLicenseByCustomerId =
     async (req, res) => {
       try {
         const { customer_id } = req.body; 
-
         const result = await dao.getLicenseByCustomerId({ db })(customer_id);
-
         return res.status(200).json({
           statusCode: 200,
           message: validation.messages.get_success || "Customer license fetched successfully.",
@@ -129,9 +119,7 @@ const saveLicense = ({ dao, db, validation }) => async (req, res) => {
   try {
     const session_userid = req.user?.userid;
     const body = req.body;
-
     const result = await dao.saveLicense({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).json({
       statusCode: result.statusCode,
       message: result.message,
@@ -150,9 +138,7 @@ const updateLicense = ({ dao, db, validation }) => async (req, res) => {
   try {
     const session_userid = req.user?.userid;
     const body = req.body;
-
     const result = await dao.updateLicense({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).json({
       statusCode: result.statusCode,
       message: result.message,
@@ -172,7 +158,6 @@ const dashboardData =
     async (req, res) => {
       try {
         const result = await dao.dashboardData({ db })();
-
         return res.status(200).json({
           statusCode: 200,
           message:
@@ -193,9 +178,7 @@ const dashboardData =
 const resendLicenseEmail = ({ dao, db, validation }) => async (req, res) => {
   try {
     const { customer_license_id } = req.body;
-
     const result = await dao.resendLicenseEmail({ db })(customer_license_id);
-
     if (!result) {
       return res.status(404).json({
         statusCode: 404,

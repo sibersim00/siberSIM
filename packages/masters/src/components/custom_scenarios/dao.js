@@ -6,44 +6,8 @@ const list =
   async () => {
     try {
       const query = `
-        SELECT 
-    s.custom_scenarioid,
-    s.custom_scenariouuid,
-    s.scenarioidentification,
-    s.scenariotitle,
-    s.scenariodescription,
-    s.scenariolevel,
-    s.scenariocategoryid,
-    s.scenariosubcategoryid,
-    s.scenariodiagram,
-    s.approval_status,
-    s.components,
-    s.learner_id,
-    CONCAT(l.firstname, ' ', IFNULL(l.lastname, '')) AS learner_name,
-    s.component_config,
-    s.instruction_file,
-    s.duration,
-    s.scenariostatus,
-    s.scenarioimage,
-    CASE 
-      WHEN s.status = 'Active' THEN 'true' 
-      ELSE 'false' 
-    END AS status,
-    sc.categoryname AS scenariocategory,
-    scc.categoryname AS scenariosubcategory,
-    DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-    DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-FROM custom_scenarios s
-INNER JOIN scenario_categories sc 
-    ON sc.scenariocategoryid = s.scenariocategoryid
-INNER JOIN scenario_categories scc 
-    ON scc.scenariocategoryid = s.scenariosubcategoryid
-LEFT JOIN learners l 
-    ON l.learner_id = s.learner_id
-    WHERE s.deletedon IS NULL
-ORDER BY s.scenariotitle;
+    SELECT  s.custom_scenarioid, s.custom_scenariouuid, s.scenarioidentification, s.scenariotitle, s.scenariodescription, s.scenariolevel, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.approval_status, s.components, s.learner_id, CONCAT(l.firstname, ' ', IFNULL(l.lastname, '')) AS learner_name, s.component_config, s.instruction_file, s.duration, s.scenariostatus, s.scenarioimage, CASE  WHEN s.status = 'Active' THEN 'true'  ELSE 'false'  END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, DATE_FORMAT(s.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM custom_scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN learners l  ON l.learner_id = s.learner_id WHERE s.deletedon IS NULL ORDER BY s.scenariotitle;
       `;
-
       const res = await db.sequelize.query(query, {
         type: db.sequelize.QueryTypes.SELECT,
       });
@@ -60,50 +24,11 @@ const getById =
   async (uuid) => {
     try {
       const res = await db.sequelize.query(
-        `SELECT 
-    s.custom_scenarioid,
-    s.scenarioidentification,
-    s.approval_status,
-    s.custom_scenariouuid,
-    s.scenariotitle,
-    s.scenariodescription,
-    s.scenariolevel,
-    s.reject_reason,
-    s.scenariocategoryid,
-    s.scenariosubcategoryid,
-    s.scenariodiagram,
-    s.components,
-    s.component_config,
-    s.network_config,
-    s.instruction_file,
-    s.scenarioimage,
-    s.instructor_id,
-    s.learner_id,
-    s.duration,
-    s.scenariostatus,
-    s.publishedon,
-    CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status,
-    sc.categoryname AS scenariocategory,
-    scc.categoryname AS scenariosubcategory,
-    CONCAT(user.firstname, ' ', user.lastname) AS instructor_name,
-    CONCAT(l.firstname, ' ', l.lastname) AS learner_name,  
-    DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon,
-    DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-FROM custom_scenarios s
-INNER JOIN scenario_categories sc  
-    ON sc.scenariocategoryid = s.scenariocategoryid
-INNER JOIN scenario_categories scc 
-    ON scc.scenariocategoryid = s.scenariosubcategoryid
-LEFT JOIN ad_users user 
-    ON user.userid = s.instructor_id
-LEFT JOIN learners l  
-    ON l.learner_id = s.learner_id
-WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
-`,
+        `SELECT  s.custom_scenarioid, s.scenarioidentification, s.approval_status, s.custom_scenariouuid, s.scenariotitle, s.scenariodescription, s.scenariolevel, s.reject_reason, s.scenariocategoryid, s.scenariosubcategoryid, s.scenariodiagram, s.components, s.component_config, s.network_config, s.instruction_file, s.scenarioimage, s.instructor_id, s.learner_id, s.duration, s.scenariostatus, s.publishedon, CASE WHEN s.status = 'Active' THEN 'true' ELSE 'false' END AS status, sc.categoryname AS scenariocategory, scc.categoryname AS scenariosubcategory, CONCAT(user.firstname, ' ', user.lastname) AS instructor_name, CONCAT(l.firstname, ' ', l.lastname) AS learner_name,   DATE_FORMAT(s.createdon , '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(s.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM custom_scenarios s INNER JOIN scenario_categories sc   ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN ad_users user  ON user.userid = s.instructor_id LEFT JOIN learners l   ON l.learner_id = s.learner_id WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid; `,
         {
           replacements: { _uuid: uuid },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       if (!res?.length) return null;
@@ -111,19 +36,15 @@ WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
       if (res[0].network_config) {
         res[0].network_config = JSON.parse(res[0].network_config);
       }
-
       res[0].component_count = 0;
       res[0].virtual_cpu = 0;
       res[0].virtual_memory = 0;
       res[0].storage_size = 0;
       res[0].component_images = [];
-
       if (res[0].component_config) {
         let components = JSON.parse(res[0].component_config);
         res[0].component_count = components.length;
-
         const componentDetails = {};
-
         await Promise.all(
           components.map(async (element) => {
             try {
@@ -137,7 +58,7 @@ WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
                   {
                     replacements: [compId],
                     type: db.sequelize.QueryTypes.SELECT,
-                  }
+                  },
                 );
 
                 if (rowData) {
@@ -158,17 +79,15 @@ WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
             } catch (err) {
               console.error(
                 `Error fetching componentid ${element.componentid}:`,
-                err
+                err,
               );
             }
-          })
+          }),
         );
-
         // --- Update 'components' JSON ---
         if (res[0].components) {
           try {
             let parsedComponents = JSON.parse(res[0].components);
-
             parsedComponents = parsedComponents.map((comp) => {
               const compId = comp.componentid || comp.componentId || comp.id;
               if (compId && componentDetails[compId]) {
@@ -176,7 +95,6 @@ WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
               }
               return comp;
             });
-
             res[0].components = JSON.stringify(parsedComponents);
           } catch (err) {
             console.error("Error parsing or updating s.components JSON:", err);
@@ -203,12 +121,11 @@ WHERE s.deletedon IS NULL AND s.custom_scenariouuid = :_uuid;
                 return node;
               });
             }
-
             res[0].scenariodiagram = JSON.stringify(diagramObj);
           } catch (err) {
             console.error(
               "Error parsing or updating scenariodiagram JSON:",
-              err
+              err,
             );
           }
         }
@@ -229,7 +146,7 @@ const create =
         {
           replacements: { _title: body.title },
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
       if (check_scenario) {
         return {
@@ -238,29 +155,7 @@ const create =
             "The provided title is already registered. Please use a different one.",
         };
       }
-      const insertQuery = `
-  INSERT INTO custom_scenarios (
-    custom_scenariouuid,
-    scenarioidentification,
-    scenariotitle,
-    scenariodescription,
-    scenariolevel,
-    scenariocategoryid,
-    scenariosubcategoryid,
-    instruction_file,
-    scenariostatus,
-    duration,
-    scenarioimage,
-    approval_status,
-    learner_id,
-    createdby,
-    createdon,
-    publishedon
-  )
-  VALUES (
-    UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, CURRENT_TIMESTAMP, NOW()
-  )
-`;
+      const insertQuery = ` INSERT INTO custom_scenarios ( custom_scenariouuid, scenarioidentification, scenariotitle, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instruction_file, scenariostatus, duration, scenarioimage, approval_status, learner_id, createdby, createdon, publishedon ) VALUES ( UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, CURRENT_TIMESTAMP, NOW() ) `;
 
       const queryParams = [
         body.identification,
@@ -286,7 +181,7 @@ const create =
         `SELECT LAST_INSERT_ID() AS custom_scenarioid;`,
         {
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
       const custom_scenarioid = idResult?.custom_scenarioid;
       return {
@@ -303,24 +198,7 @@ const update =
   ({ db }) =>
   async (body, learner_id) => {
     try {
-      const updateQuery = `
-      UPDATE custom_scenarios 
-      SET 
-        scenarioidentification = ?, 
-        scenariotitle = ?, 
-        scenariodescription = ?, 
-        scenariolevel = ?, 
-        scenariocategoryid = ?, 
-        scenariosubcategoryid = ?, 
-        instruction_file = ?, 
-        scenariostatus = ?, 
-        duration = ?, 
-        scenarioimage = ?, 
-        approval_status = ?, 
-        modifiedby = ?, 
-        modifiedon = CURRENT_TIMESTAMP 
-      WHERE custom_scenarioid = ?
-    `;
+      const updateQuery = ` UPDATE custom_scenarios  SET  scenarioidentification = ?,  scenariotitle = ?,  scenariodescription = ?,  scenariolevel = ?,  scenariocategoryid = ?,  scenariosubcategoryid = ?,  instruction_file = ?,  scenariostatus = ?,  duration = ?,  scenarioimage = ?,  approval_status = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP  WHERE custom_scenarioid = ? `;
 
       const queryParams = [
         body.identification,
@@ -354,7 +232,6 @@ const update =
     }
   };
 
-
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
@@ -384,16 +261,7 @@ const scenariodigramlist =
   ({ db }) =>
   async (scenarioid) => {
     try {
-      let query = `
-      SELECT 
-        s.custom_scenarioid,
-        s.scenariotitle,
-        s.scenarioidentification,
-        s.scenariodiagram,
-        s.duration
-      FROM custom_scenarios s
-      WHERE s.deletedon IS NULL
-    `;
+      let query = ` SELECT  s.custom_scenarioid, s.scenariotitle, s.scenarioidentification, s.scenariodiagram, s.duration FROM custom_scenarios s WHERE s.deletedon IS NULL `;
       if (scenarioid) {
         query += ` AND s.scenarioid = :_custom_scenariouuid`;
       }
@@ -411,7 +279,7 @@ const scenariodigramlist =
         } catch (e) {
           console.warn(
             "Failed to parse scenariodiagram for scenarioid",
-            scenario.scenarioid
+            scenario.scenarioid,
           );
         }
 
@@ -429,13 +297,11 @@ const scenariodigramlist =
         let components = [];
         if (componentIds.size > 0) {
           const componentList = await db.sequelize.query(
-            `SELECT componentid AS id, componentname AS label, componentimage AS imageUrl, network_ports AS networkport 
-           FROM components 
-           WHERE deletedon IS NULL AND componentid IN (:ids)`,
+            `SELECT componentid AS id, componentname AS label, componentimage AS imageUrl, network_ports AS networkport FROM components WHERE deletedon IS NULL AND componentid IN (:ids)`,
             {
               replacements: { ids: Array.from(componentIds) },
               type: db.sequelize.QueryTypes.SELECT,
-            }
+            },
           );
 
           // Optional: Parse networkport if stored as stringified JSON
@@ -483,16 +349,7 @@ const saveComponentconfiguration =
           message: "Missing or invalid required fields",
         };
       }
-      const updateQuery = `
-        UPDATE custom_scenarios
-        SET component_config = ?,
-            network_config = ?,
-            approval_status = ?,
-            reject_reason = ?, 
-            modifiedon = CURRENT_TIMESTAMP,
-            modifiedby = ?
-        WHERE custom_scenariouuid = ?
-      `;
+      const updateQuery = `  UPDATE custom_scenarios  SET component_config = ?,  network_config = ?,  approval_status = ?,  reject_reason = ?,   modifiedon = CURRENT_TIMESTAMP,  modifiedby = ?  WHERE custom_scenariouuid = ?  `;
 
       await db.sequelize.query(updateQuery, {
         replacements: [
@@ -508,17 +365,11 @@ const saveComponentconfiguration =
 
       /* -------------------- FETCH SCENARIO DETAILS FOR NOTIFICATION -------------------- */
       const [scenarioDetails] = await db.sequelize.query(
-        `SELECT 
-            cs.scenariotitle,
-            CONCAT(l.firstname, ' ', l.lastname) AS learner_name,
-            l.learner_id
-         FROM custom_scenarios cs
-         JOIN learners l ON l.learner_id = cs.learner_id
-         WHERE cs.custom_scenariouuid = ?`,
+        `SELECT  cs.scenariotitle, CONCAT(l.firstname, ' ', l.lastname) AS learner_name, l.learner_id FROM custom_scenarios cs JOIN learners l ON l.learner_id = cs.learner_id WHERE cs.custom_scenariouuid = ?`,
         {
           replacements: [body.scenarioid],
           type: db.sequelize.QueryTypes.SELECT,
-        }
+        },
       );
 
       /* -------------------- APPROVAL FLOW -------------------- */
@@ -528,7 +379,7 @@ const saveComponentconfiguration =
           {
             replacements: [body.scenarioid],
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
         if (!customScenario) {
           return {
@@ -537,14 +388,11 @@ const saveComponentconfiguration =
           };
         }
         const [existingScenario] = await db.sequelize.query(
-          `SELECT scenarioid 
-           FROM scenarios 
-           WHERE scenarioidentification = ?
-           LIMIT 1`,
+          `SELECT scenarioid  FROM scenarios   WHERE scenarioidentification = ?  LIMIT 1`,
           {
             replacements: [customScenario.scenarioidentification],
             type: db.sequelize.QueryTypes.SELECT,
-          }
+          },
         );
 
         if (existingScenario) {
@@ -556,37 +404,7 @@ const saveComponentconfiguration =
         }
 
         /* -------------------- INSERT INTO MAIN SCENARIOS TABLE -------------------- */
-        const insertQuery = `
-          INSERT INTO scenarios (
-            scenariouuid,
-            scenariotitle,
-            scenarioidentification,
-            scenariodescription,
-            scenariolevel,
-            scenariocategoryid,
-            scenariosubcategoryid,
-            instructor_id,
-            learner_id,
-            scenario_type,
-            scenarioimage,
-            scenariodiagram,
-            components,
-            component_config,
-            network_config,
-            instruction_file,
-            duration,
-            scenariostatus,
-            status,
-            publishedon,
-            createdby,
-            createdon,
-            modifiedby,
-            modifiedon
-          )
-          VALUES (
-            ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,?,CURRENT_TIMESTAMP
-          )
-        `;
+        const insertQuery = ` INSERT INTO scenarios ( scenariouuid, scenariotitle, scenarioidentification, scenariodescription, scenariolevel, scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type, scenarioimage, scenariodiagram, components, component_config, network_config, instruction_file, duration, scenariostatus, status, publishedon, createdby, createdon, modifiedby, modifiedon ) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,?,CURRENT_TIMESTAMP ) `;
 
         const insertParams = [
           customScenario.custom_scenariouuid,
@@ -615,10 +433,27 @@ const saveComponentconfiguration =
           session_userid,
         ];
 
-        await db.sequelize.query(insertQuery, {
+        // await db.sequelize.query(insertQuery, {
+        //   replacements: insertParams,
+        //   type: db.sequelize.QueryTypes.INSERT,
+        // });
+        const [insertResult] = await db.sequelize.query(insertQuery, {
           replacements: insertParams,
           type: db.sequelize.QueryTypes.INSERT,
         });
+
+        const insertedScenarioId = insertResult;
+        await db.sequelize.query(
+          `
+        UPDATE custom_scenarios
+        SET scenarioid = ?
+        WHERE custom_scenariouuid = ?
+        `,
+          {
+            replacements: [insertedScenarioId, body.scenarioid],
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
       }
 
       /* -------------------- NOTIFICATION -------------------- */
@@ -641,7 +476,7 @@ const saveComponentconfiguration =
             status: statusText,
           },
           "Learner",
-          scenarioDetails.learner_id
+          scenarioDetails.learner_id,
         );
       }
 

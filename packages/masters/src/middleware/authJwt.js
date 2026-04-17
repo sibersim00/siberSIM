@@ -92,14 +92,14 @@ const authenticateToken = (routeslug) => {
           });
         }
         const userData = JSON.parse(tokenRow.token_json || "{}");
+        userData.user_count_limit  =0;
         // License check
-        if (userData.license_key) {
+        if (!userData.issuper && userData.license_key) {
           const hostname = req.hostname;
           const licenseStatus = serialLicense.validateJWTLicense(
             hostname,
             userData.license_key
           );
-
           if (!licenseStatus) {
             return res.status(503).send({
               statusCode: 503,
@@ -111,8 +111,9 @@ const authenticateToken = (routeslug) => {
 
           }
           userData.user_count_limit  = Number(licenseStatus.user_count)
+          userData.manipulation  = licenseStatus.manipulation
         }
-console.log("eeeeeeeeeeeeeee",userData.user_count_limit );
+
 
         if (routeslug && userData.menus) {
           let allowed = false;
@@ -183,7 +184,7 @@ const authenticateTokenold = async (req, res, next) => {
       }
 
       const userData = JSON.parse(tokenRow.token_json || "{}");
-      if(userData.license_key){
+      if(!userData.issuper && userData.license_key){
         let hostname = req.hostname;
         const licenseStatus = serialLicense.validateJWTLicense(hostname,userData.license_key);
         if (!licenseStatus) { 
@@ -278,7 +279,6 @@ const refreshToken = async (req, res, next) => {
       if (err) {
         return res.status(403).send({ statusCode: 403, message: "You are not authorized to access this application." });
       } else {
-        // ✅ Invalidate previous token
         await db.sequelize.query(
           `UPDATE ad_user_refresh_tokens
            SET is_valid = 0, logged_out = NOW()

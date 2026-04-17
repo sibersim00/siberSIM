@@ -59,8 +59,6 @@ const notitermination =
   async (req, res) => {
     try {
       const body = req.body;
-      console.log("bodybodybodybodybodybody",body);
-      
       const session_userid = req.user.userid;
       // Call the DAO function, not the controller itself
       const result = await dao.notitermination({ db, validation })(
@@ -165,8 +163,6 @@ const terminateScenario =
     const { vmrequestid, remark, type } = req.body;
     const usertype = req.user.usertype;
     const session_userid = req.user.userid;
-console.log("vmrequestidvmrequestidvmrequestid",vmrequestid);
-
     if (!vmrequestid || !usertype) {
       return res
         .status(400)
@@ -289,7 +285,71 @@ const restartscenarioLearner =
     }
   };
 
+const changeEditStatus =
+  ({ dao,db }) =>
+  async (req, res) => {
+    try {
+      const body = req.body;
+      const loginId = req.user.userid;
+      const result = await dao.changeEditStatus({db})(body,loginId);
+      res .status(result.statusCode) .send({ statusCode: result.statusCode, message: result.message, data: result.data || null,});
+    } catch (error) {
+      console.error("Edit status error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "An error occurred. Please try again later.",
+      });
+    }
+  };
 
+  const releaseEditLock =
+  ({ dao ,db}) =>
+  async (req, res) => {
+    try {
+      const body = req.body;
+      const result = await dao.releaseEditLock({db})(body);
+      res.status(result.statusCode).send({
+        statusCode: result.statusCode,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error("Release edit lock error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "An error occurred. Please try again later.",
+      });
+    }
+  };
+
+    const deleteBridgeFromScenario =
+  ({ dao,db }) =>
+  async (req, res) => {
+    try {
+      const payload = req.body;
+
+
+      if (!payload.vmrequestid || !payload.edgeId) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Required fields missing",
+        });
+      }
+
+      const result = await dao.deleteBridgeFromScenario({db})(payload);
+
+      res.status(200).json({
+        statusCode: 200,
+        message: "Bridge removed successfully",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Delete bridge error:", error);
+      res.status(500).json({
+        statusCode: 500,
+        message: "Internal server error",
+      });
+    }
+  };
 module.exports = {
   listScenarios,
   getMessagesByScenario,
@@ -301,4 +361,7 @@ module.exports = {
   getLogs,
   startScenarioLearner,
   restartscenarioLearner,
+  changeEditStatus,
+  releaseEditLock,
+  deleteBridgeFromScenario
 };

@@ -6,22 +6,7 @@ const getAll =
   async () => {
     try {
       const eventlist = `
-        SELECT 
-          e.eventid, 
-          e.eventuuid, 
-          e.eventname, 
-          e.eventdescription, 
-          e.scenarioid, 
-          DATE_FORMAT(e.eventstarttime, '%Y-%m-%d %H:%i:%s') AS eventstarttime,
-          DATE_FORMAT(e.eventendtime, '%Y-%m-%d %H:%i:%s') AS eventendtime,
-          e.status, 
-          s.scenariotitle,
-          DATE_FORMAT(e.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-          DATE_FORMAT(e.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon
-        FROM events e
-        LEFT JOIN scenarios s ON s.scenarioid = e.scenarioid
-        ORDER BY e.eventname ASC
-      `;
+          SELECT  e.eventid,  e.eventuuid,  e.eventname,  e.eventdescription,  e.scenarioid,  DATE_FORMAT(e.eventstarttime, '%Y-%m-%d %H:%i:%s') AS eventstarttime, DATE_FORMAT(e.eventendtime, '%Y-%m-%d %H:%i:%s') AS eventendtime, e.status,  s.scenariotitle, DATE_FORMAT(e.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(e.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM events e LEFT JOIN scenarios s ON s.scenarioid = e.scenarioid ORDER BY e.eventname ASC `;
 
       let [res] = await db.sequelize.query(eventlist);
       return res;
@@ -48,7 +33,7 @@ const save = ({ db }) => async (body, userid) => {
 
     await db.sequelize.query(
       `INSERT INTO events (eventuuid, eventname, eventdescription, scenarioid, eventstarttime, eventendtime, status, createdby, createdon)
-       VALUES (UUID(), :eventname, :eventdescription, :scenarioid, :eventstarttime, :eventendtime, :status, :userid, NOW())`,
+      VALUES (UUID(), :eventname, :eventdescription, :scenarioid, :eventstarttime, :eventendtime, :status, :userid, NOW())`,
       {
         replacements: {
           eventname: body.eventname,
@@ -115,9 +100,7 @@ const update = ({ db }) => async (body, userid) => {
         },
       }
     );
-
     return { statusCode: 200 };
-
   } catch (error) {
     console.error("Error updating event:", error);
     return { statusCode: 500 };
@@ -138,15 +121,12 @@ const addParticipants =
           replacements,
           type: db.sequelize.QueryTypes.SELECT,
         });
-
         return !!existing;
       }
-
       const mobile =
         body.mobile && body.mobile.toString().trim() !== ""
           ? body.mobile.toString().trim()
           : null;
-
       if (await checkDuplicate("mobile", mobile)) {
         errors.push(validation.messages.mobile_duplicate);
       }
@@ -160,26 +140,9 @@ const addParticipants =
       if (errors.length > 0) {
         return { statusCode: 400, errors, message: "Username or Email already exist" };
       }
-
       const hashedPassword = await bcrypt.hash(body.password, 10);
       const insertLearnerQuery = `
-        INSERT INTO learners (
-          learner_uuid,
-          firstname,
-          lastname,
-          email,
-          mobile,
-          username,
-          password,
-          isverified,
-          createdby,
-          createdon
-        ) VALUES (
-          UUID(),
-          ?, ?, ?, ?, ?, ?, 'yes', ?, CURRENT_TIMESTAMP
-        )
-      `;
-
+          INSERT INTO learners ( learner_uuid, firstname, lastname, email, mobile, username, password, isverified, createdby, createdon ) VALUES ( UUID(), ?, ?, ?, ?, ?, ?, 'yes', ?, CURRENT_TIMESTAMP ) `;
       const insertParams = [
         body.firstname,
         body.lastname,
@@ -189,12 +152,10 @@ const addParticipants =
         hashedPassword,
         userid,
       ];
-
       const [result, metadata] = await db.sequelize.query(insertLearnerQuery, {
         replacements: insertParams,
         type: db.sequelize.QueryTypes.INSERT,
       });
-
       // Get the inserted learner_id
       const learner_id = metadata?.insertId || result;
       const eventid = body.eventid;
@@ -208,13 +169,7 @@ const addParticipants =
       }
 
       // Insert into event_learners
-      const insertMappingQuery = `
-        INSERT INTO event_learners (
-          learner_id, eventid,team_name,
-          team_description, createdby, createdon
-        ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `;
-
+      const insertMappingQuery = ` INSERT INTO event_learners ( learner_id, eventid,team_name, team_description, createdby, createdon ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP) `;
       await db.sequelize.query(insertMappingQuery, {
         replacements: [
           learner_id,
@@ -225,7 +180,6 @@ const addParticipants =
         ],
         type: db.sequelize.QueryTypes.INSERT,
       });
-
       return {
         statusCode: 200,
       };
@@ -234,7 +188,6 @@ const addParticipants =
       throw error;
     }
   };
-
 const addLearnerEvent =
   ({ db, validation }) =>
   async (body, userid) => {
@@ -251,12 +204,8 @@ const addLearnerEvent =
           message: "",
         };
       }
-      const insertQuery = `
-        INSERT INTO event_learners (
-          learner_id, eventid,team_name,team_description, createdby, createdon
-        ) VALUES (?, ?, ?,?,?, CURRENT_TIMESTAMP)
+      const insertQuery = ` INSERT INTO event_learners ( learner_id, eventid,team_name,team_description, createdby, createdon ) VALUES (?, ?, ?,?,?, CURRENT_TIMESTAMP)
       `;
-
       await db.sequelize.query(insertQuery, {
         replacements: [learner_id, eventid,body.team_name,body.team_description, userid],
         type: db.sequelize.QueryTypes.INSERT,
@@ -277,23 +226,7 @@ const getLearnersByEvent =
   ({ db }) =>
   async (eventid) => {
     try {
-      const query = `
-      SELECT 
-        elm.eventlearnerid,
-        elm.learner_id,
-        l.firstname,
-        l.lastname,
-        l.email,
-        l.mobile,
-        l.username,
-        elm.team_name,
-        elm.team_description,
-        elm.eventlearnerid
-      FROM event_learners elm
-      INNER JOIN learners l ON elm.learner_id = l.learner_id
-      WHERE elm.eventid = :eventid AND elm.deletedon IS NULL
-      ORDER BY elm.eventlearnerid DESC, 
-      CASE WHEN elm.modifiedon IS NOT NULL THEN elm.modifiedon ELSE elm.createdon END DESC 
+      const query = ` SELECT  elm.eventlearnerid, elm.learner_id, l.firstname, l.lastname, l.email, l.mobile, l.username, elm.team_name, elm.team_description, elm.eventlearnerid FROM event_learners elm INNER JOIN learners l ON elm.learner_id = l.learner_id WHERE elm.eventid = :eventid AND elm.deletedon IS NULL ORDER BY elm.eventlearnerid DESC,  CASE WHEN elm.modifiedon IS NOT NULL THEN elm.modifiedon ELSE elm.createdon END DESC 
     `;
 
       const results = await db.sequelize.query(query, {
@@ -322,11 +255,9 @@ const deleteLearnerFromEvent =
         
         AND deletedon IS NULL
     `;
-
       await db.sequelize.query(query, {
         replacements: { eventlearnerid },
       });
-
       return {
         statusCode: 200,
         message: "Learner successfully removed from the event.",
@@ -336,7 +267,6 @@ const deleteLearnerFromEvent =
       throw error;
     }
   };
-
 const updateParticipant =
   ({ db, validation }) =>
   async (body, session_userid) => {
@@ -350,9 +280,7 @@ const updateParticipant =
           message: "",
         };
       }
-
       const errors = [];
-
       async function checkDuplicate(field, value) {
         if (!value || value === "") return false;
         const query = `
@@ -370,7 +298,6 @@ const updateParticipant =
 
         return !!existing;
       }
-
       if (await checkDuplicate("mobile", mobile)) {
         errors.push(validation.messages.mobile_duplicate);
       }
@@ -380,23 +307,10 @@ const updateParticipant =
       if (await checkDuplicate("username", username)) {
         errors.push(validation.messages.username_duplicate);
       }
-
       if (errors.length > 0) {
         return { statusCode: 400, errors, message: "" };
       }
-
-      const updateQuery = `
-      UPDATE learners SET
-        firstname = ?, 
-        lastname = ?, 
-        email = ?, 
-        mobile = ?, 
-        username = ?, 
-        modifiedby = ?, 
-        modifiedon = CURRENT_TIMESTAMP
-      WHERE learner_id = ?
-    `;
-
+      const updateQuery = ` UPDATE learners SET firstname = ?,  lastname = ?,  email = ?,  mobile = ?,  username = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE learner_id = ? `;
       await db.sequelize.query(updateQuery, {
         replacements: [
           firstname,
@@ -410,16 +324,7 @@ const updateParticipant =
         type: db.sequelize.QueryTypes.UPDATE,
       });
 
-
-
-   const updateEventLearnerQuery = `
-      UPDATE event_learners SET
-        team_name = ?, 
-        team_description = ?, 
-        modifiedby = ?, 
-        modifiedon = CURRENT_TIMESTAMP
-      WHERE eventlearnerid = ?
-    `;
+   const updateEventLearnerQuery = ` UPDATE event_learners SET team_name = ?,  team_description = ?,  modifiedby = ?,  modifiedon = CURRENT_TIMESTAMP WHERE eventlearnerid = ? `;
       await db.sequelize.query(updateEventLearnerQuery, {
         replacements: [
           team_name,
@@ -429,9 +334,6 @@ const updateParticipant =
         ],
         type: db.sequelize.QueryTypes.UPDATE,
       });
-
-
-
       return {
         statusCode: 200,
         message:

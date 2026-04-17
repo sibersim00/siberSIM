@@ -131,11 +131,13 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         componentid,
         network_ports,
         vmid,
+        componenttype,
         vmid_name AS vmname,
         componentimage AS imageurl,
         storage,
         memory,
-        duration
+        duration,
+        componentname
       FROM components
       WHERE status = 'Active'
         AND deletedon IS NULL
@@ -167,8 +169,10 @@ const scenariocomponentcategorylist = async (db, componentcategoryid) => {
         networkport: parsedPorts,
         imageurl: row.imageurl || null,
         vmid: row.vmid || 0,
+        componenttype : row.componenttype,
         vmname: row.vmname || "",
         storage: row.storage || "",
+        componentname: row.componentname || "",
         memory: row.memory || 0,
         duration: row.duration || 0
       });
@@ -251,37 +255,6 @@ const studentlistevent = ({ db }) => async (session_userid, usertype, eventid) =
   }
 };
 
-
-
-
-// const studentlist = ({ db }) => async (session_userid, usertype) => {
-//   try {
-//     if (usertype == "Admin") {
-//       let [res] = await db.sequelize.query(
-//         `select t.learner_id,CONCAT(t.firstname, ' ', t.lastname) AS Student_name from learners t  where t.status='Active' and t.isverified='Yes' and t.deletedon is null ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`
-//       );
-//       return res;
-//     } else {
-//       let res = await db.sequelize.query(
-//         `select t.learner_id,CONCAT(t.firstname,' ',t.lastname) AS Student_name,lim.instructor_id
-//       from learners t  
-//       inner join learner_instructor_map lim on lim.learner_id = t.learner_id and lim.deletedon is null and lim.instructor_id =:_userid 
-//       where t.status='Active' and t.isverified='Yes' and t.deletedon is null 
-//       group by t.learner_id
-//       ORDER by CASE WHEN t.modifiedon IS NOT NULL then t.modifiedon ELSE t.createdon END  DESC`,
-//         {
-//           replacements: {
-//             _userid: session_userid,
-//           },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-//       return res;
-//     }
-//   } catch (error) {
-//     throw error;
-//   }
-// };
 const studentlist = ({ db }) => async () => {
   try {
     let [res] = await db.sequelize.query(
@@ -294,11 +267,6 @@ const studentlist = ({ db }) => async () => {
     throw error;
   }
 };
-
-
-
-
-
 
 const batchlist = ({ db }) => async (session_userid, usertype) => {
   try {
@@ -327,7 +295,6 @@ const batchlist = ({ db }) => async (session_userid, usertype) => {
     throw error;
   }
 };
-
 const scenariolist = ({ db }) => async (session_userid, usertype) => {
   try {
     if (usertype === "Admin") {

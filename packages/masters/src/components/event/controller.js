@@ -18,19 +18,14 @@ const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     let userid = req.user.userid;
-
     const result = await dao.save({ db })(body, userid);
-
     let response = { statusCode: result.statusCode };
-
     if (result.statusCode === 200) {
       response.message = validation.messages.save_success; 
     } else if (result.statusCode === 400) {
       response.message = validation.messages.eventname_exists; 
     }
-
     return res.status(result.statusCode).json(response);
-
   } catch (error) {
     console.error('Error in createEvent controller:', error);
     return res.status(500).json({
@@ -40,17 +35,12 @@ const save = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
-
 const update = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const userid = req.user.userid;
-    
-
     const result = await dao.update({ db })(body, userid);
-
     let response = { statusCode: result.statusCode };
-
     if (result.statusCode === 200) {
       response.message = validation.messages.update_success; 
     } else if (result.statusCode === 404) {
@@ -58,9 +48,7 @@ const update = ({ dao, db, validation }) => async (req, res) => {
     } else if (result.statusCode === 400) {
       response.message = validation.messages.eventname_exists;
     }
-
     return res.status(result.statusCode).json(response);
-
   } catch (error) {
     console.error('Error in updateEvent controller:', error);
     return res.status(500).json({
@@ -75,9 +63,7 @@ const addParticipants = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user.userid;
-
     const result = await dao.addParticipants({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -96,9 +82,7 @@ const addLearnerEvent = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
     const session_userid = req.user.userid;
-
     const result = await dao.addLearnerEvent({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -117,7 +101,6 @@ const addLearnerEvent = ({ dao, db, validation }) => async (req, res) => {
 const getLearnersByEvent = ({ dao, db }) => async (req, res) => {
   try {
     const { eventid } = req.params;
-
     if (!eventid) {
       return res.status(400).send({
         statusCode: 400,
@@ -125,7 +108,6 @@ const getLearnersByEvent = ({ dao, db }) => async (req, res) => {
         errors: ["Missing eventid"],
       });
     }
-
     const result = await dao.getLearnersByEvent({ db })(eventid);
     return res.status(result.statusCode).send(result);
   } catch (error) {
@@ -137,21 +119,16 @@ const getLearnersByEvent = ({ dao, db }) => async (req, res) => {
   }
 };
 
-
 const deleteLearnerFromEvent = ({ dao, db }) => async (req, res) => {
   try {
     const { eventlearnerid } = req.body;
-
-
     if (!eventlearnerid) {
       return res.status(400).send({
         statusCode: 400,
         message: "eventlearnerid is required.",
       });
     }
-
     const result = await dao.deleteLearnerFromEvent({ db })({ eventlearnerid });
-
     return res.status(result.statusCode).send(result);
   } catch (error) {
     console.error("Error in deleteLearnerFromEvent Controller:", error);
@@ -167,7 +144,6 @@ const updateParticipant = ({ dao, db, validation }) => async (req, res) => {
     const body = req.body;
     const session_userid = req.user.userid;
     const result = await dao.updateParticipant({ db, validation })(body, session_userid);
-
     return res.status(result.statusCode).send({
       statusCode: result.statusCode,
       message: result.message,
@@ -181,11 +157,6 @@ const updateParticipant = ({ dao, db, validation }) => async (req, res) => {
     });
   }
 };
-
-
-
-
-
 
  module.exports = {
     getAll,

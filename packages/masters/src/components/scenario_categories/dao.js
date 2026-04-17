@@ -37,18 +37,7 @@ const getScenarioCategorybyId =
   ({ db }) =>
   async (id) => {
     try {
-      const [res] = await db.sequelize.query(
-        `SELECT sc.categoryname, sc.categoryimage, sc.parentscenariocategoryid, sc.scenariocategoryid,
-        CASE WHEN sc.status = 'Active' THEN 'true' ELSE 'false' END AS status, 
-        CONCAT(au.firstname, ' ', au.lastname) AS createdby,
-        CONCAT(a.firstname, ' ', a.lastname) AS modifiedby
-      FROM scenario_categories sc
-      LEFT JOIN ad_users au ON sc.createdby = au.userid
-      LEFT JOIN ad_users a ON sc.modifiedby = a.userid
-      WHERE sc.deletedon IS NULL 
-        AND sc.parentscenariocategoryid IS NULL 
-        AND sc.scenariocategoryid = :_id
-      ORDER BY CASE WHEN sc.modifiedon IS NOT NULL THEN sc.modifiedon ELSE sc.createdon END DESC`,
+      const [res] = await db.sequelize.query( `SELECT sc.categoryname, sc.categoryimage, sc.parentscenariocategoryid, sc.scenariocategoryid, CASE WHEN sc.status = 'Active' THEN 'true' ELSE 'false' END AS status,  CONCAT(au.firstname, ' ', au.lastname) AS createdby, CONCAT(a.firstname, ' ', a.lastname) AS modifiedby FROM scenario_categories sc LEFT JOIN ad_users au ON sc.createdby = au.userid LEFT JOIN ad_users a ON sc.modifiedby = a.userid WHERE sc.deletedon IS NULL  AND sc.parentscenariocategoryid IS NULL  AND sc.scenariocategoryid = :_id ORDER BY CASE WHEN sc.modifiedon IS NOT NULL THEN sc.modifiedon ELSE sc.createdon END DESC`,
         {
           replacements: { _id: id },
           type: db.sequelize.QueryTypes.SELECT,
@@ -91,13 +80,7 @@ const save =
     }
 
     try {
-      await db.sequelize.query(
-        `INSERT INTO scenario_categories (
-          scenariocategoryuuid, categoryname,categorytype, categoryimage,
-          createdby, createdon
-        ) VALUES (
-          uuid(), ?, ?, ?,?, CURRENT_TIMESTAMP
-        )`,
+      await db.sequelize.query( `INSERT INTO scenario_categories ( scenariocategoryuuid, categoryname,categorytype, categoryimage, createdby, createdon ) VALUES ( uuid(), ?, ?, ?,?, CURRENT_TIMESTAMP )`,
         {
           replacements: [
             body.categoryname,
@@ -108,97 +91,12 @@ const save =
           type: db.sequelize.QueryTypes.INSERT,
         }
       );
-
       return { status: true };
     } catch (error) {
       console.error("Error Save Scenario Categories Submit:", error);
       throw error;
     }
   };
-
-// const update =
-//   ({ db }) =>
-//   async (body, userid) => {
-//     let errors = [];
-
-//     const categoryNameCleaned = body.categoryname
-//       .replace(/\s/g, "")
-//       .toLowerCase();
-
-//     if (body.parentscenariocategoryid && body.parentscenariocategoryid != 0) {
-//       const [checkduplicate] = await db.sequelize.query(
-//         `SELECT scenariocategoryid
-//        FROM scenario_categories
-//        WHERE deletedon IS NULL
-//          AND parentscenariocategoryid = :parentid
-//          AND LOWER(REPLACE(categoryname, ' ', '')) = :subcategory
-//          AND scenariocategoryid != :id`,
-//         {
-//           replacements: {
-//             parentid: body.parentscenariocategoryid,
-//             subcategory: categoryNameCleaned,
-//             id: body.scenariocategoryid,
-//           },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       if (checkduplicate) {
-//         errors.push("Category name already exists");
-//       }
-//     } else {
-//       const [checkduplicate] = await db.sequelize.query(
-//         `SELECT scenariocategoryid
-//        FROM scenario_categories
-//        WHERE deletedon IS NULL
-//          AND parentscenariocategoryid IS NULL
-//          AND LOWER(REPLACE(categoryname, ' ', '')) = :category
-//          AND scenariocategoryid != :id`,
-//         {
-//           replacements: {
-//             category: categoryNameCleaned,
-//             id: body.scenariocategoryid,
-//           },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       if (checkduplicate) {
-//         errors.push("Category name already exists");
-//       }
-//     }
-
-//     if (errors.length > 0) {
-//       return { status: false, errors };
-//     }
-
-//     try {
-//       await db.sequelize.query(
-//         `UPDATE scenario_categories
-//        SET parentscenariocategoryid = ?,
-//            categoryname = ?,
-//            categoryimage = ?,
-//            modifiedby = ?,
-//            modifiedon = CURRENT_TIMESTAMP
-//        WHERE scenariocategoryid = ? AND deletedon IS NULL`,
-//         {
-//           replacements: [
-//             body.parentscenariocategoryid || null,
-//             body.categoryname,
-//             body.categoryimage,
-//             userid,
-//             body.scenariocategoryid,
-//           ],
-//           type: db.sequelize.QueryTypes.UPDATE,
-//         }
-//       );
-
-//       return { status: true };
-//     } catch (error) {
-//       console.error("Error Update Scenario Category:", error);
-//       throw error;
-//     }
-//   };
 const update =
   ({ db }) =>
   async (body, userid) => {
@@ -210,13 +108,7 @@ const update =
 
     // Check for duplicates
     if (body.parentscenariocategoryid && body.parentscenariocategoryid != 0) {
-      const [checkduplicate] = await db.sequelize.query(
-        `SELECT scenariocategoryid
-         FROM scenario_categories
-         WHERE deletedon IS NULL
-           AND parentscenariocategoryid = :parentid
-           AND LOWER(REPLACE(categoryname, ' ', '')) = :subcategory
-           AND scenariocategoryid != :id`,
+      const [checkduplicate] = await db.sequelize.query( `SELECT scenariocategoryid FROM scenario_categories WHERE deletedon IS NULL AND parentscenariocategoryid = :parentid AND LOWER(REPLACE(categoryname, ' ', '')) = :subcategory AND scenariocategoryid != :id`,
         {
           replacements: {
             parentid: body.parentscenariocategoryid,
@@ -231,13 +123,7 @@ const update =
         errors.push("Category name already exists");
       }
     } else {
-      const [checkduplicate] = await db.sequelize.query(
-        `SELECT scenariocategoryid
-         FROM scenario_categories
-         WHERE deletedon IS NULL
-           AND parentscenariocategoryid IS NULL
-           AND LOWER(REPLACE(categoryname, ' ', '')) = :category
-           AND scenariocategoryid != :id`,
+      const [checkduplicate] = await db.sequelize.query( `SELECT scenariocategoryid FROM scenario_categories WHERE deletedon IS NULL AND parentscenariocategoryid IS NULL AND LOWER(REPLACE(categoryname, ' ', '')) = :category AND scenariocategoryid != :id`,
         {
           replacements: {
             category: categoryNameCleaned,
@@ -257,15 +143,7 @@ const update =
     }
 
     try {
-      await db.sequelize.query(
-        `UPDATE scenario_categories
-         SET parentscenariocategoryid = ?,
-             categoryname = ?,
-             categoryimage = ?,
-             categorytype = ?,        
-             modifiedby = ?,
-             modifiedon = CURRENT_TIMESTAMP
-         WHERE scenariocategoryid = ? AND deletedon IS NULL`,
+      await db.sequelize.query( `UPDATE scenario_categories SET parentscenariocategoryid = ?, categoryname = ?, categoryimage = ?, categorytype = ?,modifiedby = ?, modifiedon = CURRENT_TIMESTAMP WHERE scenariocategoryid = ? AND deletedon IS NULL`,
         {
           replacements: [
             body.parentscenariocategoryid || null,

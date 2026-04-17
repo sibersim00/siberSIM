@@ -8,6 +8,7 @@ module.exports = function (iocContainer) {
   router.post('/save', validator(validation.schema, 'body'), controller.create(iocContainer));
   router.post('/update', validator(validation.updateSchema, 'body'), controller.update(iocContainer));
   router.post('/status', validator(validation.statusSchema, 'body'), controller.changeStatus(iocContainer));
+  router.post('/manipulation-status', validator(validation.statusSchema, 'body'), controller.changeMaipulationStatus(iocContainer));
   router.post('/save_diagram', controller.saveDiagram(iocContainer));
   router.get('/scenariodigramlist', controller.scenariodigramlist(iocContainer));
   router.post('/delete', validator(validation.deleteSchema, 'body'), controller.deleteById(iocContainer));

@@ -2,57 +2,7 @@ const getAll =
   ({ db }) =>
     async (user_id) => {
       try {
-        let result = await db.sequelize.query(
-          `
-          SELECT 
-            s.scenariouuid,
-            s.scenarioidentification,
-            s.scenarioid,
-            s.scenariotitle,
-            s.scenariolevel,
-            s.scenarioimage,
-            s.duration,
-            s.status,
-            s.scenariostatus,
-
-            vr.isnotitermination,
-            vr.vmrequestid AS vmrequestid,
-            vr.vmrequestuuid,
-            sc.categoryname AS scenariocategory_name,
-            sc.scenariocategoryid AS scenariocategoryid,
-            sc.categoryimage AS category_image,
-
-            scc.scenariocategoryid AS scenariosubcategoryid,
-            scc.categoryname AS scenariosubcategory_name,
-            scc.categoryimage AS subcategory_image,
-            scc.parentscenariocategoryid AS parentscenariocategoryid
-
-          FROM scenarios s
-
-          INNER JOIN scenario_categories sc 
-            ON sc.scenariocategoryid = s.scenariocategoryid
-
-          LEFT JOIN scenario_categories scc 
-            ON scc.scenariocategoryid = s.scenariosubcategoryid
-
-          LEFT JOIN vm_request vr 
-            ON vr.scenarioid = s.scenarioid
-           AND vr.requestedby_id = ?
-           AND vr.requestedby_role = 'Admin'
-
-          WHERE 
-            s.deletedon IS NULL
-            AND s.scenariostatus = 'Publish'
-            AND s.status = 'Active'
-            AND s.scenario_type = 'Public'
-
-          ORDER BY 
-            CASE 
-              WHEN s.modifiedon IS NOT NULL 
-              THEN s.modifiedon 
-              ELSE s.createdon 
-            END DESC;
-          `,
+        let result = await db.sequelize.query( ` SELECT  s.scenariouuid, s.scenarioidentification, s.scenarioid, s.scenariotitle, s.scenariolevel, s.scenarioimage, s.duration, s.status, s.scenariostatus, vr.isnotitermination, vr.vmrequestid AS vmrequestid, vr.vmrequestuuid, sc.categoryname AS scenariocategory_name, sc.scenariocategoryid AS scenariocategoryid, sc.categoryimage AS category_image, scc.scenariocategoryid AS scenariosubcategoryid, scc.categoryname AS scenariosubcategory_name, scc.categoryimage AS subcategory_image, scc.parentscenariocategoryid AS parentscenariocategoryid FROM scenarios s INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid LEFT JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN vm_request vr  ON vr.scenarioid = s.scenarioid AND vr.requestedby_id = ? AND vr.requestedby_role = 'Admin' WHERE  s.deletedon IS NULL AND s.scenariostatus = 'Publish' AND s.status = 'Active' AND s.scenario_type = 'Public' ORDER BY  CASE  WHEN s.modifiedon IS NOT NULL  THEN s.modifiedon  ELSE s.createdon  END DESC; `,
           {
             replacements: [user_id],
             type: db.sequelize.QueryTypes.SELECT,
@@ -70,52 +20,7 @@ const getByID =
   ({ db }) =>
     async (scenarioUUID, requestedby_id) => {
       try {
-        let result = await db.sequelize.query(
-          `
-       SELECT
-  vr.vmrequestid,
-  vr.vmrequestuuid,
-  vr.status,
-  vr.vm_steps,
-  vr.timer,
-  vr.isnotitermination,
-  vr.network_bridges,
-  COALESCE(vr.scenariodiagram, s.scenariodiagram) AS scenariodiagram,
-  s.scenarioid,
-  s.scenariouuid,
-  s.scenariotitle,
-  s.scenarioidentification,
-  s.scenariodescription,
-  s.scenariolevel,
-  s.instruction_file,
-  s.component_config,
-  s.duration,
-  sc.categoryname  AS scenariocategory_name,
-  ssc.categoryname AS scenariosubcategory_name,
-   CASE
-                WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW()))
-                WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + TIME_TO_SEC(vr.timer))
-                ELSE vr.timer
-              END AS calculated_timer
-FROM scenarios s
-INNER JOIN scenario_categories sc
-  ON sc.scenariocategoryid = s.scenariocategoryid
-INNER JOIN scenario_categories ssc
-  ON ssc.scenariocategoryid = s.scenariosubcategoryid
-/* Latest vm_request per scenario per user */
-LEFT JOIN vm_request vr
-  ON vr.vmrequestid = (
-    SELECT v2.vmrequestid
-    FROM vm_request v2
-    WHERE v2.scenarioid = s.scenarioid
-      AND v2.requestedby_id = ?
-    ORDER BY v2.vmrequestid DESC
-    LIMIT 1
-  )
-WHERE s.scenariouuid = ?
-  AND s.deletedon IS NULL
-ORDER BY s.scenarioid DESC;
-        `,
+        let result = await db.sequelize.query( ` SELECT vr.vmrequestid, vr.vmrequestuuid, vr.status, vr.vm_steps, vr.timer, vr.isnotitermination, vr.network_bridges, COALESCE(vr.scenariodiagram, s.scenariodiagram) AS scenariodiagram, s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenarioidentification, s.scenariodescription, s.scenariolevel, s.instruction_file, s.component_config, s.duration, sc.categoryname  AS scenariocategory_name, ssc.categoryname AS scenariosubcategory_name, CASE WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW())) WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + TIME_TO_SEC(vr.timer)) ELSE vr.timer END AS calculated_timer FROM scenarios s INNER JOIN scenario_categories sc ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories ssc ON ssc.scenariocategoryid = s.scenariosubcategoryid LEFT JOIN vm_request vr ON vr.vmrequestid = ( SELECT v2.vmrequestid FROM vm_request v2 WHERE v2.scenarioid = s.scenarioid AND v2.requestedby_id = ? ORDER BY v2.vmrequestid DESC LIMIT 1 ) WHERE s.scenariouuid = ? AND s.deletedon IS NULL ORDER BY s.scenarioid DESC;  `,
           {
             replacements: [requestedby_id, scenarioUUID],
             type: db.sequelize.QueryTypes.SELECT,
@@ -124,42 +29,14 @@ ORDER BY s.scenarioid DESC;
 
         /* ---------- fallback if no vm_request ---------- */
         if (result.length === 0 || !result[0].vmrequestid) {
-          result = await db.sequelize.query(
-            `
-          SELECT
-            s.scenarioid,
-            s.scenariouuid,
-            s.scenariotitle,
-            s.scenariodiagram,
-            s.scenarioidentification,
-            s.scenariodescription,
-            s.scenariolevel,
-            s.instruction_file,
-            s.component_config,
-            sc.categoryname AS scenariocategory_name,
-            ssc.categoryname AS scenariosubcategory_name,
-            s.duration,
-            'Pending' AS status,
-            'Pending' AS vm_steps,
-            '00:00:00' AS timer,
-            '00:00:00' AS calculated_timer
-          FROM scenarios s
-          INNER JOIN scenario_categories sc
-            ON s.scenariocategoryid = sc.scenariocategoryid
-          INNER JOIN scenario_categories ssc
-            ON s.scenariosubcategoryid = ssc.scenariocategoryid
-          WHERE s.scenariouuid = ?
-            AND s.deletedon IS NULL;
-          `,
+          result = await db.sequelize.query( ` SELECT s.scenarioid, s.scenariouuid, s.scenariotitle, s.scenariodiagram, s.scenarioidentification, s.scenariodescription, s.scenariolevel, s.instruction_file, s.component_config, sc.categoryname AS scenariocategory_name, ssc.categoryname AS scenariosubcategory_name, s.duration, 'Pending' AS status, 'Pending' AS vm_steps, '00:00:00' AS timer, '00:00:00' AS calculated_timer FROM scenarios s INNER JOIN scenario_categories sc ON s.scenariocategoryid = sc.scenariocategoryid INNER JOIN scenario_categories ssc ON s.scenariosubcategoryid = ssc.scenariocategoryid WHERE s.scenariouuid = ? AND s.deletedon IS NULL; `,
             {
               replacements: [scenarioUUID],
               type: db.sequelize.QueryTypes.SELECT,
             }
           );
         }
-
         if (!result[0]) return null;
-
         /* ---------- component aggregation (same as old code) ---------- */
         let components = JSON.parse(result[0].component_config || "[]");
 
@@ -454,46 +331,40 @@ const updateSessionStatus =
         //STEP 2: Update vm_request table (same as scenario_learner_session)
         await db.sequelize.query(
           `UPDATE vm_request
-SET
-  status = ?,
-  modifiedon = CURRENT_TIMESTAMP,
-
-  terminatedon =
-    CASE WHEN ? = 'Terminated'
-      THEN CURRENT_TIMESTAMP
-      ELSE terminatedon
-    END,
-
-  completedon =
-    CASE WHEN ? = 'Completed'
-      THEN CURRENT_TIMESTAMP
-      ELSE completedon
-    END,
-
-  startedon =
-    CASE
-      WHEN ? IN ('Start', 'Resume') AND startedon IS NULL
-      THEN CURRENT_TIMESTAMP
-      ELSE startedon
-    END,
-    resumeon = CASE WHEN ? = 'Resume' THEN CURRENT_TIMESTAMP ELSE resumeon END, 
-
-  timer =
-    CASE
-      WHEN ? IN ('Pause', 'Completed', 'Terminated')
-      THEN ?
-      ELSE timer
-    END,
-
-  isnotitermination =
-    CASE
-      WHEN ? IN ('Completed', 'Terminated')
-      THEN 'No'
-      ELSE isnotitermination
-    END
-
-WHERE vmrequestid = ?;
-`,
+          SET
+          status = ?,
+          modifiedon = CURRENT_TIMESTAMP,
+          terminatedon =
+          CASE WHEN ? = 'Terminated'
+          THEN CURRENT_TIMESTAMP
+          ELSE terminatedon
+          END,
+          completedon =
+          CASE WHEN ? = 'Completed'
+          THEN CURRENT_TIMESTAMP
+          ELSE completedon
+          END,
+          startedon =
+          CASE
+          WHEN ? IN ('Start', 'Resume') AND startedon IS NULL
+          THEN CURRENT_TIMESTAMP
+          ELSE startedon
+          END,
+          resumeon = CASE WHEN ? = 'Resume' THEN CURRENT_TIMESTAMP ELSE resumeon END, 
+          timer =
+          CASE
+          WHEN ? IN ('Pause', 'Completed', 'Terminated')
+          THEN ?
+          ELSE timer
+          END,
+          isnotitermination =
+          CASE
+          WHEN ? IN ('Completed', 'Terminated')
+          THEN 'No'
+          ELSE isnotitermination
+          END 
+          WHERE vmrequestid = ?;
+          `,
           {
             replacements: [
               body.status, // status
@@ -734,24 +605,6 @@ const markMessagesSeen =
         return { statusCode: 500, message: "Internal Server Error" };
       }
     };
-
-// const getLogs =
-//   ({ db }) =>
-//   async (scenariouuid, learner_id) => {
-//     try {
-//       let result = await db.sequelize.query(
-//         `SELECT sll.status, DATE_FORMAT(sll.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, sll.type, sll.remark, IFNULL(DATE_FORMAT(sls.startedon, '%Y-%m-%d %H:%i:%s'), '') AS startedon FROM scenario_learner_logs sll INNER JOIN scenarios s ON s.scenarioid = sll.scenarioid INNER JOIN scenario_learner_session sls ON sls.scenariolearnersessionid = sll.scenariolearnersessionid WHERE s.scenariouuid = ? AND sll.learner_id = ? ORDER BY sll.createdon DESC;`,
-//         {
-//           replacements: [scenariouuid, learner_id],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-//       return result;
-//     } catch (error) {
-//       console.error("Error fetching scenario logs:", error);
-//       throw error;
-//     }
-//   };
 const getLogs =
   ({ db }) =>
     async (scenariouuid, learner_id) => {
@@ -759,13 +612,7 @@ const getLogs =
         const result = await db.sequelize.query(
           `
         SELECT 
-          vrl.status,
-          DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-          vrl.requestedby_role AS type,
-          vrl.remark,
-
-          -- Scenario started time (first start/init event)
-          IFNULL(
+          vrl.status, DATE_FORMAT(vrl.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, vrl.requestedby_role AS type, vrl.remark, IFNULL(
             (
               SELECT DATE_FORMAT(MIN(vrl2.createdon), '%Y-%m-%d %H:%i:%s')
               FROM vm_request_logs vrl2
@@ -774,18 +621,9 @@ const getLogs =
             ),
             ''
           ) AS startedon
-
         FROM vm_request_logs vrl
-
         INNER JOIN scenarios s 
-          ON s.scenarioid = vrl.scenarioid
-
-        WHERE 
-          s.scenariouuid = ?
-          AND vrl.requestedby_id = ?
-          AND vrl.requestedby_role = 'Learner'
-
-        ORDER BY vrl.createdon DESC
+        ON s.scenarioid = vrl.scenarioid WHERE  s.scenariouuid = ? AND vrl.requestedby_id = ? AND vrl.requestedby_role = 'Learner' ORDER BY vrl.createdon DESC
         `,
           {
             replacements: [scenariouuid, learner_id],
@@ -805,17 +643,7 @@ const getTabList =
   ({ db }) =>
     async () => {
       try {
-        const [res] = await db.sequelize.query(`SELECT 
-        scenariotabid,
-        tab_name,
-        tab_status,
-        event_status,
-        tab_type,
-        widget_url,
-        tab_ordering,
-        createdon,
-        modifiedon
-      FROM scenario_tabs`);
+        const [res] = await db.sequelize.query(`SELECT  scenariotabid, tab_name, tab_status, event_status, tab_type, widget_url, tab_ordering, createdon, modifiedon FROM scenario_tabs`);
         return res;
       } catch (error) {
         console.error("Error fetching scenario tab list:", error);
@@ -823,72 +651,12 @@ const getTabList =
       }
     };
 
-// dao.js (partial)
 
-// const getPaused =
-//   ({ db }) =>
-//   async (learner_id) => {
-//     try {
-//       const result = await db.sequelize.query(
-//         `SELECT 
-//            sl.scenariolearnerid,
-//            sl.scenarioid,
-//            sl.learner_id,
-//            sl.instructor_id,
-//            sl.currentsession_id,
-//            sl.status,
-//            sl.createdon,
-//            sl.modifiedon,
-//            s.scenariotitle AS scenario_name,
-//            s.scenariouuid
-//          FROM scenario_learner sl
-//          LEFT JOIN scenarios s ON s.scenarioid = sl.scenarioid
-//          WHERE sl.learner_id = ?
-//            AND sl.status = 'Pause'
-//          ORDER BY 
-//            CASE 
-//              WHEN sl.modifiedon IS NOT NULL THEN sl.modifiedon 
-//              ELSE sl.createdon 
-//            END DESC`,
-//         {
-//           replacements: [learner_id],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         }
-//       );
-
-//       return result || [];
-//     } catch (error) {
-//       console.error("Error in dao.getPaused:", error);
-//       throw error;
-//     }
-//   };
 const getPaused =
   ({ db }) =>
     async (learner_id) => {
       try {
-        const result = await db.sequelize.query(
-          `
-        SELECT
-          vr.vmrequestid,
-          vr.vmrequestuuid,
-          vr.scenarioid,
-          vr.requestedby_id AS learner_id,
-          vr.status,
-          vr.createdon,
-          vr.modifiedon,
-          s.scenariotitle AS scenario_name,
-          s.scenariouuid
-        FROM vm_request vr
-        INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid
-        WHERE vr.requestedby_id = ?
-          AND vr.requestedby_role = 'Learner'
-          AND vr.status = 'Pause'
-        ORDER BY
-          CASE
-            WHEN vr.modifiedon IS NOT NULL THEN vr.modifiedon
-            ELSE vr.createdon
-          END DESC
-        `,
+        const result = await db.sequelize.query( ` SELECT vr.vmrequestid, vr.vmrequestuuid, vr.scenarioid, vr.requestedby_id AS learner_id, vr.status, vr.createdon, vr.modifiedon, s.scenariotitle AS scenario_name, s.scenariouuid FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid WHERE vr.requestedby_id = ? AND vr.requestedby_role = 'Learner' AND vr.status = 'Pause' ORDER BY CASE WHEN vr.modifiedon IS NOT NULL THEN vr.modifiedon ELSE vr.createdon END DESC `,
           {
             replacements: [learner_id],
             type: db.sequelize.QueryTypes.SELECT,
@@ -929,14 +697,7 @@ const canResumeScenario =
         const { requestedby_id, vmrequestid } = body;
 
         const [activeScenario] = await db.sequelize.query(
-          `
-        SELECT scenarioid
-        FROM vm_request
-        WHERE requestedby_id = :requestedby_id
-          AND requestedby_role = 'Admin'
-          AND status IN ('Initializing', 'Running','Start','Resume')
-          AND vmrequestid != :vmrequestid
-        LIMIT 1
+          ` SELECT scenarioid FROM vm_request WHERE requestedby_id = :requestedby_id AND requestedby_role = 'Admin' AND status IN ('Initializing', 'Running','Start','Resume') AND vmrequestid != :vmrequestid LIMIT 1
         `,
           {
             replacements: { requestedby_id, vmrequestid },
@@ -964,7 +725,6 @@ const canResumeScenario =
         };
       }
     };
-
 
 module.exports = {
   getAll,

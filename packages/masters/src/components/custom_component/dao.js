@@ -7,36 +7,7 @@ const getAll =
   async () => {
     try {
       let [rows] = await db.sequelize.query(`
-        SELECT 
-        cc.customcomponentid,
-        cc.customcomponentuuid,
-        cc.componentname,
-        cc.componentcategoryid,
-        cc.clone_vmid,
-        cc.vmid,
-        cc.componenttype,
-        cc.duration,
-        cc.componentimage,
-        cc.status,
-        mcc.categoryname,
-        DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-        DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-
-        -- Join Components table by VMID
-        comp.componentid AS main_componentid,
-        comp.componentuuid AS main_componentuuid,
-        comp.componentname AS main_componentname,
-        comp.network_ports AS main_network_ports,
-        comp.cores AS main_cores,
-        comp.memory AS main_memory,
-        comp.storage AS main_storage
-
-    FROM custom_component cc
-    LEFT JOIN component_categories mcc 
-        ON mcc.componentcategoryid = cc.componentcategoryid
-    LEFT JOIN components comp 
-        ON comp.vmid = cc.vmid
-    ORDER BY cc.customcomponentid DESC;
+        SELECT   cc.customcomponentid,  cc.customcomponentuuid,  cc.componentname,  cc.componentcategoryid,  cc.clone_vmid,  cc.vmid,  cc.componenttype,  cc.duration,  cc.componentimage,  cc.status,  mcc.categoryname,  DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,  DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,  comp.componentid AS main_componentid,  comp.componentuuid AS main_componentuuid,  comp.componentname AS main_componentname,  comp.network_ports AS main_network_ports,  comp.cores AS main_cores,  comp.memory AS main_memory,  comp.storage AS main_storage  FROM custom_component cc  LEFT JOIN component_categories mcc   ON mcc.componentcategoryid = cc.componentcategoryid  LEFT JOIN components comp   ON comp.vmid = cc.vmid  WHERE cc.deletedon IS Null ORDER BY cc.customcomponentid DESC;
       `);
 
       return rows;
@@ -51,39 +22,7 @@ const getById =
   async (customUUID) => {
     try {
       let result = await db.sequelize.query(
-        `SELECT 
-            cc.customcomponentid,
-            cc.customcomponentuuid,
-            cc.componentname,
-            cc.componentcategoryid,
-            cc.clone_vmid,
-            cc.master_vmid,
-            cc.vmid,
-            cc.componenttype,
-            cc.duration,
-            cc.componentimage,
-            cc.status,
-             mcc.categoryname,
-            DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
-            DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
-
-            -- Main Component details
-            comp.componentid AS main_componentid,
-            comp.componentuuid AS main_componentuuid,
-              comp.componentname AS vmid_name,
-            comp.componenttype AS main_componenttype,
-            comp.network_ports AS main_network_ports,
-            comp.componentimage As main_componentimage,
-            comp.cores AS main_cores,
-            comp.memory AS main_memory,
-            comp.storage AS main_storage
-
-        FROM custom_component cc
-            LEFT JOIN component_categories mcc 
-        ON mcc.componentcategoryid = cc.componentcategoryid
-        LEFT JOIN components comp ON comp.vmid = cc.master_vmid
-        WHERE cc.customcomponentuuid = :uuid
-        LIMIT 1`,
+        `SELECT   cc.customcomponentid,  cc.customcomponentuuid,  cc.componentname,  cc.componentcategoryid,  cc.clone_vmid,  cc.master_vmid,  cc.vmid,  cc.componenttype,  cc.duration,  cc.componentimage,  cc.status,  mcc.categoryname,  DATE_FORMAT(cc.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,  DATE_FORMAT(cc.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,  comp.componentid AS main_componentid,  comp.componentuuid AS main_componentuuid,  comp.componentname AS vmid_name,  comp.componenttype AS main_componenttype,  comp.network_ports AS main_network_ports,  comp.componentimage As main_componentimage,  comp.cores AS main_cores,  comp.memory AS main_memory,  comp.storage AS main_storage  FROM custom_component cc  LEFT JOIN component_categories mcc   ON mcc.componentcategoryid = cc.componentcategoryid  LEFT JOIN components comp ON comp.vmid = cc.master_vmid  WHERE cc.customcomponentuuid = :uuid  LIMIT 1`,
         {
           replacements: { uuid: customUUID },
           type: db.sequelize.QueryTypes.SELECT,
@@ -113,45 +52,13 @@ const getById =
     }
   };
 
-// const updateStatus =
-//   ({ db }) =>
-//     async ({ customcomponentuuid, status }) => {
-//       try {
-//         const [result] = await db.sequelize.query(
-//           `
-//         UPDATE custom_component
-//         SET
-//             status = :status,
-//             modifiedon = NOW()
-//         WHERE customcomponentuuid = :customcomponentuuid
-//         `,
-//           {
-//             replacements: {
-//               status,
-//               customcomponentuuid,
-//             },
-//           }
-//         );
-
-//         return result;
-//       } catch (error) {
-//         console.error("Error updating custom component:", error);
-//         throw error;
-//       }
-//     };
-
 const updateStatus =
   ({ db }) =>
   async ({ customcomponentuuid, status }) => {
     try {
       // 1️⃣ Update component status
       await db.sequelize.query(
-        `
-        UPDATE custom_component
-        SET 
-            status = :status,
-            modifiedon = NOW()
-        WHERE customcomponentuuid = :customcomponentuuid
+        `  UPDATE custom_component  SET   status = :status,  modifiedon = NOW()  WHERE customcomponentuuid = :customcomponentuuid
         `,
         {
           replacements: {
@@ -164,14 +71,7 @@ const updateStatus =
       // 2️⃣ Fetch component + learner details
       const [componentDetails] = await db.sequelize.query(
         `
-  SELECT 
-    cc.componentname,
-    l.firstname AS learner_name,
-    l.learner_id
-  FROM custom_component cc
-  JOIN learners l ON l.learner_id = cc.learner_id
-  WHERE cc.customcomponentuuid = :customcomponentuuid
-  LIMIT 1
+          SELECT   cc.componentname,  l.firstname AS learner_name,  l.learner_id  FROM custom_component cc  JOIN learners l ON l.learner_id = cc.learner_id  WHERE cc.customcomponentuuid = :customcomponentuuid  LIMIT 1
   `,
         {
           replacements: { customcomponentuuid },
@@ -207,18 +107,7 @@ const save =
       if (body.customcomponentid) {
         // Update custom component table
         await db.sequelize.query(
-          `
-    UPDATE custom_component
-    SET 
-      componentname = :componentname,
-      componentcategoryid = :componentcategoryid,
-      componenttype = :subcategoryTypeid,
-      componentimage = :componentimage,
-      duration = :duration,
-      status = 'approved',
-      modifiedby = :modifiedby,
-      modifiedon = CURRENT_TIMESTAMP
-    WHERE customcomponentid = :customcomponentid
+          `UPDATE custom_component  SET   componentname = :componentname,  componentcategoryid = :componentcategoryid,  componenttype = :subcategoryTypeid,  componentimage = :componentimage,  duration = :duration,  status = 'approved',  modifiedby = :modifiedby,  modifiedon = CURRENT_TIMESTAMP  WHERE customcomponentid = :customcomponentid
   `,
           {
             replacements: {
@@ -297,44 +186,7 @@ const save =
 
         // INSERT into components table (FULL)
         await db.sequelize.query(
-          `
-      INSERT INTO components (
-        componentuuid,
-        componentcategoryid,
-        componenttype,
-        vmid,
-        vmid_name,
-        componentname,
-        componentimage,
-        duration,
-        proxmox_json,
-        network_ports,
-        network_bridge_name,
-        cores,
-        storage,
-        memory,
-        createdby,
-        createdon,
-        status
-      ) VALUES (
-        UUID(),
-        :componentcategoryid,
-        :componenttype,
-        :vmid,
-        :vmid_name,
-        :componentname,
-        :componentimage,
-        :duration,
-        :proxmox_json,
-        :network_ports,
-        :network_bridge_name,
-        :cores,
-        :storage,
-        :memory,
-        :createdby,
-        CURRENT_TIMESTAMP,
-        'Active'
-      )
+          `INSERT INTO components (  componentuuid,  componentcategoryid,  componenttype,  vmid,  vmid_name,  componentname,  componentimage,  duration,  proxmox_json,  network_ports,  network_bridge_name,  cores,  storage,  memory,  createdby,  createdon,  status  ) VALUES (  UUID(),  :componentcategoryid,  :componenttype,  :vmid,  :vmid_name,  :componentname,  :componentimage,  :duration,  :proxmox_json,  :network_ports,  :network_bridge_name,  :cores,  :storage,  :memory,  :createdby,  CURRENT_TIMESTAMP,  'Active'  )
     `,
           {
             replacements: {
@@ -447,25 +299,7 @@ const update =
       const network_ports = JSON.stringify(extractNetworkPorts());
       const network_bridge_name = JSON.stringify(extractPortsPrefix());
 
-      const updateQuery = `
-        UPDATE components 
-        SET 
-          vmid = :vmid,
-          vmid_name = :vmid_name,
-          componentimage = :componentimage,
-          componentname = :componentname,
-          componentcategoryid = :componentcategoryid,
-          componenttype = :componenttype,
-          duration = :duration,
-          proxmox_json = :proxmox_json,
-          network_ports = :network_ports,
-          network_bridge_name = :network_bridge_name,
-          cores = :cores,
-          storage = :storage,
-          memory = :memory,
-          modifiedby = :modifiedby,
-          modifiedon = CURRENT_TIMESTAMP
-        WHERE customcomponentid = :customcomponentid
+      const updateQuery = `  UPDATE components   SET   vmid = :vmid,  vmid_name = :vmid_name,  componentimage = :componentimage,  componentname = :componentname,  componentcategoryid = :componentcategoryid,  componenttype = :componenttype,  duration = :duration,  proxmox_json = :proxmox_json,  network_ports = :network_ports,  network_bridge_name = :network_bridge_name,  cores = :cores,  storage = :storage,  memory = :memory,  modifiedby = :modifiedby,  modifiedon = CURRENT_TIMESTAMP  WHERE customcomponentid = :customcomponentid
       `;
 
       await db.sequelize.query(updateQuery, {
@@ -625,11 +459,7 @@ const getVms =
 
         if (item.template === 1 || isCurrent) {
           const dupQry = `
-            SELECT COUNT(*) AS cnt
-            FROM components
-            WHERE vmid = :vmid AND componenttype = :ctype
-              AND deletedon IS NULL
-              AND (:cid IS NULL OR componentid != :cid)
+              SELECT COUNT(*) AS cnt  FROM components  WHERE vmid = :vmid AND componenttype = :ctype  AND deletedon IS NULL  AND (:cid IS NULL OR componentid != :cid)
           `;
 
           const [{ cnt }] = await db.sequelize.query(dupQry, {
