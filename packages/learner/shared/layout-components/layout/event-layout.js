@@ -142,7 +142,7 @@ const Eventlayout = ({ children }) => {
               {/* <button className="btn btn-danger" onClick={handleLogout}>
                 Logout
               </button> */}
-              <Dropdown className="dropdown d-flex main-header-theme">
+              <Dropdown className="dropdown d-flex main-header-theme main-header-theme1">
                 <Nav.Link
                   className="nav-link icon layout-setting"
                   onClick={() => handleThemeToggle()}

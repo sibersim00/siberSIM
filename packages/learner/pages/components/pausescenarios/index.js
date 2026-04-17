@@ -20,15 +20,11 @@ const PauseScenarios = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const dispatch = useDispatch();
-  const [scenStatus, setscenStatus] = useState("true");
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
-  const [quickFilter, setQuickFilter] = useState("");
   const { push } = useRouter();
-  const [backview, setBackView] = useState("card");
-  const [approvalFilter, setApprovalFilter] = useState("Unapproved"); // "", "Reject", "Pending", "Approved"
 
   const { hasGetScenariospauseListData, viewNameResp, getUserDataFromLocal } =
     useSelector((state) => {
@@ -147,7 +143,7 @@ const PauseScenarios = () => {
                         type="button"
                         title="Card View"
                         variant="outline-success"
-                        onClick={() => {}}
+                        onClick={() => { }}
                         className={
                           view === "card" ? "mx-1 active text-white" : "mx-1"
                         }
@@ -169,29 +165,27 @@ const PauseScenarios = () => {
               {gridData && gridData.length > 0 ? (
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
-                    
+
                     <Col key={index} md={12 / columnsPerRow}>
-                    {console.log("itemitemitemitemitemitem",item)}
+                      {console.log("itemitemitemitemitemitem", item)}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${
-                          item.scenariostatus === "Publish"
-                            ? "shadow-publish"
-                            : item.scenariostatus === "Draft"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
+                          ? "shadow-publish"
+                          : item.scenariostatus === "Draft"
                             ? "shadow-draft"
                             : ""
-                        }`}
+                          }`}
                       >
                         {/* Status Pill */}
                         {item.status && (
                           <span
                             className={`badge rounded-pill position-absolute top-0 end-0 m-2
-      ${
-        item.status === "Running"
-          ? "bg-success"
-          : item.status === "Pause"
-          ? "bg-warning text-dark"
-          : "bg-secondary"
-      }`}
+      ${item.status === "Running"
+                                ? "bg-success"
+                                : item.status === "Pause"
+                                  ? "bg-warning text-dark"
+                                  : "bg-secondary"
+                              }`}
                             style={{ fontSize: "12px" }}
                           >
                             {item.status}
@@ -235,9 +229,9 @@ const PauseScenarios = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>

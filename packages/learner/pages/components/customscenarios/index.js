@@ -22,7 +22,6 @@ import {
   handleManageView,
   getScenarioListapproved,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
-import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ScenarioForm from "../../../shared/data/customScenario/scenariosForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
@@ -38,14 +37,10 @@ const ManageScenarios = () => {
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
-  const [formModal, setformModal] = useState(false);
   const { push } = useRouter();
-  const [showListImort, setShowListImport] = useState(true);
   const [oneClick, setOneClick] = useState(false);
   const [previousView, setPreviousView] = useState("card");
   const [backview, setBackView] = useState("card");
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedScenarios, setSelectedScenarios] = useState([]);
   const [approvalFilter, setApprovalFilter] = useState("Approve");
   const [approvalStatus, setApprovalStatus] = useState("");
   const [showTabs, setShowTabs] = useState(true);
@@ -297,8 +292,8 @@ const ManageScenarios = () => {
       scenStatus === ""
         ? "Scenarios_All"
         : scenStatus === "true"
-        ? "Scenarios_Active"
-        : "Scenarios_Inactive";
+          ? "Scenarios_Active"
+          : "Scenarios_Inactive";
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
@@ -561,7 +556,7 @@ const ManageScenarios = () => {
                   >
                     <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
                       <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
-                          <Nav.Item
+                        <Nav.Item
                           className="mastermenu"
                           onClick={() => {
                             handleApprovalFilter("Approve");
@@ -688,27 +683,27 @@ const ManageScenarios = () => {
                         type="button"
                         variant="outline-primary"
                         onClick={() => {
-                          const hasPending = hasGetScenarioListSucc?.some(
-                            (item) =>
-                              item.approval_status &&
-                              item.approval_status.toLowerCase() === "pending"
-                          );
+                          // const hasPending = hasGetScenarioListSucc?.some(
+                          //   (item) =>
+                          //     item.approval_status &&
+                          //     item.approval_status.toLowerCase() === "pending"
+                          // );
 
-                          if (hasPending) {
-                            toast.error(
-                              "You cannot add a new scenario until the pending one is approved or rejected.",
-                              {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                theme: "colored",
-                              }
-                            );
-                            return;
-                          }
+                          // if (hasPending) {
+                          //   toast.error(
+                          //     "You cannot add a new scenario until the pending one is approved or rejected.",
+                          //     {
+                          //       position: "top-right",
+                          //       autoClose: 3000,
+                          //       hideProgressBar: false,
+                          //       closeOnClick: true,
+                          //       pauseOnHover: true,
+                          //       draggable: true,
+                          //       theme: "colored",
+                          //     }
+                          //   );
+                          //   return;
+                          // }
 
                           setView("Form");
                           dispatch(handleManageView("Form"));
@@ -767,15 +762,57 @@ const ManageScenarios = () => {
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${
-                          item.scenariostatus === "Publish"
+                      
+                       onClick={
+    approvalFilter === "Approve"
+      ? () =>
+          push({
+            pathname: `/scenarios_view/${item?.scenariouuid}`,
+            query: { fromTab: "Approve" },
+          })
+      : undefined
+  }
+                        className={`card custom-card pointer our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                             ? "shadow-publish"
                             : item.scenariostatus === "Draft"
-                            ? "shadow-draft"
-                            : ""
-                        }`}
+                              ? "shadow-draft"
+                              : ""
+                          }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column  text-center">
+                          {/* VM Status Badge - Top Right */}
+{approvalFilter === "Approve" && item.vm_status && (
+  <div
+    className="position-absolute top-0 end-0 m-2 z-1"
+    style={{ pointerEvents: "none" }}
+  >
+    {(item.vm_status === "Start" || item.vm_status === "Resume") && (
+      <span
+        className="badge rounded-pill text-dark px-2 py-1 shadow-sm"
+        style={{
+          backgroundColor: "#28a745",
+          color: "#fff",
+          fontSize: "0.8rem",
+        }}
+      >
+        Running
+      </span>
+    )}
+
+    {item.vm_status === "Pause" && (
+      <span
+        className="badge rounded-pill bg-warning text-dark px-2 py-1 shadow-sm"
+        style={{
+          color: "#ffffff",
+          fontSize: "0.8rem",
+        }}
+      >
+        Pause
+      </span>
+    )}
+  </div>
+)}
+
                           {approvalFilter === "Unapproved" && (
                             <div
                               className="position-absolute top-0 end-0 m-2 z-1"
@@ -852,9 +889,9 @@ const ManageScenarios = () => {
                                 >
                                   {item.scenariotitle?.length > 30
                                     ? `${item.scenariotitle.substring(
-                                        0,
-                                        27
-                                      )}...`
+                                      0,
+                                      27
+                                    )}...`
                                     : item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
@@ -885,7 +922,7 @@ const ManageScenarios = () => {
                                 onClick={() =>
                                   push({
                                     pathname: `/scenarios_view/${item?.scenariouuid}`,
-                                    query: {fromTab: "Approve"},
+                                    query: { fromTab: "Approve" },
                                   })
                                 }
                               >
@@ -939,163 +976,6 @@ const ManageScenarios = () => {
           )}
         </Col>
       </Row>
-      {/* <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-            styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              // onClick={handleExportZip}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal> */}
-      <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-              styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-              placeholder="Select scenarios to Export"
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              onClick={async () => {
-                if (!selectedScenarios.length)
-                  return alert("Select at least one scenario");
-
-                try {
-                  const blob = await dispatch();
-                  // exportSelectedScenariosAction({ scenarioIds: selectedScenarios.map(s => s.value) })
-
-                  const url = window.URL.createObjectURL(new Blob([blob]));
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.setAttribute("download", `scenarios_export.zip`);
-                  document.body.appendChild(link);
-                  link.click();
-                  link.remove();
-                  window.URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error(err);
-                  alert("Export failed");
-                }
-              }}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios
-              Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
-
       {view == "Form" ? (
         <ScenarioForm
           setView={handleReturnFromEdit}

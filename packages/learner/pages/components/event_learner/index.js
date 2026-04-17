@@ -29,14 +29,13 @@ import {
   clearHasError
 } from "../../../shared/redux/slices/eventLogin/eventLogin";
 
-import { d_mmm_y } from"../../../shared/data/helperFunctions/dateCustom";
+import { d_mmm_y } from "../../../shared/data/helperFunctions/dateCustom";
 import ReCAPTCHA from "react-google-recaptcha";
 
 const Home = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   let navigate = useRouter();
-  // const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
   const [showpassIcon, setPassicon] = useState("fe fe-eye-off");
   const [eventKey, setEventKey] = useState("");
   const [data, setData] = useState({
@@ -69,42 +68,9 @@ const Home = () => {
       [e.target.name]: e.target.value,
     }));
   };
-  const customStyles = {
-    control: (styles, { isFocused, isDisabled }) => ({
-      ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
-      boxShadow: isDisabled
-        ? null
-        : isFocused
-          ? "0 0 0 0.001rem #00d683"
-          : null,
-      "&:hover": {
-        borderColor: isDisabled
-          ? "#e8e8f7"
-          : isFocused
-            ? "#00d683"
-            : styles.borderColor,
-      },
-    }),
-  };
-  const getSelectStyles = (fieldName) => {
-
-    let error
-    return error
-      ? {
-        ...customStyles,
-        control: (styles) => ({
-          ...styles,
-          borderColor: "#EB5757",
-          boxShadow: "0 0 0 0.001rem #EB5757",
-        }),
-      }
-      : customStyles;
-  };
   const [isShowCaptcha, setIsShowCaptcha] = useState(false);
   const [captchaDetails, setCaptchaDetails] = useState({});
   const captchaRef = useRef(null);
-
   const otpSuccessData = useSelector((state) => state?.eventLogin?.otpSuccessData);
   const getCompanyListData = useSelector((state) => state?.eventLogin?.getCompanyListData?.data);
   const loginSuccData = useSelector((state) => state?.eventLogin?.loginSuccessData);
@@ -118,16 +84,16 @@ const Home = () => {
   }, [dispatch]);
 
   useEffect(() => {
-         if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
-             navigate.replace("/503");
-         }else if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
-           let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
-           if(!licenseStatus.isStart){
-             let startDate = d_mmm_y(licenseStatus.start_date)
-             navigate.replace(`/503?startDate=${startDate}`);
-           }
-         }
-     }, [getCompanySettingsData]);
+    if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == true) {
+      navigate.replace("/503");
+    } else if (getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false) {
+      let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
+      if (!licenseStatus.isStart) {
+        let startDate = d_mmm_y(licenseStatus.start_date)
+        navigate.replace(`/503?startDate=${startDate}`);
+      }
+    }
+  }, [getCompanySettingsData]);
 
   useEffect(() => {
     dispatch(getEventList());
@@ -345,7 +311,6 @@ const Home = () => {
       dispatch(clearDispatchDirectLogin());
       setTimeout(() => {
         navigate.replace("/event-dashboard", "", { shallow: true });
-        //window.location.href = '/dashboard';
       }, 1500);
       if (captchaRef.current) {
         captchaRef.current.value = ""; // Reset the value of the input element
@@ -742,7 +707,7 @@ const Home = () => {
                                 onClick={(e) => {
                                   setLoginSuccess(false);
                                   settimerval(0);
-                                    setData({
+                                  setData({
                                     username: "",
                                     password: "",
                                     otp: "",

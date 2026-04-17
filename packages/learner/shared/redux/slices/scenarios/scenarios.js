@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "../../axios/axiosLearner";
 import api from "../../api_urls";
 
-
 // ----------------------------------------------------------------------
 
 const initialState = {
@@ -25,7 +24,6 @@ const initialState = {
   getvmStartScenario: [],
   getvmRestartScenario: [],
   hasdeletescenarioSuccData: [],
-  getVncProxyConsole: [],
   saveSnapshot: [],
   getSnapshot: [],
   deleteSnapshot: [],
@@ -38,10 +36,26 @@ const initialState = {
   getrestoresnapshot: [],
   getVMdetail: [],
   saveCustomComponent: [],
-    rejectStopVm: [],
+  rejectStopVm: [],
+  addNetwork: [],
+  modifyNetwork: [],
+  deleteNetwork: [],
+  saveDraggedComponentData: [],
+  deleteDraggedComponentData: [],
+  modifyNetworkIdData: [],
+  plugNetworkPort: [],
+  unplugNetworkPort: [],
+  connectNetworkPort: [],
+  disconnectNetworkPort: [],
+  modifyEditStatus: [],
+  changeReleaseEditLock: [],
+  learnerlistbyinstructor: [],
+  getLearnersByVmRequestData: [],
+  deleteInviteLearnerController: [],
+  getsaveInviteLearners:[],
+  gethasdeletebridge:[],
+
 };
-
-
 
 const slice = createSlice({
   name: "scenarios",
@@ -52,146 +66,176 @@ const slice = createSlice({
       state.isLoading = true;
     },
     hasGetScenariosListData(state, action) {
-      state.isLoading = false,
-        state.getScenariosListData = action.payload;
+      ((state.isLoading = false),
+        (state.getScenariosListData = action.payload));
     },
     hasGetScenariospauseListData(state, action) {
-      state.isLoading = false,
-        state.getScenariospauseListData = action.payload;
+      ((state.isLoading = false),
+        (state.getScenariospauseListData = action.payload));
     },
 
     hasGetSingleScenariosSucc(state, action) {
-      state.isLoading = false,
-        state.singleScenarios = action.payload;
+      ((state.isLoading = false), (state.singleScenarios = action.payload));
     },
 
     hasGetSaveScenariosSucc(state, action) {
-      state.isLoading = false,
-        state.saveScenarios = action.payload;
-
+      ((state.isLoading = false), (state.saveScenarios = action.payload));
     },
     hasGetSaveComponentSucc(state, action) {
       state.isLoading = false;
-      state.saveComponent = action.payload;   // will now contain proper json
+      state.saveComponent = action.payload; // will now contain proper json
     },
 
     hasGetGetChatMessagesSucc(state, action) {
-      state.isLoading = false,
-        state.getChatMessagesListData = action.payload;
-
+      ((state.isLoading = false),
+        (state.getChatMessagesListData = action.payload));
     },
     hasGetvmRestartScenario(state, action) {
-      state.isLoading = false,
-        state.getvmRestartScenario = action.payload;
-
+      ((state.isLoading = false),
+        (state.getvmRestartScenario = action.payload));
     },
 
     hasGetSaveChatMessageSucc(state, action) {
-      state.isLoading = false,
-        state.saveChatMessage = action.payload;
-
+      ((state.isLoading = false), (state.saveChatMessage = action.payload));
     },
 
     hasGetChatMessageSeenSucc(state, action) {
-      state.isLoading = false,
-        state.saveChatMessageSeen = action.payload;
-
+      ((state.isLoading = false), (state.saveChatMessageSeen = action.payload));
     },
     hasGetUpdateSessionStatusSucc(state, action) {
-      state.isLoading = false,
-        state.updateSessionStatus = action.payload;
-
+      ((state.isLoading = false), (state.updateSessionStatus = action.payload));
     },
     hasGetSessionStatusListData(state, action) {
-      state.isLoading = false,
-        state.getSessionStatusListData = action.payload;
-
+      ((state.isLoading = false),
+        (state.getSessionStatusListData = action.payload));
     },
     hasGetConfigurationsSucc(state, action) {
-      state.isLoading = false,
-        state.getConfigurationsData = action.payload;
-
+      ((state.isLoading = false),
+        (state.getConfigurationsData = action.payload));
     },
     hasGetvmStartScenario(state, action) {
-      state.isLoading = false,
-        state.getvmStartScenario = action.payload;
-
+      ((state.isLoading = false), (state.getvmStartScenario = action.payload));
     },
     hasUpdateCompletedTerminatedSucc(state, action) {
-      state.isLoading = false,
-        state.updateCompletedTerminatedData = action.payload;
+      ((state.isLoading = false),
+        (state.updateCompletedTerminatedData = action.payload));
     },
     hasdeletescenarioSucc(state, action) {
-      state.isLoading = false,
-        state.hasdeletescenarioSuccData = action.payload;
+      ((state.isLoading = false),
+        (state.hasdeletescenarioSuccData = action.payload));
     },
     haspausescenarioSucc(state, action) {
-      state.isLoading = false,
-        state.pausescenarioData = action.payload;
+      ((state.isLoading = false), (state.pausescenarioData = action.payload));
     },
     hasresumescenarioSucc(state, action) {
-      state.isLoading = false,
-        state.resumescenarioData = action.payload;
+      ((state.isLoading = false), (state.resumescenarioData = action.payload));
     },
     hasGetLogsListData(state, action) {
-      state.isLoading = false,
-        state.getLogsData = action.payload;
+      ((state.isLoading = false), (state.getLogsData = action.payload));
     },
     hasGetTabListData(state, action) {
-      state.isLoading = false,
-        state.getTabListData = action.payload;
+      ((state.isLoading = false), (state.getTabListData = action.payload));
     },
     hasGetToken(state, action) {
-      state.isLoading = false,
-        state.getToken = action.payload;
+      ((state.isLoading = false), (state.getToken = action.payload));
     },
-    hasGetVncProxyConsole(state, action) {
-      state.isLoading = false,
-        state.getVncProxyConsole = action.payload;
-    },
-
     hasGetSaveSnapshot(state, action) {
-      state.isLoading = false,
-        state.saveSnapshot = action.payload;
+      ((state.isLoading = false), (state.saveSnapshot = action.payload));
     },
     hasGetSnapshot(state, action) {
-      state.isLoading = false,
-        state.getSnapshot = action.payload;
+      ((state.isLoading = false), (state.getSnapshot = action.payload));
     },
     hasGetresume(state, action) {
-      state.isLoading = false,
-        state.getresume = action.payload;
+      ((state.isLoading = false), (state.getresume = action.payload));
     },
     hasDeleteSnapshot(state, action) {
-      state.isLoading = false,
-        state.deleteSnapshot = action.payload;
+      ((state.isLoading = false), (state.deleteSnapshot = action.payload));
     },
     hasqemuconfig(state, action) {
-      state.isLoading = false,
-        state.hasgetqemuconfig = action.payload;
+      ((state.isLoading = false), (state.hasgetqemuconfig = action.payload));
     },
     hasStopVm(state, action) {
       state.isLoading = false;
       state.stopVmResponse = action.payload;
     },
     hasGetrestoresnapshot(state, action) {
-      state.isLoading = false,
-        state.getrestoresnapshot = action.payload;
+      ((state.isLoading = false), (state.getrestoresnapshot = action.payload));
     },
     hasGetSingleVMDetailSucc(state, action) {
-      state.isLoading = false,
-        state.getVMdetail = action.payload;
+      ((state.isLoading = false), (state.getVMdetail = action.payload));
     },
     hasGetSaveCustomComponentSucc(state, action) {
-      state.isLoading = false,
-        state.saveCustomComponent = action.payload;
-
+      ((state.isLoading = false), (state.saveCustomComponent = action.payload));
     },
- hasGetRejectStopVm(state, action) {
-      state.isLoading = false,
-        state.rejectStopVm = action.payload;
+    hasGetRejectStopVm(state, action) {
+      ((state.isLoading = false), (state.rejectStopVm = action.payload));
     },
 
+    hasGetAddNetworkSucc(state, action) {
+      ((state.isLoading = false), (state.addNetwork = action.payload));
+    },
+    hasGetModifyNetworkSucc(state, action) {
+      ((state.isLoading = false), (state.modifyNetwork = action.payload));
+    },
+    hasGetDeleteNetworkSucc(state, action) {
+      ((state.isLoading = false), (state.deleteNetwork = action.payload));
+    },
+    saveDroppedComponentSuccess(state, action) {
+      state.isLoading = false;
+      state.saveDraggedComponentData = action.payload;
+    },
+    deleteDroppedComponentSuccess(state, action) {
+      state.isLoading = false;
+      state.deleteDraggedComponentData = action.payload;
+    },
+    modifyNetworkIdSuccess(state, action) {
+      state.isLoading = false;
+      state.modifyNetworkIdData = action.payload;
+    },
+    plugNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.plugNetworkPort = action.payload;
+    },
+    unplugNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.unplugNetworkPort = action.payload;
+    },
+    connectNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.connectNetworkPort = action.payload;
+    },
+    disconnectNetworkPortSucc(state, action) {
+      state.isLoading = false;
+      state.disconnectNetworkPort = action.payload;
+    },
+    hasmodifyEditStatus(state, action) {
+      state.isLoading = false;
+      state.modifyEditStatus = action.payload;
+    },
+    haschangeReleaseEditLock(state, action) {
+      state.isLoading = false;
+      state.changeReleaseEditLock = action.payload;
+    },
+    hasGetlearnerlistbyinstructorData(state, action) {
+      ((state.isLoading = false),
+        (state.learnerlistbyinstructor = action.payload));
+    },
+    hasGetLearnersByVmRequestDataData(state, action) {
+      ((state.isLoading = false),
+        (state.getLearnersByVmRequestData = action.payload));
+    },
+    hasdeleteInviteLearnerControllerData(state, action) {
+      ((state.isLoading = false),
+        (state.deleteInviteLearnerController = action.payload));
+    },
+     hasGetsaveInviteLearnersData(state, action) {
+      ((state.isLoading = false),
+        (state.getsaveInviteLearners = action.payload));
+    },
+     hasdeletebridge(state, action) {
+      ((state.isLoading = false),
+        (state.gethasdeletebridge = action.payload));
+    },
     // HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -200,9 +244,6 @@ const slice = createSlice({
   },
 });
 
-
-
-
 // Reducer
 export default slice.reducer;
 // Actions
@@ -210,15 +251,12 @@ export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
 export function getScenariosList() {
-
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-
       const response = await axios.get(`${api.scenarios_get}`);
       dispatch(slice.actions.hasGetScenariosListData(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -230,12 +268,10 @@ export function getScenariosPauseList() {
       const response = await axios.get(`${api.scenarios_get_Pause}`);
       dispatch(slice.actions.hasGetScenariospauseListData(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-
 
 export function getSingleScenarios(id) {
   return async (dispatch) => {
@@ -248,8 +284,6 @@ export function getSingleScenarios(id) {
     }
   };
 }
-
-
 
 export function getConfigurations(payload) {
   return async (dispatch) => {
@@ -316,12 +350,14 @@ export function clearGetConfigurations() {
   };
 }
 
-
 export function updateCompletedTerminated(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.update_completed_terminated}`, payload);
+      const response = await axios.post(
+        `${api.update_completed_terminated}`,
+        payload,
+      );
       dispatch(slice.actions.hasUpdateCompletedTerminatedSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -395,7 +431,6 @@ export function clearresumescenario() {
   };
 }
 
-
 export function clearUpdateCompletedTerminated() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -416,8 +451,6 @@ export function clearSingleScenarios() {
     }
   };
 }
-
-
 
 export function saveScenarios(payload) {
   return async (dispatch) => {
@@ -446,7 +479,10 @@ export function updateSessionStatus(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.scenario_status_update}`, payload);
+      const response = await axios.post(
+        `${api.scenario_status_update}`,
+        payload,
+      );
       dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response.data));
       return response.data;
     } catch (error) {
@@ -457,32 +493,26 @@ export function updateSessionStatus(payload) {
 }
 
 export function getSessionStatusList(id) {
-
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-
       const response = await axios.get(`${api.get_session_status}/${id}`);
       dispatch(slice.actions.hasGetSessionStatusListData(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
 }
 export function clearGetSessionStatusList() {
-
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetSessionStatusListData([]));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-
 
 export function clearSaveScenarios() {
   return async (dispatch) => {
@@ -519,14 +549,14 @@ export function clearGetChatMessages() {
 }
 
 export function saveChatMessage(payload) {
-  console.log("-----------------------------------------")
+  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
 
-      console.log("response", response)
+      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -568,21 +598,17 @@ export function clearchatMessageSeen() {
 }
 
 export function getLogs(payload) {
-  console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-
       const response = await axios.post(`${api.get_logs}`, payload);
 
       dispatch(slice.actions.hasGetLogsListData(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-
 
 export function getTabList() {
   return async (dispatch) => {
@@ -611,12 +637,10 @@ export function getAccessToken() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-
       const response = await axios.post(`${api.generate_access_token}`);
 
       dispatch(slice.actions.hasGetToken(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -628,21 +652,6 @@ export function cleargetAccessToken() {
     try {
       dispatch(slice.actions.hasGetToken([]));
     } catch (error) {
-      dispatch(slice.actions.hasError(error));
-    }
-  };
-}
-
-export function vncProxyConsole(payload) {
-  return async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-    try {
-
-      const response = await axios.post(`${api.vnc_proxy_console}`, payload);
-
-      dispatch(slice.actions.hasGetVncProxyConsole(response.data));
-    } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -662,8 +671,6 @@ export function saveSnapshot(payload) {
     }
   };
 }
-
-
 
 export function clearSaveSnapshot() {
   return async (dispatch) => {
@@ -751,7 +758,6 @@ export function qemuconfig(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.vm_config}`, payload);
-      console.log("responseresponse", response)
       dispatch(slice.actions.hasqemuconfig(response.data));
       return response.data;
     } catch (error) {
@@ -794,7 +800,6 @@ export function stopVm(payload) {
 
       // ✅ IMPORTANT: return response
       return response.data;
-
     } catch (error) {
       dispatch(slice.actions.hasError(error));
 
@@ -803,7 +808,6 @@ export function stopVm(payload) {
     }
   };
 }
-
 
 export function clearStopVm() {
   return async (dispatch) => {
@@ -826,7 +830,6 @@ export function cleardeleteSnapshot() {
     }
   };
 }
-
 
 export function restoresnapshot(payload) {
   return async (dispatch) => {
@@ -879,15 +882,12 @@ export function saveCustomComponent(payload) {
     try {
       const response = await axios.post(api.save_vmDetails, payload);
 
-      dispatch(
-        slice.actions.hasGetSaveCustomComponentSucc(response.data)
-      );
+      dispatch(slice.actions.hasGetSaveCustomComponentSucc(response.data));
 
       return {
         success: true,
         data: response.data,
       };
-
     } catch (error) {
       const errData = error?.response?.data || {
         message: error.message,
@@ -902,23 +902,35 @@ export function saveCustomComponent(payload) {
     }
   };
 }
-
 export function saveComponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post( api.custom_component_save_learner, payload);
+      const response = await axios.post(
+        api.custom_component_save_learner,
+        payload,
+      );
+
       dispatch(slice.actions.hasGetSaveComponentSucc(response.data));
-      return {success: true, data: response.data,};
+
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
-      const errData = error?.response?.data || { message: error.message, };
+      const errData = error?.response?.data || {
+        message: error.message,
+      };
+
       dispatch(slice.actions.hasError(errData));
-      return {success: false,error: errData,
+
+      return {
+        success: false,
+        error: errData,
       };
     }
   };
 }
-
 export function clearSaveComponent() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -929,8 +941,6 @@ export function clearSaveComponent() {
     }
   };
 }
-
-
 export function clearCustomComponent() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -954,9 +964,291 @@ export function rejectStoppedVm(payload) {
     }
   };
 }
+export function addNetworkPort(payload) {
+  console.log("-----------------------------------------");
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.add_network}`, payload);
+      dispatch(slice.actions.hasGetAddNetworkSucc(response.data));
 
+      console.log("response", response);
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearSaveNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetAddNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function modifyNetworkPort(payload) {
+  console.log("-----------------------------------------");
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.modify_network}`, payload);
+      dispatch(slice.actions.hasGetModifyNetworkSucc(response.data));
 
+      console.log("response", response);
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearModifyNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetModifyNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deleteNetworkPort(payload) {
+  console.log("-----------------------------------------");
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_network}`, payload);
+      dispatch(slice.actions.hasGetDeleteNetworkSucc(response.data));
 
+      console.log("response", response);
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function clearDeleteNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetDeleteNetworkSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function saveDraggedComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.save_dropped_component, payload);
+      dispatch(slice.actions.saveDroppedComponentSuccess(response.data));
+      // return response.data;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDraggedComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.saveDroppedComponentSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deleteDraggedComponent(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.delete_dropped_component, payload);
+      dispatch(slice.actions.deleteDroppedComponentSuccess(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDeleteDraggedComponent() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.deleteDroppedComponentSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function modifyNetworkId(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.modify_networkId, payload);
+      dispatch(slice.actions.modifyNetworkIdSuccess(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearModifyNetworkId() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.modifyNetworkIdSuccess([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function plugNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.plug_networPort, payload);
+      console.log("rrrrrrrrrrrrrrrrrrrrrr", response);
+      dispatch(slice.actions.plugNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearPlugNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.plugNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function unplugNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.unplug_networkPort, payload);
+      dispatch(slice.actions.unplugNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearUnplugNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.unplugNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function connectNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.connect_networkPort, payload);
+      dispatch(slice.actions.connectNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearConnectNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.connectNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function disconnectNetworkPort(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.disconnect_networkPort, payload);
+      dispatch(slice.actions.disconnectNetworkPortSucc(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearDisconnectNetworkPort() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.disconnectNetworkPortSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function changeEditStatus(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.change_edit_status, payload);
+      dispatch(slice.actions.hasmodifyEditStatus(response.data));
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 409) {
+        const msg =
+          error.response?.data?.message || "Someone is already editing";
+        return Promise.reject("LOCKED");
+      }
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearchangeEditStatus() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasmodifyEditStatus([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function changeReleaseEditLock(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(api.release_edit_lock, payload);
+      dispatch(slice.actions.haschangeReleaseEditLock(response.data));
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function clearchangeReleaseEditLock() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.haschangeReleaseEditLock([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
 export function clearHasError() {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -967,3 +1259,113 @@ export function clearHasError() {
     }
   };
 }
+
+export function Learnerlistbyinstructor(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(
+        `${api.post_Learnerlistbyinstructor}`,
+        payload,
+      );
+      dispatch(slice.actions.hasGetlearnerlistbyinstructorData(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearLearnerlistbyinstructor() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetlearnerlistbyinstructorData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getLearnersByVmRequest(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.learnersByVmRequest}`, payload);
+      dispatch(slice.actions.hasGetLearnersByVmRequestDataData(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function cleargetLearnersByVmRequest() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasGetLearnersByVmRequestDataData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function saveInviteLearners(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.save_Invite_Learners}`, payload);
+      dispatch(slice.actions.hasGetsaveInviteLearnersData(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearDeleteInviteLearnerController() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeleteInviteLearnerControllerData([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function DeleteInviteLearnerController(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.deleteInviteLearner}`, payload);
+      dispatch(
+        slice.actions.hasdeleteInviteLearnerControllerData(response.data),
+      );
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function deletebridge(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.delete_bridge}`, payload);
+      console.log("responseresponseresponseresponse",response);
+      dispatch(slice.actions.hasdeletebridge(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function cleardeletebridge() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasdeletebridge([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+

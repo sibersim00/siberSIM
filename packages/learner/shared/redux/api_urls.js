@@ -38,6 +38,8 @@ const api = {
   // scenarios
   scenarios_get: "/scenarios/get",
   scenarios_get_Pause: "/scenarios/get-paused",
+  change_edit_status: "/scenarios/change-edit-status",
+  release_edit_lock: "/scenarios/release-edit-lock",
   scenarios_single: "/scenarios/get",
   scenarios_save: "/scenarios/start-scenario",
   scenario_custom_update: "/custom_scenarios/update",
@@ -55,6 +57,10 @@ const api = {
   get_logs: "/scenarios/get-logs",
   scenario_digram_custom_list: "/custom_scenarios/scenariodigramlist",
   tab_status: "/scenarios/list",
+  post_Learnerlistbyinstructor: "/scenarios/learnerlistbyinstructor",
+  learnersByVmRequest: "/scenarios/getLearnersByVmRequest",
+  deleteInviteLearner: "/scenarios/delete-invite-learner",
+  save_Invite_Learners:"/scenarios/saveInviteLearners",
   // snapshot
   save_snapshot: "/vmconfigs/create-snapshot",
   get_snapshot: "/vmconfigs/get-snapshots",
@@ -103,12 +109,9 @@ const api = {
   notification_get_noti_list_all: "/notification/get_noti_list_all",
   notification_read_notification: "/notification/read_notification",
 
-  vnc_proxy_console: "/vmconfigs/vnc-proxy-console",
-
   //Scenario Forms dropdown
   scenario_sub_category_list: "/commons/scenariocategorylist",
   scenario_child_category_list: "/commons/scenariosubcategorylist",
-
 
   scenario_flowchart_save: "/custom_scenarios/save_diagram",
   master_component_cat_get: "/commons/componentcategorylist",
@@ -119,18 +122,28 @@ const api = {
   vm_config: "vmconfigs/vm-config",
   stop_vm: "vmconfigs/stop-vm",
   custom_component_save_learner: "/vmconfigs/savecomponent",
-  reject_stopped_vm:"vmconfigs/reject-stopped-vm",
-
+  reject_stopped_vm: "vmconfigs/reject-stopped-vm",
 
   custom_component_get: "/custom_component/get",
   custom_componentby_id: "/custom_component/getbyid",
 
+  can_resume: "/scenarios/can-resume",
+  event_can_resume: "/events/can-resume",
+  //-----------Manipulation url----------
+  add_network: "vmconfigs/add-vm-network",
+  modify_network: "vmconfigs/modify-vm-network",
+  delete_network: "vmconfigs/delete-vm-network",
+  save_dropped_component: "vmconfigs/add-single-component",
+  delete_dropped_component: "vmconfigs/delete-single-network",
+  modify_networkId: "vmconfigs/modify-vm-network",
+  plug_networPort: "vmconfigs/plug-single-network",
+  unplug_networkPort: "vmconfigs/unplug-single-network",
+  connect_networkPort: "vmconfigs/connect-single-network",
+  disconnect_networkPort: "vmconfigs/disconnect-single-network",
+  delete_bridge: "vmconfigs/delete-bridge",
 
-
-can_resume: "/scenarios/can-resume",
-event_can_resume: "/events/can-resume",
-
-
-
+  // --------------invite scenario---------------
+  running_invite_learners: "/invitescenarios/running-invite-learners",
+  invite_scenario:"/invitescenarios/invite-scenario",
 };
 export default api;

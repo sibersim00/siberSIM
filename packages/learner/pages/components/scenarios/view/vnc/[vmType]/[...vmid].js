@@ -18,6 +18,7 @@ import Swal from "sweetalert2";
 import Select from "react-select";
 import {
   saveComponent,
+  clearSaveComponent,
   saveCustomComponent,
   vmStartScenario,
   vmRestartScenario,
@@ -28,7 +29,6 @@ import {
   restoresnapshot,
   getSingleVMDetail,
   clearCustomComponent,
-  clearSaveComponent,
   qemuconfig,
   stopVm,
   rejectStoppedVm,
@@ -150,12 +150,12 @@ export default function ProxmoxConsole() {
         );
         updateStatus("Starting virtual machine...");
 
-        await dispatch(
-          vmStartScenario({
-            vmid: realVmid,
-            vmType,
-          }),
-        );
+        // await dispatch(
+        //   vmStartScenario({
+        //     vmid: realVmid,
+        //     vmType,
+        //   }),
+        // );
 
         // Optional small delay to allow VM to boot
         setTimeout(() => {
@@ -207,11 +207,11 @@ export default function ProxmoxConsole() {
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
-      `/ticket?vmid=${encodeURIComponent(
-        realVmid,
-      )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
-        cleanName,
-      )}`,
+        `/ticket?vmid=${encodeURIComponent(
+          realVmid,
+        )}&vmType=${encodeURIComponent(vmType)}&cleanName=${encodeURIComponent(
+          cleanName,
+        )}`,
       {
         method: "GET",
         headers: {
@@ -237,7 +237,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
         rfbRef.current = null;
       }
 
@@ -286,7 +286,7 @@ export default function ProxmoxConsole() {
       if (rfbRef.current) {
         try {
           rfbRef.current.disconnect();
-        } catch { }
+        } catch {}
       }
     };
   }, []);
@@ -637,15 +637,16 @@ export default function ProxmoxConsole() {
         selectedFiles.push(f.file);
       });
       let filesStr = selectedFiles.join(",");
-      formik.setFieldValue(name, filesStr ? filesStr : "");
+      // formik.setFieldValue(name, filesStr ? filesStr : "");
       setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
     } else {
       formik.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
-      setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
-      );
+      // setUploadedFile(
+      //   files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
+      // );
     }
   };
+
   console.log("getVMdetail", getVMdetail);
 
   const formik = useFormik({
@@ -660,7 +661,6 @@ export default function ProxmoxConsole() {
       componentimage: "",
     },
     validationSchema: Yup.object({
-
       // componentName: Yup.string()
       //   .required("Component name is required")
       //   .test(
@@ -668,12 +668,49 @@ export default function ProxmoxConsole() {
       //     "Component name must not have spaces at the beginning or end",
       //     (value) => value === value?.trim(),
       //   ),
+      // componentName: Yup.string()
+      //   .required("Component name is required")
+      //   .matches(
+      //     /^[A-Za-z0-9-]{1,63}$/,
+      //     "Only letters, numbers and dash (-) allowed. No spaces, underscore or full stop.",
+      //   )
+      //   .test(
+      //     "no-leading-dash",
+      //     "Component name cannot start with '-'",
+      //     (value) => !value || !/^-/.test(value),
+      //   )
+      //   .test(
+      //     "no-trailing-dash",
+      //     "Component name cannot end with '-'",
+      //     (value) => !value || !/-$/.test(value),
+      //   ),
       componentName: Yup.string()
-        .required("Component name is required")
-        .matches(
-          /^[A-Za-z0-9_-]{1,63}$/,
-          "Only letters, numbers, dash (-) and underscore (_) allowed. No spaces. Max 63 characters."
-        ),
+  .required("Component name is required")
+  .matches(
+    /^[A-Za-z0-9.-]{1,63}$/,
+    "Only letters (a-z, A-Z), numbers (0-9), dash (-) and dot (.) are allowed. No spaces, underscore or special characters.",
+  )
+  .test(
+    "no-leading-dash",
+    "Component name cannot start with '-'",
+    (value) => !value || !/^-/.test(value),
+  )
+  .test(
+    "no-trailing-dash",
+    "Component name cannot end with '-'",
+    (value) => !value || !/-$/.test(value),
+  )
+  .test(
+    "no-leading-dot",
+    "Component name cannot start with '.'",
+    (value) => !value || !/^\./.test(value),
+  )
+  .test(
+    "no-trailing-dot",
+    "Component name cannot end with '.'",
+    (value) => !value || !/\.$/.test(value),
+  ),
+
       componentcategoryid: Yup.string().required(
         "Component category is required",
       ),
@@ -747,16 +784,14 @@ export default function ProxmoxConsole() {
           };
 
           const saveRes = await dispatch(saveCustomComponent(payload1));
-          console.log("saveRes", saveRes?.data?.customcomponentid);
+          console.log("saveRsssssssssssssssses", saveRes?.data?.customcomponentid);
           if (!saveRes?.success) {
             setIsSaving(false);
             setOverlayLoading(false);
             await Swal.fire(
               "Error",
               saveRes?.error?.error ||
-              saveRes?.error?.message ||
-              "Failed to save component",
-              "error",
+                saveRes?.error?.message
             );
             setShowConvertDrawer(false);
             return;
@@ -784,8 +819,8 @@ export default function ProxmoxConsole() {
             await Swal.fire(
               "Error",
               res?.error?.error ||
-              res?.error?.message ||
-              "Failed to Save component",
+                res?.error?.message ||
+                "Failed to Save component",
               "error",
             );
             setShowConvertDrawer(false);
@@ -829,8 +864,8 @@ export default function ProxmoxConsole() {
           await Swal.fire(
             "Error",
             saveRes?.error?.error ||
-            saveRes?.error?.message ||
-            "Failed to save component",
+              saveRes?.error?.message ||
+              "Failed to save component",
             "error",
           );
           setShowConvertDrawer(false);
@@ -858,6 +893,10 @@ export default function ProxmoxConsole() {
       }
     },
   });
+
+  console.log("formikformikformikformik",formik);
+  
+  
   return (
     <>
       <Seo title={`${cleanName}`} />
@@ -1516,29 +1555,21 @@ export default function ProxmoxConsole() {
             />
           </div>
         )}
-
-        {/* Convert Component Drawer */}
-        <Offcanvas
+        <Modal
           show={showConvertDrawer}
           onHide={handleCloseDrawer}
-          placement="end"
+          centered
           backdrop="static"
-          className=" text-light"
-          style={{ width: "900px", background: "#24243E" }}
+          size="xl"
+          dialogClassName="convert-modal-dialog"
+          contentClassName="convert-modal-content"
         >
-          <Offcanvas.Header
-            closeButton
-            closeVariant="white"
-            className="d-flex align-items-center justify-content-between mt-2"
-            style={{ position: "relative" }}
-          >
-            <Offcanvas.Title
-              className="fw-semibold"
-              style={{ marginBottom: "0" }}
-            >
-              Convert to Component
-            </Offcanvas.Title>
-          </Offcanvas.Header>
+          <Modal.Header closeButton className="convert-modal-header">
+            <div className="d-flex align-items-center gap-2">
+              <div className="modal-icon">🧩</div>
+              <Modal.Title>Convert to Component</Modal.Title>
+            </div>
+          </Modal.Header>
           <hr
             style={{
               borderColor: "white",
@@ -1561,231 +1592,192 @@ export default function ProxmoxConsole() {
               {hasgetqemuconfig.stopMessage}
             </div>
           )}
+          <Modal.Body
+            className="px-4 d-flex flex-column"
+            style={{ flex: 1, overflow: "hidden" }}
+          >
+            <Form
+              onSubmit={formik.handleSubmit}
+              className="d-flex flex-column h-100"
+            >
+              <Row className="g-4 align-items-start">
+                {/* ================= LEFT SECTION ================= */}
+                <Col md={5}>
+                  <div className="convert-card">
+                    <Form.Group className="mb-4">
+                      <Form.Label className="form-label-modern">
+                        Component Name
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="componentName"
+                        placeholder="Enter component name"
+                        value={formik.values.componentName}
+                        onChange={formik.handleChange}
+                        className="modern-input"
+                          isInvalid={
+      formik.touched.componentName && formik.errors.componentName
+    }
+                      />
+                        {formik.touched.componentName && formik.errors.componentName && (
+    <Form.Control.Feedback type="invalid">
+      {formik.errors.componentName}
+    </Form.Control.Feedback>
+  )}
+                    </Form.Group>
+                    <Row>
+                      {/* Category */}
+                      <Col md={12}>
+                        <Form.Group className="mb-4">
+                          <Form.Label className="form-label-modern">
+                            Component Category
+                          </Form.Label>
+                          <Form.Select
+                            name="componentcategoryid"
+                            value={formik.values.componentcategoryid}
+                            onChange={formik.handleChange}
+                            className="modern-input"
+                             isInvalid={
+      formik.touched.componentcategoryid && formik.errors.componentcategoryid
+    }
+                          >
+                            <option value="">Select Category</option>
+                            {catDropDownData.map((cat) => (
+                              <option key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </option>
+                            ))}
+                          </Form.Select>
+                            {formik.touched.componentcategoryid &&
+    formik.errors.componentcategoryid && (
+      <Form.Control.Feedback type="invalid">
+        {formik.errors.componentcategoryid}
+      </Form.Control.Feedback>
+    )}
+                        </Form.Group>
+                      </Col>
 
-          <Offcanvas.Body style={{ maxHeight: "90vh", overflowY: "auto" }}>
-            <Form onSubmit={formik.handleSubmit} className="px-2">
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-4" controlId="componentName">
-                    <Form.Label className="fw-semibold text-white mb-1">
-                      Component Name
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="componentName"
-                      placeholder="Enter component name"
-                      value={formik.values.componentName}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className="custom-input"
-                    />
-                    {formik.touched.componentName &&
-                      formik.errors.componentName && (
-                        <div className="text-danger small mt-1">
-                          {formik.errors.componentName}
-                        </div>
-                      )}
-                  </Form.Group>
-                </Col>
+                      {/* Delay */}
+                      <Col md={12}>
+                        <Form.Group className="mb-4">
+                          <Form.Label className="form-label-modern">
+                            Configuration Delay (Sec)
+                          </Form.Label>
+                          <Form.Control
+                            type="number"
+                            placeholder="Enter configuartion delay"
+                            name="duration"
+                            value={formik.values.duration}
+                            onChange={formik.handleChange}
+                            className="modern-input"
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
 
-                <Col md={6}>
-                  <Form.Group className="mb-4" controlId="componentcategoryid">
-                    <Form.Label className="fw-semibold mb-1 text-white">
-                      Component Category
-                    </Form.Label>
-                    <Form.Select
-                      name="componentcategoryid"
-                      value={formik.values.componentcategoryid}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className="custom-input"
-                      theme={(theme) => ({
-                        ...theme,
-                        colors: {
-                          ...theme.colors,
-                          primary25: "var(--primary-bg-color)",
-                          primary: "var(--primary-bg-color)",
-                        },
-                      })}
-                    >
-                      <option value="">-- Select Category --</option>
-                      {catDropDownData.map((cat) => (
-                        <option key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    {formik.touched.componentcategoryid &&
-                      formik.errors.componentcategoryid && (
-                        <div className="text-danger small mt-1">
-                          {formik.errors.componentcategoryid}
-                        </div>
-                      )}
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-4" controlId="duration">
-                    <Form.Label className="fw-semibold text-white mb-1">
-                      Configuration Delay (Seconds)
-                    </Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="duration"
-                      placeholder="Enter duration"
-                      value={formik.values.duration}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className="custom-input"
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  <Form.Group className="mb-4" controlId="componentimage">
-                    <Form.Label className="fw-semibold text-white mb-1">
-                      Upload Component Image
-                    </Form.Label>
-
-                    <FileUploader
-                      className="file-uploader-container"
-                      folderpath={category_path}
-                      ismulti={false}
-                      name="componentimage"
-                      acceptedFileTypes={["image/png", "image/jpeg"]}
-                      handleUpload={handleUpload}
-                      fetchfiles={
-                        formik.values.componentimage
-                          ? [formik.values.componentimage]
-                          : []
-                      }
-                    />
+                    <Form.Group className="mb-4" controlId="componentimage">
+                      <Form.Label className="form-label-modern">
+                        Upload Component Image
+                      </Form.Label>
+                      <div className="upload-box">
+                        <FileUploader
+                          className="file-uploader-container"
+                          folderpath={category_path}
+                          ismulti={false}
+                          name="componentimage"
+                          acceptedFileTypes={["image/png", "image/jpeg"]}
+                          handleUpload={handleUpload}
+                          fetchfiles={
+                            formik.values.componentimage
+                              ? [formik.values.componentimage]
+                              : []
+                          }
+                        />
+                      </div>
+                    </Form.Group>
                     {formik.values.componentimage && (
-                      <div className="picture avatar-lg online text-center mt-2">
+                      <div className="preview-wrapper mt-3">
                         <img
                           alt="Component Preview"
                           src={`${process.env.API_URL_FILEMANAGER}${formik.values.componentimage}`}
-                          style={{
-                            objectFit: "cover",
-                            width: "100%",
-                            height: "100%",
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = dummy_network.src;
-                          }}
+                          className="preview-image"
                         />
                       </div>
                     )}
-                  </Form.Group>
+                  </div>
+                </Col>
+
+                {/* ================= RIGHT SECTION ================= */}
+                <Col md={7}>
+                  <div className="convert-card">
+                    <div className="vm-header d-flex justify-content-between align-items-center mb-3">
+                      <h6 className="section-title">VM Details</h6>
+                    </div>
+
+                    <div className="vm-row">
+                      <span>Virtual Memory</span>
+                      <span className="vm-badge">
+                        {vmDetails?.memory || "0"} MB
+                      </span>
+                    </div>
+
+                    <div className="vm-row">
+                      <span>Virtual CPU</span>
+                      <span className="vm-badge">
+                        {vmDetails?.cpu || "0"} Cores
+                      </span>
+                    </div>
+
+                    <div className="vm-row align-items-start">
+                      <span>Network Ports</span>
+                      <div className="network-box">
+                        {vmDetails?.ports?.length > 0
+                          ? vmDetails.ports.map((p, i) => (
+                              <div key={i}>{p}</div>
+                            ))
+                          : "No Network Configured"}
+                      </div>
+                    </div>
+
+                    <div className="vm-row">
+                      <span>Storage Size</span>
+                      <span className="vm-badge">
+                        {vmDetails?.storage || "0"} GB
+                      </span>
+                    </div>
+
+                    <div className="vm-footer-note">
+                      <i className="fa fa-info-circle info-icon"></i>
+                      <span className="ml-4">
+                        These settings are derived from the source VM template.
+                      </span>
+                    </div>
+                  </div>
                 </Col>
               </Row>
 
-              <div
-                className="rounded-4 p-3 mb-4"
-                style={{
-                  background: "#0E0E23",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.4)",
-                  overflow: "hidden",
-                }}
-              >
-                <h6
-                  className="fw-semibold mb-3"
-                  style={{ letterSpacing: "0.4px" }}
-                >
-                  VM Details
-                </h6>
-
-                <Table
-                  bordered
-                  responsive
-                  size="sm"
-                  className="mb-0 text-light vm-table "
-                  style={{
-                    borderColor: "#000000ff", // or #0E0E23 for invisible border
-                  }}
-                >
-                  <thead>
-                    <tr style={{ background: "#0E0E23" }}>
-                      <th className="text-center" style={{ color: "#fff" }}>
-                        PROPERTY
-                      </th>
-                      <th className="text-center" style={{ color: "#fff" }}>
-                        VALUE
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody style={{ background: "#0E0E23" }}>
-                    <tr>
-                      <td>Virtual Memory</td>
-                      <td>
-                        {vmDetails?.memory ? `${vmDetails.memory} M ` : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Virtual CPU</td>
-                      <td>
-                        {vmDetails?.cpu ? `${vmDetails.cpu} cores` : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Network Ports</td>
-                      {/* <td style={{ whiteSpace: "pre-wrap" }}>{vmDetails.ports}</td> */}
-                      <td>
-                        {vmDetails.ports?.length > 0
-                          ? vmDetails.ports.map((p, i) => (
-                            <div key={i}>{p}</div>
-                          ))
-                          : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Storage Size</td>
-                      <td>
-                        {vmDetails?.storage ? `${vmDetails.storage} GB` : "N/A"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </div>
-
-              <div className="d-flex justify-content-end gap-3 mt-3">
+              {/* ================= FOOTER ================= */}
+              <div className="convert-footer">
                 <Button
                   variant="outline-light"
                   onClick={handleCloseDrawer}
-                  className="px-4 rounded-4"
                   disabled={isSaving}
+                  className="rounded-pill px-4"
                 >
-                  Close
+                  Cancel
                 </Button>
 
                 <Button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 rounded-4"
-                  style={{ background: "#19B159", borderColor: "#19B159" }}
+                  className="convert-btn"
                 >
-                  {isSaving ? (
-                    <>
-                      <Spinner
-                        as="span"
-                        animation="grow"
-                        size="sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                      Loading...
-                    </>
-                  ) : (
-                    "Submit"
-                  )}
+                  Convert & Save
                 </Button>
               </div>
             </Form>
-          </Offcanvas.Body>
-        </Offcanvas>
+          </Modal.Body>
+        </Modal>
 
         <style jsx>{`
           @keyframes spin {

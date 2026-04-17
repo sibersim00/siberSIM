@@ -1,4 +1,4 @@
-let title = "SIMUSER LOGIN";
+let title = "SIMUser LOGIN";
 let otp = "OTP";
 
 export const login_en = {

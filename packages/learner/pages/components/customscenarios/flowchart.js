@@ -14,7 +14,6 @@ import {
   useNodesState,
   useEdgesState,
   Background,
-  StraightEdge,
   Handle,
   Position,
   useReactFlow,
@@ -32,7 +31,6 @@ import "../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
 import Router, { useRouter } from "next/router";
 import {
-  getSingleScenarios,
   clearSingleScenarios,
   getScenarioList,
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
@@ -41,10 +39,7 @@ const DnDFlow = ({
   numLans,
   toBeDragComponent,
   scenarioId,
-  setScenarioId,
-  setTabIndex,
   setView,
-  setRowValues,
   selectedScenario,
 }) => {
 
@@ -93,9 +88,41 @@ const DnDFlow = ({
   };
   //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    const networkPorts = data.networkport || [];
-    const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
-    //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
+    // console.log("datadatadatadatadatadata",data);
+    
+    // const networkPorts = data.networkport || [];
+    // const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
+    // //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
+            let portKeys = [];
+
+    if (Array.isArray(data.networkport)) {
+      portKeys = data.networkport
+        .flatMap((obj) =>
+          Object.entries(obj).map(([key, value]) => {
+            const tagMatch = value.match(/tag=(\d+)/);
+            return {
+              key, // net0 / net1
+              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+            };
+          }),
+        )
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else if (
+      typeof data.networkport === "object" &&
+      data.networkport !== null
+    ) {
+      portKeys = Object.entries(data.networkport)
+        .map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key,
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else {
+      portKeys = [];
+    }
     const totalPorts = portKeys.length;
 
     const sides = ["Right", "Bottom", "Left", "Top"];
@@ -164,7 +191,7 @@ const DnDFlow = ({
           />
 
           {/* Ports */}
-          {portKeys.map((portKey, index) => {
+          {portKeys.map((port, index) => {
             const sideIndex = Math.floor(index / portsPerSide);
             const side = sides[sideIndex];
             const positionIndex = index % portsPerSide;
@@ -225,8 +252,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   right: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               case "Bottom":
@@ -253,8 +280,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   left: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               default:
@@ -262,22 +289,22 @@ const DnDFlow = ({
             }
 
             return (
-              <React.Fragment key={portKey}>
+              <React.Fragment key={port.key}>
                 <Handle
                   type="source"
                   position={Position[side]}
-                  id={`${portKey}-source`}
+                  id={`${port.key}-source`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
                 <Handle
                   type="target"
                   position={Position[side]}
-                  id={`${portKey}-target`}
+                  id={`${port.key}-target`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
-                <div style={labelPosition}>{portKey}</div>
+                <div style={labelPosition}>{port.label}</div>
               </React.Fragment>
             );
           })}
@@ -356,6 +383,7 @@ const DnDFlow = ({
   }, [selectedScenario]);
 
   const onConnect = useCallback((params) => {
+    console.log("jjjjjjjjjjjjjjjj",params)
       setEdges((eds) =>
         addEdge(
           {
@@ -437,7 +465,6 @@ const DnDFlow = ({
       if (imageNode) {
         const imageId = imageNode.id;
         setDroppedImages((prev) => prev.filter((id) => id !== imageId)); // Re-enable image by removing it from droppedImages
-        // Also remove the object with the matching id from drggerdComponent
         setDraggedComponent((prev) =>
           prev.filter((item) => item.id !== imageId)
         );
@@ -537,8 +564,7 @@ const DnDFlow = ({
 
   useEffect(() => {
     if (saveScenarioFlowChart.statusCode === 200) {
-      //  setScenarioId('');
-      //  setRowValues({});
+  
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
           {saveScenarioFlowChart?.message}
@@ -554,7 +580,7 @@ const DnDFlow = ({
       dispatch(getScenarioList());
       setNodes([]);
       setEdges([]);
-      // setTabIndex("tab3");
+    
     }
   }, [saveScenarioFlowChart]);
 
@@ -651,10 +677,6 @@ const DnDFlow = ({
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
-
-            // edgeTypes={{ straight: StraightEdge }}
-            // connectionLineStyle={{ stroke: '#363837', strokeWidth: 1 }}
-            // connectionLineType="straight"
           >
             {/* <Controls /> */}
             <Background />
@@ -678,29 +700,6 @@ const DnDFlow = ({
     </>
   );
 };
-// export default ({
-//   numLans,
-//   scenarioId,
-//   setScenarioId,
-//   setTabIndex,
-//   setView,
-//   setRowValues,
-//   selectedScenario,
-// }) => (
-//   <>
-//     <ReactFlowProvider>
-//       <DnDFlow
-//         numLans={numLans}
-//         scenarioId={scenarioId}
-//         setScenarioId={setScenarioId}
-//         setTabIndex={setTabIndex}
-//         setView={setView}
-//         setRowValues={setRowValues}
-//         selectedScenario={selectedScenario}
-//       />
-//     </ReactFlowProvider>
-//   </>
-// );
 const Flowchart = ({
   numLans,
   scenarioId,
@@ -723,7 +722,7 @@ const Flowchart = ({
   </ReactFlowProvider>
 );
 
-// ✅ Give it a display name for better debugging and to silence ESLint
+//Give it a display name for better debugging and to silence ESLint
 Flowchart.displayName = "Flowchart";
 
 export default Flowchart;

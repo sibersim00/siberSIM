@@ -6,32 +6,23 @@ import {
   Col,
   Card,
   Button,
-  Badge,
   OverlayTrigger,
   Tooltip,
-  Nav,
-  Tab,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import { useRouter } from "next/router";
-import {
-  getComponentList,
-  clearHasError,
-} from "../../../shared/redux/slices/customcomponent/customcomponentManage";
-import { styled } from "@mui/system";
+import { getRunningInviteLearnersList } from "../../../shared/redux/slices/invitescenario/invitescenario";
 import Seo from "../../../shared/layout-components/seo/seo";
-import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
-import { ToggleButton } from "@mui/material";
 import "../../../shared/utils/i18n";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
-import { useTranslation } from "react-i18next";
+// import { useTranslation } from "react-i18next";
+import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 
-const ManageCustomComponent = () => {
-  const { t } = useTranslation();
+const InviteScenarios = () => {
+  // const { t } = useTranslation();
   const dispatch = useDispatch();
   const router = useRouter();
-  const [openImportModal, setOpenImportModal] = useState(false);
   const { push } = useRouter();
   const [compStatus, setCompStatus] = useState("approved");
   const [view, setView] = useState("card");
@@ -42,6 +33,7 @@ const ManageCustomComponent = () => {
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
   const viewType = router.query.view || "card";
+
   useEffect(() => {
     if (viewType == "") {
       setView("list");
@@ -49,129 +41,70 @@ const ManageCustomComponent = () => {
       setView(viewType);
     }
   }, [viewType]);
-  const {
-    hasGetComponentListSucc,
-    errorData,
-    statusChangeComponentRes,
-  } = useSelector((state) => {
-    return {
-      hasGetComponentListSucc:
-        state &&
-        state.customComponent &&
-        state.customComponent.getComponentListData &&
-        state.customComponent.getComponentListData.data,
 
-      statusChangeComponentRes:
-        state &&
-        state.customComponent &&
-        state.customComponent.statusChangeComponent,
-      errorData: state && state.customComponent && state.customComponent.error,
-    };
-  });
+  const { hasgetRunningInviteLearnersData, errorData } = useSelector(
+    (state) => {
+      return {
+        hasgetRunningInviteLearnersData:
+          state &&
+          state.invitescenarioReducer &&
+          state.invitescenarioReducer.getRunningInviteLearners &&
+          state.invitescenarioReducer.getRunningInviteLearners.data,
+        errorData:
+          state &&
+          state.invitescenarioReducer &&
+          state.invitescenarioReducer.error,
+      };
+    },
+  );
 
   const columnDefs = [
     {
       headerName: "Sr No.",
       field: "Sr No.",
       cellRenderer: "srNoRender",
-      minWidth: 80,
+      maxWidth: 100,
       sortable: false,
+      headerTooltip:  "Sr No.",
     },
     {
-      headerName: "Component Category",
-      field: "categoryname",
+      headerName: "scenario title",
+      field: "scenariotitle",
       filter: true,
       floatingFilter: true,
-      minWidth: 180,
-    },
-
-    {
-      headerName: "Type",
-      field: "componenttype",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 100,
+      minWidth: 300,
+      tooltipValueGetter: (params) => params.value,
+      headerTooltip: "scenario title",
     },
     {
-      headerName: "Vmid",
-      field: "vmid",
+      headerName: "Scenario Level",
+      field: "scenariolevel",
       filter: true,
       floatingFilter: true,
-      minWidth: 180,
-      cellRenderer: "vmidWithImageRenderer",
-    },
-
-    {
-      headerName: "Name",
-      field: "componentname",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
+      minWidth: 120,
+      tooltipValueGetter: (params) => params.value,
+      headerTooltip: "Scenario Level",
     },
     {
-      headerName: "Configuration Delay",
-      field: "duration",
+      headerName: "Learner Name",
+      field: "learner_name",
       filter: true,
       floatingFilter: true,
-      minWidth: 180,
-      valueFormatter: (params) =>
-        params.value != null ? `${params.value} Sec` : "N/A",
-    },
-
-    {
-      headerName: "Virtual Memory",
-      field: "main_memory",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-      valueFormatter: (params) => (params.value ? `${params.value} M` : "N/A"),
-    },
-    {
-      headerName: "Virtual CPU",
-      field: "main_cores",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-      valueFormatter: (params) =>
-        params.value !== undefined && params.value !== null
-          ? `${params.value} Cores`
-          : "N/A",
-    },
-    {
-      headerName: "Storage Size",
-      field: "main_storage",
-      filter: true,
-      floatingFilter: true,
-      minWidth: 180,
-      valueFormatter: (params) => {
-        const val = params.value;
-        if (val == null || val === "") return "N/A";
-        const match = val.toString().match(/^([\d.]+)([KMGTP])$/i);
-        if (match) {
-          const size = parseFloat(match[1]);
-          const unit = match[2].toUpperCase();
-          const sizeInGB = {
-            K: size / (1024 * 1024),
-            M: size / 1024,
-            G: size,
-            T: size * 1024,
-            P: size * 1024 * 1024,
-          }[unit];
-          return `${Math.round(sizeInGB)} GB`;
-        }
-        const numeric = parseFloat(val);
-        return isNaN(numeric) ? "N/A" : `${Math.round(numeric)} GB`;
-      },
+      minWidth: 300,
+      tooltipValueGetter: (params) => params.value,
+      headerTooltip: "Learner Name",
     },
     {
       headerName: "Action",
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 130,
+      minWidth: 100,
+      pinned: "right",
       cellRenderer: "actionButtonRenderer",
     },
   ];
+
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -180,7 +113,6 @@ const ManageCustomComponent = () => {
       resizable: true,
     };
   }, []);
-
 
   const handleOneClick = (flag) => {
     setOneClick(flag);
@@ -194,25 +126,11 @@ const ManageCustomComponent = () => {
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
- const onFilterChanged = (data) => {
+
+  const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
-
-    let filteredList = hasGetComponentListSucc;
-
-    //  STATUS FILTER
-    if (compStatus === "Unapproved") {
-      filteredList = filteredList.filter(
-        (item) =>
-          item.status &&
-          ["pending", "reject", "draft"].includes(item.status.toLowerCase())
-      );
-    } else if (compStatus.toLowerCase() === "approved") {
-      filteredList = filteredList.filter(
-        (item) => item.status?.toLowerCase() === "approved"
-      );
-    }
-
+    let filteredList = hasgetRunningInviteLearnersData;
     // SEARCH FILTER
     const temp = filteredList.filter((item) =>
       Object.keys(item).some((key) => {
@@ -224,9 +142,8 @@ const ManageCustomComponent = () => {
           return fieldValue.toString().includes(val);
         }
         return false;
-      })
+      }),
     );
-
     setGridData(temp);
     setRowData(temp);
   };
@@ -241,19 +158,18 @@ const ManageCustomComponent = () => {
     setQuickFilter("");
     setView(thisView);
     setBackView(thisView);
-    router.push(`/customComponent?view=${thisView || "list"}`);
     if (compStatus === "") {
-      setGridData(hasGetComponentListSucc);
-      setRowData(hasGetComponentListSucc);
+      setGridData(hasgetRunningInviteLearnersData);
+      setRowData(hasgetRunningInviteLearnersData);
     } else if (compStatus === "true") {
-      const filteredData = hasGetComponentListSucc.filter(
-        (data) => data?.status?.toLowerCase() !== "false"
+      const filteredData = hasgetRunningInviteLearnersData.filter(
+        (data) => data?.status?.toLowerCase() !== "false",
       );
       setGridData(filteredData);
       setRowData(filteredData);
     } else if (compStatus === "false") {
-      const filteredData = hasGetComponentListSucc.filter(
-        (data) => data?.status?.toLowerCase() === "false"
+      const filteredData = hasgetRunningInviteLearnersData.filter(
+        (data) => data?.status?.toLowerCase() === "false",
       );
       setGridData(filteredData);
       setRowData(filteredData);
@@ -264,122 +180,65 @@ const ManageCustomComponent = () => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-          toast.error(
+            toast.error(
+              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                {data}
+              </p>,
+              {
+                position: toast.POSITION.TOP_RIGHT,
+                hideProgressBar: true,
+                theme: "colored",
+              },
+            );
+          })
+        : toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {data}
+              {errorData?.message}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
-        })
-        : toast.error(
-          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-            {errorData?.message}
-          </p>,
-          {
-            position: toast.POSITION.TOP_RIGHT,
-            hideProgressBar: true,
-            theme: "colored",
-          }
-        );
       handleOneClick(false);
       dispatch(clearHasError());
     }
   }, [errorData]);
 
   useEffect(() => {
-    dispatch(getComponentList());
+    dispatch(getRunningInviteLearnersList());
   }, []);
-  const handleReturnView = (props) => {
-    router.push(
-      `/custom_component_view/${props?.customcomponentuuid}?backView=${view}`
-    );
-  };
 
   useEffect(() => {
-    if (!hasGetComponentListSucc) return;
-
-    let filtered;
-    if (compStatus === "Unapproved") {
-      filtered = hasGetComponentListSucc.filter(
-        (item) =>
-          item.status &&
-          ["pending", "reject", "draft"].includes(item.status.toLowerCase())
-      );
-    } else if (compStatus.toLowerCase() === "approved") {
-      filtered = hasGetComponentListSucc.filter(
-        (item) => item.status && item.status.toLowerCase() === "approved"
-      );
-    } else {
-      filtered = hasGetComponentListSucc;
+    if (hasgetRunningInviteLearnersData?.length) {
+      setGridData(hasgetRunningInviteLearnersData);
+      setRowData(hasgetRunningInviteLearnersData);
     }
+  }, [hasgetRunningInviteLearnersData]);
 
-    setGridData(filtered);
-    setRowData(filtered);
-  }, [hasGetComponentListSucc, compStatus]);
+   const handleReturnView = (props) => {
+     push({
+    pathname: `/invite_scenarios/${props?.scenariouuid}`,
+    query: { view: "list" },
+  });
+  };
 
   const frameworkComponents = {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
     },
-    actionButtonRenderer: function (props) {
-      const status = props?.data?.status?.toLowerCase();
-      return (
-        <ActionButtonRenderer
-          handleEditView={handleReturnView}
-          handleShowEditView={true}
-          // handleEdit={handleEdit}
-          propsVal={props}
-        // handleShowEdit={status === "pending"}
-        />
-      );
-    },
-    vmidWithImageRenderer: function (props) {
-      const { data } = props;
-      const imageUrl = data?.componentimage
-        ? `${process.env.API_URL_FILEMANAGER}${data.componentimage}`
-        : dummy_network;
-
-      return (
-        <div className="d-flex align-items-center gap-2">
-          <span>{data?.vmid} - </span>
-          <img
-            src={imageUrl}
-            alt="vm"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = dummy_network.src;
-            }}
-            style={{
-              width: "22px",
-              height: "22px",
-              objectFit: "cover",
-            }}
-          />
-        </div>
-      );
-    },
-
-    identificationRender: function (props) {
-      return (
-        <div className="identification-container">
-          <span>{props?.data?.componentidentification}</span> &nbsp;
-          {props?.data && props.data?.url ? (
-            <a href={props.data.url} target="_blank">
-              <Badge bg="danger">
-                <i class="fa fa-link" aria-hidden="true"></i>
-              </Badge>
-            </a>
-          ) : (
-            ""
-          )}
-        </div>
-      );
-    },
+      actionButtonRenderer: function (props) {
+          return (
+            <ActionButtonRenderer
+              handleEditView={handleReturnView}
+              handleShowEditView={true}
+              propsVal={props}
+            />
+          );
+        },
   };
+
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const colarray = [6, 4, 3, 2];
   const zoomIn = () => {
@@ -395,84 +254,10 @@ const ManageCustomComponent = () => {
     }
   };
 
-  const handleImportModal = () => {
-    dispatch(clearVerifyComponentCategoryModel());
-    setOpenImportModal(!openImportModal);
-  };
-
   return (
     <>
       <Seo title="Components" />
       <ToastContainer />
-
-      <Row className="mg-b-10 text-wrap">
-        <Col md={12}>
-          <div className="panel panel-primary tabs-style-2">
-            <div className="tab-menu-heading">
-              <div className="tabs-menu ">
-                <Tab.Container
-                  id="scenario-tabs"
-                  activeKey={compStatus}
-                  onSelect={(key) => setCompStatus(key)}
-                >
-                  <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
-                    <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
-                    
-
-                      <Nav.Item
-                        className="mastermenu"
-                        onClick={() => {
-                          setCompStatus("approved");
-                        }}
-                      >
-                        <Nav.Link
-                          eventKey="approved"
-                          className="masterlist"
-                          value={compStatus}
-                          exclusive
-                          style={{
-                            color:
-                              compStatus === "approved" ? "#007bff" : "gray",
-                            fontWeight:
-                              compStatus === "approved" ? "bold" : "normal",
-                          }}
-                        >
-                          {" "}
-                          Approved
-                        </Nav.Link>
-                      </Nav.Item>
-
-                        <Nav.Item
-                        className="mastermenu"
-                        onClick={() => {
-                          setCompStatus("Unapproved");
-                        }}
-                      >
-                        <Nav.Link
-                          eventKey="Unapproved"
-                          className="masterlist"
-                          value={compStatus}
-                          exclusive
-                          style={{
-                            color:
-                              compStatus === "Unapproved" ? "#007bff" : "gray",
-                            fontWeight:
-                              compStatus === "Unapproved" ? "bold" : "normal",
-                          }}
-                        >
-                          Unapproved
-                        </Nav.Link>
-                      </Nav.Item>
-                    </Nav>
-                  </Row>
-                </Tab.Container>
-              </div>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      {/* ============================== */}
       <Row className="row-sm">
         <Col md={12}>
           <Card className="custom-card overflow-hidden">
@@ -480,7 +265,7 @@ const ManageCustomComponent = () => {
               <Card.Body className="p-3">
                 <Col md={12}>
                   <div className="d-flex justify-content-between align-items-center">
-                    <h5>Custom Component</h5>
+                    <h5>Assigned Scenarios</h5>
                     <div className="d-flex align-items-center">
                       {view === "card" && (
                         <>
@@ -556,6 +341,7 @@ const ManageCustomComponent = () => {
                       onGridReady={onGridReady}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                      enableBrowserTooltips={true}
                     ></AgGridReact>
                   </div>
                 ) : (
@@ -574,33 +360,16 @@ const ManageCustomComponent = () => {
                   {gridData.map((item, index) => {
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team component-status-card">
+                        <Card
+                          className="card custom-card our-team component-status-card"
+                          onClick={() =>
+                            router.push({
+                              pathname: `/invite_scenarios/${item?.scenariouuid}`,
+                            })
+                          }
+                        >
                           <Card.Body className="p-3 position-relative">
                             <div className="text-center mb-2">
-                              {item?.status && (
-                                <span
-                                  className="badge position-absolute"
-                                  style={{
-                                    top: "10px",
-                                    right: "12px",
-                                    fontSize: "11px",
-                                    padding: "4px 10px",
-                                    borderRadius: "12px",
-                                    backgroundColor:
-                                      item.status.toLowerCase() === "approved"
-                                        ? "#28a745"
-                                        : item.status.toLowerCase() === "reject"
-                                          ? "#ec43548e"
-                                          : "#ffc107",
-                                    color: "#fff",
-                                    zIndex: 10,
-                                    textTransform: "capitalize",
-                                    pointerEvents: "none",
-                                  }}
-                                >
-                                  {item.status}
-                                </span>
-                              )}
                               <div
                                 className="rounded-circle mx-auto d-flex justify-content-center align-items-center position-relative"
                                 style={{
@@ -608,11 +377,6 @@ const ManageCustomComponent = () => {
                                   height: "100px",
                                 }}
                               >
-                                {/* STATUS BADGE */}
-
-
-
-
                                 <img
                                   alt="avatar"
                                   style={{
@@ -633,13 +397,26 @@ const ManageCustomComponent = () => {
                               <OverlayTrigger
                                 placement="bottom"
                                 overlay={
-                                  <Tooltip id="tooltip-category">
-                                    Category: {item.categoryname}
+                                  <Tooltip id="tooltip">
+                                    Scenario Title: {item.scenariotitle}
                                   </Tooltip>
                                 }
                               >
-                                <h6 className="pro-user-username text-dark mt-2 mb-0 pointer">
-                                  <a>{item.categoryname}</a>
+                                <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
+                                  <a>{item.scenariotitle}</a>
+                                </h5>
+                              </OverlayTrigger>
+
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip id="tooltip-vmid-name pointer">
+                                    Scenario Level: {item.scenariolevel}
+                                  </Tooltip>
+                                }
+                              >
+                                <h6 className="pro-user-desc mb-1 mt-1 pointer">
+                                  {item.scenariolevel}
                                 </h6>
                               </OverlayTrigger>
 
@@ -647,48 +424,27 @@ const ManageCustomComponent = () => {
                                 placement="bottom"
                                 overlay={
                                   <Tooltip id="tooltip-vmid-name pointer">
-                                    VM Name: {item.componentname}
+                                    Learner Name: {item.learner_name}
                                   </Tooltip>
                                 }
                               >
-                                <h5 className="pro-user-desc mb-1 mt-1 pointer">
-                                  {item.componentname}
-                                </h5>
-                              </OverlayTrigger>
-
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={
-                                  <Tooltip id="tooltip-vmid pointer">
-                                    VMID: {item.vmid}
-                                  </Tooltip>
-                                }
-                              >
-                                <p className="pro-user-desc text-success mb-1 mt-1 pointer">
-                                  {item.vmid}
-                                </p>
+                                <h6
+                                  className="pro-user-desc mb-1 mt-1 pointer"
+                                  style={{ color: "#19b159" }}
+                                >
+                                  {item.learner_name}
+                                </h6>
                               </OverlayTrigger>
                             </div>
                             <div className="contact-info mb-0 text-center">
-                              <div className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={
-                                    <Tooltip>{item.componenttype}</Tooltip>
-                                  }
-                                >
-                                  <i className="fe fe-box"></i>
-                                </OverlayTrigger>
-                              </div>
-                              &nbsp;
-
-                              &nbsp;
+                              &nbsp; &nbsp;
                               <div
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                 onClick={() =>
-                                  push(
-                                    `/custom_component_view/${item?.customcomponentuuid}?backView=${view}`
-                                  )
+                                  router.push({
+                                    pathname: `/invite_scenarios/${item?.scenariouuid}`,
+                                    query: { view: "card" },
+                                  })
                                 }
                               >
                                 <OverlayTrigger
@@ -702,7 +458,6 @@ const ManageCustomComponent = () => {
                             </div>
                           </Card.Body>
                         </Card>
-
                       </Col>
                     );
                   })}
@@ -720,7 +475,6 @@ const ManageCustomComponent = () => {
                             <Card
                               style={{
                                 border: "none",
-                                // backgroundColor: "#f6f7fb",
                               }}
                             >
                               <Card.Body>
@@ -750,5 +504,5 @@ const ManageCustomComponent = () => {
     </>
   );
 };
-ManageCustomComponent.layout = "Contentlayout";
-export default ManageCustomComponent;
+InviteScenarios.layout = "Contentlayout";
+export default InviteScenarios;

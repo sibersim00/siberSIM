@@ -28,12 +28,12 @@ const FileUploader = ({ ismulti, folderpath, name, acceptedFileTypes, handleUplo
   let [uploadsfiles, setUploadsFiles] = useState([]); 
   const accessTokenLearner = JSON.parse(localStorage.getItem('accessTokenLearner')); // Replace with your actual Bearer token 
   
-    useEffect(() => {
-    // Fetch information about files from your server 
-      if(fetchfiles.length > 0){
-        fetchDataAndSetFiles();
-      }
-    }, [fetchfiles]); 
+    // useEffect(() => {
+    // // Fetch information about files from your server 
+    //   if(fetchfiles.length > 0){
+    //     fetchDataAndSetFiles();
+    //   }
+    // }, [fetchfiles]); 
     // Run this effect only once on component mount 
 
 

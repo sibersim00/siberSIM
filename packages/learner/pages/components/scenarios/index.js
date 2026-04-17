@@ -23,7 +23,7 @@ const Scenarios = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { scenariosListData } = useSelector((state) => ({
-    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? [],
+    scenariosListData: state?.scenarios?.getScenariosListData?.data ?? null,
   }));
 
   const [view, setView] = useState("card");
@@ -95,11 +95,6 @@ const Scenarios = () => {
       </div>
     );
   };
-  // const uniqueCategories = Array.from(
-  //   new Map(
-  //     scenariosListData?.map((item) => [item.scenariocategoryid, item])
-  //   ).values()
-  // );
   const uniqueCategories = Array.from(
     new Map(
       scenariosListData?.map((item) => [item.scenariocategoryid, item])
@@ -107,32 +102,19 @@ const Scenarios = () => {
   ).sort((a, b) =>
     a.scenariocategory_name.localeCompare(b.scenariocategory_name)
   );
-
-  // const uniqueSubcategories = selectedCategory
-  //   ? Array.from(
-  //       new Map(
-  //         scenariosListData
-  //           .filter(
-  //             (item) =>
-  //               item.scenariocategoryid === selectedCategory.scenariocategoryid
-  //           )
-  //           .map((item) => [item.scenariosubcategory_name, item])
-  //       ).values()
-  //     )
-  //   : [];
   const uniqueSubcategories = selectedCategory
     ? Array.from(
-        new Map(
-          scenariosListData
-            .filter(
-              (item) =>
-                item.scenariocategoryid === selectedCategory.scenariocategoryid
-            )
-            .map((item) => [item.scenariosubcategory_name, item])
-        ).values()
-      ).sort((a, b) =>
-        a.scenariosubcategory_name.localeCompare(b.scenariosubcategory_name)
-      )
+      new Map(
+        scenariosListData
+          .filter(
+            (item) =>
+              item.scenariocategoryid === selectedCategory.scenariocategoryid
+          )
+          .map((item) => [item.scenariosubcategory_name, item])
+      ).values()
+    ).sort((a, b) =>
+      a.scenariosubcategory_name?.localeCompare(b.scenariosubcategory_name)
+    )
     : [];
 
   useEffect(() => {
@@ -318,7 +300,7 @@ const Scenarios = () => {
           (item) =>
             item.scenariocategoryid === selectedCategory.scenariocategoryid &&
             item.scenariosubcategory_name ===
-              selectedSubcategory.scenariosubcategory_name
+            selectedSubcategory.scenariosubcategory_name
         );
         setFilteredData(filtered);
       }
@@ -360,7 +342,7 @@ const Scenarios = () => {
           (item) =>
             item.scenariocategoryid === selectedCategory.scenariocategoryid &&
             item.scenariosubcategory_name ===
-              selectedSubcategory.scenariosubcategory_name
+            selectedSubcategory.scenariosubcategory_name
         )
         .filter((item) => {
           const titleMatch = item.scenariotitle?.toLowerCase().includes(val);
@@ -434,162 +416,8 @@ const Scenarios = () => {
   return (
     <>
       <Seo title="Scenarios" />
-
-      {/* <Col md={12}>
-          <Row className="mg-b-10 text-wrap">
-            <div className="panel panel-primary tabs-style-2">
-              <div className="tab-menu-heading">
-                <div className="tabs-menu ">
-
-                  <Tab.Container
-                    id="left-tabs-example"
-                    activeKey={`${indexId}`}
-                  >
-                    <Row id="tabs-style-2" className="pd-l-15 pd-r-15">
-                      <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
-                   
-                        <Nav.Item
-                          className="mastermenu"
-                          onClick={() => {
-                            setIndexId("tab1");
-                          }}
-                        >
-                          <Nav.Link
-                            eventKey={"tab1"}
-                            className="masterlist"
-                            style={{
-                              color:"tab1" ? "#007bff" : "gray",
-                              fontWeight: "tab1" ? "bold" : "normal"
-                            }}
-                          >Scenarios
-                          </Nav.Link>
-                        </Nav.Item>
-        
-
-                        <Nav.Item
-                          className="mastermenu"
-                          onClick={() => {
-                            setIndexId("tab2");
-                          }}
-                        >
-                          <Nav.Link
-                            eventKey={"tab2"}
-                            className="masterlist"
-                            style={{
-                              color: "tab2" ? "#007bff" : "gray",
-                              fontWeight:  "tab2" ? "bold" : "normal"
-                            }}
-                          >Pause Scenarios
-                          </Nav.Link>
-                        </Nav.Item>
-                        
-                     
-                      </Nav>
-                    </Row>
-                  </Tab.Container>
-                </div>
-              </div>
-            </div>
-          </Row>
-        </Col>
-        <Col md={12}>
-        {/* {indexId === 'tab1' && (<Scenarios />)} */}
-      {/* {indexId === 'tab2' && (<PauseScenarios />)}
-      </Col> */}
-
-      {/* <Col md={12}>
-          <Card className="custom-card overflow-hidden">
-            <Card.Body className="p-3">
-              <div className="d-flex justify-content-between align-items-center">
-                <Breadcrumb
-                  selectedCategory={selectedCategory}
-                  selectedSubcategory={selectedSubcategory}
-                  onCategoryClick={setSelectedCategory}
-                  onSubcategoryClick={setSelectedSubcategory}
-                />
-
-                <div className="d-flex align-items-center">
-                  {view === "card" && (
-                    <>
-                      <button
-                        onClick={zoomIn}
-                        className="btn bd bd-success text-success mx-1"
-                        title="Zoom In"
-                      >
-                        <i className="fas fa-search-plus"></i>
-                      </button>
-                      <button
-                        onClick={zoomOut}
-                        className="btn bd bd-success text-success"
-                        title="Zoom Out"
-                      >
-                        <i className="fas fa-search-minus"></i>
-                      </button>
-                      &nbsp;
-                    </>
-                  )}
-                  <Button
-                    type="button"
-                    title="Card View"
-                    variant="outline-success"
-                    onClick={() => handleChangeView("card")}
-                    className={
-                      view === "card" ? "mx-1 active text-white" : "mx-1"
-                    }
-                  >
-                    <i className="fe fe-grid"></i>
-                  </Button>
-                  <Button
-                    type="button"
-                    title="List View"
-                    variant="outline-success"
-                    onClick={() => handleChangeView("list")}
-                    className={view === "list" ? "active text-white" : ""}
-                  >
-                    <i className="fe fe-list"></i>
-                  </Button>
-                  &nbsp;&nbsp;
-                  <input
-                    className="form-control bd bd-2 ms-2 w-auto"
-                    value={quickFilter}
-                    placeholder="Search..."
-                    type="text"
-                    onChange={(e) => onFilterChanged(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <Col md={12}>
-                {view == "list" ? (
-                <div
-                  className="ag-theme-alpine mt-2"
-                  style={{ height: "40em", width: "100%" }}
-                >
-                  <AgGridReact
-                    id="cat_grid"
-                    headerHeight={35}
-                    rowHeight={40}
-                    gridOptions={gridOptions}
-                    rowData={filteredData}
-                    columnDefs={columnDefs}
-                    pagination={true}
-                    paginationPageSize={10}
-                    onGridReady={onGridReady}
-                    components={frameworkComponents}
-                    defaultColDef={defaultColDef}
-                  />
-                </div>
-                ) : (
-                  ""
-                )}
-              </Col>
-            </Card.Body>
-          </Card>
-        </Col> */}
-
-      {/* ================================================================================== */}
       <Row className="mg-b-10 text-wrap">
-       
+
         <div className="panel panel-primary tabs-style-2">
           <div className="tab-menu-heading">
             <div className="tabs-menu">
@@ -598,42 +426,40 @@ const Scenarios = () => {
                 onSelect={(k) => setIndexId(k)}
               >
 
-{showTabs && (
-                <Row id="tabs-style-2" className="pd-l-30 pd-r-30">
-                  <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
-                    <Nav.Item className="mastermenu">
-                      <Nav.Link
-                        eventKey="tab1"
-                        className="masterlist"
-                        exclusive
-                        style={{
-                          color: indexId === "tab1" ? "#007bff" : "gray",
-                          fontWeight: indexId === "tab1" ? "bold" : "normal",
-                        }}
-                      >
-                        Scenarios
-                      </Nav.Link>
-                    </Nav.Item>
+                {showTabs && (
+                  <Row id="tabs-style-2" className="pd-l-30 pd-r-30">
+                    <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
+                      <Nav.Item className="mastermenu">
+                        <Nav.Link
+                          eventKey="tab1"
+                          className="masterlist"
+                          style={{
+                            color: indexId === "tab1" ? "#007bff" : "gray",
+                            fontWeight: indexId === "tab1" ? "bold" : "normal",
+                          }}
+                        >
+                          Scenarios
+                        </Nav.Link>
+                      </Nav.Item>
 
-                    <Nav.Item className="mastermenu">
-                      <Nav.Link
-                        eventKey="tab2"
-                        className="masterlist"
-                        exclusive
-                        style={{
-                          color: indexId === "tab2" ? "#007bff" : "gray",
-                          fontWeight: indexId === "tab2" ? "bold" : "normal",
-                        }}
-                      >
-                        {" "}
-                        Pause Scenarios
-                      </Nav.Link>
-                    </Nav.Item>
-                  </Nav>
+                      <Nav.Item className="mastermenu">
+                        <Nav.Link
+                          eventKey="tab2"
+                          className="masterlist"
+                          style={{
+                            color: indexId === "tab2" ? "#007bff" : "gray",
+                            fontWeight: indexId === "tab2" ? "bold" : "normal",
+                          }}
+                        >
+                          {" "}
+                          Pause Scenarios
+                        </Nav.Link>
+                      </Nav.Item>
+                    </Nav>
 
-                  {/* ------------------ */}
-                </Row>
-)}
+                    {/* ------------------ */}
+                  </Row>
+                )}
 
                 <Tab.Content>
                   <Tab.Pane eventKey="tab1">
@@ -641,26 +467,19 @@ const Scenarios = () => {
                       <Card.Body className="p-3 ">
                         <Col md={12}>
                           <div className="d-flex justify-content-between align-items-center">
-                            {/* <Breadcrumb
+                            <Breadcrumb
                               selectedCategory={selectedCategory}
                               selectedSubcategory={selectedSubcategory}
-                              onCategoryClick={setSelectedCategory}
-                              onSubcategoryClick={setSelectedSubcategory}
-                            /> */}
-
-<Breadcrumb
-  selectedCategory={selectedCategory}
-  selectedSubcategory={selectedSubcategory}
-  onCategoryClick={(cat) => {
-    setSelectedCategory(cat);
-    setSelectedSubcategory(null);
-    setShowTabs(true);
-  }}
-  onSubcategoryClick={(sub) => {
-    setSelectedSubcategory(sub);
-    setShowTabs(true);
-  }}
-/>
+                              onCategoryClick={(cat) => {
+                                setSelectedCategory(cat);
+                                setSelectedSubcategory(null);
+                                setShowTabs(true);
+                              }}
+                              onSubcategoryClick={(sub) => {
+                                setSelectedSubcategory(sub);
+                                setShowTabs(true);
+                              }}
+                            />
 
                             <div className="d-flex align-items-center">
                               {view === "card" && (
@@ -748,7 +567,7 @@ const Scenarios = () => {
                     </Card>
 
                     {view === "card" && (
-                         
+
                       <Row className="row-sm">
                         {!selectedCategory &&
                           (filteredCategories.length > 0
@@ -851,13 +670,11 @@ const Scenarios = () => {
                           selectedSubcategory &&
                           filteredData.length > 0 &&
                           ["Easy", "Medium", "Hard"].map((level) => {
-                            // const levelData = filteredData
-                            //   .filter((item) => item.scenariolevel === level)
-                            //   .sort((a, b) => a.duration - b.duration);
+                   
                             const levelData = filteredData
                               .filter((item) => item.scenariolevel === level)
                               .sort((a, b) => {
-                                // 1️⃣ Compare titles alphabetically
+                             
                                 const titleCompare =
                                   a.scenariotitle.localeCompare(
                                     b.scenariotitle
@@ -865,7 +682,7 @@ const Scenarios = () => {
                                 if (titleCompare !== 0) {
                                   return titleCompare;
                                 }
-                                // 2️⃣ If titles are same, compare duration
+                             
                                 return (a.duration ?? 0) - (b.duration ?? 0);
                               });
 
@@ -876,23 +693,22 @@ const Scenarios = () => {
                                     {[0, 1, 2].map((i) => (
                                       <i
                                         key={i}
-                                        className={`fa ${
-                                          i <
-                                          (level === "Hard"
-                                            ? 3
-                                            : level === "Medium"
-                                            ? 2
-                                            : 1)
+                                        className={`fa ${i <
+                                            (level === "Hard"
+                                              ? 3
+                                              : level === "Medium"
+                                                ? 2
+                                                : 1)
                                             ? "fa-star"
                                             : "fa-star-o"
-                                        }`}
+                                          }`}
                                         style={{
                                           color:
                                             level === "Hard"
                                               ? "#dc3545"
                                               : level === "Medium"
-                                              ? "#ffc107"
-                                              : "#28a745",
+                                                ? "#ffc107"
+                                                : "#28a745",
                                         }}
                                       ></i>
                                     ))}
@@ -975,11 +791,11 @@ const Scenarios = () => {
                                               >
                                                 <a>
                                                   {item.scenariotitle?.length >
-                                                  30
+                                                    30
                                                     ? `${item.scenariotitle.substring(
-                                                        0,
-                                                        27
-                                                      )}...`
+                                                      0,
+                                                      27
+                                                    )}...`
                                                     : item.scenariotitle}
                                                 </a>
                                               </OverlayTrigger>
@@ -998,16 +814,16 @@ const Scenarios = () => {
                                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setShowTabs(false);  
+                                                  setShowTabs(false);
                                                   handleReturnView(item);
                                                 }}
                                               >
                                                 <OverlayTrigger
                                                   placement="bottom"
                                                   overlay={
-                                                          <Tooltip>
-                                                            View
-                                                          </Tooltip>
+                                                    <Tooltip>
+                                                      View
+                                                    </Tooltip>
                                                   }
                                                 >
                                                   <i className="fe fe-eye"></i>

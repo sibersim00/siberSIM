@@ -24,7 +24,7 @@ const HeadDropDown = () => {
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
-
+console.log("getUserDataFromLocal",getUserDataFromLocal)
   const { notificationData, logoutData, markReadNotiResp, theme, errorData } =
     useSelector((state) => {
       return {
@@ -54,9 +54,16 @@ const HeadDropDown = () => {
     }
   }, []);
 
-  useEffect(() => {
-    dispatch(getNotification("Learner"));
-  }, []);
+useEffect(() => {
+  if (getUserDataFromLocal) {
+    setUser(getUserDataFromLocal);
+
+    if (getUserDataFromLocal?.type) {
+      dispatch(getNotification(getUserDataFromLocal.type));
+    }
+  }
+}, [getUserDataFromLocal, dispatch]);
+
   useEffect(() => {
     if (theme === "dark") {
       document.body.classList.add("dark-theme");
@@ -105,7 +112,7 @@ const HeadDropDown = () => {
       dispatch(markReadNotification(payload));
     }
     setTimeout(() => {
-      navigate.push("/components/noticonfigs/notificationList");
+      navigate.push("/notifications");
     }, 1000);
   };
 
@@ -145,7 +152,7 @@ const HeadDropDown = () => {
         }
       );
       const signOut = () => {
-          document.body.classList.remove("dark-theme");
+        document.body.classList.remove("dark-theme");
         localStorage.removeItem("userLearner");
         localStorage.removeItem("accessTokenLearner");
         localStorage.removeItem("menusLearner");
@@ -225,7 +232,7 @@ const HeadDropDown = () => {
             {notificationData &&
               notificationData.length > 0 &&
               notificationData.filter((obj) => obj.is_read == 0)?.length >
-                0 && (
+              0 && (
                 <p className="main-notification-text">
                   You have{" "}
                   {notificationData &&
@@ -271,9 +278,9 @@ const HeadDropDown = () => {
           </div>
           <div className="dropdown-footer">
             <span
-              onClick={() =>
-                navigate.push("/components/noticonfigs/notificationList")
-              }
+              // onClick={() =>
+              //   navigate.push("/components/notifications/notificationList")
+              // }
               className="text-primary pointer"
             >
               View All Notifications

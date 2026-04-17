@@ -647,13 +647,13 @@ const Home = () => {
                           <div className="mb-1">
                             <Link href={`/forgot-password`} style={{ color: "#044668ff" }}> {t("login.labels.forget_password")}</Link>
                           </div>
-                          <div>
+                          {/* <div>
                             {t("login.labels.don't_have_account")}
                             <Link href={`/sign-up`} style={{ color: "#044668ff" }}>
                               {" "}
                               {t("login.labels.resgister_here")}
                             </Link>
-                          </div>
+                          </div> */}
                         </div>
                       </Card.Body>
                     </Row>

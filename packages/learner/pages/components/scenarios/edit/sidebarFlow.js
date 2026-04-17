@@ -1,21 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { Row, Col, Card, Button, Form } from "react-bootstrap";
 import Select from "react-select";
+import Router, { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getCategoriesList,
   getScenarioComponentListbyCategory,
-} from "../../../shared/redux/slices/commons/commons";
+} from "../../../../shared/redux/slices/commons/commons";
 import {
   getSenarioDigramList,
-  getSinglecustomScenarios,
-} from "../../../shared/redux/slices/customScenarios/customscenarioManage";
+} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+import {
+  getSingleScenarios,
+} from "../../../../shared/redux/slices/scenarios/scenarios";
+
+const FILE_URL = process.env.API_URL_FILEMANAGER || "";
 
 const normalizeImageUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `${process.env.API_URL_FILEMANAGER}${url}`;
+  return `${FILE_URL}${url}`;
 };
+
+// const normalizeImageUrl = (url) => {
+//   if (!url) return "";
+//   if (url.startsWith("http")) return url;
+//   return `${process.env.API_URL_FILEMANAGER}${url}`;
+// };
 const SidebarFlow = ({
   setDraggedNode,
   scenarioId,
@@ -24,6 +35,7 @@ const SidebarFlow = ({
   setDraggedComponent,
 }) => {
   const dispatch = useDispatch();
+  const { query, push } = useRouter();
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
@@ -32,6 +44,7 @@ const SidebarFlow = ({
     getComponentByCatData,
     getScenarioDigListData,
     getScenarioFlowchart,
+    getSingleScenariosSucc,
   } = useSelector((state) => {
     return {
       getMasterCatListData:
@@ -54,6 +67,12 @@ const SidebarFlow = ({
         state.customScenario &&
         state.customScenario.singleScenarios &&
         state.customScenario.singleScenarios.data,
+      getSingleScenariosSucc:
+        state &&
+        state.scenarios &&
+        state.scenarios.singleScenarios &&
+        state.scenarios.singleScenarios.data,
+
       errorData: state && state.commonsdata && state.commonsdata.error,
     };
   });
@@ -67,15 +86,17 @@ const SidebarFlow = ({
     dispatch(getSenarioDigramList());
   }, []);
   useEffect(() => {
-    if (scenarioId) {
-      const payload = { scenarioid: scenarioId };
-      dispatch(getSinglecustomScenarios(scenarioId));
+    if (query.slug) {
+      // setRowId(query.slug[0]);
+      dispatch(getSingleScenarios(query.slug[0]));
     }
-  }, [scenarioId]);
+  }, [query.slug]);
   const handleDragStart = (e, node) => {
     const normalizedNode = {
       ...node,
       componentid: node.componentid || node.componentId || node.id,
+      vmType:
+      node.vmType || node.componenttype || node.componentType || "", // ✅ SAFE FALLBACK
       vmid:
         node.vmid ||
         (() => {
@@ -86,6 +107,7 @@ const SidebarFlow = ({
           }
         })(),
     };
+
     setDraggedNode(normalizedNode);
   };
 
@@ -98,13 +120,13 @@ const SidebarFlow = ({
   const [droppedImages, setDroppedImages] = useState([]);
   const [toBeDragComponent, setToBeDragComponent] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedComponent, setSelectedComponent] = useState(null);
+  const [selectedComponent, setSelectedComponent] = useState([]);
   const [rowValues, setRowValues] = useState(null);
   useEffect(() => {
-    if (getScenarioFlowchart) {
-      setRowValues(getScenarioFlowchart);
+    if (getSingleScenariosSucc) {
+      setRowValues(getSingleScenariosSucc);
     }
-  }, [getScenarioFlowchart])
+  }, [getSingleScenariosSucc])
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -140,26 +162,27 @@ const SidebarFlow = ({
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({
         value: cat?.vmid || "",
+        vmType : cat?.componenttype,
         label: cat?.vmid + " - " + cat?.componentname,
         networkport: cat?.networkport || "",
-        componentname: cat?.componentname || "",
         subcategoryimage: cat?.imageurl || "",
+        componentname: cat?.componentname || "",
         duration: cat?.duration || "",
         componentid: cat?.componentid || "",
       }));
       setComponentDropDown(filteredData);
     }
   }, [getComponentByCatData]);
-
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
-      setToBeDragComponent((prev) => {
-        const existingIds = new Set(prev.map((item) => item.value));
-        const newItems = selectedComponent.filter(
-          (item) => !existingIds.has(item.value)
-        );
-        return [...prev, ...newItems];
-      });
+      // setToBeDragComponent((prev) => {
+      //   const existingIds = new Set(prev.map((item) => item.value));
+      //   const newItems = selectedComponent.filter(
+      //     (item) => !existingIds.has(item.value)
+      //   );
+      //   return [...prev, ...newItems];
+      // });
+    setToBeDragComponent(selectedComponent);
     }
   }, [selectedComponent]);
   useEffect(() => {
@@ -169,12 +192,13 @@ const SidebarFlow = ({
         imageUrl: cat?.subcategoryimage
           ? `${process.env.API_URL_FILEMANAGER}${cat?.subcategoryimage}`
           : "",
+        // imageUrl: normalizeImageUrl(cat.subcategoryimage),
+        vmType:cat?.vmType,
         label: cat?.label,
         networkport: cat?.networkport,
         duration: cat?.duration,
         componentid: cat?.componentid,
       }));
-
       setImageNodeData((prevData) => {
         const existingIds = new Set(prevData.map((item) => item.id));
         const merged = [...prevData];
@@ -189,82 +213,126 @@ const SidebarFlow = ({
       });
     }
   }, [toBeDragComponent]);
-  useEffect(() => {
-    if (
-      getScenarioFlowchart &&
-      getScenarioFlowchart.scenariodiagram &&
-      getScenarioFlowchart.scenariodiagram.trim()
-    ) {
-      const data = getScenarioFlowchart.scenariodiagram;
-      const parsedData = JSON.parse(data.replace("flowchartData ", ""));
-      if (parsedData?.nodes && parsedData?.edges) {
-        setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
-      }
-    }
-    if (getScenarioFlowchart && getScenarioFlowchart.components) {
-      const componentsdata = getScenarioFlowchart.components;
-      const parsedcomponentData = JSON.parse(componentsdata);
-      const normalizedData = parsedcomponentData.map((node) => ({
-        ...node,
-        componentid: node.componentid || node.componentId || node.id,
-        imageUrl: `${process.env.API_URL_FILEMANAGER}${node.imageUrl || node.subcategoryimage || ""}`, //ensure full URL
-      }));
 
-      setImageNodeData(normalizedData); // update sidebar immediately
-      setDroppedImages(normalizedData.map((comp) => comp.id));
-      setDraggedComponent(normalizedData);
-    }
-  }, [getScenarioFlowchart]);
+useEffect(() => {
+  if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
+    return;
 
-  useEffect(() => {
-    if (!getScenarioFlowchart?.components) {
-      setImageNodeData([]);
-      return;
-    }
-    let parsedComponents = [];
+  const scenario = getSingleScenariosSucc[0];
+  if (!scenario) return;
+  /* ---------- restore diagram ---------- */
+  let parsedDiagram = null;
+  if (scenario.scenariodiagram?.trim()) {
     try {
-      const parsed = JSON.parse(getScenarioFlowchart.components);
-      parsedComponents = Array.isArray(parsed) ? parsed : [];
+      parsedDiagram = JSON.parse(
+        scenario.scenariodiagram.replace("flowchartData ", "")
+      );
+      if (parsedDiagram?.nodes && parsedDiagram?.edges) {
+        setNodes(parsedDiagram.nodes);
+        setEdges(parsedDiagram.edges);
+      }
     } catch (err) {
-      console.error("Invalid components JSON", err);
-      parsedComponents = [];
+      console.error("Invalid scenariodiagram JSON", err);
     }
-    const normalizedComponents = parsedComponents.map((node) => ({
-      ...node,
-      componentid: node.componentid || node.componentId || node.id,
-      imageUrl: normalizeImageUrl(
-        node.imageUrl || node.subcategoryimage
-      ),
-    }));
-    setImageNodeData(normalizedComponents);
-  }, [getScenarioFlowchart]);
+  }
+  /* ---------- restore components ---------- */
 
+  if (!scenario.components) return;
+  let parsedComponents = [];
+  try {
+    parsedComponents = JSON.parse(scenario.components);
+  } catch (e) {
+    console.error("Invalid components JSON", e);
+    return;
+  }
+  // const normalized = parsedComponents.map((node) => {
+  //   console.log("nodenodenodddddddddddddenode",node);
+    
+  //   const componentId = node.componentid || node.componentId || node.id;
+  //   let updatedImage = "";
+  //   if (parsedDiagram?.nodes?.length) {
+  //     const matchedNode = parsedDiagram.nodes.find(
+  //       (n) => String(n?.data?.componentId) === String(componentId)
+  //     );
+  //     if (matchedNode?.data?.image) {
+  //       updatedImage = matchedNode.data.image;
+  //     }
+  //     console.log("matchedNodematchedNodematchedNode",matchedNode);
+  //   }
+    
+  //   return {
+  //     ...node,
+  //     id: node.id || node.nodeid,
+  //     componentid: componentId,
+  //     imageUrl: normalizeImageUrl(
+  //       updatedImage || node.imageUrl || node.subcategoryimage
+  //     ),
+  //     networkport: node.networkport || [],
+  //     vmType: node.vmType || node.componenttype || "", // ✅ ADD THIS
+  //   };
+  // });
+  
+  const normalized = parsedComponents.map((node) => {
+  const componentId = node.componentid || node.componentId || node.id;
 
+  let updatedImage = "";
+  let matchedNode = null;
+
+  if (parsedDiagram?.nodes?.length) {
+    matchedNode = parsedDiagram.nodes.find(
+      (n) => String(n?.data?.componentId) === String(componentId)
+    );
+
+    if (matchedNode?.data?.image) {
+      updatedImage = matchedNode.data.image;
+    }
+  }
+
+  return {
+    ...node,
+    id: node.id || node.nodeid,
+    componentid: componentId,
+    imageUrl: normalizeImageUrl(
+      updatedImage || node.imageUrl || node.subcategoryimage
+    ),
+    networkport: node.networkport || [],
+    vmType:
+      matchedNode?.data?.vmType || // ✅ PRIMARY FIX
+      node.vmType ||
+      node.componenttype ||
+      "",
+  };
+});
+  // console.log("normalizednormassssssssssssssssssslizednormalizednormalized",normalized);
+  
+  setImageNodeData(normalized);
+  setDraggedComponent(normalized);
+  setDroppedImages(normalized.map((n) => n.id));
+}, [getSingleScenariosSucc]);
 
   useEffect(() => {
-    if (!imageNodeData || imageNodeData.length === 0) return;
-    setNodes((prevNodes) => {
-      const updated = prevNodes.map((node) => {
+    if (!imageNodeData?.length) return;
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
         const match = imageNodeData.find(
-          (imgNode) =>
-            imgNode.componentid === node.data?.componentId ||
-            imgNode.label === node.data?.label
+          (img) => String(img.id) === String(node.id)
         );
-        if (match && match.imageUrl && node.data?.image !== match.imageUrl) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              image: match.imageUrl,
-            },
-          };
-        }
-        return node;
-      });
-      return updated;
-    });
+        if (!match) return node;
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            image: match.imageUrl,          //  image visible
+            networkport: match.networkport, //  ports visible
+            componentId: match.componentid,
+            label: match.label || node.data?.label,
+            vmType: match.vmType || node.data?.vmType, // ✅ ADD
+          },
+        };
+      })
+    );
   }, [imageNodeData]);
+
   return (
     <div
       style={{

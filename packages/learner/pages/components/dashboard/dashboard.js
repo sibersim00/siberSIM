@@ -7,10 +7,6 @@ import {
   Row,
   Col,
   Card,
-  Badge,
-  Button,
-  OverlayTrigger,
-  Tooltip,
 } from "react-bootstrap";
 import { getStudentDashboard } from "../../../shared/redux/slices/dashboard/dashboard";
 import { useRouter } from "next/router";
@@ -23,14 +19,14 @@ const Dashboard = () => {
       state?.dashboard?.getStudentDashboardData?.data,
   }));
 
-  console.log("hasGetStudentDashboardListSucc",hasGetStudentDashboardListSucc);
-  
+  console.log("hasGetStudentDashboardListSucc", hasGetStudentDashboardListSucc);
+
   useEffect(() => {
     dispatch(getStudentDashboard());
   }, [dispatch]);
 
   const {
-    currentScenario = {} ,
+    currentScenario = {},
     widgets = [],
     webBrowserWidgets = [],
   } = hasGetStudentDashboardListSucc || {};
@@ -42,27 +38,9 @@ const Dashboard = () => {
       (w) => w.title === "Active/Failed Sessions"
     ),
   };
-
-  const mockEvents = [
-    {
-      title: "AI Workshop",
-      description:
-        "A hands-on workshop on the basics of Artificial Intelligence.",
-      date: "May 5, 2025",
-      time: "10:00 AM - 1:00 PM",
-      venue: "Auditorium, Block A",
-      organizer: "Computer Science Dept.",
-      type: "Academic",
-      registrationStatus: "Open",
-      audience: "All Students",
-      status: "Upcoming",
-      resources: true,
-    },
-  ];
-
   const handleReturnView = (props) => {
-    console.log("propspropspropspropsddddd",props);
-    
+    console.log("propspropspropspropsddddd", props);
+
     router.push(`/scenarios_view/${props?.scenariouuid}`);
   };
 
@@ -97,14 +75,14 @@ const Dashboard = () => {
     );
     setTimerSeconds(startSeconds);
 
-    if (!isRunning) return; 
+    if (!isRunning) return;
 
     const interval = setInterval(() => {
       setTimerSeconds((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning,currentScenario?.calculated_timer, currentScenario?.session_status]);
+  }, [isRunning, currentScenario?.calculated_timer, currentScenario?.session_status]);
 
   return (
     <>
@@ -142,7 +120,7 @@ const Dashboard = () => {
 
             <Row className="g-4">
               <Col xs={12}>
-              {currentScenario?.scenariotitle && currentScenario?.scenarioidentification && (
+                {currentScenario?.scenariotitle && currentScenario?.scenarioidentification && (
                   <Card className="border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
                     <Card.Body>
                       <Row className="align-items-center mb-4">
@@ -156,8 +134,7 @@ const Dashboard = () => {
                               style={{ width: "40px", height: "40px" }}
                             >
                               <i
-                                className={`mdi fs-5 ${
-                                  {
+                                className={`mdi fs-5 ${{
                                     Terminated: "mdi-alert-circle text-danger",
                                     Completed: "mdi-check-circle text-success",
                                     Initializing: "mdi-timer-sand text-info",
@@ -167,7 +144,7 @@ const Dashboard = () => {
                                     Failed: "mdi-alert-circle text-danger",
                                   }[currentScenario?.session_status] ||
                                   "mdi-help-circle text-secondary"
-                                }`}
+                                  }`}
                               />
                             </div>
 
@@ -177,27 +154,26 @@ const Dashboard = () => {
                                   {[0, 1, 2].map((i) => (
                                     <i
                                       key={i}
-                                      className={`fa ${
-                                        i <
-                                        (currentScenario?.scenariolevel ===
-                                        "Hard"
-                                          ? 3
-                                          : currentScenario?.scenariolevel ===
-                                            "Medium"
-                                          ? 2
-                                          : 1)
+                                      className={`fa ${i <
+                                          (currentScenario?.scenariolevel ===
+                                            "Hard"
+                                            ? 3
+                                            : currentScenario?.scenariolevel ===
+                                              "Medium"
+                                              ? 2
+                                              : 1)
                                           ? "fa-star"
                                           : "fa-star-o"
-                                      }`}
+                                        }`}
                                       style={{
                                         color:
                                           currentScenario?.scenariolevel ===
-                                          "Hard"
+                                            "Hard"
                                             ? "#dc3545"
                                             : currentScenario?.scenariolevel ===
                                               "Medium"
-                                            ? "#ffc107"
-                                            : "#28a745",
+                                              ? "#ffc107"
+                                              : "#28a745",
                                       }}
                                     />
                                   ))}
@@ -298,7 +274,7 @@ const Dashboard = () => {
                               <small className="text-muted">Total VM</small>
                             </div>
                           </div>
-                          
+
                         </Col>
 
                         <Col md={3}>
@@ -377,7 +353,7 @@ const Dashboard = () => {
                         </p>
                       </Card.Body>
                     </Col>
-                   
+
                     <Col xl={4} lg={4} sm={4} className="pe-0 ps-0">
                       <Card.Body className="text-center py-4">
                         <h6 className="text-uppercase fw-bold text-dark mb-2">
@@ -415,7 +391,7 @@ const Dashboard = () => {
 
                         <div
                           className="position-relative overflow-hidden border rounded"
-                          style={{ height: "300px" }}
+                          style={{ height: "900px" }}
                         >
                           <iframe
                             src={
@@ -437,112 +413,6 @@ const Dashboard = () => {
                 )}
               </Col>
             </Row>
-
-            {/* <Row className="d-flex flex-column align-items-center ">
-              {mockEvents.length === 0 ? (
-                <Col md={12}>
-                  <Card className="custom-card shadow-lg rounded-lg border-0 p-4 text-center">
-                    <Card.Body>
-                      <Card.Title className="text-primary fs-4">
-                        🎉 Events Are Coming Soon!
-                      </Card.Title>
-                      <Card.Text className="text-muted">
-                        Stay tuned — exciting updates and opportunities will be
-                        listed here shortly.
-                      </Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ) : (
-                mockEvents.map((event, index) => (
-                  <Col key={index} md={12} className="mb-4">
-                    <Card className="custom-card shadow-lg rounded-lg border-0 p-4">
-                      <Card.Body>
-                        <Row>
-                        
-                          <Col md={8}>
-                            <Card.Title className="font-weight-bold">
-                              {event.title}
-                            </Card.Title>
-                            <Card.Subtitle className="mb-2 text-muted">
-                              <strong>{event.date}</strong> | {event.time}
-                            </Card.Subtitle>
-                            <Card.Text className="text-justify">
-                              {event.description}
-                            </Card.Text>
-                            <div className="mb-2">
-                              <strong>Location:</strong>{" "}
-                              <span className="text-muted">{event.venue}</span>
-                            </div>
-                            <div className="mb-2">
-                              <strong>Organizer:</strong>{" "}
-                              <span className="text-muted">
-                                {event.organizer}
-                              </span>
-                            </div>
-                            <div className="mb-2">
-                              <strong>Target Audience:</strong>{" "}
-                              <span className="text-muted">
-                                {event.audience}
-                              </span>
-                            </div>
-                          </Col>
-
-                        
-                          <Col
-                            md={4}
-                            className="d-flex flex-column justify-content-between align-items-end h-100"
-                          >
-                       
-                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
-                              <Badge
-                                bg={
-                                  event.status === "Upcoming"
-                                    ? "info"
-                                    : event.status === "Ongoing"
-                                    ? "success"
-                                    : "secondary"
-                                }
-                                pill
-                              >
-                                {event.status}
-                              </Badge>
-                              <Badge bg="dark" pill>
-                                {event.type}
-                              </Badge>
-                            </div>
-
-                           
-                            <div className="d-flex flex-column align-items-end mt-4">
-                              <div className="mb-2">
-                                {event.registrationStatus === "Open" ? (
-                                  <Button variant="success" size="sm">
-                                    Register Now!
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="secondary"
-                                    disabled
-                                    size="sm"
-                                  >
-                                    {event.registrationStatus}
-                                  </Button>
-                                )}
-                              </div>
-                              {event.resources && (
-                                <Button variant="outline-info" size="sm">
-                                  Download Resources 📥
-                                </Button>
-                              )}
-                            </div>
-                          </Col>
-                        </Row>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))
-              )}
-            </Row> */}
           </Col>
         </Row>
       </Container>
