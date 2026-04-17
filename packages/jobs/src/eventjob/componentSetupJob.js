@@ -106,6 +106,15 @@ await db.sequelize.query(
   const proxmoxService = ProxMoxService(db,{}, ipAddress);
     const tokenResult = await proxmoxService.generateAccessTicket();
     if (!tokenResult || tokenResult.status != "200") {
+      await handleComponentFailure(
+        db,
+        scenarioid,
+        learnerid,
+        eventlearnerid,
+        statusVal,
+        vmrequestid,
+        ERROR_MESSAGES.PROXMOX_FAILURE
+      );
       return {
         success: false,
         message: `Could not connect to the siberSIM server while Configuring. Please check server status or credentials.`,
@@ -131,14 +140,14 @@ await db.sequelize.query(
         );
         throw new Error(cloneResult.message);
       }
-      if (component.componenttype?.toLowerCase() === "lxc") {
-        console.log(
-          `Waiting ${
-            cloningDelayMs / 1000
-          } seconds before cloning next LXC component...`
-        );
+      // if (component.componenttype?.toLowerCase() === "lxc") {
+      //   console.log(
+      //     `Waiting ${
+      //       cloningDelayMs / 1000
+      //     } seconds before cloning next LXC component...`
+      //   );
         await sleep(cloningDelayMs);
-      }
+      // }
     }
     await db.sequelize.query(
       `UPDATE vm_request SET vm_steps = 'Cloning', modifiedon = NOW() WHERE vmrequestid = ?`,

@@ -5,7 +5,6 @@ const validator = require("validator");
 let accessInfo = null;
 
 function ProxMoxService(db, payload, ip_address) {
-
   async function logApiRequest({
     api_end_point,
     vm_process,
@@ -52,7 +51,7 @@ function ProxMoxService(db, payload, ip_address) {
     response_code,
     response,
     error = null,
-    vm_process = null
+    vm_process = null,
   ) {
     const response_datetime = new Date();
     const duration = ((Date.now() - start) / 1000).toFixed(2);
@@ -106,8 +105,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.GENERATE_ACCESS_TICKET
-
+        constants.VM_PROCESSES.GENERATE_ACCESS_TICKET,
       );
 
       return {
@@ -126,8 +124,7 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.GENERATE_ACCESS_TICKET
-
+        constants.VM_PROCESSES.GENERATE_ACCESS_TICKET,
       );
 
       return {
@@ -139,7 +136,7 @@ function ProxMoxService(db, payload, ip_address) {
   async function QEMU_List() {
     if (!accessInfo?.cookie)
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
 
     const start = Date.now();
@@ -165,7 +162,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.QEMU_LIST
+        constants.VM_PROCESSES.QEMU_LIST,
       );
       return response.data;
     } catch (error) {
@@ -178,7 +175,7 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.QEMU_LIST
+        constants.VM_PROCESSES.QEMU_LIST,
       );
       throw error;
     }
@@ -209,7 +206,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.QEMU_VM_DETAIL
+        constants.VM_PROCESSES.QEMU_VM_DETAIL,
       );
       return response;
     } catch (error) {
@@ -222,7 +219,7 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.QEMU_VM_DETAIL
+        constants.VM_PROCESSES.QEMU_VM_DETAIL,
       );
       throw error;
     }
@@ -230,7 +227,7 @@ function ProxMoxService(db, payload, ip_address) {
   async function LXC_List() {
     if (!accessInfo?.cookie) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -257,7 +254,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.LXC_LIST
+        constants.VM_PROCESSES.LXC_LIST,
       );
       return response.data;
     } catch (error) {
@@ -270,7 +267,7 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.LXC_LIST
+        constants.VM_PROCESSES.LXC_LIST,
       );
       console.error("Error in listing LXC containers:", errorMessage);
       return null;
@@ -279,7 +276,7 @@ function ProxMoxService(db, payload, ip_address) {
   async function LXC_Container_detail(vmid) {
     if (!accessInfo?.cookie) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -306,7 +303,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null, // 👈 This is the `error` parameter
-        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL
+        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL,
       );
       return response;
     } catch (error) {
@@ -319,22 +316,22 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL
+        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL,
       );
       console.error(
         `Error in fetching container ${vmid} config:`,
-        errorMessage
+        errorMessage,
       );
       throw error;
     }
   }
   // ----------------------------VM Confugration Functions----------------------------------------
-console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
+  console.log("aaaaaaaaaaaaaaaaaaa", accessInfo);
 
   async function cloneVM(vmType, newid, name, sourceVMID) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
     const start = Date.now();
@@ -371,7 +368,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.CLONE_VM
+        constants.VM_PROCESSES.CLONE_VM,
       );
       return response;
     } catch (error) {
@@ -384,7 +381,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.CLONE_VM
+        constants.VM_PROCESSES.CLONE_VM,
       );
       console.error("Error in cloning VM:", errorMessage);
       return false;
@@ -394,7 +391,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function configureVM(vmid, vmType, networkConfig = {}) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
     const start = Date.now();
@@ -427,7 +424,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.CONFIGURE_VM
+        constants.VM_PROCESSES.CONFIGURE_VM,
       );
       return response;
     } catch (error) {
@@ -440,7 +437,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.CONFIGURE_VM
+        constants.VM_PROCESSES.CONFIGURE_VM,
       );
       console.error("Error in configuring VM:", errorMessage);
       return false;
@@ -450,7 +447,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function startVM(vmid, vmType) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -478,7 +475,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.START_VM
+        constants.VM_PROCESSES.START_VM,
       );
       return response;
     } catch (error) {
@@ -491,7 +488,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.START_VM
+        constants.VM_PROCESSES.START_VM,
       );
       console.error("Error in starting VM:", errorMessage);
       return false;
@@ -556,12 +553,13 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     console.log("vmid, vmType", vmid, vmType);
 
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
     const request_datetime = new Date();
-
     const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/stop`;
 
     const config = {
@@ -587,7 +585,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
           response.status.toString(),
           response.data,
           null,
-          constants.VM_PROCESSES.STOP_VM
+          constants.VM_PROCESSES.STOP_VM,
         );
       } catch (logErr) {
         console.error("Logging failed (STOP_VM):", logErr.message);
@@ -607,7 +605,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
           errorCode,
           errorMessage,
           error,
-          constants.VM_PROCESSES.STOP_VM
+          constants.VM_PROCESSES.STOP_VM,
         );
       } catch (logErr) {
         console.error("Logging failed (STOP_VM error):", logErr.message);
@@ -621,7 +619,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function destroyVM(vmid, vmType) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -650,7 +648,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.DESTROY_VM
+        constants.VM_PROCESSES.DESTROY_VM,
       );
       return response;
     } catch (error) {
@@ -663,7 +661,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.DESTROY_VM
+        constants.VM_PROCESSES.DESTROY_VM,
       );
       console.error("Error in destroying VM:", errorMessage);
       return {
@@ -677,7 +675,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function GetNodeNetworkInfo() {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -703,8 +701,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.NETWORK_INFO
-
+        constants.VM_PROCESSES.NETWORK_INFO,
       );
       return response.data;
     } catch (error) {
@@ -717,8 +714,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.NETWORK_INFO
-
+        constants.VM_PROCESSES.NETWORK_INFO,
       );
       console.error(`Error fetching network info:`, errorMessage);
       return null;
@@ -728,7 +724,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function createQEMUSnapshot(vmid, snapname, vmstate) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -767,7 +763,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.SNAPSHOT_QEMU
+        constants.VM_PROCESSES.SNAPSHOT_QEMU,
       );
 
       return response;
@@ -782,7 +778,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.SNAPSHOT_QEMU
+        constants.VM_PROCESSES.SNAPSHOT_QEMU,
       );
 
       console.error("Error creating QEMU snapshot:", errorMessage);
@@ -793,7 +789,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function deleteQEMUSnapshot(vmid, snapname) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -827,7 +823,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
+        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT,
       );
 
       return response;
@@ -842,7 +838,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
+        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT,
       );
 
       console.error("Error deleting QEMU snapshot:", errorMessage);
@@ -853,7 +849,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function deleteLXCSnapshot(vmid, snapname) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -887,7 +883,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT
+        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT,
       );
 
       return response;
@@ -902,7 +898,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT
+        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT,
       );
 
       console.error("Error deleting LXC snapshot:", errorMessage);
@@ -913,7 +909,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function restoreLXCSnapshot(vmid, snapname, startValue) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -951,7 +947,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT
+        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT,
       );
 
       return response;
@@ -966,7 +962,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT
+        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT,
       );
 
       console.error("Error restoring LXC snapshot:", errorMessage);
@@ -977,7 +973,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function restoreQEMUSnapshot(vmid, snapname, startValue) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1015,7 +1011,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
+        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT,
       );
 
       return response;
@@ -1030,7 +1026,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
+        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT,
       );
 
       console.error("Error restoring QEMU snapshot:", errorMessage);
@@ -1041,7 +1037,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function pauseVM(vmid, vmType) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1075,7 +1071,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.PAUSE_VM
+        constants.VM_PROCESSES.PAUSE_VM,
       );
 
       return response;
@@ -1090,7 +1086,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.PAUSE_VM
+        constants.VM_PROCESSES.PAUSE_VM,
       );
 
       console.error("Error in suspending VM:", errorMessage);
@@ -1101,7 +1097,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function resumeVM(vmid, vmType) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1133,7 +1129,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.RESUME_VM
+        constants.VM_PROCESSES.RESUME_VM,
       );
 
       return response;
@@ -1148,7 +1144,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.RESUME_VM
+        constants.VM_PROCESSES.RESUME_VM,
       );
 
       console.error("Error in resuming VM:", errorMessage);
@@ -1159,7 +1155,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function getTaskLog(upid) {
     if (!accessInfo?.cookie) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1188,7 +1184,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.GET_TASK_LOG
+        constants.VM_PROCESSES.GET_TASK_LOG,
       );
 
       return response;
@@ -1203,7 +1199,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.GET_TASK_LOG
+        constants.VM_PROCESSES.GET_TASK_LOG,
       );
 
       console.error("Error fetching task log:", errorMessage);
@@ -1214,7 +1210,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
   async function takeBackup(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1252,7 +1248,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.TAKE_BACKUP
+        constants.VM_PROCESSES.TAKE_BACKUP,
       );
 
       return response;
@@ -1267,7 +1263,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.TAKE_BACKUP
+        constants.VM_PROCESSES.TAKE_BACKUP,
       );
 
       console.error("Error taking backup:", errorMessage);
@@ -1279,10 +1275,11 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     }
   }
 
-
   async function fetchFileName(upid) {
     if (!accessInfo?.cookie) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1310,7 +1307,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.FETCH_FILE_NAME
+        constants.VM_PROCESSES.FETCH_FILE_NAME,
       );
 
       return response.data;
@@ -1325,7 +1322,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.FETCH_FILE_NAME
+        constants.VM_PROCESSES.FETCH_FILE_NAME,
       );
 
       console.error("Error fetching task log:", errorMessage);
@@ -1333,11 +1330,10 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     }
   }
 
-
   async function createLXCSnapshot(vmid, snapname) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
-        "Access info not initialized. Call generateAccessTicket first."
+        "Access info not initialized. Call generateAccessTicket first.",
       );
     }
 
@@ -1349,8 +1345,6 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     const request_datetime = new Date();
 
     const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot`;
-
-
 
     const config = {
       method: "post",
@@ -1374,9 +1368,9 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.SNAPSHOT_LXC
+        constants.VM_PROCESSES.SNAPSHOT_LXC,
       );
-      console.log("responseresponse",)
+      console.log("responseresponse");
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1389,7 +1383,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.SNAPSHOT_LXC
+        constants.VM_PROCESSES.SNAPSHOT_LXC,
       );
 
       console.error("Error creating LXC snapshot:", errorMessage);
@@ -1397,10 +1391,11 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     }
   }
 
-
   async function cloneLXC(vmid, data) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1412,11 +1407,10 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       newid: data.newid,
       hostname: data.hostname,
       full: data.full,
-      snapname: data.snapname
+      snapname: data.snapname,
     }).toString();
 
     console.log("bodyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", body);
-
 
     const config = {
       method: "post",
@@ -1435,21 +1429,28 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       const response = await axios.request(config);
 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.CLONE_LXC
+        response.data,
+        null,
+        constants.VM_PROCESSES.CLONE_LXC,
       );
-      console.log("responseresponseresponse", response)
+      console.log("responseresponseresponse", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorMessage, error,
-        constants.VM_PROCESSES.CLONE_LXC
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.CLONE_LXC,
       );
 
       console.error("Error in cloneLXC:", errorMessage);
@@ -1459,7 +1460,9 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
 
   async function templateLXC(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1468,7 +1471,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/template`;
     // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
 
-    console.log("urlurlurl", url)
+    console.log("urlurlurl", url);
     const config = {
       method: "post",
       url,
@@ -1479,104 +1482,145 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-    console.log("configconfigconfigconfig", config)
+    console.log("configconfigconfigconfig", config);
 
     try {
       const response = await axios.request(config);
 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.TEMPLATE_LXC
+        response.data,
+        null,
+        constants.VM_PROCESSES.TEMPLATE_LXC,
       );
-      console.log("responserespon222222222222222", response)
+      console.log("responserespon222222222222222", response);
       return response;
-
-    }
-    catch (error) {
+    } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorMessage, error,
-        constants.VM_PROCESSES.TEMPLATE_LXC
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.TEMPLATE_LXC,
       );
 
       console.error("Error in templateLXC:", errorMessage);
       return null;
     }
+    // catch (error) {
+    //   console.error("AXIOS ERROR RAW:", {
+    //     message: error.message,
+    //     code: error.code,
+    //     errno: error.errno,
+    //     syscall: error.syscall,
+    //     address: error.address,
+    //     port: error.port,
+    //     config: error.config,
+    //     stack: error.stack
+    //   });
+
+    //   if (error.response) {
+    //     console.error("RESPONSE STATUS:", error.response.status);
+    //     console.error("RESPONSE DATA:", error.response.data);
+    //   } else if (error.request) {
+    //     console.error("REQUEST SENT BUT NO RESPONSE");
+    //   } else {
+    //     console.error("REQUEST NOT SENT");
+    //   }
+
+    //   return null;
+    // }
   }
 
-  // async function cloneQEMU(vmid, newid) {
-  //   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-  //     throw new Error("Access info not initialized. Call generateAccessTicket first.");
-  //   }
+//   async function cloneQEMU(vmid, newid ,name = null) {
+//     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+//       throw new Error(
+//         "Access info not initialized. Call generateAccessTicket first.",
+//       );
+//     }
 
-  //   const start = Date.now();
-  //   const request_datetime = new Date();
+//     const start = Date.now();
+//     const request_datetime = new Date();
 
-  //   const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
+//     const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
 
-  //   const body = new URLSearchParams({ newid }).toString();
+//      // ADD name ONLY if provided
+//     const params = new URLSearchParams({ newid });
+//     if (name) {
+//       params.append("name", name);
+//     }
+//  const body = new URLSearchParams({ newid }).toString();
 
-  //   const config = {
-  //     method: "post",
-  //     url,
-  //     headers: {
-  //       Cookie: accessInfo.cookie,
-  //       "Content-Type": "application/x-www-form-urlencoded",
-  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-  //     },
-  //     data: body,
-  //     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-  //   };
+//     const config = {
+//       method: "post",
+//       url,
+//       headers: {
+//         Cookie: accessInfo.cookie,
+//         "Content-Type": "application/x-www-form-urlencoded",
+//         CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+//       },
+//       data: body,
+//       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+//     };
 
-  //   try {
-  //     const response = await axios.request(config);
+//     try {
+//       const response = await axios.request(config);
 
-  //     await logApiRequestData(
-  //       start, request_datetime, config,
-  //       response.status.toString(),
-  //       response.data, null,
-  //       constants.VM_PROCESSES.CLONE_QEMU
-  //     );
+//       await logApiRequestData(
+//         start,
+//         request_datetime,
+//         config,
+//         response.status.toString(),
+//         response.data,
+//         null,
+//         constants.VM_PROCESSES.CLONE_QEMU,
+//       );
 
-  //     return response;
-  //   } catch (error) {
-  //     const errorCode = error?.response?.status?.toString() || "ERR";
-  //     const errorMessage = error?.response?.data || error.toString();
+//       return response;
+//     } catch (error) {
+//       const errorCode = error?.response?.status?.toString() || "ERR";
+//       const errorMessage = error?.response?.data || error.toString();
 
-  //     await logApiRequestData(
-  //       start, request_datetime, config,
-  //       errorCode, errorMessage, error,
-  //       constants.VM_PROCESSES.CLONE_QEMU
-  //     );
+//       await logApiRequestData(
+//         start,
+//         request_datetime,
+//         config,
+//         errorCode,
+//         errorMessage,
+//         error,
+//         constants.VM_PROCESSES.CLONE_QEMU,
+//       );
 
-  //     console.error("Error in cloneQEMU:", errorMessage);
-  //     return null;
-  //   }
-  // }
-
-    async function cloneQEMU(vmid, newid, name = null) {
+//       console.error("Error in cloneQEMU:", errorMessage);
+//       return null;
+//     }
+//   }
+  async function cloneQEMU(vmid, newid, name = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
- 
+
     const start = Date.now();
     const request_datetime = new Date();
- 
+
     const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
- 
-    // ADD name ONLY if provided
+
+    // 🔥 ADD name ONLY if provided
     const params = new URLSearchParams({ newid });
     if (name) {
       params.append("name", name);
     }
- 
+
     const config = {
       method: "post",
       url,
@@ -1588,10 +1632,10 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       data: params.toString(),
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
- 
+
     try {
       const response = await axios.request(config);
- 
+
       await logApiRequestData(
         start,
         request_datetime,
@@ -1601,12 +1645,12 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         null,
         constants.VM_PROCESSES.CLONE_QEMU,
       );
- 
+
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
- 
+
       await logApiRequestData(
         start,
         request_datetime,
@@ -1616,16 +1660,18 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         error,
         constants.VM_PROCESSES.CLONE_QEMU,
       );
- 
+
       console.error("Error in cloneQEMU:", errorMessage);
       return null;
     }
   }
- 
+
 
   async function templateQEMU(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1648,21 +1694,28 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       const response = await axios.request(config);
 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.TEMPLATE_QEMU
+        response.data,
+        null,
+        constants.VM_PROCESSES.TEMPLATE_QEMU,
       );
-      console.log("response1111111111111", response)
+      console.log("response1111111111111", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorMessage, error,
-        constants.VM_PROCESSES.TEMPLATE_QEMU
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.TEMPLATE_QEMU,
       );
 
       console.error("Error in templateQEMU:", errorMessage);
@@ -1673,7 +1726,9 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     console.log("vmid:", vmid);
 
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1686,7 +1741,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       method: "get",
       url,
       headers: {
-        Cookie: accessInfo.cookie,   // ⬅ Same as your Postman header
+        Cookie: accessInfo.cookie, // ⬅ Same as your Postman header
         CSRFPreventionToken: accessInfo.CSRFPreventionToken,
         "Content-Type": "application/json",
       },
@@ -1701,10 +1756,13 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       console.log("QEMU CONFIG SUCCESS:", response.data);
 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status?.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG
+        response.data,
+        null,
+        constants.VM_PROCESSES.GET_QEMU_CONFIG,
       );
 
       return {
@@ -1713,16 +1771,18 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         data: response.data,
         message: "VM config fetched successfully.",
       };
-
     } catch (error) {
-
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorData = error?.response?.data;
 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorData, error,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorData,
+        error,
+        constants.VM_PROCESSES.GET_QEMU_CONFIG,
       );
 
       console.error("Error in getQemuConfig:", errorData);
@@ -1739,7 +1799,9 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     console.log("vmid:", vmid);
 
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error("Access info not initialized. Call generateAccessTicket first.");
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
     }
 
     const start = Date.now();
@@ -1752,7 +1814,7 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       method: "get",
       url,
       headers: {
-        Cookie: accessInfo.cookie,   // ⬅ Same as your Postman header
+        Cookie: accessInfo.cookie, // ⬅ Same as your Postman header
         CSRFPreventionToken: accessInfo.CSRFPreventionToken,
         "Content-Type": "application/json",
       },
@@ -1767,10 +1829,13 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       console.log("QEMU CONFIG SUCCESS:", response.data);
 
       await logApiRequestData(
-        start, request_datetime, config,
+        start,
+        request_datetime,
+        config,
         response.status?.toString(),
-        response.data, null,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG
+        response.data,
+        null,
+        constants.VM_PROCESSES.GET_QEMU_CONFIG,
       );
 
       return {
@@ -1779,16 +1844,18 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
         data: response.data,
         message: "VM config fetched successfully.",
       };
-
     } catch (error) {
-
       const errorCode = error?.response?.status?.toString() || "ERR";
       const errorData = error?.response?.data;
 
       await logApiRequestData(
-        start, request_datetime, config,
-        errorCode, errorData, error,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorData,
+        error,
+        constants.VM_PROCESSES.GET_QEMU_CONFIG,
       );
 
       console.error("Error in getLxcConfig:", errorData);
@@ -1801,6 +1868,479 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
       };
     }
   }
+
+  async function deleteVmNetwork(vmid, vmType, netKey) {
+    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
+    }
+
+    const start = Date.now();
+    const request_datetime = new Date();
+
+    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
+
+    const config = {
+      method: "put",
+      url,
+      headers: {
+        Cookie: accessInfo.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    };
+
+    try {
+      const response = await axios.request(config);
+
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        response.status?.toString(),
+        response.data,
+        null,
+        constants.VM_PROCESSES.DELETE_VM_NETWORK,
+      );
+
+      return response;
+    } catch (error) {
+      const errorCode = error?.response?.status?.toString() || "ERR";
+      const errorMessage = error?.response?.data || error.toString();
+
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.DELETE_VM_NETWORK,
+      );
+
+      console.error("Error in deleteVmNetwork:", errorMessage);
+      return false;
+    }
+  }
+
+  async function addVmNetwork(vmid, vmType, netKey, netValue) {
+    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+      throw new Error(
+        "Access info not initialized. Call generateAccessTicket first.",
+      );
+    }
+
+    const start = Date.now();
+    const request_datetime = new Date();
+
+    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+
+    const data = new URLSearchParams();
+    console.log("NET KEY:", netKey, "NET VALUE:", netValue);
+    data.append(netKey, netValue);
+
+    const config = {
+      method: "put",
+      url,
+      headers: {
+        Cookie: accessInfo.cookie,
+        "Content-Type": "application/x-www-form-urlencoded",
+        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+      },
+      data,
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    };
+
+    try {
+      const response = await axios.request(config);
+
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        response.status?.toString(),
+        response.data,
+        null,
+        constants.VM_PROCESSES.ADD_VM_NETWORK,
+      );
+
+      return response;
+    } catch (error) {
+      const errorCode = error?.response?.status?.toString() || "ERR";
+      const errorMessage = error?.response?.data || error.toString();
+
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.ADD_VM_NETWORK,
+      );
+
+      console.error("Error in addVmNetwork:", errorMessage);
+      return false;
+    }
+  }
+async function disconnectVmNetwork(vmid, vmType, netKey, netValue) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+
+  const data = new URLSearchParams();
+  console.log("DISCONNECT NET KEY:", netKey, "VALUE:", netValue);
+
+  // Example:
+  // netKey = "net0"
+  // netValue = "virtio=BC:24:11:DE:01:D8,bridge=vmbr1316,tag=4094"
+  data.append(netKey, netValue);
+
+  const config = {
+    method: "put",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data,
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.DISCONNECT_VM_NETWORK,
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.DISCONNECT_VM_NETWORK,
+    );
+
+    console.error("Error in disconnectVmNetwork:", errorMessage);
+    return false;
+  }
+}
+
+async function connectVmNetwork(vmid, vmType, netKey, mac, bridge) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+
+  // Build value like curl
+  const netValue = `virtio=${mac},bridge=${bridge}`;
+
+  const data = new URLSearchParams();
+  console.log("CONNECT NET KEY:", netKey, "VALUE:", netValue);
+
+  data.append(netKey, netValue);
+
+  const config = {
+    method: "put",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data,
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.CONNECT_VM_NETWORK,
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.CONNECT_VM_NETWORK,
+    );
+
+    console.error("Error in connectVmNetwork:", errorMessage);
+    return false;
+  }
+}
+
+async function getVmNetworkInfo(vmid, vmType) {
+  if (!accessInfo?.cookie) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+
+  const config = {
+    method: "get",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/json",
+    },
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.GET_VM_NETWORK_INFO,
+    );
+
+    return response.data;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.GET_VM_NETWORK_INFO,
+    );
+
+    console.error("Error in getVmNetworkInfo:", errorMessage);
+    return false;
+  }
+}
+
+
+async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
+  console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvv",vmid, vmType, netKey, mac, bridge)
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first."
+    );
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+  console.log("urlurlurlurl",url)
+  let netValue;
+   console.log("netValuenetValue",netValue)
+  /* ===================== KEY FIX ===================== */
+  if (vmType === "qemu") {
+    // Disable cable
+    netValue = `virtio=${mac},bridge=${bridge},link_down=1`;
+   console.log("netValuenetValue",netValue)
+
+  }
+
+  if (vmType === "lxc") {
+    // Remove bridge = unplug
+    const ethIndex = netKey.replace("net", "");
+    // netValue = `name=eth0,type=veth`;
+    netValue = `name=eth${ethIndex},bridge=${bridge},link_down=1`;
+
+   console.log("gggggggggggggggggggggggggggggggg",netValue)
+
+  }
+  /* =================================================== */
+
+  const data = new URLSearchParams();
+  console.log("datadatadatadata",data)
+  console.log("UNPLUG NET KEY:", netKey, "VALUE:", netValue);
+  data.append(netKey, netValue);
+
+  const config = {
+    method: "put",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data,
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+console.log("configconfig",config)
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.UNPLUG_VM_NETWORK
+    );
+console.log("responseresponse",response)
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.UNPLUG_VM_NETWORK
+    );
+
+    console.error("Error in unplugVmNetwork:", errorMessage);
+    return false;
+  }
+}
+
+async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+
+  let netValue;
+
+  /* ===================== DIFFERENCE HERE ===================== */
+  if (vmType === "qemu") {
+    // QEMU = enable cable
+    netValue = `virtio=${mac},bridge=${bridge},link_down=0`;
+  }
+
+  if (vmType === "lxc") {
+    // LXC = attach interface to bridge
+    const ethIndex = netKey.replace("net", "");
+    netValue = `name=eth${ethIndex},bridge=${bridge},hwaddr=${mac},type=veth`;
+  }
+  /* ============================================================ */
+
+  const data = new URLSearchParams();
+  console.log("PLUG NET KEY:", netKey, "VALUE:", netValue);
+
+  data.append(netKey, netValue);
+
+  const config = {
+    method: "put",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data,
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.PLUG_VM_NETWORK,
+    );
+
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.PLUG_VM_NETWORK,
+    );
+
+    console.error("Error in plugVmNetwork:", errorMessage);
+    return false;
+  }
+}
 
 
   return {
@@ -1832,7 +2372,13 @@ console.log("aaaaaaaaaaaaaaaaaaa",accessInfo);
     templateQEMU,
     getQemuConfig,
     getLxcConfig,
-
+    deleteVmNetwork,
+    addVmNetwork,
+    disconnectVmNetwork,
+    connectVmNetwork,
+    getVmNetworkInfo,
+    unplugVmNetwork,
+    plugVmNetwork
   };
 }
 

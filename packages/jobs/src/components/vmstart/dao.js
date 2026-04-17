@@ -7,7 +7,7 @@ const NotiTemplate = require("../../utils/notiUtility");
 
 const setVMRequestConfiguration =
   ({ db }) =>
-  async (scenarioid, vmrequestid, requestedby_id, requestedby_role) => {
+  async (scenarioid, vmrequestid, requestedby_id) => {
     try {
       const statusVal = "Initializing";
       const [webSettings] = await db.sequelize.query(
@@ -97,13 +97,7 @@ const setVMRequestConfiguration =
         };
       }
 
-      const availableNetworks = await db.sequelize.query(
-        `SELECT networkid, networkname
-         FROM networks
-         WHERE status = 'Available'
-           AND deletedon IS NULL
-         ORDER BY networkid ASC
-         LIMIT ?`,
+      const availableNetworks = await db.sequelize.query( `SELECT networkid, networkname  FROM networks  WHERE status = 'Available'   AND deletedon IS NULL  ORDER BY networkid ASC  LIMIT ?`,
         {
           replacements: [requiredNetworks],
           type: db.sequelize.QueryTypes.SELECT,
@@ -152,10 +146,7 @@ const setVMRequestConfiguration =
         const { vmid, order, componentid, nodeid, duration, network_ids } =
           item;
 
-        const [componentInfo] = await db.sequelize.query(
-          `SELECT componenttype, network_bridge_name, vmid_name
-           FROM components
-           WHERE componentid = ?`,
+        const [componentInfo] = await db.sequelize.query( `SELECT componenttype, network_bridge_name, vmid_name  FROM components  WHERE componentid = ?`,
           {
             replacements: [componentid],
             type: db.sequelize.QueryTypes.SELECT,
@@ -199,31 +190,13 @@ const setVMRequestConfiguration =
       --------------------------------------------------------*/
       if (allFound) {
         for (const comp of preparedComponents) {
-          const [insertId] = await db.sequelize.query(
-            `INSERT INTO vm_config
-             (scenarioid, vmrequestid, componentid, nodeid, componenttype,
-              \`order\`, master_vmid, vmid, componentname, duration,
-              network_bridge_json, status, createdon)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          const [insertId] = await db.sequelize.query( `INSERT INTO vm_config (scenarioid, vmrequestid, componentid, nodeid, componenttype, \`order\`, master_vmid, vmid, componentname, duration, network_bridge_json, status, createdon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
             {
-              replacements: [
-                comp.scenarioid,
-                comp.vmrequestid,
-                comp.componentid,
-                comp.nodeid,
-                comp.componenttype,
-                comp.order,
-                comp.master_vmid,
-                comp.vmid,
-                comp.componentname,
-                comp.duration,
-                comp.network_bridge_json,
-                comp.status,
+              replacements: [ comp.scenarioid, comp.vmrequestid, comp.componentid, comp.nodeid, comp.componenttype, comp.order, comp.master_vmid, comp.vmid, comp.componentname, comp.duration, comp.network_bridge_json, comp.status,
               ],
               type: db.sequelize.QueryTypes.INSERT,
             },
           );
-
           const realVmid = insertId + baseCloneVmid;
           await db.sequelize.query(
             `UPDATE vm_config SET vmid = ? WHERE vmconfigurationid = ?`,
@@ -261,9 +234,6 @@ const setVMRequestConfiguration =
         };
       }
 
-      /* -------------------------------------------------------
-         8. Rollback Networks on Failure
-      --------------------------------------------------------*/
       const bridgesToFree = new Set();
       for (const net of availableNetworks) {
         if (net.networkname) bridgesToFree.add(net.networkname);
@@ -444,7 +414,6 @@ const updateCompleteTerminateVMRequest =
         console.error("Error resetting diagram at start:", diagramErr);
       }
     }
-
     const handleFailureOnce = async (err) => {
       if (!hasFailed) {
         hasFailed = true;
@@ -459,7 +428,6 @@ const updateCompleteTerminateVMRequest =
       }
     };
     let components = [];
-
     try {
       if (session.vm_steps !== RUNNING && session.vm_steps !== OP_FAILED) {
         return {
@@ -467,8 +435,6 @@ const updateCompleteTerminateVMRequest =
           message: `Session vm_steps must be '${RUNNING}' or '${OP_FAILED}' to terminate.`,
         };
       }
-
-      // Fetch components
       components = await db.sequelize.query(
         `SELECT * FROM vm_config WHERE vmrequestid = ?`,
         {
@@ -476,12 +442,7 @@ const updateCompleteTerminateVMRequest =
           type: db.sequelize.QueryTypes.SELECT,
         },
       );
-
-      // 1. Stop all components first
-      //Create single tracking object
-
       const vmConfig = {};
-
       components.forEach(({ vmid }) => {
         vmConfig[vmid] = { stop: false, destroy: false };
       });
@@ -493,9 +454,6 @@ const updateCompleteTerminateVMRequest =
           message: `Could not connect to the Proxmox server while destroying components.`,
         };
       }
-
-      //Stop loop
-
       for (const {
         vmid,
         componenttype,
@@ -1468,32 +1426,26 @@ const pauseScenarioLearner =
           type: db.sequelize.QueryTypes.SELECT,
         },
       );
-
       if (!components.length) {
         return {
           success: false,
           message: "No VM components found for this VM request.",
         };
       }
-
       const hibernateDelayMs = await getHibernateDelay(db);
-
       let allSuccess = true;
       let proxmoxFailed = false;
       let results = [];
       let pausedVMs = [];
-
       // ------------------ PAUSE LOOP ------------------
       for (const { vmid, componenttype } of components) {
         const vmType = componenttype.toLowerCase();
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-
         // -------- Generate Proxmox Ticket --------
         const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           allSuccess = false;
           proxmoxFailed = true;
-
           results.push({
             vmid,
             status: "failed",
@@ -1501,7 +1453,6 @@ const pauseScenarioLearner =
           });
           break;
         }
-
         // -------- Pause / Stop VM --------
         let pauseResult;
         if (vmType === "qemu") {
@@ -1519,7 +1470,6 @@ const pauseScenarioLearner =
           });
           break;
         }
-
         // -------- Pause Success --------
         if (pauseResult?.status === 200) {
           await db.sequelize.query(
@@ -1530,9 +1480,7 @@ const pauseScenarioLearner =
               replacements: [vmrequestid, vmid],
             },
           );
-
           pausedVMs.push({ vmid, vmType });
-
           results.push({
             vmid,
             status: "success",
@@ -1545,7 +1493,6 @@ const pauseScenarioLearner =
           // -------- Pause Failed --------
           allSuccess = false;
           proxmoxFailed = true;
-
           results.push({
             vmid,
             status: "failed",
@@ -1556,21 +1503,17 @@ const pauseScenarioLearner =
           });
           break;
         }
-
         await sleep(hibernateDelayMs);
       }
-
       // ------------------ ROLLBACK (FALLBACK) ------------------
       if (proxmoxFailed && pausedVMs.length > 0) {
         console.warn(
           `Rollback started for vmrequestid ${vmrequestid}. Restoring ${pausedVMs.length} VMs`,
         );
-
         for (const { vmid, vmType } of pausedVMs) {
           try {
             const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
             await proxmoxService.generateAccessTicket();
-
             if (vmType === "qemu") {
               await proxmoxService.resumeVM(vmid, vmType);
             } else if (vmType === "lxc") {
@@ -1598,7 +1541,7 @@ const pauseScenarioLearner =
         message: allSuccess
           ? "All VMs paused successfully."
           : proxmoxFailed
-            ? "Pause failed. Rollback executed. Scenario restored to running state."
+            ? "Scenario failed to pause."
             : "Scenario failed to pause.",
         details: results,
       };
@@ -1747,7 +1690,7 @@ const resumeScenarioLearner =
         message: allSuccess
           ? "All VMs resumed successfully."
           : proxmoxFailed
-            ? "Resume failed. Rollback executed. Scenario restored to hibernate state."
+            ? "Scenario failed to resume."
             : "Scenario failed to resume.",
         details: results,
       };

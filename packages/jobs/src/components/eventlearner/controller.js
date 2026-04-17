@@ -91,8 +91,6 @@ const restartEventLearner =
   async (req, res, next) => {
     try {
       const {vmrequestid } = req.body;
-      console.log("Controller------------------",vmrequestid);
-      
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
       const result = await dao.restartEventLearner({

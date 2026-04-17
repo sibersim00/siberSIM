@@ -28,9 +28,6 @@ const setEventLearnerConfiguration =
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-
-      console.log("learnerDatalearnerData", learnerData);
-
       if (!learnerData) {
         await handleComponentFailure(
           db,
@@ -170,8 +167,6 @@ const setEventLearnerConfiguration =
             network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
           }
         }
-        console.log("fffffffffffffffffffffffffffffff");
-
         preparedComponents.push({
           scenarioid,
           vmrequestid,
@@ -327,27 +322,6 @@ async function markOperationFailedAndNotify(
       type: db.sequelize.QueryTypes.UPDATE,
     }
   );
-
-  // 4. Insert log entry
-  // await db.sequelize.query(
-  //   `INSERT INTO event_learner_logs
-  //     (eventlearnerid,eventid, learner_id, type, remark, status, createdon)
-  //     SELECT
-  //       sls.eventlearnerid,
-  //       sls.eventid,
-  //       sls.learner_id,
-  //       'System',
-  //       'Failed to Stop and destroy the component',
-  //       'Operation Failed',
-  //       NOW()
-  //     FROM event_learners sls
-  //     WHERE sls.eventlearnerid = ?`,
-  //   {
-  //     replacements: [eventlearnerid],
-  //     type: db.sequelize.QueryTypes.INSERT,
-  //   }
-  // );
-
   await db.sequelize.query(
     `
   INSERT INTO vm_request_logs
@@ -393,7 +367,6 @@ const getTerminationDelay = async (db) => {
 const updateCompleteTerminate =
   ({ db, ipAddress }) =>
   async (eventlearnerid, status, type, vmrequestid) => {
-    console.log("Update Terminate......");
     let hasFailed = false;
 
     const [session] = await db.sequelize.query(
@@ -728,8 +701,6 @@ const deleteScenarioLearner =
         componentname,
         vmconfigurationid,
       } of components) {
-        console.log("vmconfigurationidvmconfigurationid", vmconfigurationid);
-
         const vmType = componenttype.toLowerCase();
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
         if (vmType === "lxc") {
@@ -872,8 +843,6 @@ const deleteScenarioLearner =
 const restartEventLearner =
   ({ db, ipAddress }) =>
   async (vmrequestid) => {
-    console.log("vmrequestidvmrequestidvmrequestid", vmrequestid);
-
     try {
       // Fetch all components for this event learner
       const components = await db.sequelize.query(
@@ -885,8 +854,6 @@ const restartEventLearner =
           type: db.sequelize.QueryTypes.SELECT,
         }
       );
-      console.log("componentscomponentscomponents", components);
-
       if (!components.length) {
         return {
           success: false,
@@ -1187,9 +1154,7 @@ const generateProxmoxAccessToken =
 };
 const pauseScenarioLearner =
   ({ db, ipAddress }) =>
-  async (vmrequestid) => {
-    console.log("vmrequestidvmrequestid",vmrequestid);
-    
+  async (vmrequestid) => { 
     try {
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
@@ -1214,14 +1179,10 @@ const pauseScenarioLearner =
       let allSuccess = true;
       let proxmoxFailed = false;
       let results = [];
-      let pausedVMs = []; // 🔥 Track successfully paused VMs for rollback
-
-      // ------------------ PAUSE LOOP ------------------
+      let pausedVMs = []; 
       for (const { vmid, componenttype } of components) {
         const vmType = componenttype.toLowerCase();
         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-
-        // -------- Generate Proxmox Ticket --------
         const tokenResult = await proxmoxService.generateAccessTicket();
         if (!tokenResult || tokenResult.status !== "200") {
           allSuccess = false;
@@ -1232,7 +1193,7 @@ const pauseScenarioLearner =
             status: "failed",
             message: `Proxmox connection failed for VM ${vmid}`,
           });
-          break; // ⛔ Stop further pauses → trigger rollback
+          break;
         }
 
         // -------- Pause / Stop VM --------
@@ -1289,7 +1250,6 @@ const pauseScenarioLearner =
           });
           break;
         }
-
         await sleep(hibernateDelayMs);
       }
 
@@ -1309,8 +1269,6 @@ const pauseScenarioLearner =
             } else if (vmType === "lxc") {
               await proxmoxService.startVM(vmid, vmType);
             }
-
-            // 🔄 Restore DB status to Running
             await db.sequelize.query(
               `UPDATE vm_config
                SET status = 'Running', modifiedon = NOW()
@@ -1334,7 +1292,7 @@ const pauseScenarioLearner =
         message: allSuccess
           ? "All VMs paused successfully."
           : proxmoxFailed
-            ? "Pause failed. Rollback executed. Scenario restored to running state."
+            ? "Scenario failed to pause."
             : "Scenario failed to pause.",
         details: results,
       };
@@ -1374,7 +1332,7 @@ const resumeScenarioLearner =
       let allSuccess = true;
       let proxmoxFailed = false;
       let results = [];
-      let resumedVMs = []; // 🔥 Track resumed VMs for rollback
+      let resumedVMs = []; 
 
       // ------------------ RESUME LOOP ------------------
       for (const { vmid, componenttype } of components) {
@@ -1392,7 +1350,7 @@ const resumeScenarioLearner =
             status: "failed",
             message: `Proxmox connection failed for VM ${vmid}`,
           });
-          break; // ⛔ stop further resumes → rollback
+          break;
         }
 
         // -------- Resume / Start VM --------
@@ -1451,18 +1409,15 @@ const resumeScenarioLearner =
 
         await sleep(hibernateDelayMs);
       }
-
       // ------------------ ROLLBACK (FALLBACK) ------------------
       if (proxmoxFailed && resumedVMs.length > 0) {
         console.warn(
           `Resume rollback started for vmrequestid ${vmrequestid}. Re-hibernating ${resumedVMs.length} VMs`,
         );
-
         for (const { vmid, vmType } of resumedVMs) {
           try {
             const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
             await proxmoxService.generateAccessTicket();
-
             if (vmType === "qemu") {
               await proxmoxService.pauseVM(vmid, vmType);
             } else if (vmType === "lxc") {
@@ -1493,7 +1448,7 @@ const resumeScenarioLearner =
         message: allSuccess
           ? "All VMs resumed successfully."
           : proxmoxFailed
-            ? "Resume failed. Rollback executed. Scenario restored to hibernate state."
+            ? "Scenario failed to resume."
             : "Scenario failed to resume.",
         details: results,
       };

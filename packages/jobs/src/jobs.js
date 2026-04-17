@@ -45,7 +45,7 @@ class initJob {
   }
 
   async terminateExpiredEvents({ db }) {
-    const ipAddress = "127.0.0.1";
+    const ipAddress = "";
     const job = autoTerminateExpiredEvents({
       db,
       ipAddress,
@@ -56,23 +56,23 @@ class initJob {
   }
 
   async terminateFailedScenarios({ db }) {
-    const ipAddress = "127.0.0.1";
+    const ipAddress = "";
     const job = autoTerminateFailedScenarios({
       db,
       ipAddress,
       updateCompleteTerminatelearner,
     });
     const result = await job();
-    console.log("🕛 Operation Failed Scenario Cleanup Result:", result.message);
+    console.log("Operation Failed Scenario Cleanup Result:", result.message);
   }
   async checkbackupstatus({ db }) {
-    const ipAddress = "127.0.0.1";
+    const ipAddress = "";
     const job = checkBackupStatus({
       db,
       ipAddress
     });
     const result = await job();
-    console.log("🕛 Operation Failed for Check backup status:", result);
+    console.log("Operation Failed for Check backup status:", result);
   }
 }
 
@@ -82,7 +82,7 @@ const commonCronConfig = {
   timezone: "Asia/Kolkata",
 };
 
-const startJob = async ({ db }) => {
+const startJob = async ({ db  }) => {
   const jobs = new initJob();
 
   // Process notifications every 10 sec
@@ -105,7 +105,7 @@ const startJob = async ({ db }) => {
     });
   }, commonCronConfig);
 
-  // 🕛 Run auto-terminate job every midnight
+  // Run auto-terminate job every midnight
   cron.schedule("0 0 * * *",
     () => {
       console.log("Running midnight auto-terminate job...");
@@ -118,7 +118,7 @@ const startJob = async ({ db }) => {
   cron.schedule("0 0 * * *", // every day at midnight
     () => {
       console.log(
-        "🔁 Running auto-cleanup for Operation Failed scenario sessions..."
+        "Running auto-cleanup for Operation Failed scenario sessions..."
       );
       jobs.terminateFailedScenarios({ db }).catch((err) => {
         console.error("Auto-cleanup cron failed:", err);
