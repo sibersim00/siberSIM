@@ -18,27 +18,19 @@ import Router, { useRouter } from "next/router";
 import Select from "react-select";
 import {
   getScenarioList,
-  changeStatusScenarios,
-  clearScenariosChangeStatus,
-  deleteScenarios,
-  cleardeleteScenarios,
-  clearHasError,
   handleManageView,
-  exportSelectedScenariosAction,
-} from "../../../../shared/redux/slices/customScenarios/customscenarioManage"
-// import * as XLSX from "xlsx";
+} from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
 import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
 import Seo from "../../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
-// import ToggleButton from "../../../shared/data/masterbuttons/";
 import ScenarioForm from "../../../../shared/data/customScenario/scenariosForm"
 import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
 import { Fab } from "@mui/material";
 import dummy_network from "../../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
-// import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
+
 
 const ManageScenarios = () => {
   const { t } = useTranslation();
@@ -50,33 +42,13 @@ const ManageScenarios = () => {
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [quickFilter, setQuickFilter] = useState("");
-  const [formModal, setformModal] = useState(false);
   const { push } = useRouter();
-  const [showListImort, setShowListImport] = useState(true);
-  const [openImportModal, setOpenImportModal] = useState(false);
   const [oneClick, setOneClick] = useState(false);
   const [previousView, setPreviousView] = useState("card");
   const [backview, setBackView] = useState("card");
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedScenarios, setSelectedScenarios] = useState([]);
-  const [approvalFilter, setApprovalFilter] = useState("Pending"); // "", "Reject", "Pending", "Approved"
-
-  const [rowValues, setRowValues] = useState({
-    title: "Add",
-    scenarioid: 0,
-    scenarioidentification: " ",
-    scenariotitle: " ",
-    scenariodescription: " ",
-    scenariocategory: " ",
-    scenariosubcategory: " ",
-    scenariolevel: " ",
-    instructor_name: " ",
-    instruction_file: " ",
-    duration: " ",
-    status: "true",
-  });
-
-  console.log("rowDatarowDatarowDatarowDatarowDatarowDatarowData", rowData);
+  const [approvalFilter, setApprovalFilter] = useState("Pending");
   const {
     hasGetScenarioListSucc,
     errorData,
@@ -103,8 +75,6 @@ const ManageScenarios = () => {
         state && state.customScenario && state.customScenario.viewNameResp,
     };
   });
-  console.log("hasGetScenarioListSucchasGetScenarioListSucc", viewNameResp);
-
   const getScenarioSelectStyles = () => {
     return {
       control: (styles) => ({
@@ -146,7 +116,7 @@ const ManageScenarios = () => {
 
   const assignedBadgeRenderer = (params) => {
     const { value, data } = params;
-    const maxLength = 20; // Set the character limit for the title
+    const maxLength = 20;
     const title = value || "";
     const truncatedTitle =
       title.length > maxLength ? title.substring(0, maxLength) + "..." : title;
@@ -155,7 +125,7 @@ const ManageScenarios = () => {
       <div className="d-flex align-items-center position-relative">
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>{title}</Tooltip>} // Full title on hover
+          overlay={<Tooltip>{title}</Tooltip>}
         >
           <div
             className="text-truncate"
@@ -249,14 +219,6 @@ const ManageScenarios = () => {
       floatingFilter: true,
       minWidth: 180,
     },
-    // {
-    //   headerName: "Instruction File",
-    //   field: "instruction_file",
-    //   filter: true,
-    //   flex: 1,
-    //   floatingFilter: true,
-    //   minWidth: 180,
-    // },
     {
       headerName: "Duration",
       field: "duration",
@@ -287,9 +249,7 @@ const ManageScenarios = () => {
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
-  //Function to Download Excel file
   const handleExportExcel = () => {
-    // Filter data based on scenStatus ("" = all, "true" = active, "false" = inactive)
     const filteredData = hasGetScenarioListSucc.filter((row) => {
       if (scenStatus === "") return true; // All
       return row.status === scenStatus;
@@ -374,104 +334,12 @@ const ManageScenarios = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {
     setGridApi(params.api);
   };
-
-  // const onFilterChanged = (data) => {
-  //   setQuickFilter(data);
-  //   let val = data.toLowerCase();
-  //   if (scenStatus == "") {
-  //     const temp =
-  //       hasGetScenarioListSucc &&
-  //       hasGetScenarioListSucc.filter((d) => {
-  //         return (
-  //           d.scenarioidentification?.toLowerCase().includes(val) ||
-  //           // d.instructor_name?.toLowerCase().includes(val) ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariotitle?.toLowerCase().includes(val) ||
-  //           d.scenariolevel?.toLowerCase().includes(val) ||
-  //           (typeof d.duration === "number" &&
-  //             d.duration.toString().toLowerCase().includes(val)) ||
-  //           d.name?.toLowerCase().includes(val) ||
-  //           d.scenariocategory?.toLowerCase().includes(val) ||
-  //           d.scenariosubcategory?.toLowerCase().includes(val) ||
-  //           !val
-  //         );
-  //       });
-
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   } else if (scenStatus == "true") {
-  //     const filteredData =
-  //       hasGetScenarioListSucc.length > 0 &&
-  //       hasGetScenarioListSucc.filter(
-  //         (data) => data?.status?.toString() == "true"
-  //       );
-
-  //     const temp =
-  //       filteredData &&
-  //       filteredData.filter((d) => {
-  //         return (
-  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-  //           (typeof d.duration === "number" &&
-  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-  //           (d.name &&
-  //             d.name != null &&
-  //             d.name.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariocategory &&
-  //             d.scenariocategory != null &&
-  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariosubcategory &&
-  //             d.scenariosubcategory != null &&
-  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-  //           !val
-  //         );
-  //       });
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   } else if (scenStatus == "false") {
-  //     const filteredData =
-  //       hasGetScenarioListSucc.length > 0 &&
-  //       hasGetScenarioListSucc.filter(
-  //         (data) => data?.status?.toString() == "false"
-  //       );
-
-  //     const temp =
-  //       filteredData &&
-  //       filteredData.filter((d) => {
-  //         return (
-  //           d.scenarioidentification.toLowerCase().indexOf(val) !== -1 ||
-  //           d.scenariotitle.toLowerCase().indexOf(val) !== -1 ||
-  //           // d.instructor_name.toLowerCase().indexOf(val) !== -1 ||
-  //           (d.instructor_name?.toLowerCase() || "").includes(val) ||
-  //           d.scenariolevel.toLowerCase().indexOf(val) !== -1 ||
-  //           (typeof d.duration === "number" &&
-  //             d.duration.toString().indexOf(val.toLowerCase()) !== -1) ||
-  //           (d.name &&
-  //             d.name != null &&
-  //             d.name.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariocategory &&
-  //             d.scenariocategory != null &&
-  //             d.scenariocategory.toLowerCase().indexOf(val) !== -1) ||
-  //           (d.scenariosubcategory &&
-  //             d.scenariosubcategory != null &&
-  //             d.scenariosubcategory.toLowerCase().indexOf(val) !== -1) ||
-  //           !val
-  //         );
-  //       });
-  //     setGridData(temp);
-  //     setRowData(temp);
-  //   }
-  // };
-
   const onFilterChanged = (value) => {
     setQuickFilter(value);
     const val = value.toLowerCase();
@@ -479,8 +347,6 @@ const ManageScenarios = () => {
     if (!hasGetScenarioListSucc) return;
 
     let filtered = [...hasGetScenarioListSucc];
-
-    //  1. Filter by approval status first
     if (approvalFilter) {
       filtered = filtered.filter(
         (item) =>
@@ -488,15 +354,11 @@ const ManageScenarios = () => {
           item.approval_status.toLowerCase() === approvalFilter.toLowerCase()
       );
     }
-
-    //  2. Filter by scenario status (active/inactive)
     if (scenStatus === "true" || scenStatus === "false") {
       filtered = filtered.filter(
         (item) => item?.status?.toString() === scenStatus
       );
     }
-
-    //  3. Apply search text
     if (val) {
       filtered = filtered.filter((d) => {
         return (
@@ -611,7 +473,7 @@ const ManageScenarios = () => {
   const handleReturnView = (props) => {
     push({
       pathname: `/custom_scenarios_view/${props?.custom_scenariouuid}`,
-      query: { backView: approvalFilter }, // 👈 Pass the filter as a query param
+      query: { backView: approvalFilter },
     });
   };
 
@@ -624,7 +486,7 @@ const ManageScenarios = () => {
       const fileUrl = `${process.env.API_URL_FILEMANAGER}${props.instruction_file}`;
 
       if (action === "view") {
-        window.open(fileUrl, "_blank", "noopener,noreferrer"); // Opens in a new tab for viewing
+        window.open(fileUrl, "_blank", "noopener,noreferrer");
       } else if (action === "download") {
         const newWindow = window.open(fileUrl, "_blank");
         if (newWindow) {
@@ -653,7 +515,7 @@ const ManageScenarios = () => {
           handleEditView={handleReturnView}
           handleShowEditView={true}
           propsVal={props}
-          handleShowEdit={approvalStatus === "pending"} // ✅ show only if Pending
+          handleShowEdit={approvalStatus === "pending"}
         />
       );
     },
@@ -673,11 +535,6 @@ const ManageScenarios = () => {
       setColumnsPerRow(colarray[currentIndex + 1]);
     }
   };
-
-  const handleImportModal = () => {
-    setOpenImportModal(!openImportModal);
-  };
-
   const handleApprovalFilter = (status) => {
     setApprovalFilter(status);
 
@@ -801,7 +658,7 @@ const ManageScenarios = () => {
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                      style={{ height: "40em", width: "100%" }}
+                      style={{ height: "45em", width: "100%" }}
                     >
                       <AgGridReact
                         id="cat_grid"
@@ -836,13 +693,12 @@ const ManageScenarios = () => {
                         "itemitemitemitemitemitemitemitemitemitem",
                         item
                       )}
-                      {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
-                            ? "shadow-publish"
-                            : item.scenariostatus === "Draft"
-                              ? "shadow-draft"
-                              : ""
+                          ? "shadow-publish"
+                          : item.scenariostatus === "Draft"
+                            ? "shadow-draft"
+                            : ""
                           }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column text-center">
@@ -920,7 +776,7 @@ const ManageScenarios = () => {
                               onClick={() =>
                                 push({
                                   pathname: `/custom_scenarios_view/${item?.custom_scenariouuid}`,
-                                  query: { backView: approvalFilter }, // ✅ preserve current filter
+                                  query: { backView: approvalFilter }, //  preserve current filter
                                 })
                               }
                             >

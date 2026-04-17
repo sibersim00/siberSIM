@@ -21,7 +21,6 @@ import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
-// import ToggleButton from "../../../shared/data/masterButtons/toggleButton";
 import "../../../../shared/utils/i18n";
 import CustomComponentForm from "../../../../shared/data/customComponent/customComponentForm";
 import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
@@ -33,9 +32,7 @@ const ManageCustomComponent = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { push } = useRouter();
-  // const [compStatus, setCompStatus] = useState("pending");
   const statusFromQuery = router.query.status || "pending";
-  // const backStatus = query.status || "pending";
   const [compStatus, setCompStatus] = useState(statusFromQuery);
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
@@ -198,7 +195,7 @@ const ManageCustomComponent = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {
@@ -463,10 +460,6 @@ const ManageCustomComponent = () => {
                         value={compStatus}
                         size="small"
                         exclusive
-                        // onChange={(e) => {
-                        //   const value = e.target.value;
-                        //   setCompStatus(value);
-                        // }}
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) return;
@@ -508,7 +501,7 @@ const ManageCustomComponent = () => {
                 {view == "list" ? (
                   <div
                     className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                    style={{ height: "50em", width: "100%" }}
                   >
                     <AgGridReact
                       id="cat_grid"
@@ -596,12 +589,12 @@ const ManageCustomComponent = () => {
                                 placement="bottom"
                                 overlay={
                                   <Tooltip id="tooltip-vmid pointer">
-                                    VMID: {item.clone_vmid}
+                                    VMID: {item.vmid}
                                   </Tooltip>
                                 }
                               >
                                 <p className="pro-user-desc text-success mb-1 mt-1 pointer">
-                                  {item.clone_vmid}
+                                  {item.vmid}
                                 </p>
                               </OverlayTrigger>
                             </div>

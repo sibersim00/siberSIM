@@ -8,9 +8,9 @@ const initialState = {
   error: null,
   getLabsListDataresp: [],
   addLabResp: [],
-  editLabResp:[],
+  editLabResp: [],
   deleteLabResp: [],
-  viewNameResp: "card"
+  viewNameResp: "card",
 };
 
 const slice = createSlice({
@@ -20,17 +20,14 @@ const slice = createSlice({
     startLoading(state) {
       state.isLoading = true;
     },
-    hasGetLabsListSucc(state,action){
-      state.isLoading = false,
-      state.getLabsListDataresp = action.payload;
+    hasGetLabsListSucc(state, action) {
+      ((state.isLoading = false), (state.getLabsListDataresp = action.payload));
     },
-      hasAddLabSucc(state,action){
-      state.isLoading = false,
-      state.addLabResp = action.payload;
+    hasAddLabSucc(state, action) {
+      ((state.isLoading = false), (state.addLabResp = action.payload));
     },
-    hasEditLabSucc(state,action){
-      state.isLoading = false,
-      state.editLabResp = action.payload;
+    hasEditLabSucc(state, action) {
+      ((state.isLoading = false), (state.editLabResp = action.payload));
     },
     hasGetdeleteLabSucc(state, action) {
       state.isLoading = false;
@@ -58,26 +55,26 @@ export function getLabsList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-     const response = await axios.get(`${api.lab_sessions_get}`);
+      const response = await axios.get(`${api.lab_sessions_get}`);
       dispatch(slice.actions.hasGetLabsListSucc(response.data));
     } catch (error) {
-     dispatch(slice.actions.hasError(error));
+      dispatch(slice.actions.hasError(error));
     }
   };
 }
 
 export function clearHasError() {
-    return async () => {
-      dispatch(slice.actions.startLoading());
-      try {
-        dispatch(slice.actions.hasError([]));
-      } catch (error) {
-        dispatch(slice.actions.hasError(error));
-      }
-    };
-  }
-  
-  export function addLabDetails(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasError([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function addLabDetails(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
@@ -124,11 +121,10 @@ export function clearEditLabDetails() {
 }
 
 export function deleteLab(payload) {
-  
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.lab_session_delete}`,payload);
+      const response = await axios.post(`${api.lab_session_delete}`, payload);
       dispatch(slice.actions.hasGetdeleteLabSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -145,29 +141,27 @@ export function cleardeleteLab() {
       dispatch(slice.actions.hasError(error));
     }
   };
-} 
-
+}
 
 export function changeStatusLab(payload) {
   return async () => {
-     dispatch(slice.actions.startLoading());
-     try {
-       const response = await axios.post(`${api?.lab_change_status}`, payload);
-       dispatch(slice.actions.hasLabsStatusSucc(response.data));
-     } catch (error) {
-       dispatch(slice.actions.hasError(error));
-     }
-   };
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api?.lab_change_status}`, payload);
+      dispatch(slice.actions.hasLabsStatusSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
 }
 
 export function clearchangeStatusLab() {
- return async () => {
-   dispatch(slice.actions.startLoading());
-   try {
-     dispatch(slice.actions.hasLabsStatusSucc([]));
-   } catch (error) {
-     dispatch(slice.actions.hasError(error));
-   }
- };
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasLabsStatusSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
 }
-

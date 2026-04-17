@@ -257,26 +257,7 @@ const CustomerDashboard = () => {
                   </Card.Body>
                 </Card>
               </Col>
-
-              {/* <Col sm={12} md={6} lg={6} xl={4}>
-                <Card className="custom-card" style={{ cursor: "pointer" }}>
-                  <Card.Body>
-                    <div className="card-order">
-                      <label className="main-content-label mb-3 pt-1">
-                        Pending Customers
-                      </label>
-                      <h2 className="text-end card-item-icon card-icon">
-                        <i className="mdi mdi-account-multiple float-start text-primary"></i>
-                        <span className="font-weight-bold">
-                          {getCustomerDashboardResp?.counts?.pending_customers || 0}
-                        </span>
-                      </h2>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col> */}
-
-              <Col sm={12} md={6} lg={6} xl={4}>
+  <Col sm={12} md={6} lg={6} xl={4}>
                 <Card className="custom-card" style={{ cursor: "pointer" }}>
                   <Card.Body>
                     <div className="card-order">

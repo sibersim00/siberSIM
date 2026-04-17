@@ -98,8 +98,6 @@ const Normaluser = () => {
         title: { display: true, text: "SIMUser Login/Logout Stats" },
       },
     };
-
-    // return <Bar options={options} data={chartData}  height={400} />;
     return (
       <div style={{ height: "450px" }}>
         <Bar
@@ -202,7 +200,7 @@ const Normaluser = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -391,47 +389,6 @@ const Normaluser = () => {
                     >
                       <i className="fe fe-list"></i>
                     </Button>
-
-                    {/* Filter Buttons */}
-                    {/* <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("yesterday")}
-                    >
-                      Yesterday
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("mtd")}
-                    >
-                      MTD
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("ytd")}
-                    >
-                      YTD
-                    </Button>
-                    <Button
-                      variant="dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("custom")}
-                    >
-                      Custom
-                    </Button> */}
-
-                    {/* Date Picker */}
-                    {/* <div className="mx-1">
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                      />
-                    </div> */}
-
                     {/* Search Box */}
                     <div className="mx-1">
                       <input
@@ -475,8 +432,6 @@ const Normaluser = () => {
             </Card.Body>
           </Card>
         </Col>
-
-        {/* Optional Card View Below */}
         {view === "card" && (
           <Col md={12}>
             {/* Your Card View Content */}

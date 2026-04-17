@@ -165,6 +165,7 @@ const api = {
   scenario_get: "/scenario/list",
   scenario_custom_get: "/custom_scenarios/list_custom",
   scenario_change_status: "/scenario/status",
+  scenario_manipulation_status: "/scenario/manipulation-status",
   scenario_save: "/scenario/save",
   scenario_update: "/scenario/update",
   scenario_custom_update: "/custom_scenarios/update",
@@ -302,7 +303,7 @@ const api = {
   termination_Failed_Logs: "/vmconfig/get-operation-failed-logs",
   termination_Failed_Events: "/vmconfig/cleanup-operation-failed-events",
   termination_Failed_Events_logs: "/vmconfig/get-event-operation-failed-logs",
-  terminate_scenario :"/vmconfig/delete-scenario-usersession",
+  terminate_scenario: "/vmconfig/delete-scenario-usersession",
   //----------chatbox for instructor
   chatmessage_get: "/chatbox/getMessages",
   chat_save: "/chatbox/send",
@@ -384,7 +385,7 @@ const api = {
   // start and restart
   vm_start_scenario: "/usersession/start-scenario-learner",
   vm_restart_scenario: "/usersession/restart-scenario-learner",
-  
+
 
   //scenario tabs
   scenario_tab_list: "/scenarios_tabs/list",
@@ -421,8 +422,8 @@ const api = {
 
 
   // admin-instructor start-stop
-  admin_start_scenario:"/vmstart/set-scenario-start-config",
-  admin_complete_scenario:"/vmstart/update-complete-terminate",
+  admin_start_scenario: "/vmstart/set-scenario-start-config",
+  admin_complete_scenario: "/vmstart/update-complete-terminate",
   scenarios_save_start: "/vm_scenario_start/start-scenario",
   get_session_status: "/vm_scenario_start/get-session-status",
   scenarios_single: "/vm_scenario_start/get",
@@ -432,13 +433,37 @@ const api = {
   scenario_status_update: "/vm_scenario_start/update-session-status",
 
 
-// tab list
+  // tab list
   tab_status: "/scenario/tablist",
-  can_resume_admin:"/vm_scenario_start/can-resume",
-//----------license dashboard ----------
-get_license_dashboard_stats : "/licensedashboard/licensedashboardstats",
-//-- running componet list----------
-get_running_component : "/running_component/get"
+  can_resume_admin: "/vm_scenario_start/can-resume",
+  //----------license dashboard ----------
+  get_license_dashboard_stats: "/licensedashboard/licensedashboardstats",
+  //-- running componet list----------
+  // get_running_component: "/running_component/get",
+  get_running_learner: "/running_component/learners-component",
+  get_running_component: "/running_component/running-components",
+  stop_single_component: "/running_component/stop-single-component",
+  start_single_component: "/running_component/start-single-component",
+  restart_single_component: "/running_component/restart-single-component",
+  running_senario: "/running_component/running-scenarios",
+  running: "/running_component/running",
+  all_except_running: "/running_component/all-except-running",
+
+  //-----------Manipulation url----------
+  add_network: "vmconfig/add-vm-network",
+  modify_network: "vmconfig/modify-vm-network",
+  delete_network: "vmconfig/delete-vm-network",
+  save_dropped_component: "vmconfig/add-single-component",
+  delete_dropped_component: "vmconfig/delete-single-network",
+  modify_networkId: "vmconfig/modify-vm-network",
+  plug_networPort: "vmconfig/plug-single-network",
+  unplug_networkPort: "vmconfig/unplug-single-network",
+  connect_networkPort: "vmconfig/connect-single-network",
+  disconnect_networkPort: "vmconfig/disconnect-single-network",
+  change_edit_status: "/usersession/change-edit-status",
+  release_edit_lock: "/usersession/release-edit-lock",
+  delete_bridge: "/usersession/delete-bridge",
+
 };
 
 

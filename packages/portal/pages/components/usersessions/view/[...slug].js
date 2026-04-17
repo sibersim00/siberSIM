@@ -161,20 +161,9 @@ const UserSessionView = () => {
       setIsScenarioError400(true);
       errorData.errors && errorData.errors.length > 0
         ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
+          toast.error(
             <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
+              {data}
             </p>,
             {
               position: toast.POSITION.TOP_RIGHT,
@@ -182,6 +171,17 @@ const UserSessionView = () => {
               theme: "colored",
             }
           );
+        })
+        : toast.error(
+          <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+            {errorData?.message}
+          </p>,
+          {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          }
+        );
       dispatch(clearHasError());
     }
   }, [errorData]);
@@ -194,8 +194,8 @@ const UserSessionView = () => {
 
   const viewerUrl = pdfUrl
     ? `https://docs.google.com/gview?url=${encodeURIComponent(
-        pdfUrl
-      )}&embedded=true`
+      pdfUrl
+    )}&embedded=true`
     : null;
 
   const handleSentTerminationNotification = (data) => {
@@ -301,27 +301,26 @@ const UserSessionView = () => {
                             level === "Easy"
                               ? 1
                               : level === "Medium"
-                              ? 2
-                              : level === "Hard"
-                              ? 3
-                              : 0;
+                                ? 2
+                                : level === "Hard"
+                                  ? 3
+                                  : 0;
                           const colorClass =
                             level === "Easy"
                               ? "text-success"
                               : level === "Medium"
-                              ? "text-warning"
-                              : level === "Hard"
-                              ? "text-danger"
-                              : "text-muted";
+                                ? "text-warning"
+                                : level === "Hard"
+                                  ? "text-danger"
+                                  : "text-muted";
 
                           return [1, 2, 3].map((star) => (
                             <i
                               key={star}
-                              className={`me-1 ${
-                                star <= filledStars
+                              className={`me-1 ${star <= filledStars
                                   ? `fas fa-star ${colorClass}`
                                   : "far fa-star text-muted"
-                              }`}
+                                }`}
                               style={{ fontSize: "18px" }}
                             ></i>
                           ));
@@ -624,27 +623,26 @@ const UserSessionView = () => {
                                               level === "Easy"
                                                 ? 1
                                                 : level === "Medium"
-                                                ? 2
-                                                : level === "Hard"
-                                                ? 3
-                                                : 0;
+                                                  ? 2
+                                                  : level === "Hard"
+                                                    ? 3
+                                                    : 0;
                                             const colorClass =
                                               level === "Easy"
                                                 ? "text-success"
                                                 : level === "Medium"
-                                                ? "text-warning"
-                                                : level === "Hard"
-                                                ? "text-danger"
-                                                : "text-muted";
+                                                  ? "text-warning"
+                                                  : level === "Hard"
+                                                    ? "text-danger"
+                                                    : "text-muted";
 
                                             return [1, 2, 3].map((star) => (
                                               <i
                                                 key={star}
-                                                className={`me-1 ${
-                                                  star <= filledStars
+                                                className={`me-1 ${star <= filledStars
                                                     ? `fas fa-star ${colorClass}`
                                                     : "far fa-star text-muted"
-                                                }`}
+                                                  }`}
                                                 style={{ fontSize: "18px" }}
                                               ></i>
                                             ));
@@ -763,10 +761,11 @@ const UserSessionView = () => {
                                     scenarioId={rowId}
                                     scenariodiagram={
                                       rowValues?.scenariodiagram &&
-                                      rowValues.scenariodiagram.trim() !== ""
+                                        rowValues.scenariodiagram.trim() !== ""
                                         ? rowValues.scenariodiagram
                                         : ""
                                     }
+                                    isEditFlag={rowValues?.isedit}
                                   />
                                 </div>
                               </Tab.Pane>
@@ -774,7 +773,7 @@ const UserSessionView = () => {
                               <Tab.Pane eventKey="logs">
                                 <div className="p-3">
                                   {hasGetLogsListData &&
-                                  hasGetLogsListData.length > 0 ? (
+                                    hasGetLogsListData.length > 0 ? (
                                     <div
                                       style={{
                                         maxHeight: "600px",
@@ -805,7 +804,7 @@ const UserSessionView = () => {
 
                                               const statusTextClass =
                                                 badgeTextColorMap[
-                                                  statusColor
+                                                statusColor
                                                 ] || "text-dark";
                                               const typeTextClass =
                                                 badgeTextColorMap[typeColor] ||

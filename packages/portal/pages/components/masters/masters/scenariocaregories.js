@@ -211,7 +211,7 @@ const ScenarioCategory = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {

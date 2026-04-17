@@ -38,7 +38,7 @@ const FileUploader = dynamic(
   () => {
     return import("../../data/common/fileuploads/fileuploader");
   },
-  { ssr: false }
+  { ssr: false },
 );
 import { FilePath } from "../../data/common/fileuploads/filepath";
 
@@ -56,7 +56,7 @@ const ComponentForm = (props) => {
   const ismulti = false;
   const [heading, setHeading] = useState("Add");
   const [rowValues, setRowValues] = useState({});
-  const [vmid_name, setVmidName] = useState('');
+  const [vmid_name, setVmidName] = useState("");
   const isUpdate = !!rowValues?.componentid;
   const { setView, rowId, oneClick, handleOneClick, mode, backView } = props;
   const { t } = useTranslation();
@@ -80,68 +80,66 @@ const ComponentForm = (props) => {
   //       }
   //     : customStyles;
   // };
-  
-    const getSelectStyles = (fieldName) => {
-  const error =
-    !formValidation.values[fieldName] &&
-    formValidation.errors[fieldName] &&
-    formValidation.touched[fieldName];
 
-  return {
-    // ...customStyles,
-    // control: (styles, state) => ({
-    //   ...styles,
-    //   borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
-    //   boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
-    //   backgroundColor: "var(--dark-bg-color)", // dark background
-    // }),
-    // singleValue: (provided) => ({
-    //   ...provided,
-    //   color: "var(--light-text-color)", // selected value text
-    // }),
-    // input: (provided) => ({
-    //   ...provided,
-    //   color: "var(--light-text-color)", // text while typing
-    // }),
+  const getSelectStyles = (fieldName) => {
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
+
+    return {
+      // ...customStyles,
+      // control: (styles, state) => ({
+      //   ...styles,
+      //   borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+      //   boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+      //   backgroundColor: "var(--dark-bg-color)", // dark background
+      // }),
+      // singleValue: (provided) => ({
+      //   ...provided,
+      //   color: "var(--light-text-color)", // selected value text
+      // }),
+      // input: (provided) => ({
+      //   ...provided,
+      //   color: "var(--light-text-color)", // text while typing
+      // }),
       control: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--dark-bg-color)",
-      borderColor: "#ced4da",
-      minHeight: "38px",
-    }),
-    multiValue: (styles) => ({
-      ...styles,
-      backgroundColor: "var(--primary-bg-color)",
-    }),
-    multiValueLabel: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    multiValueRemove: (styles) => ({
-      ...styles,
-      color: "#fff",
-      ":hover": {
-        backgroundColor: "#EB5757",
-        color: "white",
-      },
-    }),
-    input: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    singleValue: (styles) => ({
-      ...styles,
-      color: "var(--light-text-color)",
-    }),
-    placeholder: (styles) => ({
-      ...styles,
-      color: "#aaa",
-    }),
+        ...styles,
+        backgroundColor: "var(--dark-bg-color)",
+        borderColor: "#ced4da",
+        minHeight: "38px",
+      }),
+      multiValue: (styles) => ({
+        ...styles,
+        backgroundColor: "var(--primary-bg-color)",
+      }),
+      multiValueLabel: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      multiValueRemove: (styles) => ({
+        ...styles,
+        color: "#fff",
+        ":hover": {
+          backgroundColor: "#EB5757",
+          color: "white",
+        },
+      }),
+      input: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      singleValue: (styles) => ({
+        ...styles,
+        color: "var(--light-text-color)",
+      }),
+      placeholder: (styles) => ({
+        ...styles,
+        color: "#aaa",
+      }),
+    };
   };
-};
-  
-  
-  
+
   const noEmojiTest = (value) => {
     if (typeof value !== "string") return true;
     return !emojiRegex.test(value);
@@ -153,14 +151,14 @@ const ComponentForm = (props) => {
       boxShadow: isDisabled
         ? null
         : isFocused
-        ? "0 0 0 0.001rem #00d683"
-        : null,
+          ? "0 0 0 0.001rem #00d683"
+          : null,
       "&:hover": {
         borderColor: isDisabled
           ? "#e8e8f7"
           : isFocused
-          ? "#00d683"
-          : styles.borderColor,
+            ? "#00d683"
+            : styles.borderColor,
       },
     }),
   };
@@ -238,7 +236,7 @@ const ComponentForm = (props) => {
       setSubCatDropDownData(hasGetSubCatbyIdSucc);
       setFullVmList(hasGetSubCatbyIdSucc);
       const selectedsubcategory = hasGetSubCatbyIdSucc.find(
-        (obj) => obj?.componentname === rowValues?.componentname
+        (obj) => obj?.componentname === rowValues?.componentname,
       );
     }
   }, [hasGetSubCatbyIdSucc]);
@@ -252,12 +250,12 @@ const ComponentForm = (props) => {
       });
       let filesStr = selectedFiles.join(",");
       formValidation.setFieldValue(name, filesStr ? filesStr : "");
-      setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
+      // setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
     } else {
       formValidation.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
-      setUploadedFile(
-        files && files.length > 0 && files[0]?.file ? files[0]?.file : ""
-      );
+      // setUploadedFile(
+      //   files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
+      // );
     }
   };
 
@@ -269,7 +267,7 @@ const ComponentForm = (props) => {
       }));
       setCatDropDownData(temp);
       const selectedcategory = temp.find(
-        (obj) => obj?.componentcategoryid === rowValues?.componentcategoryid
+        (obj) => obj?.componentcategoryid === rowValues?.componentcategoryid,
       );
     }
   }, [hasgetCatListSucc]);
@@ -284,7 +282,7 @@ const ComponentForm = (props) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       setView(backView);
       dispatch(getComponentList());
@@ -302,7 +300,7 @@ const ComponentForm = (props) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       setView(backView);
@@ -329,7 +327,7 @@ const ComponentForm = (props) => {
     initialValues: {
       componentcategoryid:
         catDropDownData.find(
-          (obj) => obj?.componentcategoryid === rowValues?.componentcategoryid
+          (obj) => obj?.componentcategoryid === rowValues?.componentcategoryid,
         ) || "",
       componenttype: (() => {
         return (
@@ -368,7 +366,7 @@ const ComponentForm = (props) => {
         .test(
           "no-leading-trailing-spaces",
           "No leading or trailing spaces allowed",
-          (value) => !/^\s|\s$/.test(value || "")
+          (value) => !/^\s|\s$/.test(value || ""),
         )
         .test("no-emoji", "Emojis are not allowed", noEmojiTest),
       duration: Yup.number()
@@ -407,10 +405,10 @@ const ComponentForm = (props) => {
             .test(
               "no-leading-trailing-spaces",
               "No leading or trailing spaces allowed",
-              (value) => !/^\s|\s$/.test(value || "")
+              (value) => !/^\s|\s$/.test(value || ""),
             )
             .test("no-emoji", "Emojis are not allowed", noEmojiTest),
-        })
+        }),
       ),
     }),
     onSubmit: (data, action) => {
@@ -478,7 +476,7 @@ const ComponentForm = (props) => {
   }, [rowValues]);
 
   const [formFields, setFormFields] = useState(
-    rowValues?.checkilistdata || [{ checklistname: "", checklistid: "" }]
+    rowValues?.checkilistdata || [{ checklistname: "", checklistid: "" }],
   );
 
   const handleAddField = () => {
@@ -490,7 +488,7 @@ const ComponentForm = (props) => {
   };
   const handleRemoveField = (index) => {
     const checklist_details = formValidation.values.checklist.filter(
-      (_, i) => i !== index
+      (_, i) => i !== index,
     );
     formValidation.setFieldValue("checklist", checklist_details);
   };
@@ -515,7 +513,7 @@ const ComponentForm = (props) => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         return;
       }
@@ -569,7 +567,7 @@ const ComponentForm = (props) => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
       } else {
         toast.error(
@@ -580,7 +578,7 @@ const ComponentForm = (props) => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
       }
       setScanComplete(true);
@@ -597,8 +595,15 @@ const ComponentForm = (props) => {
     }
   }, [mode, rowValues]);
 
-  console.log("formValidation.values.componentimage", formValidation.values.componentimage);
-
+  console.log(
+    "formValidation.values.componentimage",
+    formValidation.values.componentimage,
+  );
+// const memoizedComponentImages = React.useMemo(() => {
+//   const value = formValidation.values.componentimage || "";
+//   if (!value) return [];
+//   return ismulti ? value.split(",") : [value];
+// }, [formValidation.values.componentimage, ismulti]);
   return (
     <>
       <Row className="row-sm mg-t-10">
@@ -663,7 +668,7 @@ const ComponentForm = (props) => {
                                     (option) =>
                                       option.componenttype ===
                                       formValidation.values.componenttype
-                                        ?.componenttype
+                                        ?.componenttype,
                                   ) || null
                                 }
                                 options={Type}
@@ -673,19 +678,19 @@ const ComponentForm = (props) => {
                                 onChange={(e) => {
                                   formValidation.setFieldValue(
                                     "componenttype",
-                                    e
+                                    e,
                                   );
                                   formValidation.setFieldValue(
                                     "componentname",
-                                    null
+                                    null,
                                   );
                                   formValidation.setFieldValue(
                                     "componentidentification",
-                                    ""
+                                    "",
                                   );
                                   formValidation.setFieldValue(
                                     "ComponentIdentificationVMName",
-                                    ""
+                                    "",
                                   );
                                   setSelectedVM(null);
                                   handelGetSubCat(e);
@@ -745,20 +750,20 @@ const ComponentForm = (props) => {
                                     if (isUpdate) return;
                                     formValidation.setFieldValue(
                                       "componentname",
-                                      e
+                                      e,
                                     );
                                     formValidation.setFieldValue(
                                       "componentidentification",
-                                      e.componentname
+                                      e.componentname,
                                     );
 
                                     const namePart =
                                       e.subcategoryname?.split(" - ")[1] || "";
                                     formValidation.setFieldValue(
                                       "ComponentIdentificationVMName",
-                                      namePart
+                                      namePart,
                                     );
-                                    setVmidName(namePart)
+                                    setVmidName(namePart);
 
                                     const payload = {
                                       vmType:
@@ -768,19 +773,19 @@ const ComponentForm = (props) => {
 
                                     try {
                                       const response = await dispatch(
-                                        getVMDetail(payload)
+                                        getVMDetail(payload),
                                       );
                                       const vmData = response?.data || {};
                                       const config = vmData.data || {};
 
                                       const networkPorts = Object.entries(
-                                        config
+                                        config,
                                       )
                                         .filter(([key]) =>
-                                          key.startsWith("net")
+                                          key.startsWith("net"),
                                         )
                                         .map(
-                                          ([key, value]) => `${key} - ${value}`
+                                          ([key, value]) => `${key} - ${value}`,
                                         );
 
                                       const vmDetail = {
@@ -802,28 +807,28 @@ const ComponentForm = (props) => {
                                       setSelectedVM(vmDetail);
                                       formValidation.setFieldValue(
                                         "cores",
-                                        vmDetail.cores
+                                        vmDetail.cores,
                                       );
                                       formValidation.setFieldValue(
                                         "memory",
-                                        vmDetail.memory
+                                        vmDetail.memory,
                                       );
                                       formValidation.setFieldValue(
                                         "storage",
-                                        vmDetail.storage
+                                        vmDetail.storage,
                                       );
                                       formValidation.setFieldValue(
                                         "network_ports",
-                                        vmDetail.network_ports
+                                        vmDetail.network_ports,
                                       );
                                       formValidation.setFieldValue(
                                         "proxmox_json",
-                                        JSON.stringify(config)
+                                        JSON.stringify(config),
                                       );
                                     } catch (err) {
                                       console.error(
                                         "Failed to fetch VM details:",
-                                        err
+                                        err,
                                       );
                                     }
                                   }}
@@ -867,7 +872,7 @@ const ComponentForm = (props) => {
                                 onChange={(e) => {
                                   formValidation.setFieldValue(
                                     "componentcategoryid",
-                                    e
+                                    e,
                                   );
                                   // handelGetSubCat(e.componentcategoryid);
                                 }}
@@ -978,7 +983,7 @@ const ComponentForm = (props) => {
                                 <div className="">
                                   <Form.Label>
                                     {t(
-                                      "component_sub_categories.forms.label.image_url"
+                                      "component_sub_categories.forms.label.image_url",
                                     )}
                                   </Form.Label>
                                   {rowValues?.id !== 0 && (
@@ -1012,11 +1017,16 @@ const ComponentForm = (props) => {
                                       "image/jpeg",
                                     ]}
                                     handleUpload={handleUpload}
-                                     fetchfiles={
-                                                          ismulti
-                                                            ? (formValidation.values.componentimage || "").split(",")
-                                                            : [formValidation.values.componentimage]
-                                                        }
+                                    fetchfiles={
+                                      ismulti
+                                        ? (
+                                            formValidation.values
+                                              .componentimage || ""
+                                          ).split(",")
+                                        : [formValidation.values.componentimage]
+                                    }
+                                                        // fetchfiles={memoizedComponentImages}
+
                                   />
                                   <Form.Control.Feedback type="invalid">
                                     {formValidation.errors.componentimage}
@@ -1081,7 +1091,7 @@ const ComponentForm = (props) => {
                                               .map((line, i) => {
                                                 const match =
                                                   line.match(
-                                                    /^(net\d+)( - .*)$/
+                                                    /^(net\d+)( - .*)$/,
                                                   );
                                                 if (match) {
                                                   const [, iface, details] =
@@ -1110,7 +1120,7 @@ const ComponentForm = (props) => {
                                           ? (() => {
                                               const match =
                                                 selectedVM.storage.match(
-                                                  /size=(\d+)([MG])/i
+                                                  /size=(\d+)([MG])/i,
                                                 );
                                               return match
                                                 ? `${

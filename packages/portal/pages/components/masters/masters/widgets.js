@@ -15,8 +15,6 @@ import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import * as XLSX from "xlsx";
 import FormWidgets from "../../../../shared/data/mastersModal/widgetsForm";
-// import ViewFaqs from "../../../../shared/data/mastersModal/faqsView";
-
 import {
   clearHasError,
   getwidgetList,
@@ -220,7 +218,7 @@ const Widgets = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 20, // use state variable for page size
   };
 
   const onGridReady = (params) => {
@@ -527,8 +525,6 @@ const Widgets = () => {
           propsVal={props}
           handleShowEdit={true}
           handleDelete={handleDelete}
-          //   handleEditView={handleView}
-          //   handleShowEditView={true}
         />
       );
     },
@@ -576,20 +572,6 @@ const Widgets = () => {
   const handleImportModal = () => {
     setOpenImportModal(!openImportModal);
   };
-
-  //   const getTypeBadgeColor = (type) => {
-  //   switch ((type || "").toLowerCase()) {
-  //     case "learner":
-  //       return "bg-success text-white";
-  //     case "instructor":
-  //       return "bg-warning text-white";
-  //     case "admin":
-  //       return "bg-info text-white";
-  //     default:
-  //       return "bg-secondary text-white";
-  //   }
-  // };
-
   return (
     <>
       <Seo title="Widgets" />
@@ -661,18 +643,7 @@ const Widgets = () => {
                         Inactive
                       </CustomToggleButton>
                     </ToggleButtonGroup>
-                    &nbsp;&nbsp;
-                    {/* <Button
-                      type="button"
-                      variant="outline-warning"
-                      onClick={() => {
-                        setShowListImport(true);
-                        handleImportModal();
-                      }}
-                    >
-                      <i className="fa fa-file-excel-o"></i> Import
-                    </Button> */}
-                    &nbsp;
+            
                     <Button
                       type="button"
                       variant="outline-info"
@@ -745,22 +716,6 @@ const Widgets = () => {
                                     : item.widget_name}{" "}
                                 </a>
                               </h5>
-                              {/* <h5
-                                className="pro-user-username text-success mt-2 mb-0 pointer"
-                                onClick={() => {
-                                  const url = item.widget_url?.startsWith(
-                                    "http"
-                                  )
-                                    ? item.widget_url
-                                    : `https://${item.widget_url}`;
-                                  window.open(url, "_blank");
-                                }}
-                              >
-                                <a>{item.widget_url} </a>
-                              </h5>
-                              <h5 className="pro-user-username text-warning mt-2 mb-0 pointer">
-                                <a>{item.order} </a>
-                              </h5> */}
                             </div>
                             <div className="contact-info mb-0 text-center">
                               <div

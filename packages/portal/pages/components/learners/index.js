@@ -244,7 +244,7 @@ const ManageLearner = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
 
   const onGridReady = (params) => {
@@ -433,9 +433,6 @@ const ManageLearner = () => {
               src={props?.data?.profile}
               className="ht-35 wd-35 pointer rounded-circle"
               alt="logo"
-            // onClick={() =>
-            //   openImageViewer(props?.data?.index, props?.data?.profile)
-            // }
             />
           </OverlayTrigger>
         </>
@@ -623,7 +620,7 @@ const ManageLearner = () => {
               {view == "list" ? (
                 <div
                   className="ag-theme-alpine mg-t-20"
-                  style={{ height: "40.2em", width: "100%" }}
+                  style={{ height: "40em", width: "100%" }}
                 >
                   <AgGridReact
                     id="staff_grid"

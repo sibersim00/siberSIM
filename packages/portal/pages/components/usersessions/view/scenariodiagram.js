@@ -7,15 +7,55 @@ import {
   useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useRouter } from "next/router";
+import { useDispatch, useSelector } from "react-redux";
+import { toast, ToastContainer } from "react-toastify";
+
 import EditableEdge from '../../../../shared/data/usersessions/EditableEdge';
+import {
+  changeEditStatus,
+}from "../../../../shared/redux/slices/usersession/usersessionManage";
 const resolveImageUrl = (url) => {
   if (!url) return '';
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-const ImageNode = ({  data, isConnectable }) => {
-  const networkPorts = data.networkport || [];
-  const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
+const ImageNode = ({ data, isConnectable }) => {
+  // const networkPorts = data.networkport || [];
+  // const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
+  let portKeys = [];
+
+  if (Array.isArray(data.networkport)) {
+    portKeys = data.networkport
+      .flatMap((obj) =>
+        Object.entries(obj).map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key, // net0 / net1
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        }),
+      )
+      .sort((a, b) => a.key.localeCompare(b.key));
+  } else if (
+    typeof data.networkport === "object" &&
+    data.networkport !== null
+  ) {
+    portKeys = Object.entries(data.networkport)
+      .map(([key, value]) => {
+        const tagMatch = value.match(/tag=(\d+)/);
+        return {
+          key,
+          label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+        };
+      })
+      .sort((a, b) => a.key.localeCompare(b.key));
+  } else {
+    portKeys = [];
+  }
+
+
+
   const totalPorts = portKeys.length;
   const sides = ['Right', 'Bottom', 'Left', 'Top'];
   const portsPerSide = Math.ceil(totalPorts / 4);
@@ -23,19 +63,19 @@ const ImageNode = ({  data, isConnectable }) => {
   const baseSize = 90;
   const portSpacing = 15;
   const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
-const handleClick = (dataobj) => {
-  const vmid = dataobj?.vmid;
-  const vmType = dataobj?.vmType;
-  if (!vmid || !vmType) return;
+  const handleClick = (dataobj) => {
+    const vmid = dataobj?.vmid;
+    const vmType = dataobj?.vmType;
+    if (!vmid || !vmType) return;
 
-  const rawLabel = dataobj?.label || "";
-  const namePart = rawLabel.split("-")[1]?.trim() || "";
-  const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
-  window.open(
-    `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
-    "_blank"
-  );
-};
+    const rawLabel = dataobj?.label || "";
+    const namePart = rawLabel.split("-")[1]?.trim() || "";
+    const cleanName = namePart.replace(/\s+/g, "").toLowerCase();
+    window.open(
+      `${process.env.BASE_PATH}vnc_view/${vmType}/${vmid}/${cleanName}`,
+      "_blank"
+    );
+  };
 
 
   return (
@@ -73,7 +113,7 @@ const handleClick = (dataobj) => {
           }}
         />
 
-        {portKeys.map((portKey, index) => {
+        {portKeys.map((port, index) => {
           const sideIndex = Math.floor(index / portsPerSide);
           const side = sides[sideIndex];
           const positionIndex = index % portsPerSide;
@@ -114,7 +154,7 @@ const handleClick = (dataobj) => {
               break;
             case 'Right':
               handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -60, top: `60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, right: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
               break;
             case 'Bottom':
               handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
@@ -122,29 +162,29 @@ const handleClick = (dataobj) => {
               break;
             case 'Left':
               handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -60, top: `$60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, left: -50, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
               break;
             default:
               break;
           }
 
           return (
-            <React.Fragment key={portKey}>
+            <React.Fragment key={port.key}>
               <Handle
                 type="source"
                 position={Position[side]}
-                id={`${portKey}-source`}
+                id={`${port.key}-source`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
               <Handle
                 type="target"
                 position={Position[side]}
-                id={`${portKey}-target`}
+                id={`${port.key}-target`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
-              <div style={labelPosition}>{portKey}</div>
+              <div style={labelPosition}>{port.label}</div>
             </React.Fragment>
           );
         })}
@@ -188,10 +228,18 @@ const handleClick = (dataobj) => {
 };
 
 
-const ScenarioDiagram = ({ scenariodiagram }) => {
+const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
+  const { getSingleScenariosSucc, errorData } = useSelector((state) => ({
+    getSingleScenariosSucc: state?.usersessionManage?.singleUserSession?.data,
+ 
+    errorData: state?.usersessionManage?.error,
+  }));
+  const dispatch = useDispatch();
+  console.log("getSingleScenariosSucc", getSingleScenariosSucc)
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!scenariodiagram) return;
@@ -219,34 +267,85 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
     }
   }, [scenariodiagram]);
 
-useEffect(() => {
-  if (!flowRef.current || elements.nodes.length === 0) return;
-  const id = requestAnimationFrame(() => {
-    flowRef.current.fitView({ padding: 0.3 });
-  });
+  useEffect(() => {
+    if (!flowRef.current || elements.nodes.length === 0) return;
+    const id = requestAnimationFrame(() => {
+      flowRef.current.fitView({ padding: 0.3 });
+    });
 
-  return () => cancelAnimationFrame(id);
-}, [elements.nodes]); // Only run when nodes change
+    return () => cancelAnimationFrame(id);
+  }, [elements.nodes]); // Only run when nodes change
   const nodeTypes = {
     imageNode: (props) => <ImageNode {...props} />,
   };
-    const EditableEdgeWrapper = (edgeProps) => {
-      const { getEdges, setEdges } = useReactFlow();
-      const edges = getEdges(); // all current edges
-      return (
-        <EditableEdge
-          {...edgeProps}
-          allEdges={edges}
-          setEdges={setEdges}
-        />
-      );
-    };
+  const EditableEdgeWrapper = (edgeProps) => {
+    const { getEdges, setEdges } = useReactFlow();
+    const edges = getEdges(); // all current edges
+    return (
+      <EditableEdge
+        {...edgeProps}
+        allEdges={edges}
+        setEdges={setEdges}
+      />
+    );
+  };
   const edgeTypes = { custom: EditableEdgeWrapper };
   return (
     <div
       ref={reactFlowWrapper}
       style={{ width: '100%', height: '80vh', borderRadius: 8 }}
     >
+    {getSingleScenariosSucc?.[0]?.status !== "Pause" && (
+          <button
+            onClick={async () => {
+              try {
+                const vmrequestid =
+                  getSingleScenariosSucc?.[0]?.vmrequestid;
+                  console.log("vmrequestidvmrequestid",vmrequestid);
+                if (!vmrequestid) return;
+                // call API
+                await dispatch(
+                  changeEditStatus({ vmrequestid })
+                );
+
+                //  only runs if 200
+                router.push(`/scenarios_edit/${scenarioId}`);
+
+              } catch (error) {
+                console.log("errorerrorerrorerror",error);
+                
+                //  LOCK CASE (409)
+                if (error?.statusCode === 400) {
+                  toast.error(
+                    error?.message ||
+                    "You cannot edit this scenario",
+                    {
+                      position: toast.POSITION.TOP_RIGHT,
+                      theme: "colored",
+                    }
+                  );
+                }
+                // stop flow
+                return;
+              }
+            }}
+            title="Edit"
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              backgroundColor: "#292942",
+              color: "#4d4c4c",
+              border: "none",
+              padding: "4px 4px",
+              borderRadius: 15,
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            ✏️
+          </button>
+         )} 
       {elements.nodes.length > 0 && (
         <ReactFlow
           nodes={elements.nodes}

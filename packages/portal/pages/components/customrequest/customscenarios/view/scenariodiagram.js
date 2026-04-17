@@ -28,14 +28,41 @@ const resolveImageUrl = (url) => {
 
   }
 };
-
-
 const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-  const networkPorts = data.networkport || [];
-  const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
-  //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
-  const totalPorts = portKeys.length;
+  // const networkPorts = data.networkport || [];
+  // const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
+      let portKeys = [];
 
+    if (Array.isArray(data.networkport)) {
+      portKeys = data.networkport
+        .flatMap((obj) =>
+          Object.entries(obj).map(([key, value]) => {
+            const tagMatch = value.match(/tag=(\d+)/);
+            return {
+              key, // net0 / net1
+              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+            };
+          }),
+        )
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else if (
+      typeof data.networkport === "object" &&
+      data.networkport !== null
+    ) {
+      portKeys = Object.entries(data.networkport)
+        .map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key,
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else {
+      portKeys = [];
+    }
+
+  const totalPorts = portKeys.length;
   const sides = ['Right', 'Bottom', 'Left', 'Top'];
   const portsPerSide = Math.ceil(totalPorts / 4);
   const spacingRatio = 100 / (portsPerSide + 1);
@@ -49,7 +76,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
       <div
         style={{
           width: nodeSize,
-          height: nodeSize, 
+          height: nodeSize,
           position: 'relative',
           borderRadius: '8px',
           border: '2px solid #ccc',
@@ -60,29 +87,6 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
         }}
       >
-        {/* Delete Button */}
-        {/* <button
-          onClick={() => deleteNode(id)}
-          style={{
-            position: 'absolute',
-            top: 2,
-            right: 2,
-            color: 'black',
-            border: 'none',
-            borderRadius: '50%',
-            width: 14,
-            height: 14,
-            fontSize: 10,
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            background: '#fff',
-            zIndex: 2,
-          }}
-        >
-          ×
-        </button> */}
-
-        {/* Image */}
         <div
           style={{
             width: nodeSize * 0.6,
@@ -93,22 +97,16 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
             backgroundRepeat: 'no-repeat',
           }}
         />
-
-        {/* Ports */}
-        {portKeys.map((portKey, index) => {
+        {portKeys.map((port, index) => {
           const sideIndex = Math.floor(index / portsPerSide);
           const side = sides[sideIndex];
           const positionIndex = index % portsPerSide;
           let offsetPercent;
-
-          // Reverse position for specific sides
           if (side === 'Right' || side === 'Top') {
             offsetPercent = (positionIndex + 1) * spacingRatio;
           } else {
-            // Reverse direction for Bottom (right-to-left) and Left (bottom-to-top)
             offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
           }
-
           const baseHandleStyle = {
             position: 'absolute',
             width: 10,
@@ -138,7 +136,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
               break;
             case 'Right':
               handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -60, top: `60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, right: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             case 'Bottom':
               handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
@@ -146,35 +144,33 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
               break;
             case 'Left':
               handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -60, top: `60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, left: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             default:
               break;
           }
 
           return (
-            <React.Fragment key={portKey}>
+            <React.Fragment key={port.key}>
               <Handle
                 type="source"
                 position={Position[side]}
-                id={`${portKey}-source`}
+                id={`${port.key}-source`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
               <Handle
                 type="target"
                 position={Position[side]}
-                id={`${portKey}-target`}
+                id={`${port.key}-target`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
-              <div style={labelPosition}>{portKey}</div>
+              <div style={labelPosition}>{port.label}</div>
             </React.Fragment>
           );
         })}
       </div>
-
-      {/* Node Label */}
       <div
         style={{
           marginTop: 18,
@@ -192,12 +188,11 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
     </div>
   );
 };
-// Node types map
 const nodeTypes = {
   imageNode: ImageNode,
 };
 
-const ScenarioDiagram = ({ scenarioId, scenariodiagram , rowValues}) => {
+const ScenarioDiagram = ({ scenariodiagram }) => {
   const dispatch = useDispatch();
   const {
     getScenarioFlowchart
@@ -207,43 +202,35 @@ const ScenarioDiagram = ({ scenarioId, scenariodiagram , rowValues}) => {
       errorData: state && state.commonMaster && state.commonMaster.error,
     };
   });
-
-
-  // States to track selected values
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedComponent, setSelectedComponent] = useState(null);
-  const [numLans, setNumLans] = useState(1); // Default value 1
-
-
   const [elements, setelements] = useState({ nodes: [], edges: [] });
 
-useEffect(() => {
-  if (scenariodiagram && scenariodiagram !== '') {
-    try {
-      const cleanData = scenariodiagram.replace('flowchartData ', '');
-      const parsedData = JSON.parse(cleanData);
+  useEffect(() => {
+    if (scenariodiagram && scenariodiagram !== '') {
+      try {
+        const cleanData = scenariodiagram.replace('flowchartData ', '');
+        const parsedData = JSON.parse(cleanData);
 
-      // Your backend base URL where images are served from
-      const backendBaseUrl = process.env.API_URL_FILEMANAGER;
+        // Your backend base URL where images are served from
+        const backendBaseUrl = process.env.API_URL_FILEMANAGER;
 
-      const updatedNodes = parsedData.nodes.map(node => {
-        const imageUrl = node.data.image;
-        if (imageUrl && imageUrl.startsWith('/uploads')) {
-          // Prefix with backend URL + /jobapi + image path
-          node.data.image = `${backendBaseUrl}${imageUrl}`;
-        }
-        return node;
-      });
+        const updatedNodes = parsedData.nodes.map(node => {
+          const imageUrl = node.data.image;
+          if (imageUrl && imageUrl.startsWith('/uploads')) {
+            // Prefix with backend URL + /jobapi + image path
+            node.data.image = `${backendBaseUrl}${imageUrl}`;
+          }
+          return node;
+        });
 
-      setelements({
-        nodes: updatedNodes,
-        edges: parsedData.edges,
-      });
-    } catch (err) {
-      console.error('Failed to parse scenariodiagram:', err);
+        setelements({
+          nodes: updatedNodes,
+          edges: parsedData.edges,
+        });
+      } catch (err) {
+        console.error('Failed to parse scenariodiagram:', err);
+      }
     }
-  }
-}, [scenariodiagram]);
+  }, [scenariodiagram]);
   const FlowViewportController = ({ nodes }) => {
     const { setCenter } = useReactFlow();
     useEffect(() => {
@@ -279,7 +266,6 @@ useEffect(() => {
         <Col md={12}>
           <Card className="custom-card">
             <Card.Body>
-              {/* <div style={{ width: '100%', height: '1000px' }}> */}
               <div
                 className="reactflow-wrapper"
                 ref={reactFlowWrapper}
@@ -296,7 +282,7 @@ useEffect(() => {
                     onInit={(reactFlowInstance) => {
                       setTimeout(() => {
                         reactFlowInstance.fitView();
-                      }, 100); // wait for layout
+                      }, 100); 
                     }}
                     zoomOnDoubleClick={false}
                     defaultViewport={{ x: 0, y: 0, zoom: 0.6 }} edgeTypes={edgeTypes}
@@ -312,13 +298,6 @@ useEffect(() => {
       </Row>
     </>
   );
-};
-const invisibleHandleStyle = {
-  width: 10,
-  height: 10,
-  background: '#2544ff',
-  border: '1px solid white',
-  borderRadius: '50%',
 };
 
 ScenarioDiagram.layout = "Contentlayout";

@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-} from "react-bootstrap";
+import { Container, Row, Col, Card } from "react-bootstrap";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import {
   getDashboardListData,
@@ -24,24 +19,19 @@ const Dashboard = () => {
   const [showLicensePopup, setShowLicensePopup] = useState(false);
   const [licenseInfo, setLicenseInfo] = useState({
     daysLeft: null,
-    expiryDate: '',
-    companyName: ''
+    expiryDate: "",
+    companyName: "",
   });
 
-  const {
-    geDashboardListData,
-    getUserDataFromLocal,
-    hasHandleManageSuc,
-  } = useSelector((state) => ({
-    geDashboardListData: state?.dashboarData?.getDashboardData?.data,
-    hasHandleManageSuc: state?.dashboarData?.viewNameResp,
-    getUserDataFromLocal:
-      state && state.localData && state.localData.getLocalData,
-  }));
+  const { geDashboardListData, getUserDataFromLocal, hasHandleManageSuc } =
+    useSelector((state) => ({
+      geDashboardListData: state?.dashboarData?.getDashboardData?.data,
+      hasHandleManageSuc: state?.dashboarData?.viewNameResp,
+      getUserDataFromLocal:
+        state && state.localData && state.localData.getLocalData,
+    }));
 
-  const {
-    webBrowserWidgets = [],
-  } = geDashboardListData || {};
+  const { webBrowserWidgets = [] } = geDashboardListData || {};
 
   useEffect(() => {
     if (getUserDataFromLocal) {
@@ -57,20 +47,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(getDashboardListData());
-    // Check license expiry on dashboard load
     checkLicenseAndShowPopup();
   }, [dispatch]);
-
-  // Function to check license expiry and determine if popup should show
   const checkLicenseAndShowPopup = () => {
-    // Check if license expiry flag is true
-    const isLicenseExpiryFlag = localStorage.getItem('is_license_expiry') === 'true';
-
-    console.log("isLicenseExpiryFlagisLicenseExpiryFlag",isLicenseExpiryFlag)
-
-    // Get company settings
+    const isLicenseExpiryFlag =
+      localStorage.getItem("is_license_expiry") === "true";
     const storedSettings = localStorage.getItem("company_settings");
-
     if (storedSettings) {
       try {
         const parsedSettings = JSON.parse(storedSettings);
@@ -83,43 +65,33 @@ const Dashboard = () => {
         } else if (parsedSettings?.statusCode === 200 && parsedSettings?.data) {
           licenseData = parsedSettings.data;
         }
-
         if (licenseData && licenseData.licenseStatus?.expiry_date) {
           const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
           const currentDate = new Date();
-
-          // Use UTC for consistent date calculation
           const expiryUTC = Date.UTC(
             expiryDate.getUTCFullYear(),
             expiryDate.getUTCMonth(),
-            expiryDate.getUTCDate()
+            expiryDate.getUTCDate(),
           );
-
           const currentUTC = Date.UTC(
             currentDate.getUTCFullYear(),
             currentDate.getUTCMonth(),
-            currentDate.getUTCDate()
+            currentDate.getUTCDate(),
           );
 
           const timeDiff = expiryUTC - currentUTC;
           const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-          console.log("daysLeftttttttttt",daysLeft)
-          // Format date using UTC methods
           const formatDateDDMMYYYY = (dateObj) => {
             const day = String(dateObj.getUTCDate()).padStart(2, "0");
             const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
             const year = dateObj.getUTCFullYear();
             return `${day}-${month}-${year}`;
           };
-
-          // Check conditions for showing popup:
-          // 1. License expiry flag is true (set on login)
-          // 2. License has 30 days or less remaining
           if (daysLeft <= 30 && isLicenseExpiryFlag) {
             setLicenseInfo({
               daysLeft,
               expiryDate: formatDateDDMMYYYY(expiryDate),
-              companyName: licenseData.name || "Your Company"
+              companyName: licenseData.name || "Your Company",
             });
             setShowLicensePopup(true);
           }
@@ -129,18 +101,13 @@ const Dashboard = () => {
       }
     }
   };
-
-  // Handle modal close
   const handleLicensePopupClose = () => {
     setShowLicensePopup(false);
-    // Set flag to false when modal is closed
-    localStorage.setItem('is_license_expiry', 'false');
+    localStorage.setItem("is_license_expiry", "false");
   };
 
   const handleCardClick = (viewName) => {
-    dispatch(handleManageView(viewName)); // Store viewName in Redux
-
-    // Redirect based on viewName
+    dispatch(handleManageView(viewName));
     const routeMap = {
       adminuser: "/adminusers",
       instructor: "/instructors",
@@ -163,18 +130,16 @@ const Dashboard = () => {
   const totalScenarios =
     rowData?.scenarioCounts?.reduce(
       (acc, curr) => acc + Number(curr.total_scenarios || 0),
-      0
+      0,
     ) ?? 0;
 
   const publishedScenarios =
     rowData?.scenarioCounts?.reduce(
       (acc, curr) => acc + Number(curr.published_scenarios || 0),
-      0
+      0,
     ) ?? 0;
 
-
-  console.log("rowDatarowDatarowData", rowData)
-
+  console.log("rowDatarowDatarowData", rowData);
 
   return (
     <>
@@ -191,14 +156,19 @@ const Dashboard = () => {
       <Container fluid>
         <Row className="g-4">
           <Col md={12}>
-            <Row className="mb-2">
-            </Row>
+            <Row className="mb-2"></Row>
             <Row className="row-sm">
               <Col sm={12} md={6} lg={6} xl={userType === "Instructor" ? 4 : 3}>
-                <Card className="custom-card" style={{ cursor: "pointer" }} onClick={() => handleCardClick("learner")}>
+                <Card
+                  className="custom-card"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleCardClick("learner")}
+                >
                   <Card.Body>
                     <div className="card-order">
-                      <label className="main-content-label mb-3 pt-1">Total SIMUser</label>
+                      <label className="main-content-label mb-3 pt-1">
+                        Total SIMUser
+                      </label>
                       <h2 className="text-end card-item-icon card-icon">
                         <i className="mdi mdi-account-multiple float-start text-primary"></i>
                         <span className="font-weight-bold">
@@ -206,8 +176,10 @@ const Dashboard = () => {
                         </span>
                       </h2>
                       <p className="mb-0 text-success">
-                        Active & Verified<span className="float-end">
-                          {rowData?.learnerCounts?.active_verified_accounts || 0}
+                        Active & Verified
+                        <span className="float-end">
+                          {rowData?.learnerCounts?.active_verified_accounts ||
+                            0}
                         </span>
                       </p>
                     </div>
@@ -238,7 +210,8 @@ const Dashboard = () => {
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Active & Verified<span className="float-end">
+                            Active & Verified
+                            <span className="float-end">
                               {rowData?.instructorCounts
                                 ?.active_verified_instructors || 0}
                             </span>
@@ -267,7 +240,8 @@ const Dashboard = () => {
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Active<span className="float-end">
+                            Active
+                            <span className="float-end">
                               {rowData?.adminStats?.active_admins || 0}
                             </span>
                           </p>
@@ -296,7 +270,8 @@ const Dashboard = () => {
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Completed <span className="float-end">
+                            Completed{" "}
+                            <span className="float-end">
                               {rowData?.eventStats?.completed_events || 0}
                             </span>
                           </p>
@@ -304,10 +279,6 @@ const Dashboard = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-
-                  {/* Extra Admin-Specific Cards */}
-
-                  {/* 1. Total Component Count */}
                   <Col sm={12} md={6} lg={6} xl={3}>
                     <Card
                       className="custom-card"
@@ -326,7 +297,8 @@ const Dashboard = () => {
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Active LXC & QMU <span className="float-end">
+                            Active LXC & QMU{" "}
+                            <span className="float-end">
                               {rowData?.componentStats?.active_components || 0}
                             </span>
                           </p>
@@ -354,7 +326,8 @@ const Dashboard = () => {
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Available Network<span className="float-end">
+                            Available Network
+                            <span className="float-end">
                               {rowData?.networkStats?.available_networks || 0}
                             </span>
                           </p>
@@ -362,40 +335,6 @@ const Dashboard = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-
-                  {/* 3. Total Published Scenarios */}
-                  {/* <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("scenario")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Scenario
-                          </label>
-                          <h2 className="text-end">
-                            <i className="fa fa-cube float-start text-info"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.total_scenarios || 0),
-                                0
-                              )}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Published<span className="float-end">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.published_scenarios || 0))}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col> */}
                   <Col sm={12} md={6} lg={6} xl={3}>
                     <Card
                       className="custom-card"
@@ -414,7 +353,7 @@ const Dashboard = () => {
                               {rowData?.scenarioCounts?.reduce(
                                 (acc, curr) =>
                                   acc + Number(curr?.total_scenarios || 0),
-                                0
+                                0,
                               ) ?? 0}
                             </span>
                           </h2>
@@ -425,7 +364,7 @@ const Dashboard = () => {
                               {rowData?.scenarioCounts?.reduce(
                                 (acc, curr) =>
                                   acc + Number(curr?.published_scenarios || 0),
-                                0
+                                0,
                               ) ?? 0}
                             </span>
                           </p>
@@ -434,15 +373,13 @@ const Dashboard = () => {
                     </Card>
                   </Col>
 
-
                   {/* 3. Total Running Scenarios */}
                   <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card className="custom-card"
-
+                    <Card
+                      className="custom-card"
                       style={{ cursor: "pointer" }}
                       onClick={() => handleCardClick("usersession")}
                     >
-
                       <Card.Body>
                         <div className="card-widget">
                           <label className="main-content-label mb-3 pt-1">
@@ -451,69 +388,97 @@ const Dashboard = () => {
                           <h2 className="text-end">
                             <i className="	fa fa-server float-start text-mute"></i>
                             <span className="font-weight-bold">
-                              {Number(rowData?.sessionStats?.pause_resume_count || 0)}
+                              {Number(
+                                rowData?.sessionStats?.pause_resume_count || 0,
+                              )}
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Running <span className="float-end">
-                              {Number(rowData?.sessionStats?.running_sessions || 0)}
+                            Running{" "}
+                            <span className="float-end">
+                              {Number(
+                                rowData?.sessionStats?.running_sessions || 0,
+                              )}
                             </span>
                           </p>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
-                  {/* three widge in row virtual cpu storage memory */}
                   <Col md={12}>
                     <Card className="custom-card p-0">
-                      <Row className="g-0"> {/* removes all gutters between columns */}
+                      <Row className="g-0">
+                        {" "}
+                        {/* removes all gutters between columns */}
                         {/* CPU */}
                         <Col xl={4} lg={4} sm={12} className="border-end">
                           <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">TOTAL VIRTUAL CPU</label>
+                            <label className="main-content-label mb-2 pt-1">
+                              TOTAL VIRTUAL CPU
+                            </label>
                             <h2 className="d-flex justify-content-between align-items-center">
                               <i className="fe fe-cpu text-danger"></i>
                               <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce((acc, curr) => acc + Number(curr.total_cores || 0), 0)}
+                                {rowData?.vmStatsTotals?.reduce(
+                                  (acc, curr) =>
+                                    acc + Number(curr.total_cores || 0),
+                                  0,
+                                )}
                               </span>
                             </h2>
                             <p className="mb-0 text-success d-flex justify-content-between">
                               <span>Status</span>
-                              <span>{rowData?.vmStatsTotals?.[0]?.status || "N/A"}</span>
+                              <span>
+                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
+                              </span>
                             </p>
                           </Card.Body>
                         </Col>
-
                         {/* Memory */}
                         <Col xl={4} lg={4} sm={12} className="border-end">
                           <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">TOTAL VIRTUAL MEMORY</label>
+                            <label className="main-content-label mb-2 pt-1">
+                              TOTAL VIRTUAL MEMORY
+                            </label>
                             <h2 className="d-flex justify-content-between align-items-center">
                               <i className="fe fe-box text-warning"></i>
                               <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce((acc, curr) => acc + Number(curr.total_memory || 0), 0)}
+                                {rowData?.vmStatsTotals?.reduce(
+                                  (acc, curr) =>
+                                    acc + Number(curr.total_memory || 0),
+                                  0,
+                                )}
                               </span>
                             </h2>
                             <p className="mb-0 text-success d-flex justify-content-between">
                               <span>Status</span>
-                              <span>{rowData?.vmStatsTotals?.[0]?.status || "N/A"}</span>
+                              <span>
+                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
+                              </span>
                             </p>
                           </Card.Body>
                         </Col>
-
                         {/* Storage */}
                         <Col xl={4} lg={4} sm={12}>
                           <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">TOTAL STORAGE SIZE</label>
+                            <label className="main-content-label mb-2 pt-1">
+                              TOTAL STORAGE SIZE
+                            </label>
                             <h2 className="d-flex justify-content-between align-items-center">
                               <i className="fe fe-hard-drive text-success"></i>
                               <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce((acc, curr) => acc + Number(curr.total_storage || 0), 0)}
+                                {rowData?.vmStatsTotals?.reduce(
+                                  (acc, curr) =>
+                                    acc + Number(curr.total_storage || 0),
+                                  0,
+                                )}
                               </span>
                             </h2>
                             <p className="mb-0 text-success d-flex justify-content-between">
                               <span>Status</span>
-                              <span>{rowData?.vmStatsTotals?.[0]?.status || "N/A"}</span>
+                              <span>
+                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
+                              </span>
                             </p>
                           </Card.Body>
                         </Col>
@@ -523,10 +488,12 @@ const Dashboard = () => {
 
                   {/* <Row className="row-sm"> */}
                   <Col md={12}>
-
                     {webBrowserWidgets?.length > 0 ? (
                       webBrowserWidgets.map((widget) => (
-                        <Card key={widget.webbrowserwidgetid} className="mb-4 shadow-sm">
+                        <Card
+                          key={widget.webbrowserwidgetid}
+                          className="mb-4 shadow-sm"
+                        >
                           <Card.Body>
                             <h6
                               className="mb-3 text-truncate"
@@ -535,7 +502,10 @@ const Dashboard = () => {
                               {widget.widget_name}
                             </h6>
 
-                            <div className="position-relative overflow-hidden border rounded" style={{ height: '300px' }}>
+                            <div
+                              className="position-relative overflow-hidden border rounded"
+                              style={{ height: "900px" }}
+                            >
                               <iframe
                                 src={
                                   widget.widget_url.startsWith("http")
@@ -552,18 +522,18 @@ const Dashboard = () => {
                     ) : (
                       <p className="text-muted text-center"></p>
                     )}
-
                   </Col>
                   {/* </Row> */}
-
-
                 </>
               ) : (
                 <>
                   {/* Instructor-Specific: Total Scenarios Card */}
                   <Col sm={12} md={6} lg={6} xl={4}>
                     <Card className="custom-card">
-                      <Card.Body>
+                      <Card.Body
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCardClick("scenario")}
+                      >
                         <div className="card-widget">
                           <label className="main-content-label mb-3 pt-1">
                             Total Scenarios
@@ -574,16 +544,17 @@ const Dashboard = () => {
                               {rowData?.scenarioCounts?.reduce(
                                 (acc, curr) =>
                                   acc + Number(curr.total_scenarios || 0),
-                                0
+                                0,
                               )}
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Published <span className="float-end">
+                            Published{" "}
+                            <span className="float-end">
                               {rowData?.scenarioCounts?.reduce(
                                 (acc, curr) =>
                                   acc + Number(curr.published_scenarios || 0),
-                                0
+                                0,
                               )}
                             </span>
                           </p>
@@ -594,7 +565,11 @@ const Dashboard = () => {
 
                   {/* Instructor-Specific: Total User Sessions Card */}
                   <Col sm={12} md={6} lg={6} xl={4}>
-                    <Card className="custom-card">
+                    <Card
+                      className="custom-card"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => handleCardClick("usersession")}
+                    >
                       <Card.Body>
                         <div className="card-widget">
                           <label className="main-content-label mb-3 pt-1">
@@ -606,16 +581,17 @@ const Dashboard = () => {
                               {rowData?.runningSessions?.reduce(
                                 (sum, s) =>
                                   sum + Number(s.running_sessions || 0),
-                                0
+                                0,
                               )}
                             </span>
                           </h2>
                           <p className="mb-0 text-success">
-                            Running <span className="float-end">
+                            Running{" "}
+                            <span className="float-end">
                               {rowData?.runningSessions?.reduce(
                                 (sum, s) =>
                                   sum + Number(s.running_sessions || 0),
-                                0
+                                0,
                               )}
                             </span>
                           </p>
@@ -624,19 +600,24 @@ const Dashboard = () => {
                     </Card>
                   </Col>
 
-
                   <Col md={12}>
                     {webBrowserWidgets?.length > 0 ? (
                       webBrowserWidgets.map((widget) => (
-                        <Card key={widget.webbrowserwidgetid} className="mb-4 shadow-sm">
+                        <Card
+                          key={widget.webbrowserwidgetid}
+                          className="mb-4 shadow-sm"
+                        >
                           <Card.Body>
-                            <h6 className="mb-3 text-truncate" title={widget.widget_name}>
+                            <h6
+                              className="mb-3 text-truncate"
+                              title={widget.widget_name}
+                            >
                               {widget.widget_name}
                             </h6>
 
                             <div
                               className="position-relative overflow-hidden border rounded"
-                              style={{ height: '300px' }}
+                              style={{ height: "300px" }}
                             >
                               <iframe
                                 src={
@@ -651,13 +632,10 @@ const Dashboard = () => {
                           </Card.Body>
                         </Card>
                       ))
-                    ) :
-                      (
-                        <p className="text-muted text-center"></p>
-                      )
-                    }
+                    ) : (
+                      <p className="text-muted text-center"></p>
+                    )}
                   </Col>
-
                 </>
               )}
             </Row>

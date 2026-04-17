@@ -34,9 +34,40 @@ const resolveImageUrl = (url) => {
 const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
 
   console.log("data.image",data.image);
-  const networkPorts = data.networkport || [];
-  const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
-  //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
+  // const networkPorts = data.networkport || [];
+  // const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
+  // //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
+      let portKeys = [];
+
+    if (Array.isArray(data.networkport)) {
+      portKeys = data.networkport
+        .flatMap((obj) =>
+          Object.entries(obj).map(([key, value]) => {
+            const tagMatch = value.match(/tag=(\d+)/);
+            return {
+              key, // net0 / net1
+              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+            };
+          }),
+        )
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else if (
+      typeof data.networkport === "object" &&
+      data.networkport !== null
+    ) {
+      portKeys = Object.entries(data.networkport)
+        .map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key,
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else {
+      portKeys = [];
+    }
+
   const totalPorts = portKeys.length;
 
   const sides = ['Right', 'Bottom', 'Left', 'Top'];
@@ -98,7 +129,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
         />
 
         {/* Ports */}
-        {portKeys.map((portKey, index) => {
+        {portKeys.map((port, index) => {
           const sideIndex = Math.floor(index / portsPerSide);
           const side = sides[sideIndex];
           const positionIndex = index % portsPerSide;
@@ -141,7 +172,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
               break;
             case 'Right':
               handleStyle = { ...baseHandleStyle, right: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, right: -60, top: `60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, right: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             case 'Bottom':
               handleStyle = { ...baseHandleStyle, bottom: -5, left: `${offsetPercent}%`, transform: 'translateX(-50%)' };
@@ -149,29 +180,29 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
               break;
             case 'Left':
               handleStyle = { ...baseHandleStyle, left: -5, top: `${offsetPercent}%`, transform: 'translateY(-50%)' };
-              labelPosition = { ...labelStyle, left: -60, top: `60%`, transform: 'translateY(-50%)' };
+              labelPosition = { ...labelStyle, left: -60, top: `${offsetPercent}%`, transform: 'translateY(-10%)' };
               break;
             default:
               break;
           }
 
           return (
-            <React.Fragment key={portKey}>
+            <React.Fragment key={port.key}>
               <Handle
                 type="source"
                 position={Position[side]}
-                id={`${portKey}-source`}
+                id={`${port.key}-source`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
               <Handle
                 type="target"
                 position={Position[side]}
-                id={`${portKey}-target`}
+                id={`${port.key}-target`}
                 style={handleStyle}
                 isConnectable={isConnectable}
               />
-              <div style={labelPosition}>{portKey}</div>
+              <div style={labelPosition}>{port.label}</div>
             </React.Fragment>
           );
         })}

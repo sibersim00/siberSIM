@@ -408,22 +408,7 @@ const ManageEvents = () => {
       router.push(`/event-dashboard?eventuuid=${event.eventuuid}`);
     }
   };
-  // const frameworkComponents = {
-  //   srNoRender: (props) => props.node.rowIndex + 1,
-  //   actionButtonRenderer: (props) => (
-  //     <ActionButtonRenderer
-  //       addparticipants={handleFormModal}
-  //       handleaddparticipants={true}
-  //       listparticipants={handlelistModal}
-  //       handlelistparticipants={true}
-  //       handleEdit={handleEdit}
-  //       handleShowEdit={true}
-  //       propsVal={props}
-  //     />
-  //   ),
-  // };
-  
-  const frameworkComponents = {
+const frameworkComponents = {
   srNoRender: (props) => props.node.rowIndex + 1,
   actionButtonRenderer: (props) => {
     const canShowParticipantBtns =
@@ -536,7 +521,7 @@ const ManageEvents = () => {
                       rowData={filteredData}
                       columnDefs={columnDefs}
                       pagination={true}
-                      paginationPageSize={10}
+                      paginationPageSize={20}
                       onGridReady={onGridReady}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}

@@ -55,7 +55,6 @@ function ImportAdInstructor({ impUser, setimpUser }) {
                 theme: "colored",
               }
             );
-        // dispatch(clearHasError());
       }
       setRowData(errorData?.data);
       setQuestionBanlList(errorData?.data)
@@ -132,12 +131,12 @@ function ImportAdInstructor({ impUser, setimpUser }) {
           </div>
         );
       }
-      return null; // Return null if there are no status messages
+      return null; 
     },
   };
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 10, 
   };
   const defaultColDef = useMemo(() => {
     return {
@@ -434,13 +433,7 @@ if (errorData?.statusCode === 400) {
             const payload = {
               exam_id: listExamQuestionsData?.exam_id,
               questionOptions: selectedQuestions,
-            };
-           
-              //dispatch(getSaveProgramQuestionBank(payload));
-              // setQuestionSubmitButton("Submitting...");
-            
-            
-            
+            };   
           } catch (error) {
             console.error("Error submitting the form:", error);
           }
@@ -511,11 +504,7 @@ if (errorData?.statusCode === 400) {
                     ></AgGridReact>
                   </div>
                 </Col>
-
-               ) }
-              
-             
-              
+               ) }   
             </Form.Group>
           
         </Modal.Body>

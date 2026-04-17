@@ -32,7 +32,6 @@ import "../../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
 import Router, { useRouter } from "next/router";
 import {
-  getSingleScenarios,
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
@@ -41,18 +40,15 @@ const DnDFlow = ({
   numLans,
   toBeDragComponent,
   scenarioId,
-  setScenarioId,
   setTabIndex,
-  setView,
-  setRowValues,
   selectedScenario,
 }) => {
-  
+
 
   const dispatch = useDispatch();
 
   const reactFlowWrapper = useRef(null);
-  const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
+  const [imageNodeData, setImageNodeData] = useState([]);
   const { push } = useRouter();
   const [initialNodes, setInitialNodes] = useState(() => {
     const nodesArray = [];
@@ -63,25 +59,19 @@ const DnDFlow = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
   const [draggedNode, setDraggedNode] = useState(null);
-  const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
+  const [droppedImages, setDroppedImages] = useState([]);
   const [drggerdComponent, setDraggedComponent] = useState([]);
   const resolveImageUrl = (url) => {
     if (!url) return "";
 
     const backendBaseUrl =
       process.env.API_URL_FILEMANAGER || window.location.origin + "/jobapi";
-
-    // If URL is already absolute, use it directly
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
-
-    // If URL starts with /uploads, prefix with backendBaseUrl
     if (url.startsWith("/uploads")) {
       return `${backendBaseUrl}${url}`;
     }
-
-    // Otherwise, treat it as static/public path
     return `${window.location.origin}${url}`;
   };
 
@@ -91,13 +81,41 @@ const DnDFlow = ({
     net2: Position.Left,
     net3: Position.Top,
   };
-  //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    const networkPorts = data.networkport || [];
-    const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
-    //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
-    const totalPorts = portKeys.length;
+    // const networkPorts = data.networkport || [];
+    // const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
+        let portKeys = [];
 
+    if (Array.isArray(data.networkport)) {
+      portKeys = data.networkport
+        .flatMap((obj) =>
+          Object.entries(obj).map(([key, value]) => {
+            const tagMatch = value.match(/tag=(\d+)/);
+            return {
+              key, // net0 / net1
+              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+            };
+          }),
+        )
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else if (
+      typeof data.networkport === "object" &&
+      data.networkport !== null
+    ) {
+      portKeys = Object.entries(data.networkport)
+        .map(([key, value]) => {
+          const tagMatch = value.match(/tag=(\d+)/);
+          return {
+            key,
+            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
+          };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+    } else {
+      portKeys = [];
+    }
+
+    const totalPorts = portKeys.length;
     const sides = ["Right", "Bottom", "Left", "Top"];
     const portsPerSide = Math.ceil(totalPorts / 4);
     const spacingRatio = 100 / (portsPerSide + 1);
@@ -162,19 +180,15 @@ const DnDFlow = ({
               backgroundRepeat: "no-repeat",
             }}
           />
-
-          {/* Ports */}
-          {portKeys.map((portKey, index) => {
+  {/* Ports */}
+          {portKeys.map((port, index) => {
             const sideIndex = Math.floor(index / portsPerSide);
             const side = sides[sideIndex];
             const positionIndex = index % portsPerSide;
             let offsetPercent;
-
-            // Reverse position for specific sides
             if (side === "Right" || side === "Top") {
               offsetPercent = (positionIndex + 1) * spacingRatio;
             } else {
-              // Reverse direction for Bottom (right-to-left) and Left (bottom-to-top)
               offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
             }
 
@@ -225,8 +239,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   right: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               case "Bottom":
@@ -253,8 +267,8 @@ const DnDFlow = ({
                 labelPosition = {
                   ...labelStyle,
                   left: -60,
-                  top: `60%`,
-                  transform: "translateY(-50%)",
+                  top: `${offsetPercent}%`,
+                  transform: "translateY(-10%)",
                 };
                 break;
               default:
@@ -262,22 +276,22 @@ const DnDFlow = ({
             }
 
             return (
-              <React.Fragment key={portKey}>
+              <React.Fragment key={port.key}>
                 <Handle
                   type="source"
                   position={Position[side]}
-                  id={`${portKey}-source`}
+                  id={`${port.key}-source`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
                 <Handle
                   type="target"
                   position={Position[side]}
-                  id={`${portKey}-target`}
+                  id={`${port.key}-target`}
                   style={handleStyle}
                   isConnectable={isConnectable}
                 />
-                <div style={labelPosition}>{portKey}</div>
+                <div style={labelPosition}>{port.label}</div>
               </React.Fragment>
             );
           })}
@@ -318,7 +332,6 @@ const DnDFlow = ({
     if (toBeDragComponent && toBeDragComponent.length > 0) {
       let temp = toBeDragComponent.map((cat) => ({
         id: cat?.value,
-        //imageUrl: 'http://localhost:4001/_next/static/media/Firewall.7fb2a1cd.png',
         imageUrl: cat?.subcategoryimage
           ? `${process.env.API_URL_FILEMANAGER}${cat?.subcategoryimage}`
           : "",
@@ -382,7 +395,6 @@ const DnDFlow = ({
     (event) => {
       event.preventDefault();
       let id = `dndnode_${0 + 1}`;
-      //  if (!draggedNode || droppedImages.includes(draggedNode.id)) return; // Prevent drop if already dropped
       if (nodes.length > 0) {
         id = nodes[nodes.length - 1].id;
       } else {
@@ -397,7 +409,6 @@ const DnDFlow = ({
         y: event.clientY,
       });
       const newNode = {
-        // id: getId(),
         id: `dndnode_${number + 1}`,
         type: "imageNode",
         position,
@@ -408,34 +419,29 @@ const DnDFlow = ({
           networkport: draggedNode.networkport,
           duration: draggedNode.duration,
         },
-        // style: { width: 50, height: 50 },
       };
       setNodes((nds) => nds.concat(newNode));
-      setDroppedImages((prev) => [...prev, draggedNode.id]); // Add to dropped images
+      setDroppedImages((prev) => [...prev, draggedNode.id]); 
     },
     [screenToFlowPosition, draggedNode, droppedImages]
   );
-
-
-  const deleteNode = (nodeId) => {
+const deleteNode = (nodeId) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) =>
       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
     );
-    // Find the image used in the node and remove it from the droppedImages array
+
     const nodeToDelete = nodes.find((node) => node.id === nodeId);
     if (nodeToDelete && nodeToDelete.data && nodeToDelete.data.componentId) {
       const imageUrl = nodeToDelete.data.image;
       const imageComponent = nodeToDelete.data.componentId;
-      // Find the id associated with the image URL
+    
       const imageNode = imageNodeData.find(
         (item) => item.id === imageComponent
       );
-
-      if (imageNode) {
+ if (imageNode) {
         const imageId = imageNode.id;
         setDroppedImages((prev) => prev.filter((id) => id !== imageId)); // Re-enable image by removing it from droppedImages
-        // Also remove the object with the matching id from drggerdComponent
         setDraggedComponent((prev) =>
           prev.filter((item) => item.id !== imageId)
         );
@@ -500,7 +506,7 @@ const DnDFlow = ({
             id: data.componentId,
             imageUrl: data.image || "",
             componentid: data.componentId,
-            duration:data.duration,
+            duration: data.duration,
             label: data.label || "",
             networkport: data.networkport || [],
           };
@@ -521,7 +527,6 @@ const DnDFlow = ({
       scenarioid: scenarioId,
       numberoflan: numLans.toString(),
       components: componentsData,
-      //components : drggerdComponent,
       scenariostatus: status,
       component_config: configData.component_config,
       network_config: configData.network_config,
@@ -531,8 +536,6 @@ const DnDFlow = ({
 
   useEffect(() => {
     if (saveScenarioFlowChart && saveScenarioFlowChart.statusCode === 200) {
-      //  setScenarioId('');
-      //  setRowValues({});
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
           {saveScenarioFlowChart?.message}
@@ -545,9 +548,7 @@ const DnDFlow = ({
       );
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
-      //  setView("list");
       dispatch(getScenarioList());
-      //    push(`/scenarios_view/${scenarioId}?tab=diagram`);
       setNodes([]);
       setEdges([]);
       setTabIndex("tab3");
@@ -585,8 +586,6 @@ const DnDFlow = ({
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
     const { getEdges, setEdges } = useReactFlow();
-
-    // You can also pull labelMap or other shared state from context/store here
     const edges = getEdges(); // all current edges
 
     return (
@@ -611,8 +610,7 @@ const DnDFlow = ({
         <div style={{ width: "28%", height: "100%" }}>
           <SideBar
             imageNodeData={imageNodeData}
-            setDraggedNode={setDraggedNode} // Passing setDraggedNode to Sidebar
-            //  droppedImages={droppedImages} // Pass dropped images to Sidebar
+            setDraggedNode={setDraggedNode} 
             scenarioId={scenarioId}
             setNodes={setNodes}
             setEdges={setEdges}
@@ -636,17 +634,12 @@ const DnDFlow = ({
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            // style={{ backgroundColor: '#F7F9FB' }}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
+            connectionLineType="floating" 
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
-            zoomOnDoubleClick={false} // disables zoom on double-click
+            zoomOnDoubleClick={false} 
             edgeTypes={edgeTypes}
-
-            // edgeTypes={{ straight: StraightEdge }}
-            // connectionLineStyle={{ stroke: '#363837', strokeWidth: 1 }}
-            // connectionLineType="straight"
           >
             {/* <Controls /> */}
             <Background />

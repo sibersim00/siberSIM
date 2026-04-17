@@ -8,6 +8,7 @@ const initialState = {
   error: null,
   getScenarioListData: [],
   statusChangeScenarios: [],
+  statusChangemanipulationScenarios: [],
   deleteScenarios: [],
   saveScenarios: [],
   updateScenarios: [],
@@ -27,6 +28,7 @@ const initialState = {
   ScenarioExport: [],
   exportscenario:[],
   exportData: null,
+  manipulation: false,
 };
 
 const slice = createSlice({
@@ -37,9 +39,19 @@ const slice = createSlice({
     startLoading(state) {
       state.isLoading = true;
     },
+    // hasGetScenarioListSucc(state, action) {
+    //   (state.isLoading = false), (state.getScenarioListData = action.payload);
+    // },
     hasGetScenarioListSucc(state, action) {
-      (state.isLoading = false), (state.getScenarioListData = action.payload);
-    },
+  state.isLoading = false;
+
+  // ADDED: store only scenario array (not full payload)
+  state.getScenarioListData = action.payload.data;
+
+  // ADDED: store manipulation flag separately (only once)
+  state.manipulation = action.payload.manipulation;
+},
+
     // hasGetSaveScenariosSucc(state,action){
     //     state.isLoading = false,
     //     state.saveScenarios = action.payload;
@@ -47,6 +59,10 @@ const slice = createSlice({
     hasScenariosStatusSucc(state, action) {
       state.isLoading = false;
       state.statusChangeScenarios = action.payload;
+    },
+    hasScenariosmanipulationStatusSucc(state, action) {
+      state.isLoading = false;
+      state.statusChangemanipulationScenarios = action.payload;
     },
     hasGetdeleteScenariosSucc(state, action) {
       state.isLoading = false;
@@ -135,6 +151,8 @@ export function getScenarioList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.scenario_get}`);
+      console.log("responsecccccccccccccc",response);
+      
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -162,6 +180,31 @@ export function clearScenariosChangeStatus() {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasScenariosStatusSucc([]));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+export function changeManipulationStatus(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(
+        `${api?.scenario_manipulation_status}`,
+        payload
+      );
+      dispatch(slice.actions.hasScenariosmanipulationStatusSucc(response.data));
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function clearchangeManipulationStatus() {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    try {
+      dispatch(slice.actions.hasScenariosmanipulationStatusSucc([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

@@ -25,16 +25,16 @@ const CustomerLicenseAdd = (props) => {
     }
   }, [openFlag]);
 
-const y_m_d = (date) => {
-  const d = new Date(date);
-  return (
-    d.getFullYear() +
-    "-" +
-    ("0" + (d.getMonth() + 1)).slice(-2) +
-    "-" +
-    ("0" + d.getDate()).slice(-2)
-  );
-};
+  const y_m_d = (date) => {
+    const d = new Date(date);
+    return (
+      d.getFullYear() +
+      "-" +
+      ("0" + (d.getMonth() + 1)).slice(-2) +
+      "-" +
+      ("0" + d.getDate()).slice(-2)
+    );
+  };
 
   const schema = yup.object().shape({
     sim_user_count: yup.number().required("Required"),
@@ -52,8 +52,8 @@ const y_m_d = (date) => {
               Math.max(
                 ...licenseData
                   .filter((r) => r.expiry_date)
-                  .map((r) => new Date(r.expiry_date))
-              )
+                  .map((r) => new Date(r.expiry_date)),
+              ),
             );
             maxDate.setDate(maxDate.getDate() + 1); // add +1 day
             return maxDate;
@@ -61,6 +61,7 @@ const y_m_d = (date) => {
         : new Date(),
     expiry_date: "",
     domain_url: "",
+    manipulation_flag: false, // 👈 NEW
   };
 
   const handleSubmit = (data) => {
@@ -70,6 +71,7 @@ const y_m_d = (date) => {
       start_date: data.start_date ? y_m_d(data.start_date) : null,
       expiry_date: data.expiry_date ? y_m_d(data.expiry_date) : null,
       domain_url: data.domain_url.trim(),
+      manipulation_flag: data.manipulation_flag ? "True" : "False", // 👈 NEW
     };
     handleOneClick(true);
     dispatch(addLicenseDetails(payload));
@@ -172,7 +174,6 @@ const y_m_d = (date) => {
                         {errors.expiry_date}
                       </div>
                     )}
-
                   </Form.Group>
 
                   {/* Domain URL */}
@@ -212,7 +213,17 @@ const y_m_d = (date) => {
                       {errors.sim_user_count}
                     </Form.Control.Feedback>
                   </Form.Group>
-
+                  <Form.Group as={Col} md="12" className="mb-4">
+                    <Form.Check
+                      type="switch"
+                      id="manipulation-flag"
+                      label="Enable Manipulation"
+                      checked={values.manipulation_flag}
+                      onChange={(e) =>
+                        setFieldValue("manipulation_flag", e.target.checked)
+                      }
+                    />
+                  </Form.Group>
                 </Row>
               </Modal.Body>
 

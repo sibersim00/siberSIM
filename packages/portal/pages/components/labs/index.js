@@ -67,7 +67,6 @@ const Labs = () => {
   const [backview, setBackView] = useState("card");
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const [filterSlot, setfilterSlot] = useState([]);
-  const [selectedEventData, setSelectedEventData] = useState(null);
   const [allowedUsersModal, setAllowedUsersModal] = useState(false);
   const [allowedUsersData, setAllowedUsersData] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -175,13 +174,6 @@ const Labs = () => {
         </button>
       ),
     },
-    // {
-    //   headerName: "Status",
-    //   field: "status",
-    //   pinned: "right",
-    //   minWidth: 80,
-    //   cellRenderer: "actionSwitchRenderer",
-    // },
     {
       headerName: "Action",
       field: "status",
@@ -191,7 +183,6 @@ const Labs = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
-
   useEffect(() => {
     if (addLabData?.statusCode == 200) {
       setformModal(false);
@@ -203,7 +194,7 @@ const Labs = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getLabsList());
       dispatch(clearLabDetails());
@@ -222,7 +213,7 @@ const Labs = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getLabsList());
       dispatch(clearEditLabDetails());
@@ -268,7 +259,7 @@ const Labs = () => {
         const filteredData =
           hasGetLabsListSucc.length > 0 &&
           hasGetLabsListSucc.filter(
-            (data) => data?.status?.toString() == "true"
+            (data) => data?.status?.toString() == "true",
           );
         setGridData(filteredData);
         setRowData(filteredData);
@@ -276,7 +267,7 @@ const Labs = () => {
         const filteredData =
           hasGetLabsListSucc.length > 0 &&
           hasGetLabsListSucc.filter(
-            (data) => data?.status?.toString() == "false"
+            (data) => data?.status?.toString() == "false",
           );
         setGridData(filteredData);
         setRowData(filteredData);
@@ -285,30 +276,23 @@ const Labs = () => {
   }, [hasGetLabsListSucc, compStatus]);
 
   useEffect(() => {
-    if (errorData?.statusCode) {
-      errorData.errors && errorData.errors.length > 0
-        ? errorData.errors.map((data) => {
-            toast.error(
-              <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-                {data}
-              </p>,
-              {
-                position: toast.POSITION.TOP_RIGHT,
-                hideProgressBar: true,
-                theme: "colored",
-              }
-            );
-          })
-        : toast.error(
-            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-              {errorData?.message}
-            </p>,
-            {
-              position: toast.POSITION.TOP_RIGHT,
-              hideProgressBar: true,
-              theme: "colored",
-            }
-          );
+    if (errorData?.statusCode === 400) {
+      if (errorData.errors?.length > 0) {
+        errorData.errors.forEach((msg) => {
+          toast.error(msg, {
+            position: toast.POSITION.TOP_RIGHT,
+            hideProgressBar: true,
+            theme: "colored",
+          });
+        });
+      } else {
+        toast.error(errorData?.message || "Something went wrong", {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: true,
+          theme: "colored",
+        });
+      }
+
       handleOneClick(false);
       dispatch(clearHasError());
     }
@@ -331,7 +315,7 @@ const Labs = () => {
       const filteredData =
         hasGetLabsListSucc.length > 0 &&
         hasGetLabsListSucc.filter(
-          (data) => data?.status?.toString() == "false"
+          (data) => data?.status?.toString() == "false",
         );
       setRowData(filteredData);
       setGridData(filteredData);
@@ -340,7 +324,7 @@ const Labs = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -394,7 +378,7 @@ const Labs = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       dispatch(getLabsList());
       dispatch(cleardeleteLab());
@@ -440,7 +424,7 @@ const Labs = () => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       dispatch(getLabsList());
@@ -535,6 +519,7 @@ const Labs = () => {
   };
 
   const handleClose = () => {
+    setAllowedUsersModal(false);
     setShowModal(false);
     setModalEvent(null);
   };
@@ -737,7 +722,7 @@ const Labs = () => {
                                     {item.bookingname.length > 20
                                       ? `${item.bookingname.substring(
                                           0,
-                                          17
+                                          17,
                                         )}...`
                                       : item.bookingname}
                                   </span>
@@ -780,7 +765,12 @@ const Labs = () => {
                               </div>
                               &nbsp;
                               <div
-                                className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
+                                className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle align-items-center justify-content-center"
+                                style={{
+                                  width: "29px",
+                                  height: "28px",
+                                  padding: 0,
+                                }}
                                 onClick={() => {
                                   handleDeletecard(item);
                                 }}
@@ -801,7 +791,7 @@ const Labs = () => {
                                   placement="bottom"
                                   overlay={<Tooltip>View</Tooltip>}
                                 >
-                                  <i className="fe fe-eye"></i>
+                                  <i className="fe fe-eye "></i>
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
@@ -816,24 +806,6 @@ const Labs = () => {
                                   <i className="fe fe-users"></i>
                                 </OverlayTrigger>
                               </div>
-                              &nbsp;
-                              {/* <div className="btn btn-sm ripple me-1 mg-t-5">
-                                <OverlayTrigger
-                                  placement="bottom"
-                                  overlay={<Tooltip>{"Change Status"}</Tooltip>}
-                                >
-                                  <label className="custom-switch mg-t-50">
-                                    <input
-                                      type="checkbox"
-                                      name="custom-switch-checkbox1"
-                                      className="custom-switch-input"
-                                      checked={item?.status === "true"}
-                                      onChange={() => handleStatusSwitch(item)}
-                                    />
-                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                  </label>
-                                </OverlayTrigger>
-                              </div> */}
                             </div>
                           </Card.Body>
                         </Card>
@@ -991,89 +963,105 @@ const Labs = () => {
                 centered
                 dialogClassName="modal-dialog-centered modal-lg"
               >
-                <Modal.Header closeButton className="bg-primary text-white">
-                  <Modal.Title className="d-flex align-items-center">
-                    <i className="fe fe-info-circle me-2"></i> Booking Details
+                <Modal.Header closeButton className="modal-header-custom">
+                  <Modal.Title className="fw-bold">
+                    <i className="fe fe-info-circle me-2 text-danger"></i>
+                    Booking Details
                   </Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body className="bg-light">
                   {modalEvent ? (
-                    <div className="p-3">
-                      <div className="row g-3">
+                    <div>
+                      <div className="row g-0">
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-user me-2"></i>Booking Name :
-                            </h6>
-                            <p className="mb-0">{modalEvent.bookingname}</p>
+                          <div className="custom-card">
+                            <div className="d-flex align-items-center ">
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-user text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Booking Name :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.bookingname}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-calendar me-2"></i>Date & Time
-                              :
-                            </h6>
-                            <p className="mb-0">{modalEvent.datetime}</p>
+                          <div className="custom-card">
+                            <div className="d-flex align-items-center ">
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-calendar  text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Date & Time :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.datetime}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-clock me-2"></i>Duration (hrs)
-                              :
-                            </h6>
-                            <p className="mb-0">{modalEvent.duration}</p>
+                          <div className="custom-card">
+                            <div className="d-flex align-items-center ">
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-clock text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Duration (hrs) :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.duration}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-shield me-2"></i>Access Level
-                              :
-                            </h6>
-                            <p className="mb-0">{modalEvent.accesslevel}</p>
+                          <div className="custom-card">
+                            <div className="d-flex align-items-center ">
+                              {/* LEFT SIDE (ICON + LABEL) */}
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-shield  text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Access Level :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.accesslevel}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-user-check me-2"></i>Person In
-                              Charge :
-                            </h6>
-                            <p className="mb-0">
-                              {modalEvent.personincharge_name}
-                            </p>
+                          <div className="custom-card m-0">
+                            <div className="d-flex align-items-center ">
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-user-check  text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Person In Charge :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.personincharge_name}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
                         <div className="col-md-6">
-                          <div className="bg-white p-3 rounded shadow-sm">
-                            <h6 className="text-primary">
-                              <i className="fe fe-users me-2"></i>Reserved Seats
-                              :
-                            </h6>
-                            <p className="mb-0">{modalEvent.reservedseats}</p>
-                          </div>
-                        </div>
-
-                        {/* ---------------------- */}
-                        <div>
-                          <div>
-                            <div
-                              className="btn btn-sm ripple  text-warning "
-                              onClick={() =>
-                                handleAllowedUsersClick(modalEvent)
-                              }
-                            >
-                              <Button placement="bottom">
-                                <i className="fe fe-users"></i> Allowed Users
-                              </Button>
+                          <div className="custom-card m-0">
+                            <div className="d-flex align-items-center ">
+                              <div className="d-flex align-items-center">
+                                <i className="fe fe-users text-secondary me-2"></i>
+                                <span className="label-text">
+                                  Reserved Seats :
+                                </span>
+                              </div>
+                              <div className="value-text ms-2">
+                                {modalEvent.reservedseats}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1086,8 +1074,17 @@ const Labs = () => {
                   )}
                 </Modal.Body>
 
-                <Modal.Footer className="bg-light">
-                  <Button variant="secondary" onClick={handleClose}>
+                <Modal.Footer className="bg-light d-flex justify-content-between">
+                  <div
+                    className="btn btn-sm ripple ms-2 "
+                    onClick={() => handleAllowedUsersClick(modalEvent)}
+                  >
+                    <Button placement="bottom">
+                      <i className="fe fe-users"></i> Allowed Users
+                    </Button>
+                  </div>
+
+                  <Button variant="secondary " onClick={handleClose}>
                     Close
                   </Button>
                 </Modal.Footer>
@@ -1103,18 +1100,21 @@ const Labs = () => {
         centered
         size="md"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Allowed Users</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body
+          className="bg-light"
+          style={{ maxHeight: "70vh", overflowY: "auto" }}
+        >
           {allowedUsersData && allowedUsersData.length > 0 ? (
             <ul className="list-group">
               {allowedUsersData.map((user, index) => (
                 <li
                   key={index}
-                  className="list-group-item d-flex align-items-center"
+                  className="d-flex align-items-center custom-card"
                 >
-                  <i className="fe fe-user me-2 text-success"></i> {user.name}
+                  <i className="fe fe-user me-2 text-secondary"></i> {user.name}
                 </li>
               ))}
             </ul>
@@ -1124,7 +1124,7 @@ const Labs = () => {
             </p>
           )}
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="bg-light">
           <Button variant="secondary" onClick={handleCloseAllowedUsersModal}>
             Close
           </Button>

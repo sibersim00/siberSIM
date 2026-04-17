@@ -13,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import ScenarioDiagram from "./scenariodiagram";
 import {
   cleargetScenarioFlow,
-  clearsaveScenarioFlow,
 } from "../../../../../shared/redux/slices/common/masters";
 import { toast, ToastContainer } from "react-toastify";
 import dynamic from "next/dynamic";
@@ -35,14 +34,8 @@ const ScenarioView = () => {
 
   const tab = query && query.tab;
 
-  // useEffect(() => {
-  //   if (tab === "diagram") {
-  //     setActiveTab("diagram");
-  //   }
-  // }, [tab]);
   useEffect(() => {
     if (tab && Object.keys(rowValues || {}).length > 0) {
-      // Delay just a tick to ensure React Bootstrap mounts all panes
       const timer = setTimeout(() => {
         setActiveTab(tab);
       }, 100);
@@ -68,7 +61,6 @@ const ScenarioView = () => {
     if (query.slug) {
       setRowId(query.slug[0]);
       dispatch(getSingleScenarios(query.slug[0]));
-      //  dispatch(getSingleScenarios(query.slug[0]));
     }
   }, [query.slug]);
   const baseUrl = process.env.API_URL_FILEMANAGER;
@@ -180,18 +172,7 @@ const ScenarioView = () => {
                         </div>
                       </div>
                     </Col>
-                    {/* Instruction Name and Duration in One Row */}
-                    {/* <Col md={3}>
-                      <div className="d-flex align-items-start gap-3">
-                        <i className="fe fe-user text-dark fs-4 mt-1"></i>
-                        <div>
-                          <div className="fw-semibold text-dark mb-1">
-                            {rowValues?.instructor_name || "—"}
-                          </div>
-                          <small className="text-muted">SIMManager Name</small>
-                        </div>
-                      </div>
-                    </Col> */}
+
                     <Col md={3}>
                       <div className="d-flex align-items-start gap-3">
                         <i className="fe fe-clock text-danger fs-4 mt-1"></i>
@@ -402,20 +383,10 @@ const ScenarioView = () => {
                               </Tab.Pane>
 
                               <Tab.Pane eventKey="diagram">
-                                {/* <Col md={12}> */}
-                                {/* <div className="d-flex justify-content-between align-items-center"> */}
-                                {/* <h5 className="fw-semibold mb-3 text-dark">Diagram</h5> */}
-                                {/* </div> */}
-                                {/* </Col> */}
-                                <ScenarioDiagram
+                               <ScenarioDiagram
                                   scenarioId={rowId}
                                   rowValues={rowValues}
-                                  // scenariodiagram={
-                                  //     rowValues?.scenariodiagram &&
-                                  //         rowValues.scenariodiagram.trim() !== ''
-                                  //         ? rowValues.scenariodiagram
-                                  //         : ''
-                                  // }
+                                  
                                   scenariodiagram={
                                     rowValues?.scenariodiagram?.trim() ?? ""
                                   }

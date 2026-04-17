@@ -114,8 +114,6 @@ const Instructor = () => {
         title: { display: true, text: "SIMManager Login/Logout Stats" },
       },
     };
-
-    // return <Bar options={options} data={chartData} />;
       return (
           <div style={{ height: "450px" }}>
             <Bar
@@ -133,30 +131,19 @@ const Instructor = () => {
     switch (filterType) {
       case "yesterday":
         setSelectedDate(new Date(Date.now() - 86400000).toISOString().split("T")[0]);
-        // Apply Yesterday Filter Logic
         break;
       case "mtd":
-        setSelectedDate(""); // Optional, if you want to reset date picker
-        // Apply Month-To-Date Filter Logic
+        setSelectedDate(""); 
         break;
       case "ytd":
         setSelectedDate("");
-        // Apply Year-To-Date Filter Logic
         break;
       case "custom":
-        // Open Date Picker or wait for date selection
         break;
       default:
         break;
     }
   };
-
-  useEffect(() => {
-    if (activeFilter === "custom" && selectedDate) {
-
-
-    }
-  }, [selectedDate, activeFilter]);
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -217,7 +204,7 @@ const Instructor = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10,
+    paginationPageSize: 20,
   };
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -401,49 +388,6 @@ useEffect(() => {
                     >
                       <i className="fe fe-list"></i>
                     </Button>
-
-                    {/* Filter Buttons */}
-                   
-                    {/* <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("yesterday")}
-                    >
-                      Yesterday
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("mtd")}
-                    >
-                      MTD
-                    </Button>
-                    <Button
-                      variant="outline-dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("ytd")}
-                    >
-                      YTD
-                    </Button>
-                    <Button
-                      variant="dark"
-                      className="mx-1"
-                      onClick={() => handleDateFilter("custom")}
-                    >
-                      Custom
-                    </Button> */}
-
-                    {/* Date Picker */}
-                    {/* <div className="mx-1">
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                      />
-                    </div> */}
-
-                    {/* Search Box */}
                     <input
                       className="form-control bd bd-2 ms-2 w-auto"
                       value={quickFilter}

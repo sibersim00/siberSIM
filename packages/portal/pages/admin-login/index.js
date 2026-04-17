@@ -131,10 +131,6 @@ const Home = () => {
 
   useEffect(() => {
     if (otpSuccessData?.statusCode === 200) {
-      // setCookie("auth", {
-      //   username: data.username.toLowerCase(),
-      //   org: data.orgid,
-      // });
       let userData = otpSuccessData?.data;
       const lastDigitMobile = String(userData.mobile).slice(-4);
       let newuserData = {
@@ -160,25 +156,33 @@ const Home = () => {
 
   useEffect(() => {
     if (loginSuccData?.statusCode == 200) {
-      localStorage.setItem("accessToken",JSON.stringify(loginSuccData?.data?.accessToken));
-      localStorage.setItem("menus", JSON.stringify(loginSuccData?.data?.menus));
-      localStorage.setItem("user", JSON.stringify(loginSuccData?.data?.user));
-      localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
-      localStorage.setItem("apps", JSON.stringify([]));
-      setLicenseExpiryFlag(true);
-      dispatch(clearDispatchFromLogin());
-      setTimeout(() => {
-        if (getCompanySettingsData?.redirect == true) {
-          navigate.replace("/activate-account");
-        } else {
-          console.log("wwwwwwwwwwwwwwwwwwwwItems",loginSuccData?.data?.menus[0]?.Items);
-          
-          const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-          
-          const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-          navigate.replace(source, "", { shallow: true });
-        }
-      }, 1500);
+      let issuper = loginSuccData?.data?.user?.issuper ? loginSuccData?.data?.user?.issuper : false;
+      if (!issuper && getCompanySettingsData?.redirect == false && getCompanySettingsData?.data?.licenseStatus.isStart==false) {
+        let startDate = d_mmm_y(getCompanySettingsData?.data?.licenseStatus.start_date);
+        dispatch(clearDispatchFromLogin());
+        navigate.replace(`/503?startDate=${startDate}`);
+      }else{
+        localStorage.setItem("accessToken",JSON.stringify(loginSuccData?.data?.accessToken));
+        localStorage.setItem("menus", JSON.stringify(loginSuccData?.data?.menus));
+        localStorage.setItem("user", JSON.stringify(loginSuccData?.data?.user));
+        localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
+        localStorage.setItem("apps", JSON.stringify([]));
+        setLicenseExpiryFlag(true);
+        dispatch(clearDispatchFromLogin());
+        setTimeout(() => {
+          if(issuper){
+            const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+            navigate.replace(source, "", { shallow: true });
+          }else if (getCompanySettingsData?.redirect == true) {
+            navigate.replace("/activate-account");
+          } else {
+            const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+            navigate.replace(source, "", { shallow: true });
+          }
+        }, 1500);
+      }
     }
   }, [loginSuccData]);
 
@@ -275,39 +279,44 @@ const Home = () => {
     }
   };
 
+console.log("directLoginDatadirectLoginData",directLoginData);
+console.log("loginSuccDataloginSuccDataloginSuccData",loginSuccData);
 
   useEffect(() => {
     if (directLoginData?.statusCode == 200) {
-      localStorage.setItem("accessToken",JSON.stringify(directLoginData?.data?.accessToken));
-      localStorage.setItem("menus", JSON.stringify(directLoginData?.data?.menus));
-      localStorage.setItem("user", JSON.stringify(directLoginData?.data?.user));
-      localStorage.setItem("apps", JSON.stringify([]));
-      localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
-      setLicenseExpiryFlag(true);
-      dispatch(clearDispatchDirectLogin());
-      setTimeout(() => {
-        if (getCompanySettingsData?.redirect == true) {
-          navigate.replace("/activate-account");
-        } else {
-          console.log("wwwwwwwwwwwwwwwwwwwwItems",directLoginData?.data?.menus[0]?.Items);
-
-          const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-          const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-          navigate.replace(source, "", { shallow: true });
-        }
-      }, 1500);
+      let issuper = directLoginData?.data?.user?.issuper ? directLoginData?.data?.user?.issuper : false;
+      console.log("issuperissuperissuperissuperissuper",issuper);
+      
+      if (!issuper && getCompanySettingsData?.redirect == false && getCompanySettingsData?.data?.licenseStatus.isStart==false) {
+        let startDate = d_mmm_y(getCompanySettingsData?.data?.licenseStatus.start_date);
+        dispatch(clearDispatchDirectLogin());
+        navigate.replace(`/503?startDate=${startDate}`);
+      }else{
+        localStorage.setItem("accessToken",JSON.stringify(directLoginData?.data?.accessToken));
+        localStorage.setItem("menus", JSON.stringify(directLoginData?.data?.menus));
+        localStorage.setItem("user", JSON.stringify(directLoginData?.data?.user));
+        localStorage.setItem("apps", JSON.stringify([]));
+        localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
+        setLicenseExpiryFlag(true);
+        dispatch(clearDispatchDirectLogin());
+        setTimeout(() => {
+          if(issuper){
+            const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+            console.log("allMatchesallMatchesallMatchesallMatches",allMatches);
+            
+            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+            navigate.replace(source, "", { shallow: true });
+          }else if (getCompanySettingsData?.redirect == true) {
+            navigate.replace("/activate-account");
+          } else {
+            const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+            navigate.replace(source, "", { shallow: true });
+          }
+        }, 1500);
+      }
     }
   }, [directLoginData]);
-
-  useEffect(() => {
-      if(getCompanySettingsData?.statusCode === 200 && getCompanySettingsData?.redirect == false){
-        let licenseStatus = getCompanySettingsData?.data?.licenseStatus;
-        if(!licenseStatus.isStart){
-          let startDate = d_mmm_y(licenseStatus.start_date)
-          navigate.replace(`/503?startDate=${startDate}`);
-        }
-      }
-  }, [getCompanySettingsData]);
 
   const handleKeyPress = (event) => {
     if (event.key === "Enter") {

@@ -19,6 +19,8 @@ import Select from "react-select";
 import {
   getScenarioList,
   changeStatusScenarios,
+  changeManipulationStatus,
+  clearchangeManipulationStatus,
   clearScenariosChangeStatus,
   deleteScenarios,
   cleardeleteScenarios,
@@ -37,6 +39,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Seo from "../../../shared/layout-components/seo/seo";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import ToggleButton from "../../../shared/data/masterButtons/toggleButton";
+import ManipulationToggleButton from "../../../shared/data/masterButtons/manipulationtoggle";
 import ScenarioForm from "../../../shared/data/scenarios/scenariosForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import { Fab } from "@mui/material";
@@ -79,8 +82,6 @@ const ManageScenarios = () => {
     duration: " ",
     status: "true",
   });
-
-  console.log("rowDatarowDatarowDatarowDatarowDatarowDatarowData", rowData);
   const {
     hasGetScenarioListSucc,
     errorData,
@@ -90,12 +91,15 @@ const ManageScenarios = () => {
     errorData1,
     getUserDataFromLocal,
     hasGetScenarioExportSucc,
+    manipulation,
+    hasScenariosmanipulationStatusSucc
   } = useSelector((state) => {
     return {
       hasGetScenarioListSucc:
         state &&
         state.scenarioManage &&
-        state.scenarioManage.getScenarioListData.data,
+        state.scenarioManage.getScenarioListData,
+         manipulation: state?.scenarioManage?.manipulation,
       hasGetScenarioExportSucc:
         state && state.scenarioManage && state.scenarioManage.ScenarioExport,
       deleteScenariosRes:
@@ -104,6 +108,10 @@ const ManageScenarios = () => {
         state &&
         state.scenarioManage &&
         state.scenarioManage.statusChangeScenarios,
+      hasScenariosmanipulationStatusSucc:
+        state &&
+        state.scenarioManage &&
+        state.scenarioManage.statusChangemanipulationScenarios,
       errorData: state && state.scenarioManage && state.scenarioManage.error,
       errorData1: state && state.scenariostart && state.scenariostart.error,
       getUserDataFromLocal:
@@ -117,11 +125,6 @@ const ManageScenarios = () => {
         state.scenarioManage.singleScenarios.data,
     };
   });
-  console.log(
-    "hasGetScenarioListSucchasGetScenarioListSucc",
-    hasGetScenarioListSucc
-  );
-
   const getScenarioSelectStyles = () => {
     return {
       control: (styles) => ({
@@ -197,7 +200,7 @@ const ManageScenarios = () => {
     );
   };
 
-  const columnDefs = [
+  const baseColumnDefs = [
     {
       headerName: "Sr No.",
       field: "",
@@ -282,6 +285,24 @@ const ManageScenarios = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
+
+  const manipulationStatusColumn = {
+  headerName: "Manipulation Status",
+  field: "manipulation_flag",
+  pinned: "right",
+  minWidth: 100,
+  cellRenderer: "actionManipulationSwitchRenderer",
+};
+
+const columnDefs = useMemo(() => {
+  const cols = [...baseColumnDefs];
+  if (manipulation === "1") {
+    cols.push(manipulationStatusColumn);
+  }
+  return cols;
+}, [manipulation]);
+
+
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -427,7 +448,7 @@ const ManageScenarios = () => {
 
   const gridOptions = {
     pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    paginationPageSize: 20, // use state variable for page size
   };
 
   const onGridReady = (params) => {
@@ -563,7 +584,6 @@ const ManageScenarios = () => {
         hasGetScenarioListSucc.filter(
           (data) => data?.status?.toString() == "true"
         );
-      console.log("culprit", filteredData.length);
       setRowData(filteredData && filteredData.length > 0 ? filteredData : []);
       setGridData(filteredData);
     } else if (scenStatus == "false") {
@@ -649,6 +669,22 @@ const ManageScenarios = () => {
       dispatch(clearScenariosChangeStatus());
     }
   }, [hasScenariosStatusSucc]);
+  useEffect(() => {
+    if (hasScenariosmanipulationStatusSucc?.statusCode) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {hasScenariosmanipulationStatusSucc?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+      dispatch(getScenarioList());
+      dispatch(clearchangeManipulationStatus());
+    }
+  }, [hasScenariosmanipulationStatusSucc]);
 
   useEffect(() => {
     if (deleteScenariosRes?.statusCode) {
@@ -690,15 +726,10 @@ const ManageScenarios = () => {
     setBackView(view);
     if (props && props.scenariouuid) {
       title: "Add", setRowId(props.scenariouuid);
-      // setView("Form");
       dispatch(handleManageView("Form"));
-      console.log("first", props.scenariouuid);
     }
   };
-  console.log("rowIdrowId", rowId);
   const handleDeletecard = (item) => {
-    console.log("itemitemitemitemitemitemitem", item);
-
     Swal.fire({
       title: t("common.swal.title"),
       text: t("common.swal.text_delete"),
@@ -748,6 +779,28 @@ const ManageScenarios = () => {
       }
     });
   };
+  const handleManipulationStatusSwitch = (data) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you really want to change the Manipulation status?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: "Yes, change it!",
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const Id = data?.scenarioid;
+        
+        const payload = {
+          status: data.manipulation_flag == "true" ? "false" : "true",
+          scenarioid: Id,
+        };
+        dispatch(changeManipulationStatus(payload, Id));
+      }
+    });
+  };
   const router = useRouter();
 
   useEffect(() => {
@@ -755,11 +808,6 @@ const ManageScenarios = () => {
       setScenType(router.query.type);
     }
   }, [router.query.type]);
-  console.log("scenTypescenTypescenTypescenType", scenType);
-
-  // const handleReturnView = (props) => {
-  //   push(`/scenarios_view/${props?.scenariouuid}`);
-  // };
   const handleReturnView = (props) => {
     push({
       pathname: `/scenarios_view/${props?.scenariouuid}`,
@@ -820,6 +868,15 @@ const ManageScenarios = () => {
         />
       );
     },
+    actionManipulationSwitchRenderer: function (props) {
+    return (
+    <ManipulationToggleButton
+      data={props?.data}
+      handleManipulationStatusSwitch={handleManipulationStatusSwitch}  // pass wrapped function as handleStatusSwitch
+    />
+  );
+  },
+
   };
 
   const [columnsPerRow, setColumnsPerRow] = useState(4);
@@ -996,12 +1053,11 @@ const ManageScenarios = () => {
                     </div>
                   </div>
                 </Col>
-                {console.log(scenStatus, "000000000", rowData)}
                 <Col md={12}>
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                      style={{ height: "40em", width: "100%" }}
+                      style={{ height: "50em", width: "100%" }}
                     >
                       <AgGridReact
                         id="cat_grid"
@@ -1034,6 +1090,7 @@ const ManageScenarios = () => {
               {gridData && gridData.length > 0 ? (
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
+                    
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
@@ -1206,10 +1263,10 @@ const ManageScenarios = () => {
                           {/* Second row for actions */}
                           <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
                             {/* Edit Button */}
-                            {!(
+                            {/* {!(
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
-                            ) && (
+                            ) && ( */}
                                 <div
                                   className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
                                   onClick={() => handleEdit(item)}
@@ -1221,7 +1278,7 @@ const ManageScenarios = () => {
                                     <i className="fe fe-edit"></i>
                                   </OverlayTrigger>
                                 </div>
-                              )}
+                              {/* )} */}
 
                             {/* View Button */}
                             <div
@@ -1240,24 +1297,6 @@ const ManageScenarios = () => {
                                 <i className="fe fe-eye"></i>
                               </OverlayTrigger>
                             </div>
-
-                            {/* <div
-                              className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-                              onClick={() =>
-                                push({
-                                  pathname: `/scenarios_view_start/${item?.scenariouuid}`,
-                                  query: { backType: scenType },
-                                })
-                              }
-                            >
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={<Tooltip>Start Scenario</Tooltip>}
-                              >
-                               <i className="fe fe-play"></i>
-
-                              </OverlayTrigger>
-                            </div> */}
 
                             {item.scenariostatus === "Publish" && (
                               <div
@@ -1314,6 +1353,24 @@ const ManageScenarios = () => {
                                   </OverlayTrigger>
                                 </div>
                               )}
+                            {/* {item.manipulation === "1"&& (
+                                <div className="btn btn-sm ripple me-1">
+                                  <OverlayTrigger
+                                    placement="bottom"
+                                    overlay={<Tooltip>Manipulation Change Status</Tooltip>}
+                                  >
+                                    <label className="custom-switch mb-0">
+                                      <input
+                                        type="checkbox"
+                                        className="custom-switch-input"
+                                        checked={item?.status === "true"}
+                                        onChange={() => handleManipulationStatusSwitch(item)}
+                                      />
+                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                    </label>
+                                  </OverlayTrigger>
+                                </div>
+                              )} */}
                           </div>
                         </Card.Body>
                       </Card>
@@ -1356,73 +1413,6 @@ const ManageScenarios = () => {
           )}
         </Col>
       </Row>
-      {/* <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-            styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              // onClick={handleExportZip}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal> */}
       <Modal
         show={showExportModal}
         onHide={() => setShowExportModal(false)}
