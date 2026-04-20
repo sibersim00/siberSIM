@@ -44,7 +44,6 @@ const PAGINATION_BAR_HEIGHT = 48;
 
 const ManageLearner = () => {
   const dispatch = useDispatch();
-  const gridRef = useRef();
   const { push } = useRouter();
   const { t } = useTranslation();
   const [empStatus, setEmpStatus] = useState("true");

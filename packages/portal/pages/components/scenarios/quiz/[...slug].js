@@ -22,7 +22,6 @@ const PAGINATION_BAR_HEIGHT = 48;
 
 const ScenarioQuiz = () => {
   const dispatch = useDispatch();
-  const gridRef = useRef();
   const { push, query } = useRouter();
 
   const { t } = useTranslation();
