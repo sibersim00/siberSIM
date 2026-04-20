@@ -1326,7 +1326,7 @@ const ConnectionPopover = ({ data, onSelect, onClose }) => {
   const isValidVmbr = (val) => {
   if (!val) return true;
   const num = parseInt(val, 10);
-  return !isNaN(num) && num >= 50 && num <= 999;
+  return !isNaN(val);
 };
       // const popoverRef = useRef(null);
     const labelMap = {
