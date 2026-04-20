@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -27,6 +27,9 @@ import ScenarioForm from "../../../shared/data/customScenario/scenariosForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
 const ManageScenarios = () => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -44,6 +47,9 @@ const ManageScenarios = () => {
   const [approvalFilter, setApprovalFilter] = useState("Approve");
   const [approvalStatus, setApprovalStatus] = useState("");
   const [showTabs, setShowTabs] = useState(true);
+  const gridRef = useRef(null);
+  const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+    
   const {
     hasGetScenarioListSucc,
     hasGetScenarioListapprovedSucc,
@@ -298,14 +304,28 @@ const ManageScenarios = () => {
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
 
   const getActiveDataSource = () => {
     if (approvalFilter === "Approve") {
@@ -742,6 +762,8 @@ const ManageScenarios = () => {
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
+                        paginationPageSize={20}
+                        onPaginationChanged={onPaginationChanged}
                         context={{ approvalFilter }}
                       ></AgGridReact>
                     </div>

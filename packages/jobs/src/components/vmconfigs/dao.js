@@ -3440,9 +3440,9 @@ if (mode === "existing") {
               return { success: false, message: "Invalid number format" };
             }
 
-            if (num < 50 || num > 999) {
-              return { success: false, message: "Value must be between 50–999" };
-            }
+            // if (num < 50 || num > 999) {
+            //   return { success: false, message: "Value must be between 50–999" };
+            // }
 
             networkname = `vmbr${num}`;
             finalLabel = networkname; // instead of label

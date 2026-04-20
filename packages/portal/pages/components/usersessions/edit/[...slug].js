@@ -1260,17 +1260,26 @@ const buildNetworkPayload = (type, staticValue) => {
   let activeNode = dragStart?.nodeId;
   let activeHandle = normalizeHandle(dragStart?.handleId);
   corrected.sourceHandle = params.sourceHandle;
-  let options = [];const getEdgeMatch = (e) => {
-  const edgeSourceHandle = normalizeHandle(e.sourceHandle);
-  const edgeTargetHandle = normalizeHandle(e.targetHandle);
+  let options = [];
+  
+  const getEdgeMatch = (e) => {
+    const edgeSourceHandle = normalizeHandle(e.sourceHandle);
+    const edgeTargetHandle = normalizeHandle(e.targetHandle);
 
-  return (
-    (e.source === activeNode &&
-      edgeSourceHandle === activeHandle) ||
-    (e.target === activeNode &&
-      edgeTargetHandle === activeHandle)
-  );
-};
+    const sourceHandle = normalizeHandle(corrected.sourceHandle);
+    const targetHandle = normalizeHandle(corrected.targetHandle);
+
+    return (
+      (e.source === corrected.source &&
+        edgeSourceHandle === sourceHandle) ||
+      (e.target === corrected.source &&
+        edgeTargetHandle === sourceHandle) ||
+      (e.source === corrected.target &&
+        edgeSourceHandle === targetHandle) ||
+      (e.target === corrected.target &&
+        edgeTargetHandle === targetHandle)
+    );
+  };
   const matchingEdges = edges.filter(getEdgeMatch);
   const hasSourceLink = matchingEdges.length > 0;
   const sourceEdge = matchingEdges[0];
@@ -1416,7 +1425,7 @@ const iconMap = {
           >
             <input
               type="text"
-              placeholder="Please enter a valid number(50-999)"
+              placeholder="Please enter a valid number"
               value={staticInput}
               onChange={(e) => setStaticInput(e.target.value)}
               style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: 12,
@@ -1469,16 +1478,16 @@ const iconMap = {
           onClick={() => {
             if (!isValidVmbr(staticInput)) {
               // alert("Enter valid vmbr (700–1000)");
-              toast.error(
-            <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-              Enter valid number (50–999)
-            </p>,
-            {
-              position: toast.POSITION.TOP_RIGHT,
-              hideProgressBar: false,
-              theme: "colored",
-            },
-          );
+          //     toast.error(
+          //   <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          //     Enter valid number (50–999)
+          //   </p>,
+          //   {
+          //     position: toast.POSITION.TOP_RIGHT,
+          //     hideProgressBar: false,
+          //     theme: "colored",
+          //   },
+          // );
               return;
             }
 

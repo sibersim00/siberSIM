@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { Row, Col, Card, Form, Button, Spinner } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
@@ -20,6 +20,10 @@ import { useFormik } from "formik";
 import * as yup from "yup";
 import { getComponentDetails } from "../../../shared/redux/slices/localstorage/LocalStorage";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const UserRoleMapping = () => {
   const dispatch = useDispatch();
   const [title, setTitle] = useState('');
@@ -31,6 +35,11 @@ const UserRoleMapping = () => {
   const [rowData, SetRowData] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showData, setshowData] = useState();
+
+ const [pageSize, setPageSize] = useState(20);
+    const gridRef = useRef(null);
+     const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+
   const [oneClick, setOneClick] = useState(false);
   const {
     errorData,
@@ -159,14 +168,33 @@ const UserRoleMapping = () => {
     }
   }, [getShowRightData]);
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10,
+ const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
   useEffect(() => {
     if (gridApi) {
@@ -430,8 +458,12 @@ const UserRoleMapping = () => {
 
                 <Col md={12}>
                   <div
-                    className="ag-theme-alpine"
-                    style={{ height: "38em", width: "100%" }}
+  className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="staff_grid"
@@ -440,10 +472,12 @@ const UserRoleMapping = () => {
                       gridOptions={gridOptions}
                       rowData={rowData}
                       columnDefs={columnDefs}
+                      paginationPageSize={20}
                       pagination={true}
                       onGridReady={onGridReady}
                       frameworkComponents={frameworkComponents}
                       defaultColDef={defaultColDef}
+                       onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>
                   </div>
                 </Col>

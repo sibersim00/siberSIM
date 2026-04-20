@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -32,6 +32,12 @@ import ComponentForm from "../../../shared/data/component/componentForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
+
+
+
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
 
 const ManageComponent = () => {
     const { t } = useTranslation();
@@ -67,6 +73,12 @@ const ManageComponent = () => {
   });
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
+
+
+  const [pageSize, setPageSize] = useState(20);
+  const gridRef = useRef(null);
+   const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+
   const viewType = router.query.view || "card";
   useEffect(() => {
     if (viewType == "") {
@@ -200,7 +212,7 @@ const ManageComponent = () => {
       headerName: "Status",
       field: "status",
       pinned: "right",
-      minWidth: 80,
+      maxWidth: 80,
       cellRenderer: "actionSwitchRenderer",
     },
     {
@@ -208,7 +220,7 @@ const ManageComponent = () => {
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 130,
+      minWidth: 30,
       cellRenderer: "actionButtonRenderer",
     },
   ];
@@ -333,14 +345,35 @@ const ManageComponent = () => {
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
+  // const gridOptions = {
+  //   pagination: true,
+  //   paginationPageSize: 20,
+  // };
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+  // const onGridReady = (params) => {
+  //   setGridApi(params.api);
+  // };
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
@@ -856,29 +889,33 @@ const ManageComponent = () => {
               </Card.Body>
             )}
             {view === "list" && (
-              <Col md={12}>
-                {view == "list" ? (
-                  <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "50em", width: "100%" }}
-                  >
-                    <AgGridReact
-                      id="cat_grid"
-                      headerHeight={35}
-                      rowHeight={40}
-                      gridOptions={gridOptions}
-                      rowData={rowData}
-                      columnDefs={columnDefs}
-                      pagination={true}
-                      onGridReady={onGridReady}
-                      components={frameworkComponents}
-                      defaultColDef={defaultColDef}
-                    ></AgGridReact>
-                  </div>
-                ) : (
-                  ""
-                )}
-              </Col>
+                              <Col md={12}>
+                    {view === "list" && (
+                      <div
+                        className="ag-theme-alpine mt-2"
+                        style={{
+                          height: `${gridHeight}px`,
+                          width: "100%",
+                          overflow: "visible",     
+                        }}
+                      >
+                        <AgGridReact
+                          ref={gridRef}
+                          headerHeight={HEADER_HEIGHT}
+                          rowHeight={ROW_HEIGHT}
+                          gridOptions={gridOptions}
+                          rowData={rowData}
+                          columnDefs={columnDefs}
+                          pagination={true}
+                          onGridReady={onGridReady}
+                          paginationPageSize={20}
+                          onPaginationChanged={onPaginationChanged}
+                          components={frameworkComponents}
+                          defaultColDef={defaultColDef}
+                        />
+                      </div>
+                    )}
+                  </Col>
             )}
           </Card>
         </Col>

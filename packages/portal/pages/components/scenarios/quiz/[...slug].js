@@ -16,6 +16,10 @@ import CreateQuestions from "../../../../shared/data/scenarioQuiz/create-quiz";
 import ImportScenarioQuizList from "../../../../shared/data/scenarioQuiz/import-quiz";
 import { maxWidth, width } from "@mui/system";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ScenarioQuiz = () => {
   const dispatch = useDispatch();
   const gridRef = useRef();
@@ -33,6 +37,9 @@ const ScenarioQuiz = () => {
   const [scenarioid, setScenarioid] = useState(0);
   const [ScenarioQuizData, setScenarioQuizData] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+     const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const [rowValues, setRowValues] = useState({
     scenarioid: scenarioid,
     scenarioquestionid: 0,
@@ -203,14 +210,33 @@ const ScenarioQuiz = () => {
   }, []);
 
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10,
-  };
-
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+ const gridOptions = {
+     headerHeight: HEADER_HEIGHT,
+     rowHeight: ROW_HEIGHT,
+     suppressScrollOnNewData: true,
+   };
+ 
+ const onGridReady = useCallback((params) => {
+   gridRef.current = params.api;
+ 
+   // Set correct height on first load as well
+   const initialPageSize = params.api.paginationGetPageSize();
+   const totalRows = params.api.getDisplayedRowCount();
+   const effectiveRows = Math.min(initialPageSize, totalRows);
+   setPageSize(effectiveRows);
+ }, []);
+   
+     // Fires when page size changes via the built-in dropdown
+    const onPaginationChanged = useCallback((params) => {
+   if (params.api) {
+     const newPageSize = params.api.paginationGetPageSize();
+     const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+ 
+     // Use whichever is smaller — actual rows vs page size
+     const effectiveRows = Math.min(newPageSize, totalRows);
+     setPageSize(effectiveRows);
+   }
+ }, []);
 
   const onFilterChanged = (data) => {
     gridApi.setQuickFilter(data);
@@ -505,8 +531,12 @@ const ScenarioQuiz = () => {
               </div>
 
               <div
-                className="ag-theme-alpine mg-t-20"
-                style={{ height: "40.2em", width: "100%" }}
+                  className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
               >
                 <AgGridReact
                   id="staff_grid"
@@ -517,10 +547,12 @@ const ScenarioQuiz = () => {
                   pagination={true}
                   onGridReady={onGridReady}
                   components={frameworkComponents}
+                  paginationPageSize={20}
                   defaultColDef={defaultColDef}
                   overlayNoRowsTemplate="No data available"
                   suppressRowClickSelection={true}
                 // onFirstDataRendered={autoSizeAll}
+                  onPaginationChanged={onPaginationChanged} //  track page size changes
                 ></AgGridReact>
               </div>
 

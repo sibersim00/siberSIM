@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import Seo from "../../../../shared/layout-components/seo/seo";
@@ -27,6 +27,11 @@ import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-b
 import AddParticipantModal from "../../../../shared/data/events/addParticipantModal";
 import ListParticipantModal from "../../../../shared/data/events/listParticipantModal";
 import AddEventModal from "../../../../shared/data/events/AddeventModal";
+
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ManageEvents = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -62,6 +67,10 @@ const ManageEvents = () => {
   const [oneClick, setOneClick] = useState(false);
   const [addformModal, addsetformModal] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
+    const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+
   const [rowValues, setRowValues] = useState({
     title: "Add",
     eventid: 0,
@@ -297,13 +306,35 @@ const ManageEvents = () => {
       maxWidth: 150,
     },
   ];
+
   const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10,
-  };
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+     headerHeight: HEADER_HEIGHT,
+     rowHeight: ROW_HEIGHT,
+     suppressScrollOnNewData: true,
+   };
+ 
+ const onGridReady = useCallback((params) => {
+   gridRef.current = params.api;
+ 
+   // Set correct height on first load as well
+   const initialPageSize = params.api.paginationGetPageSize();
+   const totalRows = params.api.getDisplayedRowCount();
+   const effectiveRows = Math.min(initialPageSize, totalRows);
+   setPageSize(effectiveRows);
+ }, []);
+   
+     // Fires when page size changes via the built-in dropdown
+    const onPaginationChanged = useCallback((params) => {
+   if (params.api) {
+     const newPageSize = params.api.paginationGetPageSize();
+     const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+ 
+     // Use whichever is smaller — actual rows vs page size
+     const effectiveRows = Math.min(newPageSize, totalRows);
+     setPageSize(effectiveRows);
+   }
+ }, []);
+
   const defaultColDef = useMemo(
     () => ({
       sortable: true,
@@ -509,8 +540,12 @@ const frameworkComponents = {
               <Card.Body>
                 <Col md={12}>
                   <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                   className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="cat_grid"
@@ -525,6 +560,7 @@ const frameworkComponents = {
                       onGridReady={onGridReady}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                      onPaginationChanged={onPaginationChanged} //  track page size changes
                     />
                   </div>
                 </Col>

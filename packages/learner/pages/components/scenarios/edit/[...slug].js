@@ -1263,20 +1263,26 @@ const onHandleMouseDown = (event, portKey, nodeId) => {
   const  onConnect = useCallback(
     (params) => {
   let corrected = { ...params };
-  let activeNode = dragStart?.nodeId;
-  let activeHandle = normalizeHandle(dragStart?.handleId);
   corrected.sourceHandle = params.sourceHandle;
-  let options = [];const getEdgeMatch = (e) => {
-  const edgeSourceHandle = normalizeHandle(e.sourceHandle);
-  const edgeTargetHandle = normalizeHandle(e.targetHandle);
+  let options = [];
+  const getEdgeMatch = (e) => {
+    const edgeSourceHandle = normalizeHandle(e.sourceHandle);
+    const edgeTargetHandle = normalizeHandle(e.targetHandle);
 
-  return (
-    (e.source === activeNode &&
-      edgeSourceHandle === activeHandle) ||
-    (e.target === activeNode &&
-      edgeTargetHandle === activeHandle)
-  );
-};
+    const sourceHandle = normalizeHandle(corrected.sourceHandle);
+    const targetHandle = normalizeHandle(corrected.targetHandle);
+
+    return (
+      (e.source === corrected.source &&
+        edgeSourceHandle === sourceHandle) ||
+      (e.target === corrected.source &&
+        edgeTargetHandle === sourceHandle) ||
+      (e.source === corrected.target &&
+        edgeSourceHandle === targetHandle) ||
+      (e.target === corrected.target &&
+        edgeTargetHandle === targetHandle)
+    );
+  };
   const matchingEdges = edges.filter(getEdgeMatch);
   const hasSourceLink = matchingEdges.length > 0;
   const sourceEdge = matchingEdges[0];
@@ -1458,7 +1464,7 @@ const iconMap = {
           >
             <input
               type="text"
-              placeholder="Please enter a valid number(50-999)"
+              placeholder="Please enter a valid number"
               value={staticInput}
               onChange={(e) => setStaticInput(e.target.value)}
               style={{
@@ -1522,16 +1528,16 @@ const iconMap = {
           onClick={() => {
             if (!isValidVmbr(staticInput)) {
               // alert("Enter valid vmbr (700–1000)");
-              toast.error(
-                          <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-                            Enter valid number (50–999)
-                          </p>,
-                          {
-                            position: toast.POSITION.TOP_RIGHT,
-                            hideProgressBar: false,
-                            theme: "colored",
-                          },
-                        );
+              // toast.error(
+              //             <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+              //               Enter valid number (50–999)
+              //             </p>,
+              //             {
+              //               position: toast.POSITION.TOP_RIGHT,
+              //               hideProgressBar: false,
+              //               theme: "colored",
+              //             },
+              //           );
               return;
             }
 
@@ -1597,20 +1603,6 @@ const iconMap = {
       setBridgeLoading(false);
     }
   };
-// const normalizeHandle = (handle, expectedType) => {
-//   if (!handle) return handle;
-//   const [port, type] = handle.split("-");
-//   if (!type) {
-//     return `${port}-${expectedType}`;
-//   }
-//   if (expectedType === "source" && type !== "source") {
-//     return `${port}-source`;
-//   }
-//   if (expectedType === "target" && type !== "target") {
-//     return `${port}-target`;
-//   }
-//   return handle;
-// };
 const normalizeHandle = (handle) => {
   if (!handle) return handle;
 

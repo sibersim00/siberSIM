@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef,useCallback  } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -27,6 +27,10 @@ import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ManageCustomComponent = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -43,6 +47,9 @@ const ManageCustomComponent = () => {
   const [oneClick, setOneClick] = useState(false);
   const [backview, setBackView] = useState("card");
   const viewType = router.query.view || "card";
+     const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   useEffect(() => {
     if (viewType == "") {
       setView("list");
@@ -193,14 +200,34 @@ const ManageCustomComponent = () => {
     setOneClick(flag);
   };
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
+ const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
+
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     const val = data.toLowerCase();
@@ -500,8 +527,12 @@ const ManageCustomComponent = () => {
               <Col md={12}>
                 {view == "list" ? (
                   <div
-                    className="ag-theme-alpine mt-2"
-                    style={{ height: "50em", width: "100%" }}
+                     className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="cat_grid"
@@ -512,8 +543,11 @@ const ManageCustomComponent = () => {
                       columnDefs={columnDefs}
                       pagination={true}
                       onGridReady={onGridReady}
+                      paginationPageSize={20}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                      onPaginationChanged={onPaginationChanged} //  track page size changes
+                      
                     ></AgGridReact>
                   </div>
                 ) : (

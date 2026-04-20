@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef,useCallback } from "react";
 import * as yup from "yup";
 import * as XLSX from "xlsx";
 import { AgGridReact } from "ag-grid-react";
@@ -16,12 +16,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { error } from '../../../shared/data/common/vaidationMessage/formValidationMsg';
 import {getListOfUser, saveImportAdUser, clearImportAdUser,clearHasError} from "../../../shared/redux/slices/admin/Users"; 
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
 function ImportAdInstructor({ impUser, setimpUser }) {
   const dispatch = useDispatch();
   const [questionBanlList, setQuestionBanlList] = useState([]);
   const [rowData, setRowData] = useState([]);
   const [agGrid, setAgGrid] = useState("Hide");
   const [clearClose, setClearClose] = useState("");
+
+   const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const { saveImportAdUserResp, errorData, } =
     useSelector((state) => (
     console.log('saveImportAdUserResp',state),
@@ -134,10 +141,33 @@ function ImportAdInstructor({ impUser, setimpUser }) {
       return null; 
     },
   };
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, 
-  };
+     const gridOptions = {
+     headerHeight: HEADER_HEIGHT,
+     rowHeight: ROW_HEIGHT,
+     suppressScrollOnNewData: true,
+   };
+ 
+ const onGridReady = useCallback((params) => {
+   gridRef.current = params.api;
+ 
+   // Set correct height on first load as well
+   const initialPageSize = params.api.paginationGetPageSize();
+   const totalRows = params.api.getDisplayedRowCount();
+   const effectiveRows = Math.min(initialPageSize, totalRows);
+   setPageSize(effectiveRows);
+ }, []);
+   
+     // Fires when page size changes via the built-in dropdown
+    const onPaginationChanged = useCallback((params) => {
+   if (params.api) {
+     const newPageSize = params.api.paginationGetPageSize();
+     const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+ 
+     // Use whichever is smaller — actual rows vs page size
+     const effectiveRows = Math.min(newPageSize, totalRows);
+     setPageSize(effectiveRows);
+   }
+ }, []);
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -487,8 +517,12 @@ if (errorData?.statusCode === 400) {
               {agGrid === "Show" && (
                 <Col md={12}>
                   <div
-                    className="ag-theme-alpine  mg-t-20"
-                    style={{ height: "38em", width: "100%" }}
+                     className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     
                     <AgGridReact
@@ -500,7 +534,9 @@ if (errorData?.statusCode === 400) {
                       columnDefs={columnDefs}
                       pagination={true}
                       defaultColDef={defaultColDef}
+                      paginationPageSize={20}
                       components={frameworkComponents}
+                         onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>
                   </div>
                 </Col>

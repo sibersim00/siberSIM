@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo ,useRef,useCallback} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -43,6 +43,11 @@ import ChatBox from "./chatbox"; // Import the ChatBox component
 // import { color } from "@mui/system";
 import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 
+
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 155;
+
 const UserSession = () => {
   const dispatch = useDispatch();
   const [view, setView] = useState("card");
@@ -61,6 +66,13 @@ const UserSession = () => {
       action: null,
     });
   const [selectedSession, setSelectedSession] = useState(null); // State to manage chat visibility
+
+
+  const [pageSize, setPageSize] = useState(20);
+  const gridRef = useRef(null);
+   const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+
+
   const { push } = useRouter();
   const {
     hasGetUserSessionListSucc,
@@ -156,14 +168,36 @@ const UserSession = () => {
     };
   }, []);
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+  // const gridOptions = {
+  //   pagination: true,
+  //   paginationPageSize: 10, // use state variable for page size
+  // };
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); 
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
   const onFilterChanged = (data) => {
     setQuickFilter(data);
@@ -795,7 +829,7 @@ const footerStyle = {
                     </div>
                   </div>
                 </Col>
-                <Col md={12}>
+                {/* <Col md={12}>
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
@@ -818,7 +852,34 @@ const footerStyle = {
                   ) : (
                     ""
                   )}
-                </Col>
+                </Col> */}
+                <Col md={12}>
+      {view === "list" && (
+        <div
+          className="ag-theme-alpine mt-2"
+          style={{
+            height: `${gridHeight}px`,
+            width: "100%",
+            overflow: "visible",
+          }}
+        >
+          <AgGridReact
+            ref={gridRef}
+            headerHeight={HEADER_HEIGHT}
+            rowHeight={ROW_HEIGHT}
+            gridOptions={gridOptions}
+            rowData={rowData}
+            columnDefs={columnDefs}
+            pagination={true}
+            onGridReady={onGridReady}
+            paginationPageSize={20}
+            onPaginationChanged={onPaginationChanged} // ✅ track page size changes
+            components={frameworkComponents}
+            defaultColDef={defaultColDef}
+          />
+        </div>
+      )}
+    </Col>
               </Card.Body>
             </Card>
           </Col>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback  } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -48,6 +48,10 @@ import { useTranslation } from "react-i18next";
 import ScenarioModal from "../../../shared/data/scenarios/scenarioModal";
 // import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ManageScenarios = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -67,6 +71,11 @@ const ManageScenarios = () => {
   const [backview, setBackView] = useState("card");
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedScenarios, setSelectedScenarios] = useState([]);
+
+    const [pageSize, setPageSize] = useState(20);
+    const gridRef = useRef(null);
+     const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+  
 
   const [rowValues, setRowValues] = useState({
     title: "Add",
@@ -271,7 +280,7 @@ const ManageScenarios = () => {
       headerName: "Status",
       field: "status",
       pinned: "right",
-      minWidth: 80,
+      maxWidth: 70,
       pinned: "right",
       cellRenderer: "actionSwitchRenderer",
     },
@@ -280,7 +289,7 @@ const ManageScenarios = () => {
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 160,
+      maxWidth: 160,
       pinned: "right",
       cellRenderer: "actionButtonRenderer",
     },
@@ -290,8 +299,9 @@ const ManageScenarios = () => {
   headerName: "Manipulation Status",
   field: "manipulation_flag",
   pinned: "right",
-  minWidth: 100,
+  maxWidth: 100,
   cellRenderer: "actionManipulationSwitchRenderer",
+  headerTooltip: "Toggle to enable or disable manipulation for this record"
 };
 
 const columnDefs = useMemo(() => {
@@ -446,15 +456,33 @@ const columnDefs = useMemo(() => {
     }
   }, [hasGetScenarioExportSucc]);
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20, // use state variable for page size
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
 
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     let val = data.toLowerCase();
@@ -1057,7 +1085,11 @@ const columnDefs = useMemo(() => {
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                      style={{ height: "50em", width: "100%" }}
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                     >
                       <AgGridReact
                         id="cat_grid"
@@ -1069,6 +1101,8 @@ const columnDefs = useMemo(() => {
                         pagination={true}
                         onGridReady={onGridReady}
                         components={frameworkComponents}
+                        paginationPageSize={20}
+                        onPaginationChanged={onPaginationChanged} //  track page size changes
                         defaultColDef={defaultColDef}
                       //  overlayNoRowsTemplate={
                       //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
