@@ -1085,11 +1085,11 @@ const onGridReady = useCallback((params) => {
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                       style={{
-                          height: `${gridHeight}px`, //  dynamic, grows with page size
-                          width: "100%",
-                          overflow: "visible",        // no internal scrollbar
-                        }}
+                      style={{
+                        height: `${gridHeight}px`, //  dynamic, grows with page size
+                        width: "100%",
+                        overflow: "visible", // no internal scrollbar
+                      }}
                     >
                       <AgGridReact
                         id="cat_grid"
@@ -1104,9 +1104,9 @@ const onGridReady = useCallback((params) => {
                         paginationPageSize={20}
                         onPaginationChanged={onPaginationChanged} //  track page size changes
                         defaultColDef={defaultColDef}
-                      //  overlayNoRowsTemplate={
-                      //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
-                      // }
+                        //  overlayNoRowsTemplate={
+                        //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
+                        // }
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -1124,22 +1124,22 @@ const onGridReady = useCallback((params) => {
               {gridData && gridData.length > 0 ? (
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
-                    
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${
+                          item.scenariostatus === "Publish"
                             ? "shadow-publish"
                             : item.scenariostatus === "Draft"
                               ? "shadow-draft"
                               : ""
-                          }`}
+                        }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
                           {item.requestedby_role === "Admin" &&
                             item.vm_steps === "Running" &&
                             ["Start", "Resume", "Pause"].includes(
-                              item.vm_status
+                              item.vm_status,
                             ) && (
                               <span
                                 className="position-absolute top-0 end-0 m-2 px-1 py-1 rounded-pill text-white"
@@ -1180,23 +1180,16 @@ const onGridReady = useCallback((params) => {
                               />
                             </div>
 
-                            <h5 className="text-dark mt-2 mb-1 fs-5 pointer">
+                         
+                            <h5 className="text-dark mt-2 mb-1 fs-6 pointer">
                               <OverlayTrigger
                                 placement="top"
                                 overlay={
                                   <Tooltip>{item.scenariotitle}</Tooltip>
                                 }
                               >
-                                <span
-                                  className="d-inline-block text-truncate w-100"
-                                  style={{ maxWidth: "100%" }}
-                                >
-                                  {item.scenariotitle?.length > 30
-                                    ? `${item.scenariotitle.substring(
-                                      0,
-                                      27
-                                    )}...`
-                                    : item.scenariotitle}
+                                <span className="w-100 wrap-text">
+                                  {item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
                             </h5>
@@ -1269,7 +1262,9 @@ const onGridReady = useCallback((params) => {
                             <div
                               className="btn btn-sm ripple bg-info text-dark rounded-circle"
                               // onClick={() => handleExport(item.scenarioid)}
-                              onClick={() => handleScenarioExport(item.scenarioid)}
+                              onClick={() =>
+                                handleScenarioExport(item.scenarioid)
+                              }
                             >
                               <OverlayTrigger
                                 placement="bottom"
@@ -1301,18 +1296,18 @@ const onGridReady = useCallback((params) => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && ( */}
-                                <div
-                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                  onClick={() => handleEdit(item)}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Update</Tooltip>}
-                                  >
-                                    <i className="fe fe-edit"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              {/* )} */}
+                            <div
+                              className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={<Tooltip>Update</Tooltip>}
+                              >
+                                <i className="fe fe-edit"></i>
+                              </OverlayTrigger>
+                            </div>
+                            {/* )} */}
 
                             {/* View Button */}
                             <div
@@ -1370,23 +1365,23 @@ const onGridReady = useCallback((params) => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                                <div className="btn btn-sm ripple me-1">
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Change Status</Tooltip>}
-                                  >
-                                    <label className="custom-switch mb-0">
-                                      <input
-                                        type="checkbox"
-                                        className="custom-switch-input"
-                                        checked={item?.status === "true"}
-                                        onChange={() => handleStatusSwitch(item)}
-                                      />
-                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                    </label>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                              <div className="btn btn-sm ripple me-1">
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Change Status</Tooltip>}
+                                >
+                                  <label className="custom-switch mb-0">
+                                    <input
+                                      type="checkbox"
+                                      className="custom-switch-input"
+                                      checked={item?.status === "true"}
+                                      onChange={() => handleStatusSwitch(item)}
+                                    />
+                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                  </label>
+                                </OverlayTrigger>
+                              </div>
+                            )}
                             {/* {item.manipulation === "1"&& (
                                 <div className="btn btn-sm ripple me-1">
                                   <OverlayTrigger
@@ -1475,9 +1470,9 @@ const onGridReady = useCallback((params) => {
                 { value: "all", label: "Select All Scenarios" },
                 ...(Array.isArray(hasGetScenarioListSucc)
                   ? hasGetScenarioListSucc.map((s) => ({
-                    value: s.scenarioid,
-                    label: s.scenariotitle,
-                  }))
+                      value: s.scenarioid,
+                      label: s.scenariotitle,
+                    }))
                   : []),
               ]}
               value={selectedScenarios}
@@ -1487,7 +1482,7 @@ const onGridReady = useCallback((params) => {
                     (hasGetScenarioListSucc || []).map((s) => ({
                       value: s.scenarioid,
                       label: s.scenariotitle,
-                    }))
+                    })),
                   );
                 } else {
                   setSelectedScenarios(selected);
@@ -1517,7 +1512,7 @@ const onGridReady = useCallback((params) => {
                   const blob = await dispatch(
                     exportSelectedScenariosAction({
                       scenarioIds: selectedScenarios.map((s) => s.value),
-                    })
+                    }),
                   );
 
                   const url = window.URL.createObjectURL(new Blob([blob]));

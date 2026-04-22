@@ -1418,10 +1418,51 @@ const getHibernateDelay = async (db) => {
   }
 };
 
+
+
+const getPauselimit = async (db) => {
+  try {
+    const settings = await db.sequelize.query(
+      `SELECT pause_limit FROM web_settings WHERE status = 1 LIMIT 1`,
+      { type: db.sequelize.QueryTypes.SELECT },
+    );
+
+    const pauseLimitValue =
+      settings?.[0]?.pause_limit && Number.isFinite(settings[0].pause_limit)
+        ? settings[0].pause_limit
+        : 5;
+
+    return pauseLimitValue;
+  } catch (err) {
+    console.error("Error fetching pause_limit:", err);
+    return 5; // fallback to default
+  }
+};
+
 const pauseScenarioLearner =
   ({ db, ipAddress }) =>
-  async (vmrequestid) => {
+  async (vmrequestid, learner_id) => {
     try {
+      const pauseLimit = await getPauselimit(db);
+      const [pausedCountResult] = await db.sequelize.query(
+        `SELECT COUNT(*) AS pausedCount
+         FROM vm_request
+         WHERE requestedby_id = :learner_id
+         AND requestedby_role = 'Learner'
+         AND status = 'Pause'`,
+        {
+          replacements: { learner_id },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if ((pausedCountResult?.pausedCount || 0) >= pauseLimit) {
+        return {
+          statusCode: 400,
+          message: `You have reached the maximum pause limit (${pauseLimit}).`,
+        };
+      }
+
       // ------------------ FETCH COMPONENTS ------------------
       const components = await db.sequelize.query(
         `SELECT vmid, componenttype, componentname
@@ -3111,6 +3152,595 @@ const deleteScenarioVmNetwork =
     }
   };
 
+// const ModifyScenarioVmNetwork =
+//   ({ ipAddress, db }) =>
+//   async (
+//     vmid,
+//     Targetvmid,
+//     netKey,
+//     mode,
+//     source,
+//     sourceHandle,
+//     target,
+//     targetHandle,
+//     label,
+//     staticVmbr
+//   ) => {
+//     const [vmTypeRow] = await db.sequelize.query(
+//       `SELECT componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+//       {
+//         replacements: [vmid],
+//         type: db.sequelize.QueryTypes.SELECT,
+//       },
+//     );
+
+//     if (!vmTypeRow?.componenttype) {
+//       return { success: false, message: "VM type not found" };
+//     }
+
+//     const normalizedVmType = vmTypeRow.componenttype.toLowerCase();
+//     try {
+//       let networkid = null;
+//       let networkname = null;
+//       let netValue = null;
+//       let finalLabel = label;
+//       /* =========================================================
+//            MODE: NEW
+//         ========================================================= */
+//       if (mode === "new") {
+//         const [availableNetwork] = await db.sequelize.query(
+//           `SELECT networkid, networkname FROM networks 
+//            WHERE status='Available' AND deletedon IS NULL 
+//            ORDER BY networkid ASC LIMIT 1`,
+//           { type: db.sequelize.QueryTypes.SELECT },
+//         );
+
+//         if (!availableNetwork) {
+//           return { success: false, message: "No free networks." };
+//         }
+
+//         networkid = availableNetwork.networkid;
+//         networkname = availableNetwork.networkname;
+//         finalLabel = networkname;
+
+//         const ethIndex = netKey.replace("net", "");
+
+//         // ---------- SOURCE NET VALUE ----------
+//         if (normalizedVmType === "qemu") {
+//           netValue = `virtio,bridge=${networkname}`;
+//         } else if (normalizedVmType === "lxc") {
+//           netValue = `name=eth${ethIndex},bridge=${networkname}`;
+//         } else {
+//           return { success: false, message: "Unsupported VM type" };
+//         }
+
+//         // ---------- TARGET VM FETCH ----------
+//         const [targetVmRow] = await db.sequelize.query(
+//           `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+//           {
+//             replacements: [Targetvmid], // ⚠️ ensure this maps correctly
+//             type: db.sequelize.QueryTypes.SELECT,
+//           },
+//         );
+
+//         if (!targetVmRow) {
+//           return { success: false, message: "Target VM not found" };
+//         }
+
+//         const targetVmType = targetVmRow.componenttype.toLowerCase();
+
+//         const targetNetKey = targetHandle
+//           .replace("-target", "")
+//           .replace("-source", "");
+
+//         let targetNetValue;
+
+//         if (targetVmType === "qemu") {
+//           targetNetValue = `virtio,bridge=${networkname}`;
+//         } else if (targetVmType === "lxc") {
+//           const targetEthIndex = targetNetKey.replace("net", "");
+//           targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
+//         }
+
+//         // ---------- PROXMOX ----------
+//         const proxmoxService = ProxMoxService(
+//           db,
+//           { vmType: normalizedVmType },
+//           ipAddress,
+//         );
+
+//       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, normalizedVmType);
+
+//       console.log("vmInfovmInfovmInfovmInfovmInfo",vmInfo);
+    
+//         const token = await proxmoxService.generateAccessTicket();
+//         if (!token || token.status !== "200") {
+//           return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
+//         }
+
+//         // 👉 APPLY TO SOURCE
+//         const addNetSource = await proxmoxService.addVmNetwork(
+//           vmid,
+//           normalizedVmType,
+//           netKey,
+//           netValue,
+//         );
+
+//         await sleep(3000);
+
+//         // 👉 APPLY TO TARGET
+//         const proxmoxServiceTarget = ProxMoxService(
+//           db,
+//           { vmType: targetVmType },
+//           ipAddress,
+//         );
+//         const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+//           targetVmRow.vmid,
+//           targetVmType,
+//           targetNetKey,
+//           targetNetValue,
+//         );
+//         if (
+//           addNetSource?.status !== 200 ||
+//           addNetTarget?.status !== 200
+//         ) {
+//           return {
+//             success: false,
+//             message: "Failed to apply network bridge to both VMs",
+//           };
+//         }
+
+//         // ---------- MARK NETWORK USED ----------
+//         await db.sequelize.query(
+//           `UPDATE networks
+//            SET status='In Use', modifiedon=NOW()
+//            WHERE networkid=?`,
+//           {
+//             replacements: [networkid],
+//             type: db.sequelize.QueryTypes.UPDATE,
+//           },
+//         );
+
+//         /* ---------- UPDATE SOURCE JSON ---------- */
+//         const [sourceVmRow] = await db.sequelize.query(
+//           `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+//           {
+//             replacements: [vmid],
+//             type: db.sequelize.QueryTypes.SELECT,
+//           },
+//         );
+
+//         let sourceBridgeJson = {};
+//         if (sourceVmRow?.network_bridge_json) {
+//           try {
+//             sourceBridgeJson = JSON.parse(
+//               sourceVmRow.network_bridge_json,
+//             );
+//           } catch {}
+//         }
+
+//         sourceBridgeJson[netKey] = {
+//           networkid,
+//           networkname,
+//           value: netValue,
+//         };
+
+//         await db.sequelize.query(
+//           `UPDATE vm_config 
+//            SET network_bridge_json=?, modifiedon=NOW() 
+//            WHERE vmid=?`,
+//           {
+//             replacements: [
+//               JSON.stringify(sourceBridgeJson),
+//               vmid,
+//             ],
+//             type: db.sequelize.QueryTypes.UPDATE,
+//           },
+//         );
+
+//         /* ---------- UPDATE TARGET JSON ---------- */
+//         const [targetVmConfig] = await db.sequelize.query(
+//           `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+//           {
+//             replacements: [targetVmRow.vmid],
+//             type: db.sequelize.QueryTypes.SELECT,
+//           },
+//         );
+
+//         let targetBridgeJson = {};
+//         if (targetVmConfig?.network_bridge_json) {
+//           try {
+//             targetBridgeJson = JSON.parse(
+//               targetVmConfig.network_bridge_json,
+//             );
+//           } catch {}
+//         }
+
+//         targetBridgeJson[targetNetKey] = {
+//           networkid,
+//           networkname,
+//           value: targetNetValue,
+//         };
+
+//         await db.sequelize.query(
+//           `UPDATE vm_config 
+//            SET network_bridge_json=?, modifiedon=NOW() 
+//            WHERE vmid=?`,
+//           {
+//             replacements: [
+//               JSON.stringify(targetBridgeJson),
+//               targetVmRow.vmid,
+//             ],
+//             type: db.sequelize.QueryTypes.UPDATE,
+//           },
+//         );
+//       }
+
+//       /* =========================================================
+//            MODE: EXISTING
+//         ========================================================= */
+    
+// if (mode === "existing") {
+//   if (!label) {
+//     return {
+//       success: false,
+//       message:
+//         "No existing network found. Unable to add a network bridge.",
+//     };
+//   }
+
+//   networkname = label;
+//   finalLabel = label;
+
+//   const ethIndex = netKey.replace("net", "");
+
+//   // ---------- SOURCE NET VALUE ----------
+//   if (normalizedVmType === "qemu") {
+//     netValue = `virtio,bridge=${networkname}`;
+//   } else if (normalizedVmType === "lxc") {
+//     netValue = `name=eth${ethIndex},bridge=${networkname}`;
+//   } else {
+//     return { success: false, message: "Unsupported VM type" };
+//   }
+
+//   // ---------- TARGET VM FETCH ----------
+//   const [targetVmRow] = await db.sequelize.query(
+//     `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+//     {
+//       replacements: [Targetvmid],
+//       type: db.sequelize.QueryTypes.SELECT,
+//     },
+//   );
+
+//   if (!targetVmRow) {
+//     return { success: false, message: "Target VM not found" };
+//   }
+
+//   const targetVmType = targetVmRow.componenttype.toLowerCase();
+
+//   const targetNetKey = targetHandle
+//     .replace("-target", "")
+//     .replace("-source", "");
+
+//   let targetNetValue;
+
+//   if (targetVmType === "qemu") {
+//     targetNetValue = `virtio,bridge=${networkname}`;
+//   } else if (targetVmType === "lxc") {
+//     const targetEthIndex = targetNetKey.replace("net", "");
+//     targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
+//   }
+
+//   // ---------- PROXMOX ----------
+//   const proxmoxService = ProxMoxService(
+//     db,
+//     { vmType: normalizedVmType },
+//     ipAddress,
+//   );
+
+//   const token = await proxmoxService.generateAccessTicket();
+//   if (!token || token.status !== "200") {
+//     return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
+//   }
+
+//   // 👉 SOURCE
+//   const addNetSource = await proxmoxService.addVmNetwork(
+//     vmid,
+//     normalizedVmType,
+//     netKey,
+//     netValue,
+//   );
+//   await sleep(3000);
+
+//   // 👉 TARGET
+//   const proxmoxServiceTarget = ProxMoxService(
+//     db,
+//     { vmType: targetVmType },
+//     ipAddress,
+//   );
+
+//   const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+//     targetVmRow.vmid,
+//     targetVmType,
+//     targetNetKey,
+//     targetNetValue,
+//   );
+
+//   if (
+//     addNetSource?.status !== 200 ||
+//     addNetTarget?.status !== 200
+//   ) {
+//     return {
+//       success: false,
+//       message: "Failed to apply existing network to both VMs",
+//     };
+//   }
+// }
+
+//       /* =========================================================
+//            MODE: STATIC
+//         ========================================================= */
+//         if (mode === "static") {
+//           if (staticVmbr) {
+//             const num = parseInt(staticVmbr, 10);
+
+//             if (isNaN(num)) {
+//               return { success: false, message: "Invalid number format" };
+//             }
+
+//             // if (num < 50 || num > 999) {
+//             //   return { success: false, message: "Value must be between 50–999" };
+//             // }
+
+//             networkname = `vmbr${num}`;
+//             finalLabel = networkname; // instead of label
+//           } else {
+//             networkname = null;
+//             finalLabel = "Network Id";
+//           }
+//         }
+//         if (mode === "static" && networkname) {
+//           const ethIndex = netKey.replace("net", "");
+
+//           // ---------- SOURCE ----------
+//           if (normalizedVmType === "qemu") {
+//             netValue = `virtio,bridge=${networkname}`;
+//           } else if (normalizedVmType === "lxc") {
+//             netValue = `name=eth${ethIndex},bridge=${networkname}`;
+//           }
+
+//           // ---------- TARGET VM ----------
+//           const [targetVmRow] = await db.sequelize.query(
+//             `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
+//             {
+//               replacements: [Targetvmid],
+//               type: db.sequelize.QueryTypes.SELECT,
+//             }
+//           );
+
+//           if (!targetVmRow) {
+//             return { success: false, message: "Target VM not found" };
+//           }
+
+//           const targetVmType = targetVmRow.componenttype.toLowerCase();
+
+//           const targetNetKey = targetHandle
+//             .replace("-target", "")
+//             .replace("-source", "");
+
+//           let targetNetValue;
+
+//           if (targetVmType === "qemu") {
+//             targetNetValue = `virtio,bridge=${networkname}`;
+//           } else if (targetVmType === "lxc") {
+//             const targetEthIndex = targetNetKey.replace("net", "");
+//             targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
+//           }
+
+//           // ---------- PROXMOX ----------
+//           const proxmoxService = ProxMoxService(
+//             db,
+//             { vmType: normalizedVmType },
+//             ipAddress
+//           );
+
+//           const token = await proxmoxService.generateAccessTicket();
+
+//           if (!token || token.status !== "200") {
+//             return {
+//               success: false,
+//               message: "Proxmox authentication failed",
+//             };
+//           }
+
+//           // APPLY TO SOURCE
+//           const addNetSource = await proxmoxService.addVmNetwork(
+//             vmid,
+//             normalizedVmType,
+//             netKey,
+//             netValue
+//           );
+
+//           await sleep(3000);
+//           // APPLY TO TARGET
+//           const proxmoxServiceTarget = ProxMoxService(
+//             db,
+//             { vmType: targetVmType },
+//             ipAddress
+//           );
+
+//           const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+//             targetVmRow.vmid,
+//             targetVmType,
+//             targetNetKey,
+//             targetNetValue
+//           );
+//           if (
+//             addNetSource?.status !== 200 ||
+//             addNetTarget?.status !== 200
+//           ) {
+//             return {
+//               success: false,
+//               message: `The network bridge vmbr${label} is not available`,
+//             };
+//           }
+//         }
+
+//         if (mode === "static" && staticVmbr) {
+//           const bridgeName = networkname;
+
+//           const [existing] = await db.sequelize.query(
+//             `SELECT tempnetworkid 
+//             FROM static_networks 
+//             WHERE networkname = ? 
+//             LIMIT 1`,
+//             {
+//               replacements: [bridgeName],
+//               type: db.sequelize.QueryTypes.SELECT,
+//             }
+//           );
+
+//           // Insert only if not exists
+//           if (!existing) {
+//             await db.sequelize.query(
+//               `INSERT INTO static_networks 
+//               (networkname, lock_status, createdon)
+//               VALUES (?, 'Free', NOW())`,
+//               {
+//                 replacements: [bridgeName],
+//                 type: db.sequelize.QueryTypes.INSERT,
+//               }
+//             );
+//           }
+//         }
+
+//       /* =========================================================
+//            FETCH VM CONFIG
+//         ========================================================= */
+//       const [vmRow] = await db.sequelize.query(
+//         `SELECT vmrequestid, network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+//         {
+//           replacements: [vmid],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         },
+//       );
+
+//       if (!vmRow) {
+//         return { success: false, message: "VM config not found" };
+//       }
+
+//       /* =========================================================
+//            UPDATE BRIDGE JSON
+//         ========================================================= */
+//       let bridgeJson = {};
+//       if (vmRow.network_bridge_json) {
+//         try {
+//           bridgeJson = JSON.parse(vmRow.network_bridge_json);
+//         } catch {}
+//       }
+
+//       bridgeJson[netKey] = {
+//         networkid,
+//         networkname: finalLabel,
+//         value: netValue,
+//       };
+
+//       await db.sequelize.query(
+//         `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+//         {
+//           replacements: [JSON.stringify(bridgeJson), vmid],
+//           type: db.sequelize.QueryTypes.UPDATE,
+//         },
+//       );
+
+//       /* =========================================================
+//            SCENARIO DIAGRAM
+//         ========================================================= */
+//       const [reqRow] = await db.sequelize.query(
+//         `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+//         {
+//           replacements: [vmRow.vmrequestid],
+//           type: db.sequelize.QueryTypes.SELECT,
+//         },
+//       );
+
+//       if (!reqRow?.scenariodiagram) {
+//         return { success: true, message: "No diagram found" };
+//       }
+
+//       let diagram = JSON.parse(reqRow.scenariodiagram);
+//       if (!diagram.edges) diagram.edges = [];
+
+//       /* =========================================================
+//            EDGE ID
+//         ========================================================= */
+//       // const edgeId = `xy-edge__${source}${sourceHandle}-${target}${targetHandle}`;
+//       const edgeId = `xy-edge__${source}-${sourceHandle}-${target}-${targetHandle}`;
+
+//       /* =========================================================
+//            BUILD EDGE
+//         ========================================================= */
+//       const updatedEdge = {
+//         type: "custom",
+//         style: {
+//           stroke: "#000",
+//           strokeWidth: 2,
+//         },
+//         source,
+//         sourceHandle,
+//         target,
+//         targetHandle,
+//         isAttacked: "Yes",
+//         data: {
+//           label: finalLabel,
+//           source,
+//           sourceHandle,
+//           target,
+//           targetHandle,
+//         },
+//         id: edgeId,
+//       };
+
+//       /* =========================================================
+//            UPDATE OR ADD EDGE
+//         ========================================================= */
+//       const edgeIndex = diagram.edges.findIndex((e) => e.id === edgeId);
+
+//       if (edgeIndex !== -1) {
+//         // UPDATE
+//         diagram.edges[edgeIndex] = updatedEdge;
+//       } else {
+//         // ADD
+//         diagram.edges.push(updatedEdge);
+//       }
+
+//       /* =========================================================
+//            SAVE DIAGRAM
+//         ========================================================= */
+//       await db.sequelize.query(
+//         `UPDATE vm_request SET scenariodiagram=?, modifiedon=NOW() WHERE vmrequestid=?`,
+//         {
+//           replacements: [JSON.stringify(diagram), vmRow.vmrequestid],
+//           type: db.sequelize.QueryTypes.UPDATE,
+//         },
+//       );
+//       return {
+//         success: true,
+//         message:
+//           edgeIndex !== -1
+//             ? "Edge updated successfully"
+//             : "Network and edge added successfully",
+//         edge: updatedEdge,
+//       };
+//     } catch (err) {
+//       console.error(err);
+//       return {
+//         success: false,
+//         message: err.message,
+//       };
+//     }
+//   };
+
 const ModifyScenarioVmNetwork =
   ({ ipAddress, db }) =>
   async (
@@ -3125,12 +3755,18 @@ const ModifyScenarioVmNetwork =
     label,
     staticVmbr
   ) => {
+    // Helper: swap out bridge= in existing net config string
+    function replaceBridge(existingValue, newBridgeName) {
+      if (!existingValue) return null;
+      if (existingValue.includes("bridge=")) {
+        return existingValue.replace(/bridge=[^,]+/, `bridge=${newBridgeName}`);
+      }
+      return `${existingValue},bridge=${newBridgeName}`;
+    }
+
     const [vmTypeRow] = await db.sequelize.query(
       `SELECT componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-      {
-        replacements: [vmid],
-        type: db.sequelize.QueryTypes.SELECT,
-      },
+      { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
     );
 
     if (!vmTypeRow?.componenttype) {
@@ -3138,20 +3774,22 @@ const ModifyScenarioVmNetwork =
     }
 
     const normalizedVmType = vmTypeRow.componenttype.toLowerCase();
+
     try {
       let networkid = null;
       let networkname = null;
       let netValue = null;
       let finalLabel = label;
+
       /* =========================================================
-           MODE: NEW
+           RESOLVE networkname PER MODE
         ========================================================= */
       if (mode === "new") {
         const [availableNetwork] = await db.sequelize.query(
           `SELECT networkid, networkname FROM networks 
            WHERE status='Available' AND deletedon IS NULL 
            ORDER BY networkid ASC LIMIT 1`,
-          { type: db.sequelize.QueryTypes.SELECT },
+          { type: db.sequelize.QueryTypes.SELECT }
         );
 
         if (!availableNetwork) {
@@ -3162,24 +3800,38 @@ const ModifyScenarioVmNetwork =
         networkname = availableNetwork.networkname;
         finalLabel = networkname;
 
-        const ethIndex = netKey.replace("net", "");
-
-        // ---------- SOURCE NET VALUE ----------
-        if (normalizedVmType === "qemu") {
-          netValue = `virtio,bridge=${networkname}`;
-        } else if (normalizedVmType === "lxc") {
-          netValue = `name=eth${ethIndex},bridge=${networkname}`;
-        } else {
-          return { success: false, message: "Unsupported VM type" };
+      } else if (mode === "existing") {
+        if (!label) {
+          return {
+            success: false,
+            message: "No existing network found. Unable to add a network bridge.",
+          };
         }
+        networkname = label;
+        finalLabel = label;
 
+      } else if (mode === "static") {
+        if (staticVmbr) {
+          const num = parseInt(staticVmbr, 10);
+          if (isNaN(num)) {
+            return { success: false, message: "Invalid number format" };
+          }
+          networkname = `vmbr${num}`;
+          finalLabel = networkname;
+        } else {
+          networkname = null;
+          finalLabel = "Network Id";
+        }
+      }
+
+      /* =========================================================
+           APPLY NETWORK (only when networkname is resolved)
+        ========================================================= */
+      if (networkname) {
         // ---------- TARGET VM FETCH ----------
         const [targetVmRow] = await db.sequelize.query(
           `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-          {
-            replacements: [Targetvmid], // ⚠️ ensure this maps correctly
-            type: db.sequelize.QueryTypes.SELECT,
-          },
+          { replacements: [Targetvmid], type: db.sequelize.QueryTypes.SELECT }
         );
 
         if (!targetVmRow) {
@@ -3187,392 +3839,159 @@ const ModifyScenarioVmNetwork =
         }
 
         const targetVmType = targetVmRow.componenttype.toLowerCase();
-
         const targetNetKey = targetHandle
           .replace("-target", "")
           .replace("-source", "");
 
-        let targetNetValue;
-
-        if (targetVmType === "qemu") {
-          targetNetValue = `virtio,bridge=${networkname}`;
-        } else if (targetVmType === "lxc") {
-          const targetEthIndex = targetNetKey.replace("net", "");
-          targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
-        }
-
-        // ---------- PROXMOX ----------
+        // ---------- PROXMOX AUTH ----------
         const proxmoxService = ProxMoxService(
           db,
           { vmType: normalizedVmType },
-          ipAddress,
+          ipAddress
         );
 
         const token = await proxmoxService.generateAccessTicket();
         if (!token || token.status !== "200") {
-          return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-        }
-
-        // 👉 APPLY TO SOURCE
-        const addNetSource = await proxmoxService.addVmNetwork(
-          vmid,
-          normalizedVmType,
-          netKey,
-          netValue,
-        );
-
-        // 👉 APPLY TO TARGET
-        const proxmoxServiceTarget = ProxMoxService(
-          db,
-          { vmType: targetVmType },
-          ipAddress,
-        );
-        const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-          targetVmRow.vmid,
-          targetVmType,
-          targetNetKey,
-          targetNetValue,
-        );
-        if (
-          addNetSource?.status !== 200 ||
-          addNetTarget?.status !== 200
-        ) {
           return {
             success: false,
-            message: "Failed to apply network bridge to both VMs",
+            message: "We couldn't authenticate with the server. Please try after some time",
           };
         }
 
-        // ---------- MARK NETWORK USED ----------
-        await db.sequelize.query(
-          `UPDATE networks
-           SET status='In Use', modifiedon=NOW()
-           WHERE networkid=?`,
-          {
-            replacements: [networkid],
-            type: db.sequelize.QueryTypes.UPDATE,
-          },
-        );
+        // ---------- FETCH EXISTING NET CONFIG & BUILD NET VALUES ----------
+        const sourceVmInfo = await proxmoxService.getVmNetworkInfo(vmid, normalizedVmType);
+        const existingSourceNetValue = sourceVmInfo?.data?.[netKey];
 
-        /* ---------- UPDATE SOURCE JSON ---------- */
-        const [sourceVmRow] = await db.sequelize.query(
-          `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-          {
-            replacements: [vmid],
-            type: db.sequelize.QueryTypes.SELECT,
-          },
-        );
+        netValue = replaceBridge(existingSourceNetValue, networkname);
+        console.log("netValusssssssenetValuenetValue",netValue);
+        
 
-        let sourceBridgeJson = {};
-        if (sourceVmRow?.network_bridge_json) {
-          try {
-            sourceBridgeJson = JSON.parse(
-              sourceVmRow.network_bridge_json,
-            );
-          } catch {}
-        }
-
-        sourceBridgeJson[netKey] = {
-          networkid,
-          networkname,
-          value: netValue,
-        };
-
-        await db.sequelize.query(
-          `UPDATE vm_config 
-           SET network_bridge_json=?, modifiedon=NOW() 
-           WHERE vmid=?`,
-          {
-            replacements: [
-              JSON.stringify(sourceBridgeJson),
-              vmid,
-            ],
-            type: db.sequelize.QueryTypes.UPDATE,
-          },
-        );
-
-        /* ---------- UPDATE TARGET JSON ---------- */
-        const [targetVmConfig] = await db.sequelize.query(
-          `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-          {
-            replacements: [targetVmRow.vmid],
-            type: db.sequelize.QueryTypes.SELECT,
-          },
-        );
-
-        let targetBridgeJson = {};
-        if (targetVmConfig?.network_bridge_json) {
-          try {
-            targetBridgeJson = JSON.parse(
-              targetVmConfig.network_bridge_json,
-            );
-          } catch {}
-        }
-
-        targetBridgeJson[targetNetKey] = {
-          networkid,
-          networkname,
-          value: targetNetValue,
-        };
-
-        await db.sequelize.query(
-          `UPDATE vm_config 
-           SET network_bridge_json=?, modifiedon=NOW() 
-           WHERE vmid=?`,
-          {
-            replacements: [
-              JSON.stringify(targetBridgeJson),
-              targetVmRow.vmid,
-            ],
-            type: db.sequelize.QueryTypes.UPDATE,
-          },
-        );
-      }
-
-      /* =========================================================
-           MODE: EXISTING
-        ========================================================= */
-    
-if (mode === "existing") {
-  if (!label) {
-    return {
-      success: false,
-      message:
-        "No existing network found. Unable to add a network bridge.",
-    };
-  }
-
-  networkname = label;
-  finalLabel = label;
-
-  const ethIndex = netKey.replace("net", "");
-
-  // ---------- SOURCE NET VALUE ----------
-  if (normalizedVmType === "qemu") {
-    netValue = `virtio,bridge=${networkname}`;
-  } else if (normalizedVmType === "lxc") {
-    netValue = `name=eth${ethIndex},bridge=${networkname}`;
-  } else {
-    return { success: false, message: "Unsupported VM type" };
-  }
-
-  // ---------- TARGET VM FETCH ----------
-  const [targetVmRow] = await db.sequelize.query(
-    `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-    {
-      replacements: [Targetvmid],
-      type: db.sequelize.QueryTypes.SELECT,
-    },
-  );
-
-  if (!targetVmRow) {
-    return { success: false, message: "Target VM not found" };
-  }
-
-  const targetVmType = targetVmRow.componenttype.toLowerCase();
-
-  const targetNetKey = targetHandle
-    .replace("-target", "")
-    .replace("-source", "");
-
-  let targetNetValue;
-
-  if (targetVmType === "qemu") {
-    targetNetValue = `virtio,bridge=${networkname}`;
-  } else if (targetVmType === "lxc") {
-    const targetEthIndex = targetNetKey.replace("net", "");
-    targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
-  }
-
-  // ---------- PROXMOX ----------
-  const proxmoxService = ProxMoxService(
-    db,
-    { vmType: normalizedVmType },
-    ipAddress,
-  );
-
-  const token = await proxmoxService.generateAccessTicket();
-  if (!token || token.status !== "200") {
-    return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-  }
-
-  // 👉 SOURCE
-  const addNetSource = await proxmoxService.addVmNetwork(
-    vmid,
-    normalizedVmType,
-    netKey,
-    netValue,
-  );
-
-  // 👉 TARGET
-  const proxmoxServiceTarget = ProxMoxService(
-    db,
-    { vmType: targetVmType },
-    ipAddress,
-  );
-
-  const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-    targetVmRow.vmid,
-    targetVmType,
-    targetNetKey,
-    targetNetValue,
-  );
-
-  if (
-    addNetSource?.status !== 200 ||
-    addNetTarget?.status !== 200
-  ) {
-    return {
-      success: false,
-      message: "Failed to apply existing network to both VMs",
-    };
-  }
-}
-
-      /* =========================================================
-           MODE: STATIC
-        ========================================================= */
-        if (mode === "static") {
-          if (staticVmbr) {
-            const num = parseInt(staticVmbr, 10);
-
-            if (isNaN(num)) {
-              return { success: false, message: "Invalid number format" };
-            }
-
-            // if (num < 50 || num > 999) {
-            //   return { success: false, message: "Value must be between 50–999" };
-            // }
-
-            networkname = `vmbr${num}`;
-            finalLabel = networkname; // instead of label
-          } else {
-            networkname = null;
-            finalLabel = "Network Id";
-          }
-        }
-        if (mode === "static" && networkname) {
-          const ethIndex = netKey.replace("net", "");
-
-          // ---------- SOURCE ----------
+        if (!netValue) {
+          // Fallback if this net port doesn't exist yet on the VM
           if (normalizedVmType === "qemu") {
             netValue = `virtio,bridge=${networkname}`;
           } else if (normalizedVmType === "lxc") {
+            const ethIndex = netKey.replace("net", "");
             netValue = `name=eth${ethIndex},bridge=${networkname}`;
+          } else {
+            return { success: false, message: "Unsupported VM type" };
           }
+        }
 
-          // ---------- TARGET VM ----------
-          const [targetVmRow] = await db.sequelize.query(
-            `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-            {
-              replacements: [Targetvmid],
-              type: db.sequelize.QueryTypes.SELECT,
-            }
-          );
+        const proxmoxServiceTarget = ProxMoxService(
+          db,
+          { vmType: targetVmType },
+          ipAddress
+        );
 
-          if (!targetVmRow) {
-            return { success: false, message: "Target VM not found" };
-          }
+        const targetVmInfo = await proxmoxServiceTarget.getVmNetworkInfo(
+          targetVmRow.vmid,
+          targetVmType
+        );
+        const existingTargetNetValue = targetVmInfo?.data?.[targetNetKey];
 
-          const targetVmType = targetVmRow.componenttype.toLowerCase();
-
-          const targetNetKey = targetHandle
-            .replace("-target", "")
-            .replace("-source", "");
-
-          let targetNetValue;
-
+        let targetNetValue = replaceBridge(existingTargetNetValue, networkname);
+        if (!targetNetValue) {
           if (targetVmType === "qemu") {
             targetNetValue = `virtio,bridge=${networkname}`;
           } else if (targetVmType === "lxc") {
             const targetEthIndex = targetNetKey.replace("net", "");
             targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
           }
+        }
+        // ---------- APPLY TO SOURCE ----------
+        const addNetSource = await proxmoxService.addVmNetwork(
+          vmid,
+          normalizedVmType,
+          netKey,
+          netValue
+        );
 
-          // ---------- PROXMOX ----------
-          const proxmoxService = ProxMoxService(
-            db,
-            { vmType: normalizedVmType },
-            ipAddress
-          );
+        await sleep(3000);
+        // ---------- APPLY TO TARGET ----------
+        const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
+          targetVmRow.vmid,
+          targetVmType,
+          targetNetKey,
+          targetNetValue
+        );
 
-          const token = await proxmoxService.generateAccessTicket();
-
-          if (!token || token.status !== "200") {
-            return {
-              success: false,
-              message: "Proxmox authentication failed",
-            };
-          }
-
-          // APPLY TO SOURCE
-          const addNetSource = await proxmoxService.addVmNetwork(
-            vmid,
-            normalizedVmType,
-            netKey,
-            netValue
-          );
-          // APPLY TO TARGET
-          const proxmoxServiceTarget = ProxMoxService(
-            db,
-            { vmType: targetVmType },
-            ipAddress
-          );
-
-          const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-            targetVmRow.vmid,
-            targetVmType,
-            targetNetKey,
-            targetNetValue
-          );
-          if (
-            addNetSource?.status !== 200 ||
-            addNetTarget?.status !== 200
-          ) {
-            return {
-              success: false,
-              message: `The network bridge vmbr${label} is not available`,
-            };
-          }
+        if (addNetSource?.status !== 200 || addNetTarget?.status !== 200) {
+          return {
+            success: false,
+            message:
+              mode === "static"
+                ? `The network bridge ${networkname} is not available`
+                : "Failed to apply network bridge to both VMs",
+          };
         }
 
-        if (mode === "static" && staticVmbr) {
-          const bridgeName = networkname;
+        // ---------- POST-APPLY: MODE-SPECIFIC DB UPDATES ----------
+        if (mode === "new") {
+          // Mark network as In Use
+          await db.sequelize.query(
+            `UPDATE networks SET status='In Use', modifiedon=NOW() WHERE networkid=?`,
+            { replacements: [networkid], type: db.sequelize.QueryTypes.UPDATE }
+          );
 
-          const [existing] = await db.sequelize.query(
-            `SELECT tempnetworkid 
-            FROM static_networks 
-            WHERE networkname = ? 
-            LIMIT 1`,
+          // Update SOURCE bridge JSON
+          const [sourceVmRow] = await db.sequelize.query(
+            `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+            { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
+          );
+
+          let sourceBridgeJson = {};
+          try { sourceBridgeJson = JSON.parse(sourceVmRow?.network_bridge_json || "{}"); } catch {}
+          sourceBridgeJson[netKey] = { networkid, networkname, value: netValue };
+
+          await db.sequelize.query(
+            `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
             {
-              replacements: [bridgeName],
-              type: db.sequelize.QueryTypes.SELECT,
+              replacements: [JSON.stringify(sourceBridgeJson), vmid],
+              type: db.sequelize.QueryTypes.UPDATE,
             }
           );
 
-          // Insert only if not exists
+          // Update TARGET bridge JSON
+          const [targetVmConfig] = await db.sequelize.query(
+            `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+            { replacements: [targetVmRow.vmid], type: db.sequelize.QueryTypes.SELECT }
+          );
+
+          let targetBridgeJson = {};
+          try { targetBridgeJson = JSON.parse(targetVmConfig?.network_bridge_json || "{}"); } catch {}
+          targetBridgeJson[targetNetKey] = { networkid, networkname, value: targetNetValue };
+
+          await db.sequelize.query(
+            `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+            {
+              replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid],
+              type: db.sequelize.QueryTypes.UPDATE,
+            }
+          );
+        }
+
+        if (mode === "static" && staticVmbr) {
+          const [existing] = await db.sequelize.query(
+            `SELECT tempnetworkid FROM static_networks WHERE networkname=? LIMIT 1`,
+            { replacements: [networkname], type: db.sequelize.QueryTypes.SELECT }
+          );
+
           if (!existing) {
             await db.sequelize.query(
-              `INSERT INTO static_networks 
-              (networkname, lock_status, createdon)
-              VALUES (?, 'Free', NOW())`,
-              {
-                replacements: [bridgeName],
-                type: db.sequelize.QueryTypes.INSERT,
-              }
+              `INSERT INTO static_networks (networkname, lock_status, createdon) VALUES (?, 'Free', NOW())`,
+              { replacements: [networkname], type: db.sequelize.QueryTypes.INSERT }
             );
           }
         }
+      }
 
       /* =========================================================
            FETCH VM CONFIG
         ========================================================= */
       const [vmRow] = await db.sequelize.query(
         `SELECT vmrequestid, network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-        {
-          replacements: [vmid],
-          type: db.sequelize.QueryTypes.SELECT,
-        },
+        { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
       );
 
       if (!vmRow) {
@@ -3583,11 +4002,7 @@ if (mode === "existing") {
            UPDATE BRIDGE JSON
         ========================================================= */
       let bridgeJson = {};
-      if (vmRow.network_bridge_json) {
-        try {
-          bridgeJson = JSON.parse(vmRow.network_bridge_json);
-        } catch {}
-      }
+      try { bridgeJson = JSON.parse(vmRow.network_bridge_json || "{}"); } catch {}
 
       bridgeJson[netKey] = {
         networkid,
@@ -3600,7 +4015,7 @@ if (mode === "existing") {
         {
           replacements: [JSON.stringify(bridgeJson), vmid],
           type: db.sequelize.QueryTypes.UPDATE,
-        },
+        }
       );
 
       /* =========================================================
@@ -3608,10 +4023,7 @@ if (mode === "existing") {
         ========================================================= */
       const [reqRow] = await db.sequelize.query(
         `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=? LIMIT 1`,
-        {
-          replacements: [vmRow.vmrequestid],
-          type: db.sequelize.QueryTypes.SELECT,
-        },
+        { replacements: [vmRow.vmrequestid], type: db.sequelize.QueryTypes.SELECT }
       );
 
       if (!reqRow?.scenariodiagram) {
@@ -3621,73 +4033,43 @@ if (mode === "existing") {
       let diagram = JSON.parse(reqRow.scenariodiagram);
       if (!diagram.edges) diagram.edges = [];
 
-      /* =========================================================
-           EDGE ID
-        ========================================================= */
-      // const edgeId = `xy-edge__${source}${sourceHandle}-${target}${targetHandle}`;
       const edgeId = `xy-edge__${source}-${sourceHandle}-${target}-${targetHandle}`;
 
-      /* =========================================================
-           BUILD EDGE
-        ========================================================= */
       const updatedEdge = {
         type: "custom",
-        style: {
-          stroke: "#000",
-          strokeWidth: 2,
-        },
+        style: { stroke: "#000", strokeWidth: 2 },
         source,
         sourceHandle,
         target,
         targetHandle,
         isAttacked: "Yes",
-        data: {
-          label: finalLabel,
-          source,
-          sourceHandle,
-          target,
-          targetHandle,
-        },
+        data: { label: finalLabel, source, sourceHandle, target, targetHandle },
         id: edgeId,
       };
 
-      /* =========================================================
-           UPDATE OR ADD EDGE
-        ========================================================= */
       const edgeIndex = diagram.edges.findIndex((e) => e.id === edgeId);
-
       if (edgeIndex !== -1) {
-        // UPDATE
         diagram.edges[edgeIndex] = updatedEdge;
       } else {
-        // ADD
         diagram.edges.push(updatedEdge);
       }
 
-      /* =========================================================
-           SAVE DIAGRAM
-        ========================================================= */
       await db.sequelize.query(
         `UPDATE vm_request SET scenariodiagram=?, modifiedon=NOW() WHERE vmrequestid=?`,
         {
           replacements: [JSON.stringify(diagram), vmRow.vmrequestid],
           type: db.sequelize.QueryTypes.UPDATE,
-        },
+        }
       );
+
       return {
         success: true,
-        message:
-          edgeIndex !== -1
-            ? "Edge updated successfully"
-            : "Network and edge added successfully",
+        message: edgeIndex !== -1 ? "Edge updated successfully" : "Network and edge added successfully",
         edge: updatedEdge,
       };
     } catch (err) {
       console.error(err);
-      return {
-        success: false,
-        message: err.message,
-      };
+      return { success: false, message: err.message };
     }
   };
 
@@ -4176,9 +4558,6 @@ const disconnectRuntimeNetworks =
         ======================================================= */
       if (network_bridge_json) {
         const bridgeObj = JSON.parse(network_bridge_json);
-
-        console.log("bridgeObj:", bridgeObj);
-
         if (bridgeObj[netKey]) {
           let value = bridgeObj[netKey];
 
@@ -5059,6 +5438,89 @@ const restartComponent =
     }
   };
 
+   const sendRunningUserReminder =
+  ({ db }) =>
+  async () => {
+    try {
+      const labs = await db.sequelize.query(
+        `
+        SELECT labid, bookingname, datetime
+      FROM lab_sessions
+      WHERE status = 'Active'
+      AND deletedon IS NULL
+      AND TIMESTAMPDIFF( MINUTE, NOW(), datetime) BETWEEN 0 AND 60;
+      `,
+        { type: db.sequelize.QueryTypes.SELECT },
+      );
+
+      if (!labs.length) {
+        return { message: "No labs in reminder window" };
+      }
+      //  GET RUNNING USERS
+      const users = await db.sequelize.query(
+        `
+      SELECT 
+        vr.requestedby_id AS learner_id,
+        CONCAT(l.firstname, ' ', l.lastname) AS learner_name
+      FROM vm_request vr
+      JOIN learners l ON l.learner_id = vr.requestedby_id
+      WHERE vr.status IN ('Start','Resume','Pause')
+      AND vr.vm_steps = 'Running'
+      GROUP BY vr.requestedby_id
+      `,
+        { type: db.sequelize.QueryTypes.SELECT },
+      );
+
+      if (!users.length) {
+        return { message: "No running users" };
+      }
+      //  LOOP LABS + USERS
+      for (const lab of labs) {
+        console.log(`Processing Lab: ${lab.labid} | ${lab.datetime}`);
+
+        for (const user of users) {
+
+
+   const [alreadySent] = await db.sequelize.query(
+      `SELECT 1 FROM noti_logs 
+       WHERE template_action = 'Lab_Start_Reminder'
+       AND type_id = ?
+       AND JSON_EXTRACT(payload, '$.labid') = ?`,
+      { 
+        replacements: [user.learner_id, lab.labid], 
+        type: db.sequelize.QueryTypes.SELECT 
+      }
+    );
+
+    if (alreadySent) {
+      console.log(`Already notified User ${user.learner_id} for Lab ${lab.labid} — skipping`);
+      continue;
+    }
+
+          // SEND NOTIFICATION
+          console.log(`Sending -> User ${user.learner_id}, Lab ${lab.labid}`);
+
+          await new NotiTemplate(
+            db,
+            "Lab_Start_Reminder",
+            {
+              // learner_id: user.learner_id,
+               learner_name: user.learner_name, 
+               booking_name: lab.bookingname, 
+               labid: lab.labid,  
+            },
+            "Learner",
+            user.learner_id,
+          );
+        }
+      }
+      return { message: "Reminder sent successfully" };
+    } catch (err) {
+      console.error("Reminder Error:", err);
+      return { message: "Error" };
+    }
+  };
+
 module.exports = {
   setScenarioLearnerConfiguration,
   updateCompleteTerminatelearner,
@@ -5091,4 +5553,5 @@ module.exports = {
   stopComponent,
   startComponent,
   restartComponent,
+  sendRunningUserReminder,
 };
