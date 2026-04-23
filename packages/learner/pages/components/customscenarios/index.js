@@ -46,6 +46,7 @@ const ManageScenarios = () => {
   const [backview, setBackView] = useState("card");
   const [approvalFilter, setApprovalFilter] = useState("Approve");
   const [approvalStatus, setApprovalStatus] = useState("");
+  const [pageSize, setPageSize] = useState(20);
   const [showTabs, setShowTabs] = useState(true);
   const gridRef = useRef(null);
   const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders

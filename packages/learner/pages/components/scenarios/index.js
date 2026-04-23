@@ -830,13 +830,7 @@ const Scenarios = () => {
                                                 }
                                               >
                                                 <a>
-                                                  {item.scenariotitle?.length >
-                                                    30
-                                                    ? `${item.scenariotitle.substring(
-                                                      0,
-                                                      27
-                                                    )}...`
-                                                    : item.scenariotitle}
+                                                  {item.scenariotitle}
                                                 </a>
                                               </OverlayTrigger>
                                             </h5>
