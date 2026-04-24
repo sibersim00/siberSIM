@@ -3799,6 +3799,7 @@ const ModifyScenarioVmNetwork =
         networkid = availableNetwork.networkid;
         networkname = availableNetwork.networkname;
         finalLabel = networkname;
+        
 
       } else if (mode === "existing") {
         if (!label) {
@@ -3927,49 +3928,105 @@ const ModifyScenarioVmNetwork =
         }
 
         // ---------- POST-APPLY: MODE-SPECIFIC DB UPDATES ----------
-        if (mode === "new") {
-          // Mark network as In Use
-          await db.sequelize.query(
-            `UPDATE networks SET status='In Use', modifiedon=NOW() WHERE networkid=?`,
-            { replacements: [networkid], type: db.sequelize.QueryTypes.UPDATE }
-          );
+        // if (mode === "new") {
+        //   // Mark network as In Use
+        //   await db.sequelize.query(
+        //     `UPDATE networks SET status='In Use', modifiedon=NOW() WHERE networkid=?`,
+        //     { replacements: [networkid], type: db.sequelize.QueryTypes.UPDATE }
+        //   );
 
-          // Update SOURCE bridge JSON
-          const [sourceVmRow] = await db.sequelize.query(
-            `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-            { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
-          );
+        //   // Update SOURCE bridge JSON
+        //   const [sourceVmRow] = await db.sequelize.query(
+        //     `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+        //     { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
+        //   );
 
-          let sourceBridgeJson = {};
-          try { sourceBridgeJson = JSON.parse(sourceVmRow?.network_bridge_json || "{}"); } catch {}
-          sourceBridgeJson[netKey] = { networkid, networkname, value: netValue };
+        //   let sourceBridgeJson = {};
+        //   try { sourceBridgeJson = JSON.parse(sourceVmRow?.network_bridge_json || "{}"); } catch {}
+        //   sourceBridgeJson[netKey] = { networkid, networkname, value: netValue };
 
-          await db.sequelize.query(
-            `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
-            {
-              replacements: [JSON.stringify(sourceBridgeJson), vmid],
-              type: db.sequelize.QueryTypes.UPDATE,
-            }
-          );
+        //   await db.sequelize.query(
+        //     `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+        //     {
+        //       replacements: [JSON.stringify(sourceBridgeJson), vmid],
+        //       type: db.sequelize.QueryTypes.UPDATE,
+        //     }
+        //   );
 
-          // Update TARGET bridge JSON
-          const [targetVmConfig] = await db.sequelize.query(
-            `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-            { replacements: [targetVmRow.vmid], type: db.sequelize.QueryTypes.SELECT }
-          );
+        //   // Update TARGET bridge JSON
+        //   const [targetVmConfig] = await db.sequelize.query(
+        //     `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+        //     { replacements: [targetVmRow.vmid], type: db.sequelize.QueryTypes.SELECT }
+        //   );
 
-          let targetBridgeJson = {};
-          try { targetBridgeJson = JSON.parse(targetVmConfig?.network_bridge_json || "{}"); } catch {}
-          targetBridgeJson[targetNetKey] = { networkid, networkname, value: targetNetValue };
+        //   let targetBridgeJson = {};
+        //   try { targetBridgeJson = JSON.parse(targetVmConfig?.network_bridge_json || "{}"); } catch {}
+        //   targetBridgeJson[targetNetKey] = { networkid, networkname, value: targetNetValue };
 
-          await db.sequelize.query(
-            `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
-            {
-              replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid],
-              type: db.sequelize.QueryTypes.UPDATE,
-            }
-          );
-        }
+        //   await db.sequelize.query(
+        //     `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+        //     {
+        //       replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid],
+        //       type: db.sequelize.QueryTypes.UPDATE,
+        //     }
+        //   );
+        // }
+        // ---------- POST-APPLY: MODE-SPECIFIC DB UPDATES ----------
+if (mode === "new") {
+  // Mark network as In Use
+  await db.sequelize.query(
+    `UPDATE networks SET status='In Use', modifiedon=NOW() WHERE networkid=?`,
+    { replacements: [networkid], type: db.sequelize.QueryTypes.UPDATE }
+  );
+
+  // Update SOURCE bridge JSON
+  const [sourceVmRow] = await db.sequelize.query(
+    `SELECT network_bridge_json, vmrequestid FROM vm_config WHERE vmid=? LIMIT 1`, // ✅ added vmrequestid
+    { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
+  );
+
+  let sourceBridgeJson = {};
+  try { sourceBridgeJson = JSON.parse(sourceVmRow?.network_bridge_json || "{}"); } catch {}
+  sourceBridgeJson[netKey] = { networkid, networkname, value: netValue };
+
+  await db.sequelize.query(
+    `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+    { replacements: [JSON.stringify(sourceBridgeJson), vmid], type: db.sequelize.QueryTypes.UPDATE }
+  );
+
+  // Update TARGET bridge JSON
+  const [targetVmConfig] = await db.sequelize.query(
+    `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
+    { replacements: [targetVmRow.vmid], type: db.sequelize.QueryTypes.SELECT }
+  );
+
+  let targetBridgeJson = {};
+  try { targetBridgeJson = JSON.parse(targetVmConfig?.network_bridge_json || "{}"); } catch {}
+  targetBridgeJson[targetNetKey] = { networkid, networkname, value: targetNetValue };
+
+  await db.sequelize.query(
+    `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
+    { replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid], type: db.sequelize.QueryTypes.UPDATE }
+  );
+
+  // ✅ NEW: Update vm_request.network_bridges
+  const [vmReqRow] = await db.sequelize.query(
+    `SELECT network_bridges FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+    { replacements: [sourceVmRow.vmrequestid], type: db.sequelize.QueryTypes.SELECT }
+  );
+
+  let networkBridges = [];
+  try { networkBridges = JSON.parse(vmReqRow?.network_bridges || "[]"); } catch {}
+
+  const alreadyExists = networkBridges.some(n => n.networkid === networkid);
+  if (!alreadyExists) {
+    networkBridges.push({ networkid, networkname });
+    await db.sequelize.query(
+      `UPDATE vm_request SET network_bridges=?, modifiedon=NOW() WHERE vmrequestid=?`,
+      { replacements: [JSON.stringify(networkBridges), sourceVmRow.vmrequestid], type: db.sequelize.QueryTypes.UPDATE }
+    );
+  }
+}
 
         if (mode === "static" && staticVmbr) {
           const [existing] = await db.sequelize.query(
@@ -4017,6 +4074,8 @@ const ModifyScenarioVmNetwork =
           type: db.sequelize.QueryTypes.UPDATE,
         }
       );
+
+      
 
       /* =========================================================
            SCENARIO DIAGRAM

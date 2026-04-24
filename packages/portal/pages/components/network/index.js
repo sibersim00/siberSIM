@@ -20,7 +20,7 @@ import "../../../shared/utils/i18n";
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
-const PAGINATION_BAR_HEIGHT = 48;
+const PAGINATION_BAR_HEIGHT = 100;
 
 const ManageComponent = () => {
   const dispatch = useDispatch();
