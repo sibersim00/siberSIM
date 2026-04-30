@@ -18,6 +18,7 @@ const getLicenseDashboardStats =
       );
 
       let licenseOwnerName = "";
+      let ownerStatus = "";
       if (customerLicense?.customer_id) {
         const [customer] = await db.sequelize.query(
           `SELECT firstname, lastname,status FROM customers WHERE customerid = :customerid AND deletedon IS NULL`,
