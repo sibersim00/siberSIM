@@ -220,54 +220,112 @@ const LabsAdd = ({
       }),
     };
   };
-  const getSelectStyles = (fieldName) => {
-    // const error = !values[fieldName] && errors[fieldName] && touched[fieldName];
-    const error =
-      touched[fieldName] &&
-      errors[fieldName] &&
-      (Array.isArray(values[fieldName])
-        ? values[fieldName].length === 0
-        : !values[fieldName]);
+// =====================================================
+//   const getSelectStyles = (fieldName) => {
+//   const isDark = document.body.classList.contains("dark-theme");
 
-    return {
-      ...customStyles,
-      control: (styles, state) => ({
-        ...styles,
-        borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
-        boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
-        backgroundColor: "var(--dark-bg-color)", // dark background
-      }),
-      singleValue: (provided) => ({
-        ...provided,
-        color: "var(--light-text-color)", // selected value text
-      }),
-      input: (provided) => ({
-        ...provided,
-        color: "var(--light-text-color)", // text while typing
-      }),
+//   const error =
+//     touched[fieldName] &&
+//     errors[fieldName] &&
+//     (Array.isArray(values[fieldName])
+//       ? values[fieldName].length === 0
+//       : !values[fieldName]);
 
-      multiValue: (provided) => ({
-        ...provided,
-        backgroundColor: "#1e263a", // darker chip color
-        borderRadius: "4px",
-      }),
+//   return {
+//     control: (styles) => ({
+//       ...styles,
+//       borderColor: error ? "#EB5757" : styles.borderColor,
+//       boxShadow: error ? "0 0 0 0.001rem #EB5757" : "none",
+//       backgroundColor: isDark ? "var(--dark-bg-color)" : "#ffffff",
+//       color: isDark ? "#fff" : "#111827",
+//       minHeight: "38px",
+//     }),
 
-      multiValueLabel: (provided) => ({
-        ...provided,
-        color: "#fff",
-        fontWeight: 500,
-      }),
-    };
+//     menu: (styles) => ({
+//       ...styles,
+//       backgroundColor: isDark ? "#1e263a" : "#ffffff",
+//       color: isDark ? "#fff" : "#111827",
+//       zIndex: 9999,
+//     }),
+
+//     option: (styles, state) => ({
+//       ...styles,
+//       backgroundColor: state.isFocused
+//         ? isDark
+//           ? "#04aa1f"
+//           : "#04aa1f"
+//         : state.isSelected
+//         ? isDark
+//           ? "#04aa1f"
+//           : "#04aa1f"
+//         : "transparent",
+//       color: state.isSelected ? "#fff" : isDark ? "#fff" : "#111827",
+//       cursor: "pointer",
+//     }),
+
+//     singleValue: (provided) => ({
+//       ...provided,
+//       color: isDark ? "#fff" : "#111827",
+//     }),
+
+//     input: (provided) => ({
+//       ...provided,
+//       color: isDark ? "#04aa1f" : "#04aa1f",
+//     }),
+
+//     placeholder: (provided) => ({
+//       ...provided,
+//       color: isDark ? "#aaa" : "#6b7280",
+//     }),
+
+//     multiValue: (provided) => ({
+//       ...provided,
+//       backgroundColor: isDark ? "#1e263a" : "#e5e7eb",
+//       borderRadius: "6px",
+//       padding: "2px 4px",
+//     }),
+
+//     multiValueLabel: (provided) => ({
+//       ...provided,
+//       color: isDark ? "#fff" : "#111827",
+//       fontWeight: 500,
+//     }),
+
+//     multiValueRemove: (provided) => ({
+//       ...provided,
+//       color: isDark ? "#fff" : "#333",
+//       cursor: "pointer",
+//       ":hover": {
+//         backgroundColor: "#ef4444",
+//         color: "#fff",
+//       },
+//     }),
+//   };
+// };
+// ====================================
+const getSelectStyles = (fieldName) => {
+  const hasError =
+    touched[fieldName] &&
+    errors[fieldName] &&
+    (Array.isArray(values[fieldName])
+      ? values[fieldName].length === 0
+      : !values[fieldName]);
+
+  return {
+    control: (base, state) => ({
+      ...base,
+      borderColor: hasError ? "#EB5757" : base.borderColor,
+      boxShadow: hasError
+        ? "0 0 0 1px #EB5757"
+        : state.isFocused
+        ? base.boxShadow
+        : "none",
+      "&:hover": {
+        borderColor: hasError ? "#EB5757" : base.borderColor,
+      },
+    }),
   };
-
-  // useEffect(() => {
-  //   const reserved = Number(formik.values.reservedseats || 0);
-
-  //   if (reserved > 0 && formik.values.allowedusers.length > reserved) {
-  //     const trimmed = formik.values.allowedusers.slice(0, reserved);
-  //     formik.setFieldValue("allowedusers", trimmed);
-  //   }
-  // }, [openFlag]);
+};
 
   useEffect(() => {
     const reserved = Number(formik.values.reservedseats || 0);
@@ -369,15 +427,16 @@ const LabsAdd = ({
                 </Form.Label>
 
                 <Select
-                  theme={(theme) => ({
-                    ...theme,
-                    colors: {
-                      ...theme.colors,
-                      primary25: "var(--primary-bg-color)",
-                      primary: "var(--primary-bg-color)",
-                    },
-                  })}
+                //  theme={(theme) => ({
+                //     ...theme,
+                //     colors: {
+                //       ...theme.colors,
+                //       primary25: "var(--primary-bg-color)",
+                //       primary: "var(--primary-bg-color)",
+                //     },
+                //   })}
                   name="accesslevel"
+                  classNamePrefix="custom-select"
                   styles={getSelectStyles("accesslevel")}
                   value={
                     accessLevelOptions.find(
@@ -388,7 +447,7 @@ const LabsAdd = ({
                   placeholder="Select Access Level"
                   onChange={(selected) => {
                     setFieldValue("accesslevel", selected.value);
-                    setFieldValue("personincharge", ""); // clear old selection
+                    setFieldValue("personincharge", "");
 
                     dispatch(getUserTypeWiseList(selected.value));
                   }}
@@ -406,16 +465,19 @@ const LabsAdd = ({
                 <Form.Label>
                   Person In Charge <span className="text-danger">*</span>
                 </Form.Label>
+                
                 <Select
-                  theme={(theme) => ({
-                    ...theme,
-                    colors: {
-                      ...theme.colors,
-                      primary25: "var(--primary-bg-color)",
-                      primary: "var(--primary-bg-color)",
-                    },
-                  })}
+
+                //  theme={(theme) => ({
+                //     ...theme,
+                //     colors: {
+                //       ...theme.colors,
+                //       primary25: "var(--primary-bg-color)",
+                //       primary: "var(--primary-bg-color)",
+                //     },
+                //   })}
                   name="personincharge"
+                  classNamePrefix="custom-select"
                   styles={getSelectStyles("personincharge")}
                   value={
                     userOptions.find(
@@ -428,7 +490,7 @@ const LabsAdd = ({
                       ? "Select Person In Charge"
                       : "Select access level first"
                   }
-                  isDisabled={!values.accesslevel} // disable until access level is selected
+                  isDisabled={!values.accesslevel}
                   onChange={(selected) =>
                     setFieldValue("personincharge", selected.value)
                   }
@@ -472,19 +534,21 @@ const LabsAdd = ({
                 <Select
                   isMulti
                   name="allowedusers"
+                  classNamePrefix="custom-select"
                   options={studentOptions}
                   value={values.allowedusers}
-                  // styles={customStyles()}
                   styles={getSelectStyles("allowedusers")}
                   onBlur={() => formik.setFieldTouched("allowedusers", true)}
-                  theme={(theme) => ({
-                    ...theme,
-                    colors: {
-                      ...theme.colors,
-                      primary25: "var(--primary-bg-color)",
-                      primary: "var(--primary-bg-color)",
-                    },
-                  })}
+                  //  theme={(theme) => ({
+                //     ...theme,
+                //     colors: {
+                //       ...theme.colors,
+                //       primary25: "var(--primary-bg-color)",
+                //       primary: "var(--primary-bg-color)",
+                //     },
+                //   })}
+                  menuPosition="fixed"
+                  placeholder="Select Allowed Users"
                   onChange={(selectedList) => {
                     const reserved = Number(values.reservedseats || 0);
 
@@ -493,20 +557,12 @@ const LabsAdd = ({
                         <p className="mx-2 tx-16 d-flex align-items-center mb-0">
                           You can select only {reserved} users!
                         </p>,
-                        {
-                          position: toast.POSITION.TOP_RIGHT,
-                          hideProgressBar: false,
-                          theme: "colored",
-                        },
                       );
                       return;
                     }
 
                     setFieldValue("allowedusers", selectedList);
                   }}
-                  placeholder="Select Allowed Users"
-                  menuPosition="fixed"
-                  isInvalid={touched.allowedusers && errors.allowedusers}
                 />
 
                 {touched.allowedusers && errors.allowedusers && (

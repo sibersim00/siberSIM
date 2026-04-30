@@ -49,9 +49,9 @@ const startScenario =
     try {
       const body = req.body;
       body.learner_id = req.learneruser.learner_id;
-      console.log("req.learneruser", req.learneruser);
       body.instructor_id = req.learneruser.instructor_id;
       const user_count_limit = req.learneruser.user_count_limit;
+      
       const result = await dao.startScenario({ db, validation })(
         body,
         user_count_limit,
@@ -255,7 +255,6 @@ const canResumeScenario =
     try {
       const body = req.body;
       const user_count_limit = req.learneruser.user_count_limit;
-      console.log("uuuuuuuuuuuuu", user_count_limit);
       const result = await dao.canResumeScenario({ db, validation })(
         body,
         user_count_limit,

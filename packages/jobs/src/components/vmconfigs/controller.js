@@ -324,7 +324,7 @@ const pauseScenarioLearner =
   ({ dao, db, validation }) =>
   async (req, res, next) => {
     try {
-      const { vmrequestid } = req.body;
+      const { vmrequestid, learner_id } = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
       // if (!vmid || !vmType) {
@@ -337,7 +337,7 @@ const pauseScenarioLearner =
         db,
         ipAddress,
         validation,
-      })(vmrequestid);
+      })(vmrequestid, learner_id);
 
       if (result.success) {
         return res.status(200).send({

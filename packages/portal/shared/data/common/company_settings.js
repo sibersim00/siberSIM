@@ -287,41 +287,145 @@ const CompanySettingsCommon = ({ isSL }) => {
 
   const formValidation = useFormik({
     enableReinitialize: true,
+    // initialValues: {
+    //   id: cmpSettingData?.id ? cmpSettingData?.id : 0,
+    //   name: cmpSettingData?.name ? cmpSettingData?.name : "",
+    //   phone_number: cmpSettingData?.phone_number
+    //     ? cmpSettingData?.phone_number
+    //     : "",
+    //   website: cmpSettingData?.website ? cmpSettingData?.website : "",
+    //   otp_verification: cmpSettingData?.otp_verification
+    //     ? cmpSettingData?.otp_verification
+    //     : "",
+
+    //   component_approval: cmpSettingData?.component_approval
+    //     ? cmpSettingData?.component_approval
+    //     : "",
+    //   scenario_approval: cmpSettingData?.scenario_approval
+    //     ? cmpSettingData?.scenario_approval
+    //     : "",
+    //   // -----
+    //   max_questions: cmpSettingData?.max_questions
+    //     ? cmpSettingData?.max_questions
+    //     : "",
+
+    //   email: cmpSettingData?.email ? cmpSettingData?.email : "",
+    //   system_name: cmpSettingData?.system_name
+    //     ? cmpSettingData?.system_name
+    //     : "",
+    //   system_footer: cmpSettingData?.system_footer
+    //     ? cmpSettingData?.system_footer
+    //     : "",
+    //   proxmox_alert_time: cmpSettingData?.proxmox_alert_time
+    //     ? cmpSettingData?.proxmox_alert_time
+    //     : "",
+    //   proxmox_email_sent: cmpSettingData?.proxmox_email_sent
+    //     ? cmpSettingData?.proxmox_email_sent
+    //     : "",
+    //   termination_delay: cmpSettingData?.termination_delay
+    //     ? cmpSettingData?.termination_delay
+    //     : "",
+    //   configuration_delay: cmpSettingData?.configuration_delay
+    //     ? cmpSettingData?.configuration_delay
+    //     : "",
+    //   cloning_delay: cmpSettingData?.cloning_delay
+    //     ? cmpSettingData?.cloning_delay
+    //     : "",
+    //   hibernate_delay: cmpSettingData?.hibernate_delay
+    //     ? cmpSettingData?.hibernate_delay
+    //     : "",
+    //   pause_limit: cmpSettingData?.pause_limit
+    //     ? cmpSettingData?.pause_limit
+    //     : "",
+    //   max_ports: cmpSettingData?.max_ports
+    //     ? cmpSettingData?.max_ports
+    //     : "",
+    //   address: cmpSettingData?.address ? cmpSettingData?.address : "",
+    //   favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
+    //   admin_panel_logo: cmpSettingData?.admin_panel_logo
+    //     ? cmpSettingData?.admin_panel_logo
+    //     : "",
+    //   web_panel_logo: cmpSettingData?.web_panel_logo
+    //     ? cmpSettingData?.web_panel_logo
+    //     : "",
+    //   expiry_date: "",
+    //   license_key: "",
+    //   domail_url: "",
+    // },
+
     initialValues: {
       id: cmpSettingData?.id ? cmpSettingData?.id : 0,
       name: cmpSettingData?.name ? cmpSettingData?.name : "",
       phone_number: cmpSettingData?.phone_number
         ? cmpSettingData?.phone_number
         : "",
-      website: cmpSettingData?.website ? cmpSettingData?.website : "",
-      otp_verification: cmpSettingData?.otp_verification
-        ? cmpSettingData?.otp_verification
-        : "",
-
-      component_approval: cmpSettingData?.component_approval
-        ? cmpSettingData?.component_approval
-        : "",
-      scenario_approval: cmpSettingData?.scenario_approval
-        ? cmpSettingData?.scenario_approval
-        : "",
-      // -----
-      max_questions: cmpSettingData?.max_questions
-        ? cmpSettingData?.max_questions
-        : "",
-
       email: cmpSettingData?.email ? cmpSettingData?.email : "",
+      address: cmpSettingData?.address ? cmpSettingData?.address : "",
+      website: cmpSettingData?.website ? cmpSettingData?.website : "",
+
       system_name: cmpSettingData?.system_name
         ? cmpSettingData?.system_name
         : "",
       system_footer: cmpSettingData?.system_footer
         ? cmpSettingData?.system_footer
         : "",
+
+      domain_url: cmpSettingData?.domain_url ? cmpSettingData?.domain_url : "",
+      license_key: cmpSettingData?.license_key
+        ? cmpSettingData?.license_key
+        : "",
+
+      otp_verification: cmpSettingData?.otp_verification
+        ? cmpSettingData?.otp_verification
+        : false,
+      component_approval: cmpSettingData?.component_approval
+        ? cmpSettingData?.component_approval
+        : true,
+      scenario_approval: cmpSettingData?.scenario_approval
+        ? cmpSettingData?.scenario_approval
+        : true,
+
+      base_clone_vmid: cmpSettingData?.base_clone_vmid
+        ? cmpSettingData?.base_clone_vmid
+        : "",
+      template_clone_vmid: cmpSettingData?.template_clone_vmid
+        ? cmpSettingData?.template_clone_vmid
+        : "",
+      start_network_id: cmpSettingData?.start_network_id
+        ? cmpSettingData?.start_network_id
+        : "",
+
+      max_questions: cmpSettingData?.max_questions
+        ? cmpSettingData?.max_questions
+        : "",
+
+      proxmox_current_node: cmpSettingData?.proxmox_current_node
+        ? cmpSettingData?.proxmox_current_node
+        : "",
+      proxmox_host: cmpSettingData?.proxmox_host
+        ? cmpSettingData?.proxmox_host
+        : "",
+      proxmox_username: cmpSettingData?.proxmox_username
+        ? cmpSettingData?.proxmox_username
+        : "",
+      proxmox_password: cmpSettingData?.proxmox_password
+        ? cmpSettingData?.proxmox_password
+        : "",
+
+      file_server_username: cmpSettingData?.file_server_username
+        ? cmpSettingData?.file_server_username
+        : "",
+      file_server_password: cmpSettingData?.file_server_password
+        ? cmpSettingData?.file_server_password
+        : "",
+
       proxmox_alert_time: cmpSettingData?.proxmox_alert_time
         ? cmpSettingData?.proxmox_alert_time
         : "",
       proxmox_email_sent: cmpSettingData?.proxmox_email_sent
         ? cmpSettingData?.proxmox_email_sent
         : "",
+
       termination_delay: cmpSettingData?.termination_delay
         ? cmpSettingData?.termination_delay
         : "",
@@ -334,13 +438,12 @@ const CompanySettingsCommon = ({ isSL }) => {
       hibernate_delay: cmpSettingData?.hibernate_delay
         ? cmpSettingData?.hibernate_delay
         : "",
+
       pause_limit: cmpSettingData?.pause_limit
         ? cmpSettingData?.pause_limit
         : "",
-      max_ports: cmpSettingData?.max_ports
-        ? cmpSettingData?.max_ports
-        : "",
-      address: cmpSettingData?.address ? cmpSettingData?.address : "",
+      max_ports: cmpSettingData?.max_ports ? cmpSettingData?.max_ports : "",
+
       favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
       admin_panel_logo: cmpSettingData?.admin_panel_logo
         ? cmpSettingData?.admin_panel_logo
@@ -348,16 +451,13 @@ const CompanySettingsCommon = ({ isSL }) => {
       web_panel_logo: cmpSettingData?.web_panel_logo
         ? cmpSettingData?.web_panel_logo
         : "",
-      expiry_date: "",
-      license_key: "",
-      domail_url: "",
     },
     validationSchema: yup.object().shape({
       name: yup.string().required(error?.required),
       system_name: yup.string().required(error?.required),
       system_footer: yup.string().required(error?.required),
 
-      pause_limit: yup 
+      pause_limit: yup
         .number()
         .typeError("Pause limit must be a number")
         .integer("Pause limit must be an integer")
@@ -365,7 +465,7 @@ const CompanySettingsCommon = ({ isSL }) => {
         .required(error?.required),
       max_ports: yup
         .number()
-        .typeError("Pause limit must be a number")  
+        .typeError("Pause limit must be a number")
         .integer("Pause limit must be an integer")
         .max(16, "Maximum port limit should not exceed 16")
         .min(1, "Minimum port limit should be 1")
@@ -373,21 +473,95 @@ const CompanySettingsCommon = ({ isSL }) => {
     }),
 
     onSubmit: (data, action) => {
+      // const payload = {
+      //   id: data?.id ? data?.id : 0,
+      //   name: data?.name ? data?.name : "",
+      //   phone_number: data?.phone_number ? data?.phone_number : "",
+      //   website: data?.website ? data?.website : "",
+      //   max_questions: data?.max_questions ? data?.max_questions : "",
+      //   email: data?.email ? data?.email : "",
+      //   system_name: data?.system_name ? data?.system_name : "",
+      //   system_footer: data?.system_footer ? data?.system_footer : "",
+      //   proxmox_alert_time: data?.proxmox_alert_time
+      //     ? data?.proxmox_alert_time
+      //     : "",
+      //   proxmox_email_sent: data?.proxmox_email_sent
+      //     ? data?.proxmox_email_sent
+      //     : "",
+      //   termination_delay: data?.termination_delay
+      //     ? data?.termination_delay
+      //     : "",
+      //   configuration_delay: data?.configuration_delay
+      //     ? data?.configuration_delay
+      //     : "",
+      //   cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
+      //   hibernate_delay: data?.hibernate_delay ? data?.hibernate_delay : "",
+      //   pause_limit: data?.pause_limit ? data?.pause_limit : "",
+      //   max_ports: data?.max_ports ? data?.max_ports : "",
+      //   address: data?.address ? data?.address : "",
+
+      //   otp_verification: data?.otp_verification.toString(),
+      //   component_approval: data?.component_approval.toString(),
+      //   scenario_approval: data?.scenario_approval.toString(),
+      //   // -----
+      //   favicon: isDefaultFavicon ? "" : data?.favicon || "",
+      //   admin_panel_logo: isDefaultPanel ? "" : data?.admin_panel_logo || "",
+      //   web_panel_logo: isDefaultWeb ? "" : data?.web_panel_logo || "",
+      //   is_default_favicon: isDefaultFavicon.toString(),
+      //   is_default_ad_logo: isDefaultPanel.toString(),
+      //   is_default_web_logo: isDefaultWeb.toString(),
+      //   license_key: data?.license_key ? data?.license_key : "",
+      //   domail_url: data?.domail_url ? data?.domail_url : "",
+      // };
+
       const payload = {
         id: data?.id ? data?.id : 0,
+
         name: data?.name ? data?.name : "",
         phone_number: data?.phone_number ? data?.phone_number : "",
-        website: data?.website ? data?.website : "",
-        max_questions: data?.max_questions ? data?.max_questions : "",
         email: data?.email ? data?.email : "",
+        address: data?.address ? data?.address : "",
+        website: data?.website ? data?.website : "",
+
         system_name: data?.system_name ? data?.system_name : "",
         system_footer: data?.system_footer ? data?.system_footer : "",
+
+        domain_url: data?.domain_url ? data?.domain_url : "",
+        license_key: data?.license_key ? data?.license_key : "",
+
+        otp_verification: data?.otp_verification.toString(),
+        component_approval: data?.component_approval.toString(),
+        scenario_approval: data?.scenario_approval.toString(),
+
+        base_clone_vmid: data?.base_clone_vmid ? data?.base_clone_vmid : "",
+        template_clone_vmid: data?.template_clone_vmid
+          ? data?.template_clone_vmid
+          : "",
+        start_network_id: data?.start_network_id ? data?.start_network_id : "",
+
+        max_questions: data?.max_questions ? data?.max_questions : "",
+
+        proxmox_current_node: data?.proxmox_current_node
+          ? data?.proxmox_current_node
+          : "",
+        proxmox_host: data?.proxmox_host ? data?.proxmox_host : "",
+        proxmox_username: data?.proxmox_username ? data?.proxmox_username : "",
+        proxmox_password: data?.proxmox_password ? data?.proxmox_password : "",
+
+        file_server_username: data?.file_server_username
+          ? data?.file_server_username
+          : "",
+        file_server_password: data?.file_server_password
+          ? data?.file_server_password
+          : "",
+
         proxmox_alert_time: data?.proxmox_alert_time
           ? data?.proxmox_alert_time
           : "",
         proxmox_email_sent: data?.proxmox_email_sent
           ? data?.proxmox_email_sent
           : "",
+
         termination_delay: data?.termination_delay
           ? data?.termination_delay
           : "",
@@ -396,22 +570,17 @@ const CompanySettingsCommon = ({ isSL }) => {
           : "",
         cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
         hibernate_delay: data?.hibernate_delay ? data?.hibernate_delay : "",
+
         pause_limit: data?.pause_limit ? data?.pause_limit : "",
         max_ports: data?.max_ports ? data?.max_ports : "",
-        address: data?.address ? data?.address : "",
 
-        otp_verification: data?.otp_verification.toString(),
-        component_approval: data?.component_approval.toString(),
-        scenario_approval: data?.scenario_approval.toString(),
-        // -----
         favicon: isDefaultFavicon ? "" : data?.favicon || "",
         admin_panel_logo: isDefaultPanel ? "" : data?.admin_panel_logo || "",
         web_panel_logo: isDefaultWeb ? "" : data?.web_panel_logo || "",
+
         is_default_favicon: isDefaultFavicon.toString(),
         is_default_ad_logo: isDefaultPanel.toString(),
         is_default_web_logo: isDefaultWeb.toString(),
-        license_key: data?.license_key ? data?.license_key : "",
-        domail_url: data?.domail_url ? data?.domail_url : "",
       };
       if (data?.id == 0) {
         dispatch(addWebSetting(payload));
@@ -672,7 +841,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.system_footer}
                         </Form.Control.Feedback>
                       </Form.Group>
-                     
 
                       {/* Quiz / Website */}
                       <Form.Group
@@ -839,7 +1007,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setiscomponent_approval(!component_approval);
                                   formValidation.setFieldValue(
                                     "component_approval",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -875,7 +1043,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setisscenario_approval(!scenario_approval);
                                   formValidation.setFieldValue(
                                     "scenario_approval",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -884,7 +1052,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                           </OverlayTrigger>
                         </div>
                       </Form.Group>
-                       <Form.Group
+                      <Form.Group
                         as={Col}
                         md="4"
                         controlid="validationFormik102"
@@ -933,7 +1101,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setisotp_verification(!otp_verification);
                                   formValidation.setFieldValue(
                                     "otp_verification",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -1198,6 +1366,386 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.termination_delay}
                         </Form.Control.Feedback>
                       </Form.Group>
+
+                      {isSL && (
+                        <>
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>Compute Node Identifier</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Proxmox cluster node where virtual machines
+                                    will be deployed.
+                                  </Tooltip>
+                                }
+                              >
+                                 <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_current_node"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.proxmox_current_node
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .proxmox_current_node &&
+                                formValidation.errors.proxmox_current_node
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_current_node}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>Proxmox Host Address</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>IP address or domain of Proxmox server</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_host"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.proxmox_host
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .proxmox_host &&
+                                formValidation.errors.proxmox_host
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_host}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                             <Form.Label>Proxmox Login Username</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Admin username for Proxmox authentication</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                             name="proxmox_username"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.proxmox_username
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .proxmox_username &&
+                                formValidation.errors.proxmox_username
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_username}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                            <Form.Label>Proxmox Login Password</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Secure password for Proxmox access</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                            name="proxmox_password"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.proxmox_password
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .proxmox_password &&
+                                formValidation.errors.proxmox_password
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_password}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                            <Form.Label>File Server Username</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Username used to access file storage server</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                            name="file_server_username"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.file_server_username
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .file_server_username &&
+                                formValidation.errors.file_server_username
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.file_server_username}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                             <Form.Label>File Server Password</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Authentication password for file server access</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="file_server_password"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.file_server_password
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .file_server_password &&
+                                formValidation.errors.file_server_password
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.file_server_password}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                           <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                            <Form.Label>Starting VM Identifier (VMID)</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Initial VM ID used for provisioning virtual machines</Tooltip>
+                                }
+                              >
+                                 <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                             name="base_clone_vmid"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.base_clone_vmid
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .base_clone_vmid &&
+                                formValidation.errors.base_clone_vmid
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.base_clone_vmid}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                            <Form.Label>Custom VMID Range Start</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Starting point for custom VM ID allocation range</Tooltip>
+                                }
+                              >
+                                 <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                             name="template_clone_vmid"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.template_clone_vmid
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .template_clone_vmid &&
+                                formValidation.errors.template_clone_vmid
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.template_clone_vmid}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                            <Form.Label>Network Segment ID</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                 <Tooltip>Virtual network segment identifier for VM connectivity</Tooltip>
+                                }
+                              >
+                                <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                            name="start_network_id"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={
+                                formValidation.values.start_network_id
+                              }
+                              isInvalid={
+                                formValidation.touched
+                                  .start_network_id &&
+                                formValidation.errors.start_network_id
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.start_network_id}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                        </>
+                     )}   
                     </Row>
                   </Card.Body>
                 </Card>
@@ -1320,7 +1868,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setIsDefaultPanel(!isDefaultPanel);
                                   formValidation.setFieldValue(
                                     "admin_panel_logo",
-                                    ""
+                                    "",
                                   );
                                 }}
                               />
@@ -1392,7 +1940,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setIsDefaultWeb(!isDefaultWeb);
                                   formValidation.setFieldValue(
                                     "web_panel_logo",
-                                    ""
+                                    "",
                                   );
                                 }}
                               />
@@ -1444,7 +1992,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                     </Row>
                   </Card.Body>
                 </Card>
-                
+
                 <Row>
                   <Col className="d-flex justify-content-end mt-3">
                     {oneClick ? (

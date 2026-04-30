@@ -13,6 +13,9 @@ const autoTerminateFailedScenarios =
 const checkBackupStatus =
   require("../src/components/vmconfigs/dao").checkBackupStatus;
 
+const sendRunningUserReminder =
+  require("../src/components/vmconfigs/dao").sendRunningUserReminder;
+  
 class initJob {
   constructor() {
     this.isEmailJobRunning = false;
@@ -74,6 +77,18 @@ class initJob {
     const result = await job();
     console.log("Operation Failed for Check backup status:", result);
   }
+
+
+  async runningUserReminder({ db }) {
+  const ipAddress = "";
+  const job = sendRunningUserReminder({ 
+    db,
+    ipAddress
+   });
+  const result = await job();
+  console.log("Running User Reminderfffffff", result.message);
+}
+
 }
 
 
@@ -86,7 +101,7 @@ const startJob = async ({ db  }) => {
   const jobs = new initJob();
 
   // Process notifications every 10 sec
-  cron.schedule("*/30 * * * * *",
+  cron.schedule("*/3 * * * * *",
     () => {
       console.log("PROCESS NOTIFICATION IN EVERY 30 SEC.");
       jobs.notirun({ db }).catch((e) => {
@@ -115,6 +130,7 @@ const startJob = async ({ db  }) => {
     },
     commonCronConfig
   );
+
   cron.schedule("0 0 * * *", // every day at midnight
     () => {
       console.log(
@@ -136,6 +152,26 @@ const startJob = async ({ db  }) => {
     },
     commonCronConfig
   );
+
+
+//   cron.schedule(
+//   "*/1 * * * *", // 1 min
+//   () => {
+//     console.log("Running Lab Reminder Cron...");
+//     jobs.runningUserReminder({ db }).catch((err) => {
+//       console.error("Reminder cron failed:", err);
+//     });
+//   },
+//   commonCronConfig
+// );
+
+setInterval(() => {
+  console.log("Running Lab Reminder every 5 seconds...");
+  jobs.runningUserReminder({ db }).catch((err) => {
+    console.error("Reminder failed:", err);
+  });
+}, 20000); // 5000 milliseconds = 50 seconds
+
 };
 
 

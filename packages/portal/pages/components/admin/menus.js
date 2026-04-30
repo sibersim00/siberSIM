@@ -520,7 +520,7 @@ const onGridReady = useCallback((params) => {
                     columnDefs={columnDefs}
                     pagination={true}
                     onGridReady={onGridReady}
-                    frameworkComponents={frameworkComponents}
+                    components={frameworkComponents}
                     defaultColDef={defaultColDef}
                     paginationPageSize={20}
                     onPaginationChanged={onPaginationChanged} //  track page size changes

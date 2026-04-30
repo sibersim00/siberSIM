@@ -474,7 +474,7 @@ let importAdUsers = (modal) => {
                     pagination={true}
                     onGridReady={onGridReady}
                     paginationPageSize={20}
-                    frameworkComponents={frameworkComponents}
+                    components={frameworkComponents}
                     onPaginationChanged={onPaginationChanged} //  track page size changes
                     defaultColDef={defaultColDef}
                   ></AgGridReact>

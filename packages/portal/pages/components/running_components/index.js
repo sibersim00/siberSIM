@@ -42,7 +42,7 @@ const RunningComponent = () => {
   const [learnerOptions, setLearnerOptions] = useState([]);
   const [scenType, setScenType] = useState("Running");
   const [currentPage, setCurrentPage] = useState(1);
-  const [recordSize, setRecordSize] = useState(10);
+  const [recordSize, setRecordSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [searchText, setSearchText] = useState("");
 

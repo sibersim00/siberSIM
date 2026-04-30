@@ -10,8 +10,8 @@ import {
   clearStoreRoleMenus
 } from "../../../shared/redux/slices/admin/Roles";
 import { Row, Col, Card, Button } from "react-bootstrap";
-import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
-import ToggleButton from "../../../shared/data/masterButtons/toggleButton";
+import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button.js";
+import ToggleButton from "../../../shared/data/masterButtons/toggleButton.js";
 import Swal from "sweetalert2";
 import FormRole from "../../../shared/data/admin/modals/role";
 import { toast, ToastContainer } from "react-toastify";
@@ -91,6 +91,9 @@ const Roles = () => {
     };
   });
 
+  console.log("listRoleDatalistRoleData",listRoleData);
+  
+
   useEffect(() => {
     dispatch(getListOfRole());
     dispatch(getComponentDetails("/roles"))
@@ -165,7 +168,7 @@ const Roles = () => {
       sortable: false,
       cellRenderer: "actionButtonRenderer",
       pinned: "right",
-      width: 100,
+      width: 200,
     },
   ];
 
@@ -513,7 +516,7 @@ const onGridReady = useCallback((params) => {
                     columnDefs={columnDefs}
                     pagination={true}
                     onGridReady={onGridReady}
-                    frameworkComponents={frameworkComponents}
+                    components={frameworkComponents}
                     defaultColDef={defaultColDef}
                     paginationPageSize={20}
                     onPaginationChanged={onPaginationChanged} //  track page size changes

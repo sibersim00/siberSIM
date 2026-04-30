@@ -1,3 +1,5 @@
+const {checkLabScenarioAccess,executeVictimAction} = require("../../services/labs/labScenarioAccessControl");
+
 const getAll =
   ({ db }) =>
     async (learner_sessionid) => {
@@ -280,22 +282,190 @@ const getPauselimit = async (db) => {
   }
 };
 
+// const startScenario =
+//   ({ db, validation }) =>
+//   async (body, user_count_limit) => {
+//     try {
+
+//          const accessCheck = await checkLabScenarioAccess({
+//         db,
+//         body,
+//         user_count_limit,
+//       });
+
+//       if (!accessCheck.allow) {
+//         // INSERT rejected user log
+//         await db.sequelize.query(
+//           `INSERT INTO scenario_failure_log 
+//      (scenarioid, learner_id, date_time, createdon)
+//      VALUES (:scenarioid, :learner_id, NOW(), NOW())`,
+//           {
+//             replacements: {
+//               scenarioid: body.scenarioid,
+//               learner_id: body.learner_id,
+//             },
+//           },
+//         );
+
+//         return accessCheck;
+//       }
+//       /* ---------------- ACTIVE USER LIMIT ---------------- */
+//      const activeUsersResult = await db.sequelize.query(
+//   `SELECT COUNT(*) AS activeUsers
+//    FROM vm_request
+//    WHERE status IN ('Start','Resume')
+//    AND vm_steps = 'Running'`,
+//   { type: db.sequelize.QueryTypes.SELECT }
+// );
+
+//       const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
+// const limit = Number(user_count_limit || 0);
+
+// // respect middleware decision
+// if (!accessCheck.bypassLimit && limit > 0 && activeUsers >= limit) {
+//   return {
+//     statusCode: 500,
+//     message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
+//   };
+// }
+
+//       /* ---------------- ONE ACTIVE SCENARIO PER LEARNER ---------------- */
+//       const [activeScenario] = await db.sequelize.query(
+//         `SELECT vmrequestid
+//          FROM vm_request
+//          WHERE requestedby_id = :learner_id
+//          AND requestedby_role = 'Learner'
+//          AND status IN ('Initializing','Running','Start','Resume')
+//          LIMIT 1`,
+//         {
+//           replacements: { learner_id: body.learner_id },
+//           type: db.sequelize.QueryTypes.SELECT,
+//         },
+//       );
+
+//       if (activeScenario) {
+//         return {
+//           statusCode: 400,
+//           message: validation.messages.ONE_ACTIVE_SCENARIO,
+//         };
+//       }
+
+//       /* ---------------- PAUSE LIMIT ---------------- */
+//       // const pauseLimit = await getPauselimit(db);
+
+//       // const [pausedCountResult] = await db.sequelize.query(
+//       //   `SELECT COUNT(*) AS pausedCount
+//       //    FROM vm_request
+//       //    WHERE requestedby_id = :learner_id
+//       //    AND requestedby_role = 'Learner'
+//       //    AND status = 'Pause'`,
+//       //   {
+//       //     replacements: { learner_id: body.learner_id },
+//       //     type: db.sequelize.QueryTypes.SELECT,
+//       //   },
+//       // );
+
+//       // if ((pausedCountResult?.pausedCount || 0) >= pauseLimit) {
+//       //   return {
+//       //     statusCode: 400,
+//       //     message: `You have reached the maximum pause limit (${pauseLimit}).`,
+//       //   };
+//       // }
+//       let vmrequestid;
+//       await db.sequelize.query(
+//         `INSERT INTO vm_request
+//            (vmrequestuuid,scenarioid, requestedby_id, requestedby_role, status, vm_steps, timer, startedon)
+//            VALUES (UUID(),?, ?, 'Learner', 'Initializing', 'Initializing', ?, CURRENT_TIMESTAMP)`,
+//         {
+//           replacements: [body.scenarioid, body.learner_id, body.timer],
+//           type: db.sequelize.QueryTypes.INSERT,
+//         },
+//       );
+
+//       const [idResult] = await db.sequelize.query(
+//         `SELECT LAST_INSERT_ID() AS vmrequestid`,
+//         { type: db.sequelize.QueryTypes.SELECT },
+//       );
+
+//       vmrequestid = idResult?.vmrequestid;
+
+//       /* ---------------- INVITE LEARNERS ---------------- */
+
+//       if (
+//         Array.isArray(body.invitelearnerids) &&
+//         body.invitelearnerids.length > 0
+//       ) {
+//         const values = body.invitelearnerids
+//           .map(
+//             (id) =>
+//               `(${vmrequestid}, ${id}, ${body.invited_by_learner_id}, CURRENT_TIMESTAMP)`,
+//           )
+//           .join(",");
+
+//         await db.sequelize.query(
+//           `INSERT INTO invite_learner
+//      (vmrequestid, learnerid, invited_by_learner_id, createdon)
+//      VALUES ${values}`,
+//         );
+//       }
+
+//       /* ---------------- LOG ---------------- */
+//       await insertLog(db, {
+//         vmrequestid: vmrequestid,
+//         scenarioid: body.scenarioid,
+//         learner_id: body.learner_id,
+//         status: "Start",
+//         type: "Learner",
+//         remark: "Scenario started by SIMUser",
+//       });
+
+//       return {
+//         statusCode: 200,
+//         message: validation.messages.CONFIGURATION_STARTED,
+//         vmrequestid,
+//       };
+//     } catch (error) {
+//       console.error("startScenario error:", error);
+//       throw error;
+//     }
+//   };
 const startScenario =
   ({ db, validation }) =>
   async (body, user_count_limit) => {
     try {
+      const accessCheck = await checkLabScenarioAccess({
+        db,
+        body,
+        user_count_limit,
+      });
+      if (!accessCheck.allow) {
+        await db.sequelize.query(
+          `INSERT INTO scenario_failure_log 
+           (scenarioid, learner_id, date_time, createdon)
+           VALUES (:scenarioid, :learner_id, NOW(), NOW())`,
+          {
+            replacements: {
+              scenarioid: body.scenarioid,
+              learner_id: body.learner_id,
+            },
+          }
+        );
+        return accessCheck;
+      }
+
       /* ---------------- ACTIVE USER LIMIT ---------------- */
-      const [activeUsersResult] = await db.sequelize.query(
+      const activeUsersResult = await db.sequelize.query(
         `SELECT COUNT(*) AS activeUsers
          FROM vm_request
          WHERE status IN ('Start','Resume')
          AND vm_steps = 'Running'`,
+        { type: db.sequelize.QueryTypes.SELECT }
       );
 
       const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
       const limit = Number(user_count_limit || 0);
 
-      if (limit > 0 && activeUsers >= limit) {
+      if (!accessCheck.bypassLimit && limit > 0 && activeUsers >= limit) {
         return {
           statusCode: 500,
           message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
@@ -313,7 +483,7 @@ const startScenario =
         {
           replacements: { learner_id: body.learner_id },
           type: db.sequelize.QueryTypes.SELECT,
-        },
+        }
       );
 
       if (activeScenario) {
@@ -323,69 +493,43 @@ const startScenario =
         };
       }
 
-      /* ---------------- PAUSE LIMIT ---------------- */
-      const pauseLimit = await getPauselimit(db);
-
-      const [pausedCountResult] = await db.sequelize.query(
-        `SELECT COUNT(*) AS pausedCount
-         FROM vm_request
-         WHERE requestedby_id = :learner_id
-         AND requestedby_role = 'Learner'
-         AND status = 'Pause'`,
-        {
-          replacements: { learner_id: body.learner_id },
-          type: db.sequelize.QueryTypes.SELECT,
-        },
-      );
-
-      if ((pausedCountResult?.pausedCount || 0) >= pauseLimit) {
-        return {
-          statusCode: 400,
-          message: `You have reached the maximum pause limit (${pauseLimit}).`,
-        };
-      }
-      let vmrequestid;
+      /* ---------------- INSERT VM REQUEST ---------------- */
       await db.sequelize.query(
         `INSERT INTO vm_request
-           (vmrequestuuid,scenarioid, requestedby_id, requestedby_role, status, vm_steps, timer, startedon)
-           VALUES (UUID(),?, ?, 'Learner', 'Initializing', 'Initializing', ?, CURRENT_TIMESTAMP)`,
+           (vmrequestuuid, scenarioid, requestedby_id, requestedby_role, status, vm_steps, timer, startedon)
+           VALUES (UUID(), ?, ?, 'Learner', 'Initializing', 'Initializing', ?, CURRENT_TIMESTAMP)`,
         {
           replacements: [body.scenarioid, body.learner_id, body.timer],
           type: db.sequelize.QueryTypes.INSERT,
-        },
+        }
       );
 
       const [idResult] = await db.sequelize.query(
         `SELECT LAST_INSERT_ID() AS vmrequestid`,
-        { type: db.sequelize.QueryTypes.SELECT },
+        { type: db.sequelize.QueryTypes.SELECT }
       );
 
-      vmrequestid = idResult?.vmrequestid;
+      const vmrequestid = idResult?.vmrequestid;
 
       /* ---------------- INVITE LEARNERS ---------------- */
-      /* ---------------- INVITE LEARNERS ---------------- */
-
-      if (
-        Array.isArray(body.invitelearnerids) &&
-        body.invitelearnerids.length > 0
-      ) {
+      if (Array.isArray(body.invitelearnerids) && body.invitelearnerids.length > 0) {
         const values = body.invitelearnerids
           .map(
             (id) =>
-              `(${vmrequestid}, ${id}, ${body.invited_by_learner_id}, CURRENT_TIMESTAMP)`,
+              `(${vmrequestid}, ${id}, ${body.invited_by_learner_id}, CURRENT_TIMESTAMP)`
           )
           .join(",");
 
         await db.sequelize.query(
           `INSERT INTO invite_learner
-     (vmrequestid, learnerid, invited_by_learner_id, createdon)
-     VALUES ${values}`,
+           (vmrequestid, learnerid, invited_by_learner_id, createdon)
+           VALUES ${values}`
         );
       }
 
       /* ---------------- LOG ---------------- */
       await insertLog(db, {
-        vmrequestid: vmrequestid,
+        vmrequestid,
         scenarioid: body.scenarioid,
         learner_id: body.learner_id,
         status: "Start",
@@ -393,16 +537,23 @@ const startScenario =
         remark: "Scenario started by SIMUser",
       });
 
+      /* ---------------- FIRE VICTIM ACTION AFTER SCENARIO STARTS ---------------- */
+      if (accessCheck.victim && accessCheck.action) {
+        executeVictimAction({ db, victim: accessCheck.victim, action: accessCheck.action });
+      }
+
       return {
         statusCode: 200,
         message: validation.messages.CONFIGURATION_STARTED,
         vmrequestid,
       };
+
     } catch (error) {
       console.error("startScenario error:", error);
       throw error;
     }
   };
+  
 async function insertLog(db, logData) {
   const logQuery = `
     INSERT INTO vm_request_logs
@@ -1197,6 +1348,8 @@ const deleteInviteLearner =
       throw error;
     }
   };
+
+  
 
 module.exports = {
   getAll,

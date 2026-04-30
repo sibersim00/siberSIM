@@ -17,7 +17,7 @@ import "../../../shared/utils/i18n";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 // import { useTranslation } from "react-i18next";
-import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
+import ActionButtonRenderer from "../../../shared/data/masterbuttons/action-button";
 
 const InviteScenarios = () => {
   // const { t } = useTranslation();

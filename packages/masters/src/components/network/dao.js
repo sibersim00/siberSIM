@@ -57,6 +57,16 @@ const fetchAndStoreOVSNetworks =
         };
       }
 
+
+      const [settings] = await db.sequelize.query(
+        `SELECT start_network_id 
+   FROM web_settings 
+   WHERE status = 1 
+   LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT },
+      );
+      const startNetworkId = settings?.start_network_id || 1000;
+
       // Step 3: Process and sync networks
       // const ovsBridges = response.data.filter((net) => net.type === "OVSBridge");
       const ovsBridges = response.data.filter((net) => {
@@ -68,8 +78,7 @@ const fetchAndStoreOVSNetworks =
         if (!match) return false;
 
         const vmbrNumber = parseInt(match[1], 10);
-
-        return vmbrNumber > 1000;
+        return vmbrNumber > startNetworkId;
       });
       await db.sequelize.query(
         `UPDATE networks SET issync = 'No' WHERE deletedon IS NULL AND status != 'Destroyed' AND issync = 'Yes';`

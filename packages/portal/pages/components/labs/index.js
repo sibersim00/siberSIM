@@ -173,9 +173,9 @@ const Labs = () => {
       minWidth: 100,
       maxWidth: 100,
       width: 100,
-      cellRendererFramework: (params) => (
+      cellRenderer: (params) => (
         <button
-          className="btn btn-sm btn-outline-dark"
+          className="btn btn-sm btn-outline-warning mb-2"
           onClick={() => handleAllowedUsersClick(params.data)}
         >
           <i className="fe fe-users"></i>
@@ -191,6 +191,7 @@ const Labs = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
+
   useEffect(() => {
     if (addLabData?.statusCode == 200) {
       setformModal(false);
@@ -490,7 +491,7 @@ const Labs = () => {
       return (
         <ActionButtonRenderer
           handleEditView={() => handleView(props.data)}
-          handleShowEditView={true}
+          // handleShowEditView={true}
           handleEdit={handleEdit}
           propsVal={props}
           handleDelete={handleDelete}
@@ -813,7 +814,7 @@ const Labs = () => {
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
-                              <div
+                              {/* <div
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                 onClick={() => handleView(item)}
                               >
@@ -824,7 +825,7 @@ const Labs = () => {
                                   <i className="fe fe-eye "></i>
                                 </OverlayTrigger>
                               </div>
-                              &nbsp;
+                              &nbsp; */}
                               <div
                                 className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle"
                                 onClick={() => handleAllowedUsersClick(item)}

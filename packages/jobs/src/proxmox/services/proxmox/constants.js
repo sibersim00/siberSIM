@@ -6,9 +6,10 @@ const CONFIG_VALUES = {
   endpoint: process.env.PROXMOX_ENDPOINT,
   username: process.env.PROXMOX_USERNAME,
   password: process.env.PROXMOX_PASSWORD,
-  user: process.env.PROXMOX_USER,
-  cookie_prefix: process.env.PROXMOX_COOKIE_PREFIX,
   current_node: process.env.PROXMOX_CURRENT_NODE,
+
+  
+  cookie_prefix: process.env.PROXMOX_COOKIE_PREFIX,
   full: "0",
 };
 const VM_PROCESSES = {

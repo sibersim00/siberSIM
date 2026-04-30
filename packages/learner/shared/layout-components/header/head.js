@@ -159,7 +159,10 @@ useEffect(() => {
         localStorage.clear();
         dispatch({ type: "LOGOUT" });
         //window.location.href = '/';
-        navigate.replace("/", "", { shallow: true });
+        // navigate.replace("/", "", { shallow: true });
+        setTimeout(() => {
+          navigate.replace("/", "", { shallow: true });
+        }, 2000);
       };
 
       dispatch(clearlogOutData());

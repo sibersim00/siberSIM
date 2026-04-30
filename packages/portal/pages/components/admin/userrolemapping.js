@@ -475,7 +475,7 @@ const onGridReady = useCallback((params) => {
                       paginationPageSize={20}
                       pagination={true}
                       onGridReady={onGridReady}
-                      frameworkComponents={frameworkComponents}
+                      components={frameworkComponents}
                       defaultColDef={defaultColDef}
                        onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>

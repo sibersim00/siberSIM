@@ -1131,7 +1131,7 @@ const footerStyle = {
                                 </OverlayTrigger>
                               </div>
 
-                              {/* {["Resume", "Start"].includes(
+                              {["Resume", "Start"].includes(
                                 item?.scenario_status,
                               ) && (
                                 <OverlayTrigger
@@ -1154,7 +1154,7 @@ const footerStyle = {
                                     <i className="fe fe-list"></i>
                                   </div>
                                 </OverlayTrigger>
-                              )} */}
+                              )}
                             </div>
                           </div>
                         </Card.Body>
