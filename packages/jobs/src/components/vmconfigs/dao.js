@@ -1765,35 +1765,126 @@ const resumeScenarioLearner =
     }
   };
 
-const fetchScenarioWithComponents = async (db, scenarioId) => {
-  const rows = await db.sequelize.query(
-    `SELECT * FROM scenarios WHERE scenarioid = :scenarioId`,
-    {
-      replacements: { scenarioId },
-      type: db.sequelize.QueryTypes.SELECT,
-    },
-  );
-  if (!rows.length) return null;
-  const scenario = rows[0];
-  // Parse components JSON
-  let componentIds = [];
-  try {
-    const parsed = JSON.parse(scenario.component_config);
-    componentIds = parsed.map((c) => c.componentid);
-  } catch (err) {
-    console.error("Error parsing components JSON:", err);
-  }
-
-  if (componentIds.length > 0) {
-    const componentDetails = await db.sequelize.query(
-      `SELECT * FROM components WHERE componentid IN (:componentIds)`,
+  const pollBackupStatus =
+  ({ db }) =>
+  async (scenarioid, exportid) => {
+    const rows = await db.sequelize.query(
+      `SELECT status, file_name
+       FROM component_export
+       WHERE scenarioid = :scenarioid
+         AND exportid   = :exportid
+         AND deletedon IS NULL`,
       {
-        replacements: { componentIds },
+        replacements: { scenarioid, exportid },
         type: db.sequelize.QueryTypes.SELECT,
       },
     );
 
-    scenario.componentDetails = componentDetails;
+    if (!rows.length) {
+      return {
+        error: "No component export records found for this export.",
+      };
+    }
+
+    const total     = rows.length;
+    const completed = rows.filter((r) => r.status === "Completed").length;
+    const failed    = rows.filter((r) => r.status === "Failed").length;
+
+    return {
+      total,
+      completed,
+      failed,
+      allDone: completed === total,
+      error:   null,
+    };
+  };
+
+// ─── getCompletedBackupFiles ──────────────────────────────────────────────────
+// Returns all completed .zst file paths for a given export
+const getCompletedBackupFiles =
+  ({ db }) =>
+  async (scenarioid, exportid) => {
+    const rows = await db.sequelize.query(
+      `SELECT file_name
+       FROM component_export
+       WHERE scenarioid = :scenarioid
+         AND exportid   = :exportid
+         AND status     = 'Completed'
+         AND file_name IS NOT NULL`,
+      {
+        replacements: { scenarioid, exportid },
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+
+    return rows; // [{ file_name: '/var/lib/vz/dump/vzdump-qemu-xxx.vma.zst' }, ...]
+  };
+
+// ─── markExportCompleted ──────────────────────────────────────────────────────
+const markExportCompleted =
+  ({ db }) =>
+  async (exportid, zipFileName) => {
+    await db.sequelize.query(
+      `UPDATE scenario_export
+       SET file_name  = :zipFileName,
+           status     = 'Complete',
+           modifiedon = NOW()
+       WHERE exportid = :exportid`,
+      {
+        replacements: { zipFileName, exportid },
+        type: db.sequelize.QueryTypes.UPDATE,
+      },
+    );
+  };
+
+// ─── markExportFailed ─────────────────────────────────────────────────────────
+const markExportFailed =
+  ({ db }) =>
+  async (exportid) => {
+    await db.sequelize.query(
+      `UPDATE scenario_export
+       SET status     = 'Failed',
+           modifiedon = NOW()
+       WHERE exportid = :exportid`,
+      {
+        replacements: { exportid },
+        type: db.sequelize.QueryTypes.UPDATE,
+      },
+    );
+  };
+
+const fetchScenarioWithComponents = async (db, scenarioId) => {
+  const rows = await db.sequelize.query(
+    `SELECT * FROM scenarios WHERE scenarioid = :scenarioId`,
+    { replacements: { scenarioId }, type: db.sequelize.QueryTypes.SELECT },
+  );
+  if (!rows.length) return null;
+
+  const scenario = rows[0];
+  let parsed = [];  // ← hoisted here
+
+  try {
+    parsed = JSON.parse(scenario.component_config);  // ← assign, don't declare
+  } catch (err) {
+    console.error("Error parsing components JSON:", err);
+  }
+
+  const componentIds = parsed.map((c) => c.componentid);
+
+  if (componentIds.length > 0) {
+    const componentDetails = await db.sequelize.query(
+      `SELECT * FROM components WHERE componentid IN (:componentIds)`,
+      { replacements: { componentIds }, type: db.sequelize.QueryTypes.SELECT },
+    );
+
+    const compMap = Object.fromEntries(
+      componentDetails.map((c) => [c.componentid, c])
+    );
+
+    // Re-expand using original parsed list — preserves duplicates
+    scenario.componentDetails = parsed
+      .map((c) => compMap[c.componentid])
+      .filter(Boolean);
   } else {
     scenario.componentDetails = [];
   }
@@ -1803,7 +1894,7 @@ const fetchScenarioWithComponents = async (db, scenarioId) => {
 
 const getScenarioById =
   ({ db, ipAddress }) =>
-  async (scenarioId) => {
+  async (scenarioId, exportid) => {  // ← accept exportid
     try {
       const scenario = await fetchScenarioWithComponents(db, scenarioId);
       if (!scenario) {
@@ -1811,7 +1902,21 @@ const getScenarioById =
       }
 
       const components = scenario.componentDetails || [];
+      // const vmComponents = components.filter((c) => c.vmid);
+
       const vmComponents = components.filter((c) => c.vmid);
+
+// ── Remove duplicate VMIDs ─────────────────────────
+      const uniqueVmMap = new Map();
+
+      for (const comp of vmComponents) {
+        if (!uniqueVmMap.has(comp.vmid)) {
+          uniqueVmMap.set(comp.vmid, comp);
+        }
+      }
+
+      const uniqueVmComponents = [...uniqueVmMap.values()];
+
 
       if (!vmComponents.length) {
         return {
@@ -1820,30 +1925,37 @@ const getScenarioById =
         };
       }
 
+      // Authenticate ONCE — reuse for all VMs
+      const proxmoxService = ProxMoxService(db, {}, ipAddress);
+      const tokenResult = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        return {
+          success: false,
+          message: "We couldn't authenticate with the server. Please try after some time",
+        };
+      }
+
       let backupResults = [];
 
-      for (const comp of vmComponents) {
-        const { vmid, componentname } = comp;
+      for (const comp of uniqueVmComponents) {
+        const { vmid, componentname, componentid } = comp;
 
         try {
-          const proxmoxService = ProxMoxService(db, {}, ipAddress);
-          const tokenResult = await proxmoxService.generateAccessTicket();
-          if (!tokenResult || tokenResult.status !== "200") {
-            return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-          }
-
           const backup = await proxmoxService.takeBackup(vmid);
-
           if (backup?.data) {
             const upid = backup.data.data;
-
+            // ← exportid now stored so polling can filter by it
             await db.sequelize.query(
-              `INSERT INTO component_export (componentid, vmid,scenarioid, upid, status,      createdon)  VALUES (:componentid, :vmid,:scenarioid, :upid, 'Pending', NOW())`,
+              `INSERT INTO component_export
+                (componentid, vmid, scenarioid, exportid, upid, status, createdon)
+               VALUES
+                (:componentid, :vmid, :scenarioid, :exportid, :upid, 'Pending', NOW())`,
               {
                 replacements: {
-                  componentid: comp.componentid,
-                  vmid: vmid,
+                  componentid,
+                  vmid,
                   scenarioid: scenarioId,
+                  exportid,   // ← added
                   upid,
                 },
                 type: db.sequelize.QueryTypes.INSERT,
@@ -1851,21 +1963,14 @@ const getScenarioById =
             );
           }
 
-          if (backup?.status === 200) {
-            backupResults.push({
-              vmid,
-              componentname,
-              status: "success",
-              message: "Backup started successfully",
-            });
-          } else {
-            backupResults.push({
-              vmid,
-              componentname,
-              status: "failed",
-              message: "Backup failed",
-            });
-          }
+          backupResults.push({
+            vmid,
+            componentname,
+            status: backup?.status === 200 ? "success" : "failed",
+            message: backup?.status === 200
+              ? "Backup started successfully"
+              : "Backup failed",
+          });
         } catch (err) {
           backupResults.push({
             vmid,
@@ -1874,25 +1979,13 @@ const getScenarioById =
             message: "Unexpected error during backup",
           });
         }
+        await sleep(5000);
       }
-      const allGood = backupResults.every((x) => x.status === "success");
-      // Fetch filenames from component_export (updated by cron)
-      const exports = await db.sequelize.query(
-        `SELECT vmid, file_name FROM component_export  WHERE scenarioid = :scenarioid`,
-        {
-          replacements: { scenarioid: scenarioId },
-          type: db.sequelize.QueryTypes.SELECT,
-        },
-      );
 
-      // Merge filename into backupResults
-      backupResults = backupResults.map((b) => {
-        const match = exports.find((e) => e.vmid === b.vmid);
-        return {
-          ...b,
-          filename: match?.file_name || null,
-        };
-      });
+      const allGood = backupResults.every((x) => x.status === "success");
+
+      // NOTE: Don't fetch file_name here — cron hasn't run yet
+      // Controller will poll separately
 
       return {
         success: allGood,
@@ -1926,13 +2019,10 @@ const checkBackupStatus =
         try {
           const tokenResult = await proxmoxService.generateAccessTicket();
           if (!tokenResult || tokenResult.status !== "200") {
-            console.log("We couldn't authenticate with the server.Please try after some time");
+            console.log("Proxmox auth failed, skipping...");
             continue;
           }
 
-          // -------------------------------------------------
-          // GET BACKUP STATUS (getTaskLog)
-          // -------------------------------------------------
           const logResponse = await proxmoxService.getTaskLog(upid);
           if (!logResponse?.data?.data) continue;
 
@@ -1952,14 +2042,10 @@ const checkBackupStatus =
             exitstatus === "job errors"
           ) {
             newStatus = "Failed";
-            rejectReason =
-              "Something went wrong in Proxmox, please try again later.";
+            rejectReason = "Something went wrong in Proxmox, please try again later.";
           }
 
-          // -------------------------------------------------
-          // FETCH FILENAME using fetchFileName()
-          // -------------------------------------------------
-
+          // Extract filename from task log
           let extractedFileName = null;
           try {
             const fileResponse = await proxmoxService.fetchFileName(upid);
@@ -1977,52 +2063,54 @@ const checkBackupStatus =
               }
             }
           } catch (err) {
-            console.error("Error fetching or parsing filename:", err);
+            console.error("Error fetching filename:", err);
           }
 
-          // -------------------------------------------------
-          // UPDATE component_export TABLE
-          // -------------------------------------------------
-          let updateQuery = `
-            UPDATE component_export
-            SET status = :newStatus,
-                reject_reason = :rejectReason,
-                modifiedon = NOW()
-            WHERE componentexportid = :exportId
-          `;
+          // Build the full absolute path so controller can copy it
+          // ← THIS IS THE FIX — store full path not just filename
+          const fullFilePath = extractedFileName
+            ? `/var/lib/vz/dump/${extractedFileName}`
+            : null;
 
-          let replacements = {
-            newStatus,
-            rejectReason,
-            exportId: componentexportid,
-          };
-
-          // Completed + filename → add file_name
-          if (newStatus === "Completed" && extractedFileName) {
-            updateQuery = `
-              UPDATE component_export
-              SET status = :newStatus,
-                  file_name = :fileName,
-                  reject_reason = :rejectReason,
-                  modifiedon = NOW()
-              WHERE componentexportid = :exportId
-            `;
-            replacements.fileName = extractedFileName;
+          // Update component_export
+          if (newStatus === "Completed" && fullFilePath) {
+            await db.sequelize.query(
+              `UPDATE component_export
+               SET status        = :newStatus,
+                   file_name     = :fileName,
+                   reject_reason = :rejectReason,
+                   modifiedon    = NOW()
+               WHERE componentexportid = :exportId`,
+              {
+                replacements: {
+                  newStatus,
+                  fileName: fullFilePath,  // ← full path now
+                  rejectReason,
+                  exportId: componentexportid,
+                },
+                type: db.sequelize.QueryTypes.UPDATE,
+              },
+            );
+          } else {
+            await db.sequelize.query(
+              `UPDATE component_export
+               SET status        = :newStatus,
+                   reject_reason = :rejectReason,
+                   modifiedon    = NOW()
+               WHERE componentexportid = :exportId`,
+              {
+                replacements: { newStatus, rejectReason, exportId: componentexportid },
+                type: db.sequelize.QueryTypes.UPDATE,
+              },
+            );
           }
 
-          await db.sequelize.query(updateQuery, {
-            replacements,
-            type: db.sequelize.QueryTypes.UPDATE,
-          });
-          // -------------------------------------------------
-          // CHECK SCENARIO EXPORT STATUS BASED ON COMPONENTS
-          // -------------------------------------------------
-
+          // Update scenario_export — filter by BOTH scenarioid AND exportid
+          // ← THIS IS THE FIX — was only filtering by scenarioid before
           try {
             const scenarioRow = await db.sequelize.query(
-              `SELECT scenarioid 
-                FROM component_export 
-                WHERE componentexportid = :exportId`,
+              `SELECT scenarioid, exportid FROM component_export
+               WHERE componentexportid = :exportId`,
               {
                 replacements: { exportId: componentexportid },
                 type: db.sequelize.QueryTypes.SELECT,
@@ -2030,19 +2118,19 @@ const checkBackupStatus =
             );
 
             if (scenarioRow.length) {
-              const scenarioId = scenarioRow[0].scenarioid;
+              const { scenarioid: scenarioId, exportid } = scenarioRow[0];
 
-              // Get all component statuses for this scenario
               const statusCounts = await db.sequelize.query(
-                `SELECT 
+                `SELECT
                   SUM(status = 'Completed') AS completedCount,
-                  SUM(status = 'Running') AS runningCount,
-                  SUM(status = 'Failed') AS failedCount,
-                  COUNT(*) AS totalCount
-                  FROM component_export
-                  WHERE scenarioid = :scenarioId`,
+                  SUM(status = 'Running')   AS runningCount,
+                  SUM(status = 'Failed')    AS failedCount,
+                  COUNT(*)                  AS totalCount
+                 FROM component_export
+                 WHERE scenarioid = :scenarioId
+                   AND exportid   = :exportid`,  // ← filter by exportid too
                 {
-                  replacements: { scenarioId },
+                  replacements: { scenarioId, exportid },
                   type: db.sequelize.QueryTypes.SELECT,
                 },
               );
@@ -2050,38 +2138,35 @@ const checkBackupStatus =
               const { completedCount, runningCount, failedCount, totalCount } =
                 statusCounts[0];
 
-              let scenarioStatus = "Running"; // default
-
+              let scenarioStatus = "Running";
               if (failedCount > 0) {
                 scenarioStatus = "Failed";
-              } else if (completedCount == totalCount) {
+              } else if (Number(completedCount) === Number(totalCount)) {
                 scenarioStatus = "Complete";
-              } else {
-                scenarioStatus = "Running"; // because some components still running
               }
 
-              // Update scenario_export
               await db.sequelize.query(
                 `UPDATE scenario_export
-                  SET status = :scenarioStatus,
-                  modifiedon = NOW()
-                  WHERE scenarioid = :scenarioId`,
+                 SET status     = :scenarioStatus,
+                     modifiedon = NOW()
+                 WHERE scenarioid = :scenarioId
+                   AND exportid   = :exportid`,  // ← filter by exportid too
                 {
-                  replacements: { scenarioStatus, scenarioId },
+                  replacements: { scenarioStatus, scenarioId, exportid },
                   type: db.sequelize.QueryTypes.UPDATE,
                 },
               );
 
               console.log(
-                `Scenario ${scenarioId} status updated → ${scenarioStatus} 
-                (Completed: ${completedCount}, Running: ${runningCount}, Failed: ${failedCount})`,
+                `[Cron] Scenario ${scenarioId} export ${exportid} → ${scenarioStatus} ` +
+                `(✓${completedCount} ⟳${runningCount} ✗${failedCount} / ${totalCount})`,
               );
             }
           } catch (err) {
             console.error("Failed to update scenario_export status:", err);
           }
         } catch (err) {
-          console.error("Cron Status Update Error (loop):", err);
+          console.error("Cron loop error:", err);
         }
       }
     } catch (err) {
@@ -3152,595 +3237,6 @@ const deleteScenarioVmNetwork =
     }
   };
 
-// const ModifyScenarioVmNetwork =
-//   ({ ipAddress, db }) =>
-//   async (
-//     vmid,
-//     Targetvmid,
-//     netKey,
-//     mode,
-//     source,
-//     sourceHandle,
-//     target,
-//     targetHandle,
-//     label,
-//     staticVmbr
-//   ) => {
-//     const [vmTypeRow] = await db.sequelize.query(
-//       `SELECT componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-//       {
-//         replacements: [vmid],
-//         type: db.sequelize.QueryTypes.SELECT,
-//       },
-//     );
-
-//     if (!vmTypeRow?.componenttype) {
-//       return { success: false, message: "VM type not found" };
-//     }
-
-//     const normalizedVmType = vmTypeRow.componenttype.toLowerCase();
-//     try {
-//       let networkid = null;
-//       let networkname = null;
-//       let netValue = null;
-//       let finalLabel = label;
-//       /* =========================================================
-//            MODE: NEW
-//         ========================================================= */
-//       if (mode === "new") {
-//         const [availableNetwork] = await db.sequelize.query(
-//           `SELECT networkid, networkname FROM networks 
-//            WHERE status='Available' AND deletedon IS NULL 
-//            ORDER BY networkid ASC LIMIT 1`,
-//           { type: db.sequelize.QueryTypes.SELECT },
-//         );
-
-//         if (!availableNetwork) {
-//           return { success: false, message: "No free networks." };
-//         }
-
-//         networkid = availableNetwork.networkid;
-//         networkname = availableNetwork.networkname;
-//         finalLabel = networkname;
-
-//         const ethIndex = netKey.replace("net", "");
-
-//         // ---------- SOURCE NET VALUE ----------
-//         if (normalizedVmType === "qemu") {
-//           netValue = `virtio,bridge=${networkname}`;
-//         } else if (normalizedVmType === "lxc") {
-//           netValue = `name=eth${ethIndex},bridge=${networkname}`;
-//         } else {
-//           return { success: false, message: "Unsupported VM type" };
-//         }
-
-//         // ---------- TARGET VM FETCH ----------
-//         const [targetVmRow] = await db.sequelize.query(
-//           `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-//           {
-//             replacements: [Targetvmid], // ⚠️ ensure this maps correctly
-//             type: db.sequelize.QueryTypes.SELECT,
-//           },
-//         );
-
-//         if (!targetVmRow) {
-//           return { success: false, message: "Target VM not found" };
-//         }
-
-//         const targetVmType = targetVmRow.componenttype.toLowerCase();
-
-//         const targetNetKey = targetHandle
-//           .replace("-target", "")
-//           .replace("-source", "");
-
-//         let targetNetValue;
-
-//         if (targetVmType === "qemu") {
-//           targetNetValue = `virtio,bridge=${networkname}`;
-//         } else if (targetVmType === "lxc") {
-//           const targetEthIndex = targetNetKey.replace("net", "");
-//           targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
-//         }
-
-//         // ---------- PROXMOX ----------
-//         const proxmoxService = ProxMoxService(
-//           db,
-//           { vmType: normalizedVmType },
-//           ipAddress,
-//         );
-
-//       const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, normalizedVmType);
-
-//       console.log("vmInfovmInfovmInfovmInfovmInfo",vmInfo);
-    
-//         const token = await proxmoxService.generateAccessTicket();
-//         if (!token || token.status !== "200") {
-//           return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-//         }
-
-//         // 👉 APPLY TO SOURCE
-//         const addNetSource = await proxmoxService.addVmNetwork(
-//           vmid,
-//           normalizedVmType,
-//           netKey,
-//           netValue,
-//         );
-
-//         await sleep(3000);
-
-//         // 👉 APPLY TO TARGET
-//         const proxmoxServiceTarget = ProxMoxService(
-//           db,
-//           { vmType: targetVmType },
-//           ipAddress,
-//         );
-//         const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-//           targetVmRow.vmid,
-//           targetVmType,
-//           targetNetKey,
-//           targetNetValue,
-//         );
-//         if (
-//           addNetSource?.status !== 200 ||
-//           addNetTarget?.status !== 200
-//         ) {
-//           return {
-//             success: false,
-//             message: "Failed to apply network bridge to both VMs",
-//           };
-//         }
-
-//         // ---------- MARK NETWORK USED ----------
-//         await db.sequelize.query(
-//           `UPDATE networks
-//            SET status='In Use', modifiedon=NOW()
-//            WHERE networkid=?`,
-//           {
-//             replacements: [networkid],
-//             type: db.sequelize.QueryTypes.UPDATE,
-//           },
-//         );
-
-//         /* ---------- UPDATE SOURCE JSON ---------- */
-//         const [sourceVmRow] = await db.sequelize.query(
-//           `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-//           {
-//             replacements: [vmid],
-//             type: db.sequelize.QueryTypes.SELECT,
-//           },
-//         );
-
-//         let sourceBridgeJson = {};
-//         if (sourceVmRow?.network_bridge_json) {
-//           try {
-//             sourceBridgeJson = JSON.parse(
-//               sourceVmRow.network_bridge_json,
-//             );
-//           } catch {}
-//         }
-
-//         sourceBridgeJson[netKey] = {
-//           networkid,
-//           networkname,
-//           value: netValue,
-//         };
-
-//         await db.sequelize.query(
-//           `UPDATE vm_config 
-//            SET network_bridge_json=?, modifiedon=NOW() 
-//            WHERE vmid=?`,
-//           {
-//             replacements: [
-//               JSON.stringify(sourceBridgeJson),
-//               vmid,
-//             ],
-//             type: db.sequelize.QueryTypes.UPDATE,
-//           },
-//         );
-
-//         /* ---------- UPDATE TARGET JSON ---------- */
-//         const [targetVmConfig] = await db.sequelize.query(
-//           `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-//           {
-//             replacements: [targetVmRow.vmid],
-//             type: db.sequelize.QueryTypes.SELECT,
-//           },
-//         );
-
-//         let targetBridgeJson = {};
-//         if (targetVmConfig?.network_bridge_json) {
-//           try {
-//             targetBridgeJson = JSON.parse(
-//               targetVmConfig.network_bridge_json,
-//             );
-//           } catch {}
-//         }
-
-//         targetBridgeJson[targetNetKey] = {
-//           networkid,
-//           networkname,
-//           value: targetNetValue,
-//         };
-
-//         await db.sequelize.query(
-//           `UPDATE vm_config 
-//            SET network_bridge_json=?, modifiedon=NOW() 
-//            WHERE vmid=?`,
-//           {
-//             replacements: [
-//               JSON.stringify(targetBridgeJson),
-//               targetVmRow.vmid,
-//             ],
-//             type: db.sequelize.QueryTypes.UPDATE,
-//           },
-//         );
-//       }
-
-//       /* =========================================================
-//            MODE: EXISTING
-//         ========================================================= */
-    
-// if (mode === "existing") {
-//   if (!label) {
-//     return {
-//       success: false,
-//       message:
-//         "No existing network found. Unable to add a network bridge.",
-//     };
-//   }
-
-//   networkname = label;
-//   finalLabel = label;
-
-//   const ethIndex = netKey.replace("net", "");
-
-//   // ---------- SOURCE NET VALUE ----------
-//   if (normalizedVmType === "qemu") {
-//     netValue = `virtio,bridge=${networkname}`;
-//   } else if (normalizedVmType === "lxc") {
-//     netValue = `name=eth${ethIndex},bridge=${networkname}`;
-//   } else {
-//     return { success: false, message: "Unsupported VM type" };
-//   }
-
-//   // ---------- TARGET VM FETCH ----------
-//   const [targetVmRow] = await db.sequelize.query(
-//     `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-//     {
-//       replacements: [Targetvmid],
-//       type: db.sequelize.QueryTypes.SELECT,
-//     },
-//   );
-
-//   if (!targetVmRow) {
-//     return { success: false, message: "Target VM not found" };
-//   }
-
-//   const targetVmType = targetVmRow.componenttype.toLowerCase();
-
-//   const targetNetKey = targetHandle
-//     .replace("-target", "")
-//     .replace("-source", "");
-
-//   let targetNetValue;
-
-//   if (targetVmType === "qemu") {
-//     targetNetValue = `virtio,bridge=${networkname}`;
-//   } else if (targetVmType === "lxc") {
-//     const targetEthIndex = targetNetKey.replace("net", "");
-//     targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
-//   }
-
-//   // ---------- PROXMOX ----------
-//   const proxmoxService = ProxMoxService(
-//     db,
-//     { vmType: normalizedVmType },
-//     ipAddress,
-//   );
-
-//   const token = await proxmoxService.generateAccessTicket();
-//   if (!token || token.status !== "200") {
-//     return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-//   }
-
-//   // 👉 SOURCE
-//   const addNetSource = await proxmoxService.addVmNetwork(
-//     vmid,
-//     normalizedVmType,
-//     netKey,
-//     netValue,
-//   );
-//   await sleep(3000);
-
-//   // 👉 TARGET
-//   const proxmoxServiceTarget = ProxMoxService(
-//     db,
-//     { vmType: targetVmType },
-//     ipAddress,
-//   );
-
-//   const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-//     targetVmRow.vmid,
-//     targetVmType,
-//     targetNetKey,
-//     targetNetValue,
-//   );
-
-//   if (
-//     addNetSource?.status !== 200 ||
-//     addNetTarget?.status !== 200
-//   ) {
-//     return {
-//       success: false,
-//       message: "Failed to apply existing network to both VMs",
-//     };
-//   }
-// }
-
-//       /* =========================================================
-//            MODE: STATIC
-//         ========================================================= */
-//         if (mode === "static") {
-//           if (staticVmbr) {
-//             const num = parseInt(staticVmbr, 10);
-
-//             if (isNaN(num)) {
-//               return { success: false, message: "Invalid number format" };
-//             }
-
-//             // if (num < 50 || num > 999) {
-//             //   return { success: false, message: "Value must be between 50–999" };
-//             // }
-
-//             networkname = `vmbr${num}`;
-//             finalLabel = networkname; // instead of label
-//           } else {
-//             networkname = null;
-//             finalLabel = "Network Id";
-//           }
-//         }
-//         if (mode === "static" && networkname) {
-//           const ethIndex = netKey.replace("net", "");
-
-//           // ---------- SOURCE ----------
-//           if (normalizedVmType === "qemu") {
-//             netValue = `virtio,bridge=${networkname}`;
-//           } else if (normalizedVmType === "lxc") {
-//             netValue = `name=eth${ethIndex},bridge=${networkname}`;
-//           }
-
-//           // ---------- TARGET VM ----------
-//           const [targetVmRow] = await db.sequelize.query(
-//             `SELECT vmid, componenttype FROM vm_config WHERE vmid=? LIMIT 1`,
-//             {
-//               replacements: [Targetvmid],
-//               type: db.sequelize.QueryTypes.SELECT,
-//             }
-//           );
-
-//           if (!targetVmRow) {
-//             return { success: false, message: "Target VM not found" };
-//           }
-
-//           const targetVmType = targetVmRow.componenttype.toLowerCase();
-
-//           const targetNetKey = targetHandle
-//             .replace("-target", "")
-//             .replace("-source", "");
-
-//           let targetNetValue;
-
-//           if (targetVmType === "qemu") {
-//             targetNetValue = `virtio,bridge=${networkname}`;
-//           } else if (targetVmType === "lxc") {
-//             const targetEthIndex = targetNetKey.replace("net", "");
-//             targetNetValue = `name=eth${targetEthIndex},bridge=${networkname}`;
-//           }
-
-//           // ---------- PROXMOX ----------
-//           const proxmoxService = ProxMoxService(
-//             db,
-//             { vmType: normalizedVmType },
-//             ipAddress
-//           );
-
-//           const token = await proxmoxService.generateAccessTicket();
-
-//           if (!token || token.status !== "200") {
-//             return {
-//               success: false,
-//               message: "Proxmox authentication failed",
-//             };
-//           }
-
-//           // APPLY TO SOURCE
-//           const addNetSource = await proxmoxService.addVmNetwork(
-//             vmid,
-//             normalizedVmType,
-//             netKey,
-//             netValue
-//           );
-
-//           await sleep(3000);
-//           // APPLY TO TARGET
-//           const proxmoxServiceTarget = ProxMoxService(
-//             db,
-//             { vmType: targetVmType },
-//             ipAddress
-//           );
-
-//           const addNetTarget = await proxmoxServiceTarget.addVmNetwork(
-//             targetVmRow.vmid,
-//             targetVmType,
-//             targetNetKey,
-//             targetNetValue
-//           );
-//           if (
-//             addNetSource?.status !== 200 ||
-//             addNetTarget?.status !== 200
-//           ) {
-//             return {
-//               success: false,
-//               message: `The network bridge vmbr${label} is not available`,
-//             };
-//           }
-//         }
-
-//         if (mode === "static" && staticVmbr) {
-//           const bridgeName = networkname;
-
-//           const [existing] = await db.sequelize.query(
-//             `SELECT tempnetworkid 
-//             FROM static_networks 
-//             WHERE networkname = ? 
-//             LIMIT 1`,
-//             {
-//               replacements: [bridgeName],
-//               type: db.sequelize.QueryTypes.SELECT,
-//             }
-//           );
-
-//           // Insert only if not exists
-//           if (!existing) {
-//             await db.sequelize.query(
-//               `INSERT INTO static_networks 
-//               (networkname, lock_status, createdon)
-//               VALUES (?, 'Free', NOW())`,
-//               {
-//                 replacements: [bridgeName],
-//                 type: db.sequelize.QueryTypes.INSERT,
-//               }
-//             );
-//           }
-//         }
-
-//       /* =========================================================
-//            FETCH VM CONFIG
-//         ========================================================= */
-//       const [vmRow] = await db.sequelize.query(
-//         `SELECT vmrequestid, network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-//         {
-//           replacements: [vmid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if (!vmRow) {
-//         return { success: false, message: "VM config not found" };
-//       }
-
-//       /* =========================================================
-//            UPDATE BRIDGE JSON
-//         ========================================================= */
-//       let bridgeJson = {};
-//       if (vmRow.network_bridge_json) {
-//         try {
-//           bridgeJson = JSON.parse(vmRow.network_bridge_json);
-//         } catch {}
-//       }
-
-//       bridgeJson[netKey] = {
-//         networkid,
-//         networkname: finalLabel,
-//         value: netValue,
-//       };
-
-//       await db.sequelize.query(
-//         `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
-//         {
-//           replacements: [JSON.stringify(bridgeJson), vmid],
-//           type: db.sequelize.QueryTypes.UPDATE,
-//         },
-//       );
-
-//       /* =========================================================
-//            SCENARIO DIAGRAM
-//         ========================================================= */
-//       const [reqRow] = await db.sequelize.query(
-//         `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=? LIMIT 1`,
-//         {
-//           replacements: [vmRow.vmrequestid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if (!reqRow?.scenariodiagram) {
-//         return { success: true, message: "No diagram found" };
-//       }
-
-//       let diagram = JSON.parse(reqRow.scenariodiagram);
-//       if (!diagram.edges) diagram.edges = [];
-
-//       /* =========================================================
-//            EDGE ID
-//         ========================================================= */
-//       // const edgeId = `xy-edge__${source}${sourceHandle}-${target}${targetHandle}`;
-//       const edgeId = `xy-edge__${source}-${sourceHandle}-${target}-${targetHandle}`;
-
-//       /* =========================================================
-//            BUILD EDGE
-//         ========================================================= */
-//       const updatedEdge = {
-//         type: "custom",
-//         style: {
-//           stroke: "#000",
-//           strokeWidth: 2,
-//         },
-//         source,
-//         sourceHandle,
-//         target,
-//         targetHandle,
-//         isAttacked: "Yes",
-//         data: {
-//           label: finalLabel,
-//           source,
-//           sourceHandle,
-//           target,
-//           targetHandle,
-//         },
-//         id: edgeId,
-//       };
-
-//       /* =========================================================
-//            UPDATE OR ADD EDGE
-//         ========================================================= */
-//       const edgeIndex = diagram.edges.findIndex((e) => e.id === edgeId);
-
-//       if (edgeIndex !== -1) {
-//         // UPDATE
-//         diagram.edges[edgeIndex] = updatedEdge;
-//       } else {
-//         // ADD
-//         diagram.edges.push(updatedEdge);
-//       }
-
-//       /* =========================================================
-//            SAVE DIAGRAM
-//         ========================================================= */
-//       await db.sequelize.query(
-//         `UPDATE vm_request SET scenariodiagram=?, modifiedon=NOW() WHERE vmrequestid=?`,
-//         {
-//           replacements: [JSON.stringify(diagram), vmRow.vmrequestid],
-//           type: db.sequelize.QueryTypes.UPDATE,
-//         },
-//       );
-//       return {
-//         success: true,
-//         message:
-//           edgeIndex !== -1
-//             ? "Edge updated successfully"
-//             : "Network and edge added successfully",
-//         edge: updatedEdge,
-//       };
-//     } catch (err) {
-//       console.error(err);
-//       return {
-//         success: false,
-//         message: err.message,
-//       };
-//     }
-//   };
-
 const ModifyScenarioVmNetwork =
   ({ ipAddress, db }) =>
   async (
@@ -3864,9 +3360,6 @@ const ModifyScenarioVmNetwork =
         const existingSourceNetValue = sourceVmInfo?.data?.[netKey];
 
         netValue = replaceBridge(existingSourceNetValue, networkname);
-        console.log("netValusssssssenetValuenetValue",netValue);
-        
-
         if (!netValue) {
           // Fallback if this net port doesn't exist yet on the VM
           if (normalizedVmType === "qemu") {
@@ -3927,51 +3420,7 @@ const ModifyScenarioVmNetwork =
           };
         }
 
-        // ---------- POST-APPLY: MODE-SPECIFIC DB UPDATES ----------
-        // if (mode === "new") {
-        //   // Mark network as In Use
-        //   await db.sequelize.query(
-        //     `UPDATE networks SET status='In Use', modifiedon=NOW() WHERE networkid=?`,
-        //     { replacements: [networkid], type: db.sequelize.QueryTypes.UPDATE }
-        //   );
-
-        //   // Update SOURCE bridge JSON
-        //   const [sourceVmRow] = await db.sequelize.query(
-        //     `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-        //     { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
-        //   );
-
-        //   let sourceBridgeJson = {};
-        //   try { sourceBridgeJson = JSON.parse(sourceVmRow?.network_bridge_json || "{}"); } catch {}
-        //   sourceBridgeJson[netKey] = { networkid, networkname, value: netValue };
-
-        //   await db.sequelize.query(
-        //     `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
-        //     {
-        //       replacements: [JSON.stringify(sourceBridgeJson), vmid],
-        //       type: db.sequelize.QueryTypes.UPDATE,
-        //     }
-        //   );
-
-        //   // Update TARGET bridge JSON
-        //   const [targetVmConfig] = await db.sequelize.query(
-        //     `SELECT network_bridge_json FROM vm_config WHERE vmid=? LIMIT 1`,
-        //     { replacements: [targetVmRow.vmid], type: db.sequelize.QueryTypes.SELECT }
-        //   );
-
-        //   let targetBridgeJson = {};
-        //   try { targetBridgeJson = JSON.parse(targetVmConfig?.network_bridge_json || "{}"); } catch {}
-        //   targetBridgeJson[targetNetKey] = { networkid, networkname, value: targetNetValue };
-
-        //   await db.sequelize.query(
-        //     `UPDATE vm_config SET network_bridge_json=?, modifiedon=NOW() WHERE vmid=?`,
-        //     {
-        //       replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid],
-        //       type: db.sequelize.QueryTypes.UPDATE,
-        //     }
-        //   );
-        // }
-        // ---------- POST-APPLY: MODE-SPECIFIC DB UPDATES ----------
+     
 if (mode === "new") {
   // Mark network as In Use
   await db.sequelize.query(
@@ -3981,7 +3430,7 @@ if (mode === "new") {
 
   // Update SOURCE bridge JSON
   const [sourceVmRow] = await db.sequelize.query(
-    `SELECT network_bridge_json, vmrequestid FROM vm_config WHERE vmid=? LIMIT 1`, // ✅ added vmrequestid
+    `SELECT network_bridge_json, vmrequestid FROM vm_config WHERE vmid=? LIMIT 1`, //  added vmrequestid
     { replacements: [vmid], type: db.sequelize.QueryTypes.SELECT }
   );
 
@@ -4009,7 +3458,7 @@ if (mode === "new") {
     { replacements: [JSON.stringify(targetBridgeJson), targetVmRow.vmid], type: db.sequelize.QueryTypes.UPDATE }
   );
 
-  // ✅ NEW: Update vm_request.network_bridges
+  //  NEW: Update vm_request.network_bridges
   const [vmReqRow] = await db.sequelize.query(
     `SELECT network_bridges FROM vm_request WHERE vmrequestid=? LIMIT 1`,
     { replacements: [sourceVmRow.vmrequestid], type: db.sequelize.QueryTypes.SELECT }
@@ -5580,6 +5029,554 @@ const restartComponent =
     }
   };
 
+
+
+  const getExportById =
+  ({ db }) =>
+  async (exportid) => {
+    const rows = await db.sequelize.query(
+      `SELECT * FROM scenario_export
+       WHERE exportid = :exportid
+         AND deletedon IS NULL`,
+      {
+        replacements: { exportid },
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+    return rows.length ? rows[0] : null;
+  };
+
+
+const createScenarioImport =
+  ({ db }) =>
+  async ({
+    scenariotitle,
+    scenarioidentification,
+    userid,
+    original_scenarioid,
+    zip_path,
+    extract_path,
+    components,  //  accept components array
+  }) => {
+    const [result] = await db.sequelize.query(
+      `INSERT INTO scenario_import
+        (scenariotitle, scenarioidentification, userid, original_scenarioid,
+         zip_path, extract_path, status, message, createdon, modifiedon)
+       VALUES
+        (:scenariotitle, :scenarioidentification, :userid, :original_scenarioid,
+         :zip_path, :extract_path, 'Pending', 'Awaiting ZST uploads', NOW(), NOW())`,
+      {
+        replacements: {
+          scenariotitle, scenarioidentification, userid,
+          original_scenarioid, zip_path, extract_path,
+        },
+        type: db.sequelize.QueryTypes.INSERT,
+      },
+    );
+
+    const importid = result;
+
+    //  Pre-insert ALL components with uploaded = 0
+    if (components && components.length > 0) {
+      for (const component of components) {
+        await db.sequelize.query(
+          `INSERT INTO scenario_import_components (importid, vm_file, uploaded)
+           VALUES (:importid, :vmFile, 0)
+           ON DUPLICATE KEY UPDATE vm_file = vm_file`,
+          {
+            replacements: { importid, vmFile: component.file },
+            type: db.sequelize.QueryTypes.INSERT,
+          },
+        );
+      }
+    }
+
+    return importid;
+  };
+
+const updateImportStatus =
+  ({ db }) =>
+  async (importid, status, message = null) => {
+    await db.sequelize.query(
+      `UPDATE scenario_import
+          SET status = :status, message = :message, modifiedon = NOW()
+        WHERE importid = :importid`,
+      { replacements: { importid, status, message }, type: db.sequelize.QueryTypes.UPDATE },
+    );
+  };
+
+const getImportList =
+  ({ db }) =>
+  async (userid) => {
+    try {
+      const rows = await db.sequelize.query(
+        `SELECT * FROM scenario_import
+         WHERE userid    = :userid
+           AND deletedon IS NULL
+         ORDER BY createdon DESC`,
+        {
+          replacements: { userid },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (!rows) {
+        return { success: false, message: "No import records found." };
+      }
+
+      return rows;
+    } catch (err) {
+      console.error("FATAL ERROR in getImportList:", err);
+      return { success: false, message: err.message };
+    }
+  };
+
+const checkScenarioIdentification =
+  ({ db }) =>
+  async ({ zipPath, customIdentification }) => {
+    const fs       = require("fs");
+    const path     = require("path");
+    const unzipper = require("unzipper");
+    const os       = require("os");
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sim_check_"));
+
+    try {
+      // ── Extract ZIP ─────────────────────────────────────────────
+      await fs
+        .createReadStream(zipPath)
+        .pipe(unzipper.Extract({ path: tmpDir }))
+        .promise();
+
+      // ── Find manifest ───────────────────────────────────────────
+      let scenarioPath = path.join(tmpDir, "scenario.json");
+
+if (!fs.existsSync(scenarioPath)) {
+  scenarioPath = path.join(
+    tmpDir,
+    "assets",
+    "class_export",
+    "scenario.json"
+  );
+}
+
+if (!fs.existsSync(scenarioPath)) {
+  return {
+    conflict: false,
+    error: "scenario.json not found in ZIP.",
+  };
+}
+
+const scenarioFile = JSON.parse(
+  fs.readFileSync(scenarioPath, "utf8")
+);
+
+const s =
+  scenarioFile.scenario?.scenario ||
+  scenarioFile.scenario ||
+  scenarioFile;
+
+      // ── Identification ──────────────────────────────────────────
+      const baseId = s.scenarioidentification || "";
+
+      const checkId = customIdentification
+        ? customIdentification.trim()
+        : `${baseId}`;
+
+      // ── Duplicate check ─────────────────────────────────────────
+      const rows = await db.sequelize.query(
+        `SELECT scenarioid
+         FROM scenarios
+         WHERE scenarioidentification = :id
+           AND deletedon IS NULL
+         LIMIT 1`,
+        {
+          replacements: { id: checkId },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      console.log("rowsrowsrows", rows);
+
+      const conflict = rows.length > 0;
+
+      // ── Manifest info ───────────────────────────────────────────
+      const manifestInfo = {
+        title: s.scenariotitle || null,
+        identification: checkId,
+        level: s.scenariolevel || null,
+        type: s.scenario_type || null,
+
+        components: s.components
+          ? typeof s.components === "string"
+            ? (JSON.parse(s.components)?.length ?? "present")
+            : Array.isArray(s.components)
+            ? s.components.length
+            : "present"
+          : null,
+
+        componentConfig: !!s.component_config,
+        networkConfig: !!s.network_config,
+      };
+
+      return {
+        conflict,
+        conflictId: conflict ? checkId : null,
+        resolvedId: conflict ? null : checkId,
+        manifest: manifestInfo,
+      };
+    } finally {
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch (_) {}
+    }
+  };
+
+const runImportJob =
+  ({ db,ip_address }) =>
+  async ({ importid, stagingDir, zipPath, ipAddress, userid, customIdentification, vmFiles, isFinalBatch }) => {
+
+    const { NodeSSH } = require("node-ssh");
+    const path        = require("path");
+    const fs          = require("fs");
+
+    console.log("[runImportJob]", { importid, vmFiles, isFinalBatch });
+
+    try {
+      await updateImportStatus({ db })(importid, "Running", "Reading extracted scenario files...");
+
+      // ── Read class_manifest.json ──────────────────────────────────────
+      let manifestPath = path.join(stagingDir, "class_manifest.json");
+      if (!fs.existsSync(manifestPath)) {
+        manifestPath = path.join(stagingDir, "assets", "class_export", "class_manifest.json");
+      }
+      if (!fs.existsSync(manifestPath)) {
+        await updateImportStatus({ db })(importid, "Failed", "class_manifest.json not found.");
+        return { success: false, message: "class_manifest.json not found." };
+      }
+
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const allVms   = manifest.vms || manifest.componentDetails || [];
+
+      //  Filter to only VMs in this batch
+      const vms = vmFiles && vmFiles.length > 0
+        ? allVms.filter((vm) => vmFiles.includes(vm.file))
+        : allVms;
+
+      console.log(`[runImportJob] Restoring ${vms.length} VM(s) in this batch:`, vms.map((v) => v.file));
+
+      // ── Read scenario.json ────────────────────────────────────────────
+      let scenarioPath = path.join(stagingDir, "scenario.json");
+      if (!fs.existsSync(scenarioPath)) {
+        scenarioPath = path.join(stagingDir, "assets", "class_export", "scenario.json");
+      }
+
+      let s = {};
+      if (fs.existsSync(scenarioPath)) {
+        const scenarioFile = JSON.parse(fs.readFileSync(scenarioPath, "utf8"));
+        s = scenarioFile.scenario?.scenario || scenarioFile.scenario || scenarioFile;
+      }
+
+      const finalId = customIdentification || s.scenarioidentification || `IMP_${Date.now()}`;
+
+      await updateImportStatus({ db })(importid, "Running", "Restoring VMs...");
+
+      //  Only check duplicate on final batch (when inserting to DB)
+      if (isFinalBatch) {
+        const [existing] = await db.sequelize.query(
+          `SELECT scenarioid FROM scenarios
+            WHERE scenarioidentification = :id AND deletedon IS NULL LIMIT 1`,
+          { replacements: { id: finalId }, type: db.sequelize.QueryTypes.SELECT },
+        );
+        if (existing) {
+          await updateImportStatus({ db })(importid, "Failed",
+            `Scenario identification "${finalId}" already exists.`);
+          return { success: false, conflict: true, conflictId: finalId };
+        }
+      }
+
+      // ── Auth Proxmox ──────────────────────────────────────────────────
+      const proxmoxService = ProxMoxService(db, {}, ipAddress);
+      const tokenResult    = await proxmoxService.generateAccessTicket();
+      if (!tokenResult || tokenResult.status !== "200") {
+        await updateImportStatus({ db })(importid, "Failed", "Proxmox authentication failed.");
+        return { success: false, message: "Proxmox authentication failed." };
+      }
+
+      const restoredVmids = [];
+
+      // ── Restore each VM in this batch ─────────────────────────────────
+      for (const vm of vms) {
+        const zstFile = vm.file;
+        const vmType  = vm.type || "lxc";
+
+        if (!zstFile) {
+          console.warn(`[runImportJob] vm.file undefined for ${vm.name}, skipping.`);
+          continue;
+        }
+
+        console.log(`[runImportJob] Restoring: ${vm.name} | ${vmType} | ${zstFile}`);
+
+        const remotePath   = `/var/lib/vz/dump/${zstFile}`;
+        const targetVmid   = await proxmoxService.findFreeVmid(vmType);
+        if (!targetVmid) {
+          await updateImportStatus({ db })(importid, "Failed", "No free VMID available.");
+          return { success: false, message: "No free VMID available." };
+        }
+
+        const restoreResp = await proxmoxService.restoreVM({ vmid: targetVmid, zstFile, vmType });
+        if (!restoreResp || restoreResp.status !== 200 || !restoreResp?.data?.data) {
+          await updateImportStatus({ db })(importid, "Failed", `Restore failed for VMID ${targetVmid}.`);
+          return { success: false, message: `Restore failed for VMID ${targetVmid}.` };
+        }
+
+        const upid = restoreResp.data.data;
+
+        // Poll task completion
+        let restored  = false;
+        let pollError = null;
+        for (let i = 0; i < 60; i++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          const taskResp = await proxmoxService.getTaskLog(upid);
+          if (!taskResp || taskResp.status !== 200) { pollError = `Failed to get task status`; break; }
+          const taskData = taskResp?.data?.data;
+          if (taskData?.exitstatus === "OK" && taskData?.status === "stopped") {
+            restored = true;
+            console.log(`[runImportJob] ✓ VMID ${targetVmid} restored.`);
+            break;
+          }
+          if (taskData?.exitstatus && taskData.exitstatus !== "OK") {
+            pollError = `Restore task failed: ${taskData.exitstatus}`; break;
+          }
+        }
+
+        if (!restored) {
+          const reason = pollError || `Restore timed out for VMID ${targetVmid}`;
+          await updateImportStatus({ db })(importid, "Failed", reason);
+          return { success: false, message: reason };
+        }
+
+        // Cleanup ZST from Proxmox
+        try {
+          const ssh = new NodeSSH();
+          await ssh.connect({
+            host:     process.env.PROXMOX_SSH_HOST,
+            username: process.env.PROXMOX_SSH_USER,
+            password: process.env.PROXMOX_SSH_PASSWORD,
+          });
+          await ssh.execCommand(`rm -f "${remotePath}"`);
+          ssh.dispose();
+        } catch (cleanupErr) {
+          console.warn(`[runImportJob] Could not clean up ${remotePath}:`, cleanupErr.message);
+        }
+
+        restoredVmids.push({ targetVmid, vmType, name: vm.name });
+      }
+
+      // ──  Only insert scenario to DB + mark Completed on FINAL batch ──
+      if (isFinalBatch) {
+        await updateImportStatus({ db })(importid, "Running", "Creating scenario in database...");
+
+        await db.sequelize.query(
+          `INSERT INTO scenarios
+            (scenariotitle, scenarioidentification, scenariodescription, scenariolevel,
+             scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type,
+             scenarioimage, scenariodiagram, components, component_config, network_config,
+             instruction_file, duration, scenariostatus, status,
+             manipulation_flag, publishedon, createdby, createdon)
+           VALUES
+            (:title, :identification, :description, :level,
+             :categoryid, :subcategoryid, :instructor_id, :learner_id, :type,
+             :image, :diagram, :components, :component_config, :network_config,
+             :instruction_file, :duration, :scenariostatus , 'Active',
+             :manipulation_flag, NOW(), :userid, NOW())`,
+          {
+            replacements: {
+              title:             s.scenariotitle           || "Imported Scenario",
+              identification:    finalId,
+              description:       s.scenariodescription     || null,
+              level:             s.scenariolevel           || null,
+              categoryid:        s.scenariocategoryid      || null,
+              subcategoryid:     s.scenariosubcategoryid   || null,
+              instructor_id:     s.instructor_id           || null,
+              learner_id:        s.learner_id              || null,
+              type:              s.scenario_type           || null,
+              image:             s.scenarioimage           || null,
+              diagram:           s.scenariodiagram         || null,
+              components:        s.components              || null,
+              component_config:  s.component_config        || null,
+              network_config:    s.network_config          || null,
+              instruction_file:  s.instruction_file        || null,
+              duration:          s.duration                || 0,
+              scenariostatus:    s.scenariostatus          || "Publish",
+              manipulation_flag: s.manipulation_flag       || "true",
+              userid,
+            },
+            type: db.sequelize.QueryTypes.INSERT,
+          },
+        );
+
+        console.log(`[runImportJob] ✓ Scenario inserted: ${finalId}`);
+
+        //  Only cleanup files on final batch
+        try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch (_) {}
+        try { fs.unlinkSync(zipPath); } catch (_) {}
+
+        await updateImportStatus({ db })(importid, "Completed",
+          `Import completed. ${restoredVmids.length} VM(s) restored.`);
+
+      } else {
+        // ── Partial batch done — mark Running so frontend keeps polling ──
+        await updateImportStatus({ db })(importid, "Running",
+          `BatchCompleted: ${restoredVmids.map((v) => v.name).join(", ")}`);
+      }
+
+      return { success: true, restoredVmids };
+
+    } catch (err) {
+      console.error("FATAL ERROR in runImportJob:", err);
+      try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch (_) {}
+      try { fs.unlinkSync(zipPath); } catch (_) {}
+      await updateImportStatus({ db })(importid, "Failed", err.message);
+      return { success: false, message: err.message };
+    }
+  };
+
+const getImportById =
+  ({ db }) =>
+  async (importid) => {
+    const [record] = await db.sequelize.query(
+      `SELECT importid, status, message,zip_path,extract_path,
+              userid, scenarioidentification,
+              createdon, modifiedon
+         FROM scenario_import
+        WHERE importid = :importid LIMIT 1`,
+      { replacements: { importid }, type: db.sequelize.QueryTypes.SELECT },
+    );
+    return record || null;
+  };
+const checkAllComponentsUploaded =
+  ({ db }) =>
+  async (importid) => {
+
+    //  Get all expected component files
+    const expected = await db.sequelize.query(
+      `SELECT vm_file
+       FROM scenario_import_components
+       WHERE importid = :importid`,
+      {
+        replacements: { importid },
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+
+    //  No components means nothing pending
+    if (expected.length === 0) {
+      return true;
+    }
+
+    const expectedFiles = expected.map(
+      (row) => row.vm_file,
+    );
+
+    //  Get uploaded files
+    const uploaded = await db.sequelize.query(
+      `SELECT vm_file
+       FROM scenario_import_components
+       WHERE importid = :importid
+       AND uploaded = 1`,
+      {
+        replacements: { importid },
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+
+    const uploadedSet = new Set(
+      uploaded.map((row) => row.vm_file),
+    );
+
+    //  Check all expected files uploaded
+    return expectedFiles.every((file) =>
+      uploadedSet.has(file),
+    );
+  };
+  const checkSpecificComponentsUploaded =
+  ({ db }) =>
+  async (importid, vmFiles) => {
+    if (!vmFiles || vmFiles.length === 0) return true;
+
+    const uploaded = await db.sequelize.query(
+      `SELECT vm_file
+       FROM scenario_import_components
+       WHERE importid = :importid
+         AND vm_file IN (:vmFiles)
+         AND uploaded = 1`,
+      {
+        replacements: { importid, vmFiles },
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+
+    const uploadedSet = new Set(uploaded.map((r) => r.vm_file));
+    return vmFiles.every((f) => uploadedSet.has(f));
+  };
+
+const markComponentUploaded =
+  ({ db }) =>
+  async (importid, vmFile) => {
+    await db.sequelize.query(
+      `UPDATE scenario_import_components
+          SET status = 'uploaded', uploaded = 1, uploadedon = NOW()
+        WHERE importid = :importid AND vm_file = :vmFile`,
+      { replacements: { importid, vmFile }, type: db.sequelize.QueryTypes.UPDATE },
+    );
+  };
+
+  const markComponentTransferring =
+  ({ db }) =>
+  async (importid, vmFile) => {
+    await db.sequelize.query(
+      `DELETE FROM scenario_import_components
+        WHERE importid = :importid AND vm_file = :vmFile`,
+      { replacements: { importid, vmFile }, type: db.sequelize.QueryTypes.DELETE },
+    );
+
+    await db.sequelize.query(
+      `INSERT INTO scenario_import_components
+         (importid, vm_file, status, uploaded, uploadedon)
+       VALUES (:importid, :vmFile, 'transferring', 0, NOW())`,
+      { replacements: { importid, vmFile }, type: db.sequelize.QueryTypes.INSERT },
+    );
+  };
+
+  const markComponentFailed =
+  ({ db }) =>
+  async (importid, vmFile, errorMessage) => {
+    await db.sequelize.query(
+      `INSERT INTO scenario_import_components
+         (importid, vm_file, status, uploaded, error_message, uploadedon)
+       VALUES (:importid, :vmFile, 'failed', 0, :errorMessage, NOW())
+       ON DUPLICATE KEY UPDATE
+         status = 'failed',
+         uploaded = 0,
+         error_message = :errorMessage,
+         uploadedon = NOW()`,
+      { replacements: { importid, vmFile, errorMessage }, type: db.sequelize.QueryTypes.INSERT },
+    );
+  };
+
+
+const getComponentUploadStatus =
+  ({ db }) =>
+  async (importid) => {
+    return await db.sequelize.query(
+      `SELECT vm_file, status, uploaded, error_message, uploadedon
+         FROM scenario_import_components
+        WHERE importid = :importid`,
+      { replacements: { importid }, type: db.sequelize.QueryTypes.SELECT },
+    );
+  };
+
 module.exports = {
   setScenarioLearnerConfiguration,
   updateCompleteTerminatelearner,
@@ -5613,4 +5610,21 @@ module.exports = {
   startComponent,
   restartComponent,
   sendRunningUserReminder,
+  pollBackupStatus,
+  markExportFailed,
+  getCompletedBackupFiles,
+  markExportCompleted,
+  getExportById,
+  createScenarioImport,
+  updateImportStatus,
+  getImportList,
+  runImportJob,
+  checkScenarioIdentification,
+  getImportById,
+  markComponentUploaded,
+  checkAllComponentsUploaded,
+  checkSpecificComponentsUploaded,
+  getComponentUploadStatus,
+  markComponentTransferring,
+  markComponentFailed
 };

@@ -1,0 +1,12 @@
+{
+  "watch": ["src"],
+  "ignore": [
+    "exports/**",
+    "temp_zip/**",
+    "uploads/**",
+    "*.tar.zst",
+    "*.vma.zst",
+    "*.zip"
+  ],
+  "ext": "js,json"
+}

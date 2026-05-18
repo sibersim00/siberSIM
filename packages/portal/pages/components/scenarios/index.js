@@ -16,19 +16,7 @@ import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
 import Router, { useRouter } from "next/router";
 import Select from "react-select";
-import {
-  getScenarioList,
-  changeStatusScenarios,
-  changeManipulationStatus,
-  clearchangeManipulationStatus,
-  clearScenariosChangeStatus,
-  deleteScenarios,
-  cleardeleteScenarios,
-  clearHasError,
-  handleManageView,
-  exportSelectedScenariosAction,
-  exportScenario,
-  ScenarioExport,
+import { getScenarioList, changeStatusScenarios, changeManipulationStatus, clearchangeManipulationStatus, clearScenariosChangeStatus, deleteScenarios, cleardeleteScenarios, clearHasError, handleManageView,triggerScenarioExport, createScenarioExport,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 import {
   clearHasErrorr,
@@ -46,37 +34,40 @@ import { Fab } from "@mui/material";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
 import ScenarioModal from "../../../shared/data/scenarios/scenarioModal";
+import ScenarioImportModal from "../../../shared/data/scenarios/ScenarioImportModal";
 // import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
-
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
 const PAGINATION_BAR_HEIGHT = 48;
 
+
+
 const ManageScenarios = () => {
-  const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const [scenStatus, setscenStatus] = useState("true");
-  const [scenType, setScenType] = useState("Public"); // Public/Private
-  const [view, setView] = useState("card");
-  const [rowData, setRowData] = useState([]);
-  const [gridData, setGridData] = useState([]);
-  const [gridApi, setGridApi] = useState(null);
-  const [quickFilter, setQuickFilter] = useState("");
-  const [formModal, setformModal] = useState(false);
-  const { push } = useRouter();
-  const [showListImort, setShowListImport] = useState(true);
-  const [openImportModal, setOpenImportModal] = useState(false);
-  const [oneClick, setOneClick] = useState(false);
-  const [previousView, setPreviousView] = useState("card");
-  const [backview, setBackView] = useState("card");
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedScenarios, setSelectedScenarios] = useState([]);
-
-    const [pageSize, setPageSize] = useState(20);
-    const gridRef = useRef(null);
-     const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+const router = useRouter();
+const { t } = useTranslation();
+const dispatch = useDispatch();
+const [scenStatus, setscenStatus] = useState("true");
+const [scenType, setScenType] = useState("Public"); // Public/Private
+const [view, setView] = useState("card");
+const [rowData, setRowData] = useState([]);
+const [gridData, setGridData] = useState([]);
+const [gridApi, setGridApi] = useState(null);
+const [quickFilter, setQuickFilter] = useState("");
+const [formModal, setformModal] = useState(false);
+const { push } = useRouter();
+const [showListImort, setShowListImport] = useState(true);
+const [openImportModal, setOpenImportModal] = useState(false);
+const [oneClick, setOneClick] = useState(false);
+const [previousView, setPreviousView] = useState("card");
+const [backview, setBackView] = useState("card");
+const [showExportModal, setShowExportModal] = useState(false);
+const [selectedScenarios, setSelectedScenarios] = useState([]);
+const [exportingIds, setExportingIds] = useState([]);
+const [showImportModal, setShowImportModal] = useState(false);
+const [pageSize, setPageSize] = useState(20);
+const gridRef = useRef(null);
+const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   
-
   const [rowValues, setRowValues] = useState({
     title: "Add",
     scenarioid: 0,
@@ -172,7 +163,55 @@ const ManageScenarios = () => {
       }),
     };
   };
+const handleScenarioExport = async (scenarioid) => {
+  setExportingIds((prev) => [...prev, scenarioid]);
+  try {
+    // Step 1: Create export record
+    const createRes = await dispatch(
+      createScenarioExport({
+        scenarioid,
+        learner_id: null,
+        status: "Inprogress",
+      }),
+    );
 
+    const { exportid } = createRes.data;
+    if (!exportid) throw new Error("No exportid returned");
+
+    // Step 2: Fire export job — DO NOT await completion
+    // Backend will process in background, cron updates status
+    dispatch(triggerScenarioExport({ scenarioid, exportid }));
+
+    // Step 3: Redirect immediately to export list page
+    toast.success(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+              Export started! You'll be notified when it's ready
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: true,
+              theme: "colored",
+            }
+          );
+    // push("/scenarioexport/");
+    router.push(`/scenarioexport`);
+
+  } catch (err) {
+    console.error("Export failed:", err);
+    toast.error(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+              Export failed. Please try again
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: true,
+              theme: "colored",
+            }
+          );
+  } finally {
+    setExportingIds((prev) => prev.filter((id) => id !== scenarioid));
+  }
+};
   const assignedBadgeRenderer = (params) => {
     const { value, data } = params;
     const maxLength = 20; // Set the character limit for the title
@@ -261,14 +300,6 @@ const ManageScenarios = () => {
       floatingFilter: true,
       minWidth: 180,
     },
-    // {
-    //   headerName: "Instruction File",
-    //   field: "instruction_file",
-    //   filter: true,
-    //   flex: 1,
-    //   floatingFilter: true,
-    //   minWidth: 180,
-    // },
     {
       headerName: "Duration",
       field: "duration",
@@ -435,27 +466,6 @@ const columnDefs = useMemo(() => {
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
-
-  const handleScenarioExport = (scenarioid) => {
-    const payload = {
-      scenarioid: scenarioid,
-      learner_id: null,
-      status: "Inprogress",
-    };
-    dispatch(ScenarioExport(payload));
-  };
-
-  useEffect(() => {
-    if (hasGetScenarioExportSucc?.exportid) {
-      const exportPayload = {
-        scenarioid: hasGetScenarioExportSucc.scenarioid,
-        exportid: hasGetScenarioExportSucc.exportid,
-      };
-
-      dispatch(exportScenario(exportPayload));
-    }
-  }, [hasGetScenarioExportSucc]);
-
     const gridOptions = {
     headerHeight: HEADER_HEIGHT,
     rowHeight: ROW_HEIGHT,
@@ -829,8 +839,6 @@ const onGridReady = useCallback((params) => {
       }
     });
   };
-  const router = useRouter();
-
   useEffect(() => {
     if (router.query.type) {
       setScenType(router.query.type);
@@ -1039,24 +1047,16 @@ const onGridReady = useCallback((params) => {
                         </CustomToggleButton>
                       </ToggleButtonGroup>
                       &nbsp;
-                      {/* <Button
-                        type="button"
-                        variant="outline-info"
-                        onClick={() => setShowExportModal(true)}
-                      >
-                        <i className="fa fa-file-excel-o"></i> Export
-                      </Button>
-                      &nbsp;
                       <Button
                         type="button"
                         variant="outline-warning"
-                        onClick={() => {
-                          setShowListImport(true);
-                          handleImportModal();
-                        }}
+                        onClick={() => setShowImportModal(true)}
+                        className="mx-1"
+                        title="Import Scenario"
                       >
-                        <i className="fa fa-file-excel-o"></i> Import
-                      </Button> */}
+                        <i className="fa fa-upload me-1" /> Import
+                      </Button>
+                      &nbsp;
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -1261,16 +1261,14 @@ const onGridReady = useCallback((params) => {
                             {/* Expport */}
                             <div
                               className="btn btn-sm ripple bg-info text-dark rounded-circle"
-                              // onClick={() => handleExport(item.scenarioid)}
-                              onClick={() =>
-                                handleScenarioExport(item.scenarioid)
-                              }
+                              onClick={() => handleScenarioExport(item.scenarioid)}
+                              style={{ pointerEvents: exportingIds.includes(item.scenarioid) ? "none" : "auto" }}
                             >
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={<Tooltip>Export</Tooltip>}
-                              >
-                                <i className="fa fa-file-excel-o"></i>
+                              <OverlayTrigger placement="bottom" overlay={<Tooltip>Export</Tooltip>}>
+                                {exportingIds.includes(item.scenarioid)
+                                  ? <i className="fa fa-spinner fa-spin" />
+                                  : <i className="fa fa-file-excel-o" />
+                                }
                               </OverlayTrigger>
                             </div>
                             {/* Instruction File Download */}
@@ -1425,7 +1423,7 @@ const onGridReady = useCallback((params) => {
                                     alt="user-img"
                                     className="wd-150 mt-5"
                                   />
-                                  <h5 className="mt-4">No data found.</h5>
+                                  <h5 className="mt-4">Loading...</h5>
                                 </div>
                               </Card.Body>
                             </Card>
@@ -1442,100 +1440,6 @@ const onGridReady = useCallback((params) => {
           )}
         </Col>
       </Row>
-      <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-              styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    })),
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-              placeholder="Select scenarios to Export"
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              // onClick={handleScenarioExport}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              onClick={async () => {
-                if (!selectedScenarios.length)
-                  return alert("Select at least one scenario");
-
-                try {
-                  const blob = await dispatch(
-                    exportSelectedScenariosAction({
-                      scenarioIds: selectedScenarios.map((s) => s.value),
-                    }),
-                  );
-
-                  const url = window.URL.createObjectURL(new Blob([blob]));
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.setAttribute("download", `scenarios_export.zip`);
-                  document.body.appendChild(link);
-                  link.click();
-                  link.remove();
-                  window.URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error(err);
-                  alert("Export failed");
-                }
-              }}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios
-              Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
-
       {view == "Form" ? (
         <ScenarioForm
           setView={handleReturnFromEdit}
@@ -1547,18 +1451,18 @@ const onGridReady = useCallback((params) => {
       ) : (
         <></>
       )}
-      {/* <ImportScenarioZipFile
-              openImportModal={openImportModal}
-              handleImportModal={handleImportModal}
-              showListImort={showListImort}
-              setShowListImport={setShowListImport}
-            /> */}
-
       <ScenarioModal
         openImportModal={openImportModal}
         handleImportModal={handleImportModal}
         showListImort={showListImort}
         setShowListImport={setShowListImport}
+      />
+      <ScenarioImportModal
+        show={showImportModal}
+        onHide={() => setShowImportModal(false)}
+        onImportStarted={() => {
+          dispatch(getScenarioList());
+        }}
       />
     </>
   );

@@ -46,6 +46,9 @@ const VM_PROCESSES = {
   GET_VM_NETWORK_INFO:"Network Information",
   UNPLUG_VM_NETWORK:"Unplug Network Port",
   PLUG_VM_NETWORK:"Plug Network Port",
+  GET_VM_STATUS:"Get VM Status",
+  RESTORE_VM:"Restore VM",
+  CHECK_VMID_STATUS:"Check vmid status",
 };
 
 module.exports = {

@@ -262,7 +262,7 @@ useEffect(() => {
                 <div
                   className={`media new ${item.is_read == 0 ? "" : ""}`}
                   key={index}
-                  onClick={() => handleReadNoti(item)}
+                  // onClick={() => handleReadNoti(item)}
                 >
                   {/* <div className="main-img-user online">
                     <img alt="avatar"  className="rounded-circle" src={dummy_profile.src} />
@@ -279,7 +279,7 @@ useEffect(() => {
               </p>
             )}
           </div>
-          <div className="dropdown-footer">
+          {/*  <div className="dropdown-footer">
             <span
               // onClick={() =>
               //   navigate.push("/components/notifications/notificationList")
@@ -288,7 +288,7 @@ useEffect(() => {
             >
               View All Notifications
             </span>
-          </div>
+          </div>*/}
         </Dropdown.Menu>
       </Dropdown>
       <Dropdown className="main-profile-menu">

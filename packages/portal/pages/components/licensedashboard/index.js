@@ -136,7 +136,7 @@ const LicenseDashboard = () => {
     return () => clearInterval(interval);
   }, [licenseStatistics?.labSession]);
 
-  const handleUpgrade = () => window.open("/app/activate-account?mode=upgrade", "_blank");
+  const handleUpgrade = () => window.open("/activate-account?mode=upgrade", "_blank");
 
   const statusColors = {
     Start: "#22c55e",

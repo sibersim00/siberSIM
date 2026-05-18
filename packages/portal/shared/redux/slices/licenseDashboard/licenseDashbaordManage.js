@@ -46,7 +46,7 @@ export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
 export function getLicenseDashboardData() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.get_license_dashboard_stats}`);
@@ -59,7 +59,7 @@ export function getLicenseDashboardData() {
 
 export function handleManageView(payload) {
 
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasHandleManageSuc(payload));

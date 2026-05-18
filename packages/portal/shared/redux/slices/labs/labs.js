@@ -52,7 +52,7 @@ export const { openModal, closeModal, selectEvent } = slice.actions;
 
 // ----------------------------------------------------------------------
 export function getLabsList() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.lab_sessions_get}`);
@@ -64,7 +64,7 @@ export function getLabsList() {
 }
 
 export function clearHasError() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasError([]));
@@ -75,7 +75,7 @@ export function clearHasError() {
 }
 
 export function addLabDetails(payload) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api?.lab_session_save, payload);
@@ -87,7 +87,7 @@ export function addLabDetails(payload) {
 }
 
 export function clearLabDetails() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasAddLabSucc([]));
@@ -98,7 +98,7 @@ export function clearLabDetails() {
 }
 
 export function editLabDetails(payload) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api?.lab_session_update, payload);
@@ -110,7 +110,7 @@ export function editLabDetails(payload) {
 }
 
 export function clearEditLabDetails() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasEditLabSucc([]));
@@ -121,7 +121,7 @@ export function clearEditLabDetails() {
 }
 
 export function deleteLab(payload) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.lab_session_delete}`, payload);
@@ -133,7 +133,7 @@ export function deleteLab(payload) {
 }
 
 export function cleardeleteLab() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetdeleteLabSucc([]));
@@ -144,7 +144,7 @@ export function cleardeleteLab() {
 }
 
 export function changeStatusLab(payload) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api?.lab_change_status}`, payload);
@@ -156,7 +156,7 @@ export function changeStatusLab(payload) {
 }
 
 export function clearchangeStatusLab() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasLabsStatusSucc([]));

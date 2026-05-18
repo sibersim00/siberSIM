@@ -1,5 +1,6 @@
 const axios = require("axios");
 const constants = require("./constants");
+const keys = require("../../../keys");
 const https = require("https");
 const validator = require("validator");
 let accessInfo = null;
@@ -1220,7 +1221,7 @@ async function getProxmoxConfig() {
     params.append("compress", "zstd");
     params.append("mode", "snapshot");
     params.append("vmid", vmid);
-    params.append("storage", "bucket");
+    params.append("storage", "local");
 
     const config = {
       method: "post",
@@ -2288,6 +2289,154 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   }
 }
 
+const IMPORT_STORAGE = keys.IMPORT_STORAGE;
+const VMID_RANGE_START = keys.VMID_RANGE_START;
+const VMID_RANGE_END = keys.VMID_RANGE_END;
+
+async function checkVmidStatus(vmid, vmType) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+
+  const cfg = await getProxmoxConfig();
+
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/current`;
+
+  const config = {
+    method: "get",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.CHECK_VMID_STATUS,
+    );
+
+    // 200 OK = VMID is already in use
+    return response.status === 200;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.CHECK_VMID_STATUS,
+    );
+
+    // 404 or 500 = VMID is free
+    const freeStatusCodes = [404, 500];
+    if (freeStatusCodes.includes(error?.response?.status)) {
+      return false;
+    }
+
+    // Unexpected error — bubble it up so findFreeVmid doesn't silently skip
+    console.error(`Unexpected error checking VMID ${vmid} (${vmType}):`, errorMessage);
+    throw error;
+  }
+}
+
+
+// ─── FIND FREE VMID ───────────────────────────────────────────────────────────
+async function findFreeVmid() {
+  for (let vmid = VMID_RANGE_START; vmid <= VMID_RANGE_END; vmid++) {
+    const usedAsQemu = await checkVmidStatus(vmid, "qemu");
+    if (usedAsQemu) continue;
+
+    const usedAsLxc = await checkVmidStatus(vmid, "lxc");
+    if (usedAsLxc) continue;
+
+    // Free in both QEMU and LXC
+    return vmid;
+  }
+
+  throw new Error(
+    `No free VMID available in range ${VMID_RANGE_START}–${VMID_RANGE_END}.`,
+  );
+}
+
+async function restoreVM({ vmid, zstFile, vmType }) {
+  console.log("IMPORT_STORAGE:", IMPORT_STORAGE);
+
+  if (!accessInfo?.cookie) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+
+  const cfg              = await getProxmoxConfig();
+  const start            = Date.now();
+  const request_datetime = new Date();
+  const type             = vmType === "qemu" ? "qemu" : "lxc";
+  const volid            = `local:backup/${zstFile}`;
+  const url              = `${constants.endpoint}/nodes/${cfg.current_node}/${type}`;
+
+  console.log("url:", url);
+  console.log("volid:", volid);
+  console.log("vmType:", vmType);
+
+  // ── Build params based on vmType ──────────────────────────────────
+  const params = vmType === "qemu"
+    ? {
+        archive: volid,       // QEMU uses archive
+        vmid:    String(vmid),
+        storage: IMPORT_STORAGE,
+      }
+    : {
+        ostemplate: volid,    // LXC uses ostemplate
+        vmid:       String(vmid),
+        storage:    IMPORT_STORAGE,
+        restore:    "1",      // LXC needs restore=1
+        unique:     "1"
+      };
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie:             accessInfo.cookie,
+      "Content-Type":    "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data:       new URLSearchParams(params).toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+    await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, "RESTORE_VM");
+    return response;
+  } catch (error) {
+    const errorCode    = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+    await logApiRequestData(start, request_datetime, config, errorCode, errorMessage, error, "RESTORE_VM");
+    console.error("Error restoring VM:", errorMessage);
+    return null;
+  }
+}
+
 
   return {
     generateAccessTicket,
@@ -2324,7 +2473,9 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
     connectVmNetwork,
     getVmNetworkInfo,
     unplugVmNetwork,
-    plugVmNetwork
+    plugVmNetwork,
+    restoreVM,
+    findFreeVmid
   };
 }
 

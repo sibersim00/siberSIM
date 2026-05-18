@@ -27,7 +27,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ limit: "10gb",extended: true }));
 app.use('/masterapi', router(iocContainer))
 app.get('/masterapi/health', (req, res) => {
     return res.status(200).send({ uptime: process.uptime(),message: 'Ok',date: new Date()});

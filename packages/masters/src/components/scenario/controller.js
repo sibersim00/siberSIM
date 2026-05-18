@@ -230,55 +230,55 @@ const saveComponentconfiguration =
     }
   };
 
-const exportList =
-  ({ dao, db }) =>
-  async (req, res) => {
-    try {
-      const session_userid = req.user.userid;
-      const result = await dao.exportList({ db })(session_userid);
-      res.status(200).send({
-        statusCode: 200,
-        message: "Scenario Export List",
-        data: result,
-      });
-    } catch (error) {
-      console.error("Error fetching scenario export data:", error.message);
-      res
-        .status(500)
-        .json({ error: "An error occurred. Please try again later." });
-    }
-  };
+// const exportList =
+//   ({ dao, db }) =>
+//   async (req, res) => {
+//     try {
+//       const session_userid = req.user.userid;
+//       const result = await dao.exportList({ db })(session_userid);
+//       res.status(200).send({
+//         statusCode: 200,
+//         message: "Scenario Export List",
+//         data: result,
+//       });
+//     } catch (error) {
+//       console.error("Error fetching scenario export data:", error.message);
+//       res
+//         .status(500)
+//         .json({ error: "An error occurred. Please try again later." });
+//     }
+//   };
 
-const createExport =
-  ({ dao, db, validation }) =>
-  async (req, res) => {
-    try {
-      const body = req.body;
-      const userid = req.user.userid;
-      const result = await dao.createExport({ db, validation })(body, userid);
-      if (result.statusCode === 200) {
-        return res.status(200).send({
-          statusCode: 200,
-          message:
-            validation.messages.save_success ||
-            "Scenario Export created successfully",
-          exportid: result.exportid,
-          scenarioid: result.scenarioid,
-        });
-      } else {
-        return res.status(400).send({
-          statusCode: 400,
-          message: result.errors || ["Something went wrong"],
-        });
-      }
-    } catch (error) {
-      console.error("Error creating Scenario Export:", error.message);
-      return res.status(500).json({
-        statusCode: 500,
-        error: validation.messages.server_error,
-      });
-    }
-  };
+// const createExport =
+//   ({ dao, db, validation }) =>
+//   async (req, res) => {
+//     try {
+//       const body = req.body;
+//       const userid = req.user.userid;
+//       const result = await dao.createExport({ db, validation })(body, userid);
+//       if (result.statusCode === 200) {
+//         return res.status(200).send({
+//           statusCode: 200,
+//           message:
+//             validation.messages.save_success ||
+//             "Scenario Export created successfully",
+//           exportid: result.exportid,
+//           scenarioid: result.scenarioid,
+//         });
+//       } else {
+//         return res.status(400).send({
+//           statusCode: 400,
+//           message: result.errors || ["Something went wrong"],
+//         });
+//       }
+//     } catch (error) {
+//       console.error("Error creating Scenario Export:", error.message);
+//       return res.status(500).json({
+//         statusCode: 500,
+//         error: validation.messages.server_error,
+//       });
+//     }
+//   };
 
 const exportScenario =
   ({ dao, db }) =>
@@ -369,6 +369,101 @@ const getTabList =
     }
   };
 
+
+
+
+
+
+
+
+
+
+
+
+const exportList =
+  ({ dao, db }) =>
+  async (req, res) => {
+    try {
+      const userid = req.user.userid;
+      const result = await dao.exportList({ db })(userid);
+      res.status(200).send({
+        statusCode: 200,
+        message: "Scenario Export List",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error fetching export list:", error.message);
+      res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+  };
+
+// ─── createExport ─────────────────────────────────────────────────────────────
+const createExport =
+  ({ dao, db, validation }) =>
+  async (req, res) => {
+    try {
+      const body   = req.body;
+      const userid = req.user.userid;
+      const result = await dao.createExport({ db, validation })(body, userid);
+      res.status(result.statusCode).send({
+        statusCode: result.statusCode,
+        message:    result.message,
+        exportid:   result.exportid,
+        scenarioid: result.scenarioid,
+      });
+    } catch (error) {
+      console.error("Error creating export:", error.message);
+      res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+  };
+
+// ─── triggerExport ────────────────────────────────────────────────────────────
+// Responds immediately — runs the actual job in the background
+
+
+
+const exportcomponents =
+  ({ dao, db }) =>
+  async (req, res) => {
+    try {
+      const { exportid, scenarioid } = req.body;
+      const result = await dao.getExportComponents({ db })(exportid, scenarioid);
+      res.status(200).json({
+        statusCode: 200,
+        message: "Export Components",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error fetching export components:", error.message);
+      res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+  };
+
+
+  const exportListInProgress =
+  ({ dao, db }) =>
+  async (req, res) => {
+    try {
+      const userid = req.user.userid;
+      const result = await dao.exportListInProgress({ db })(userid);
+      res.status(200).send({
+        statusCode: 200,
+        message: "In Progress Exports",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error fetching in-progress exports:", error.message);
+      res.status(500).json({ error: "An error occurred. Please try again later." });
+    }
+  };
+
+
+
+
+
+
+
+
 module.exports = {
   list,
   getById,
@@ -384,4 +479,7 @@ module.exports = {
   createExport,
   getTabList,
   changeMaipulationStatus,
+  exportcomponents,
+  exportListInProgress,
 };
+  

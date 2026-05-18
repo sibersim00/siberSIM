@@ -429,6 +429,9 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
       };
     }
 
+    console.log("bodydddddddddddddd",body);
+    
+
     const updateQuery = `UPDATE scenarios SET component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ?, publishedon = NOW() WHERE scenariouuid = ?`;
     const updateParams = [JSON.stringify(body.component_config), JSON.stringify(body.network_config), body.scenariostatus, session_userid, body.scenarioid,
     ];
@@ -444,50 +447,70 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
   }
 };
 
-const exportList = ({ db }) => async (session_userid) => {
-  try {
-    let query = ` SELECT  se.exportid, se.scenarioid, se.userid, se.learner_id, se.file_name, se.status, DATE_FORMAT(se.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(se.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, s.scenariotitle, s.scenarioidentification, s.scenario_type, CONCAT(u.firstname, ' ', u.lastname) AS exported_by FROM scenario_export se INNER JOIN scenarios s ON s.scenarioid = se.scenarioid LEFT JOIN ad_users u ON u.userid = se.userid WHERE se.deletedon IS NULL AND se.userid = :_session_userid   -- Filter only by userid ORDER BY se.exportid DESC `;
+const exportList =
+  ({ db }) =>
+  async (session_userid) => {
+    const query = `
+      SELECT
+        se.exportid,
+        se.scenarioid,
+        se.userid,
+        se.learner_id,
+        se.file_name,
+        se.status,
+        DATE_FORMAT(se.createdon,  '%Y-%m-%d %H:%i:%s') AS createdon,
+        DATE_FORMAT(se.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
+        s.scenariotitle,
+        s.scenarioidentification,
+        s.scenario_type,
+        CONCAT(u.firstname, ' ', u.lastname) AS exported_by
+      FROM scenario_export se
+      INNER JOIN scenarios s ON s.scenarioid = se.scenarioid
+      LEFT JOIN  ad_users u  ON u.userid     = se.userid
+      WHERE se.deletedon IS NULL
+        AND se.userid    = :_session_userid
+      ORDER BY se.exportid DESC
+    `;
 
     const res = await db.sequelize.query(query, {
       replacements: { _session_userid: session_userid },
-      type: db.sequelize.QueryTypes.SELECT
+      type: db.sequelize.QueryTypes.SELECT,
     });
-    return res;
-  } catch (error) {
-    console.error("Error in exportList:", error);
-    throw new Error("Failed to fetch scenario export list");
-  }
-};
 
-const createExport = ({ db, validation }) => async (body, userid) => {
-  if (!userid) {
-    throw new Error("User ID is required.");
-  }
-  const generatedFileName = `scenario_${body.scenarioid}.zip`;
-  const result = await db.sequelize.query(
-    `INSERT INTO scenario_export
-      (scenarioid, userid, learner_id, status, file_name, createdon)
-     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-    {
-      replacements: [
-        body.scenarioid,
-        userid,
-        body.learner_id ?? null,
-        body.status ?? "Inprogress",
-        generatedFileName,  
-      ],
-      type: db.sequelize.QueryTypes.INSERT,
-    }
-  );
-  const exportid = result[0];
-  return {
-    statusCode: 200,
-    message: "Scenario Export created successfully",
-    exportid,   
-    scenarioid: body.scenarioid,
-    file_name: generatedFileName,
+    return res;
   };
-};
+
+const createExport =
+  ({ db, validation }) =>
+  async (body, userid) => {
+    if (!userid) throw new Error("User ID is required.");
+
+    const generatedFileName = `scenario_${body.scenarioid}.zip`;
+
+    const result = await db.sequelize.query(
+      `INSERT INTO scenario_export
+        (scenarioid, userid, learner_id, status, file_name, createdon)
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      {
+        replacements: [
+          body.scenarioid,
+          userid,
+          body.learner_id ?? null,
+          body.status     ?? "Inprogress",
+          generatedFileName,
+        ],
+        type: db.sequelize.QueryTypes.INSERT,
+      },
+    );
+
+    return {
+      statusCode:  200,
+      message:     "Scenario Export created successfully",
+      exportid:    result[0],
+      scenarioid:  body.scenarioid,
+      file_name:   generatedFileName,
+    };
+  };
 
 const getTabList = ({ db }) => async () => {
   try {
@@ -498,6 +521,71 @@ const getTabList = ({ db }) => async () => {
     throw error;
   }
 };
+const getExportComponents =
+  ({ db }) =>
+  async (exportid, scenarioid) => {
+    const query = `
+      SELECT
+        ce.componentid,
+        ce.vmid,
+        ce.status,
+        ce.file_name,
+        ce.upid,
+        DATE_FORMAT(ce.createdon, '%Y-%m-%d %H:%i:%s') AS createdon,
+        c.componentname,
+        c.componentuuid,
+        c.componenttype,
+        c.vmid_name
+      FROM component_export ce
+      INNER JOIN components c 
+        ON c.componentid = ce.componentid
+      WHERE ce.exportid   = :exportid
+        AND ce.scenarioid = :scenarioid
+        AND ce.deletedon  IS NULL
+      ORDER BY ce.componentid ASC
+    `;
+
+    const result = await db.sequelize.query(query, {
+      replacements: { exportid, scenarioid },
+      type: db.sequelize.QueryTypes.SELECT,
+    });
+
+    return result;
+  };
+
+  const exportListInProgress =
+  ({ db }) =>
+  async (session_userid) => {
+    const query = `
+      SELECT
+        se.exportid,
+        se.scenarioid,
+        se.userid,
+        se.learner_id,
+        se.file_name,
+        se.status,
+        DATE_FORMAT(se.createdon,  '%Y-%m-%d %H:%i:%s') AS createdon,
+        DATE_FORMAT(se.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon,
+        s.scenariotitle,
+        s.scenarioidentification,
+        s.scenario_type,
+        CONCAT(u.firstname, ' ', u.lastname) AS exported_by
+      FROM scenario_export se
+      INNER JOIN scenarios s ON s.scenarioid = se.scenarioid
+      LEFT JOIN  ad_users u  ON u.userid     = se.userid
+      WHERE se.deletedon IS NULL
+        AND se.userid    = :_session_userid
+        AND se.status IN ('Inprogress', 'Running')  -- ← only these
+      ORDER BY se.exportid DESC
+    `;
+
+    const res = await db.sequelize.query(query, {
+      replacements: { _session_userid: session_userid },
+      type: db.sequelize.QueryTypes.SELECT,
+    });
+
+    return res;
+  };
 
 
 module.exports = {
@@ -513,5 +601,7 @@ module.exports = {
   saveComponentconfiguration,
   exportList,
   createExport,
-  getTabList
+  getTabList,
+  getExportComponents,
+  exportListInProgress
 };

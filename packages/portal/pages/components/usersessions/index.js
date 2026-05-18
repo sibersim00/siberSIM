@@ -46,7 +46,7 @@ import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
-const PAGINATION_BAR_HEIGHT = 155;
+const PAGINATION_BAR_HEIGHT = 200;
 
 const UserSession = () => {
   const dispatch = useDispatch();

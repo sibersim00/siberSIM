@@ -113,7 +113,37 @@ axiosInstance.interceptors.response.use(
           Router.push('/404');
       }
     } else if (error?.response?.status === 500 ||error?.response?.status === 400 ) {
-      //Requested Resource Not Found OR Server Side Wrror
+        const data = error?.response?.data;
+      if (data instanceof Blob && data.type === "application/json") {
+        data.text().then((text) => {
+          try {
+            const parsed = JSON.parse(text);
+            const msg = parsed?.error || parsed?.message || "Something went wrong";
+            toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{msg}</p>, {
+              position: toast.POSITION.TOP_RIGHT,
+              theme: "colored",
+              autoClose: 5000,
+              closeButton: false,
+              closeOnClick: false,
+              draggable: false,
+              pauseOnHover: false,
+              style: { width: '319px' }
+            });
+          } catch {
+            toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">Something went wrong</p>, {
+              position: toast.POSITION.TOP_RIGHT,
+              theme: "colored",
+              autoClose: 5000,
+              closeButton: false,
+              closeOnClick: false,
+              draggable: false,
+              pauseOnHover: false,
+              style: { width: '319px' }
+            });
+          }
+        });
+        return Promise.reject(error);
+      }
       if(error?.response?.data.error){
         toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{error?.response?.data.error}</p>, {
           position: toast.POSITION.TOP_RIGHT,
@@ -124,7 +154,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'330px',
+            width:'319px',
           }
         });
       }
@@ -138,7 +168,7 @@ axiosInstance.interceptors.response.use(
           draggable: false,
           pauseOnHover: false,
           style: {
-            width:'330px',
+            width:'319px',
           }
         });
       }

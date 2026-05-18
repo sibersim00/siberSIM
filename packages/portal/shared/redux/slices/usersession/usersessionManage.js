@@ -309,7 +309,7 @@ export function clearchatMessageSeen() {
 // ----------------------------------------------------------------------
 export function getUserSessionList() {
   console.log("notification_sendnotification_send");
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.usersession_list}`);
@@ -332,7 +332,7 @@ export function clearGetUserSessionList() {
 }
 
 export function getSingleScenarios(id) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.scenario_single}/${id}`);
@@ -420,7 +420,7 @@ export function terminateScenarioByAdInst(payload) {
 }
 
 export function clearTerminateScenarioByAdInst() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetTerminationByAdInstSucc([]));
@@ -431,7 +431,7 @@ export function clearTerminateScenarioByAdInst() {
 }
 
 export function clearSingleScenarios() {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetSingleScenariosSucc([]));
@@ -486,7 +486,7 @@ export function clearvmRestartScenario() {
 }
 
 export function handleManageView(payload) {
-  return async () => {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasHandleMAnageSuc(payload));
