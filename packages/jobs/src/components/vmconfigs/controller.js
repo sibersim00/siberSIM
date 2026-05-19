@@ -1132,10 +1132,9 @@ const restartComponent =
 
         // SSH connect
         await ssh.connect({
-          host:         "10.10.2.49",
-          username:     "root",
-          password:     "sysadmin",
-          readyTimeout: 30000,
+            host:     process.env.PROXMOX_SSH_HOST,
+            username: process.env.PROXMOX_SSH_USER,
+            password: process.env.PROXMOX_SSH_PASSWORD,
         });
         console.log(`[Component Download] SSH connected — streaming ${fileName}`);
 
