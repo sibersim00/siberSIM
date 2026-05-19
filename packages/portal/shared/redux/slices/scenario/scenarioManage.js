@@ -685,23 +685,44 @@ export function pollImportStatus(importid) {
   };
 }
 
-export function downloadScenarioZIP({ exportid }) {
+// export function downloadScenarioZIP({ exportid }) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+
+//     try {
+//       const response = await axios.get(
+//         `${api.scenario_trigger_zip}?exportid=${exportid}`,
+//         {
+//           responseType: "blob",
+//         },
+//       );
+
+//       // interceptor may unwrap response.data — handle both cases
+//       const blob = response?.data instanceof Blob ? response.data : response;
+
+//       dispatch(slice.actions.downloadScenarioExportSuccess(blob));
+
+//       return blob;
+//     } catch (error) {
+//       console.error("downloadScenarioZIP Error:", error);
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+export function downloadScenarioZIP({ exportid, scenarioid }) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
-
     try {
       const response = await axios.get(
-        `${api.scenario_trigger_zip}?exportid=${exportid}`,
+        `${api.scenario_trigger_zip}`,
         {
+          params:       { exportid, scenarioid }, // ← both params
           responseType: "blob",
         },
       );
 
-      // interceptor may unwrap response.data — handle both cases
       const blob = response?.data instanceof Blob ? response.data : response;
-
       dispatch(slice.actions.downloadScenarioExportSuccess(blob));
-
       return blob;
     } catch (error) {
       console.error("downloadScenarioZIP Error:", error);

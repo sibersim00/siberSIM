@@ -149,10 +149,13 @@ const handleCardClick = async (item) => {
     }
   }, [errorData]);
 const handleDownloadZip = async (row) => {
+  console.log("rowrowrowrowrowrow",row);
+  
   try {
     const blob = await dispatch(
       downloadScenarioZIP({
         exportid: row.exportid,
+        scenarioid: row.scenarioid,
       }),
     );
 
@@ -190,11 +193,7 @@ const handleDownloadComponent = async (exportid, file_name) => {
 
   try {
     const blob = await dispatch(downloadScenarioComponent({ exportid, file_name }));
-    console.log("blobblobblobblobblobblobblob",blob);
-    
-
     if (!blob) return;
-
     const url  = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href  = url;
