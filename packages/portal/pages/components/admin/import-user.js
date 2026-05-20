@@ -180,9 +180,6 @@ function ImportAdUser({ impUser, setimpUser }) {
       suppressMovable: true,
     };
   }, []);
-
-console.log("questionBanlList",questionBanlList);
-
   let columnDefs = [];
 
 if (errorData?.statusCode === 400) {
@@ -346,7 +343,6 @@ if (errorData?.statusCode === 400) {
       const payload = {
         leadImport: finalArray, 
       };
-      console.log("finalArray",finalArray)
       dispatch(saveImportAdUser(finalArray));
       
       

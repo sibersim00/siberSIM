@@ -103,8 +103,6 @@ const Widgets = () => {
   useEffect(() => {
     dispatch(getwidgetList());
   }, []);
-
-  console.log("hasGetwidgetListSucc", hasGetwidgetListSucc);
   const columnDefs = [
     {
       headerName: "Sr No.",

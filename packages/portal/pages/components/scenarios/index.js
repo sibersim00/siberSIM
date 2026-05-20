@@ -63,8 +63,21 @@ const [backview, setBackView] = useState("card");
 const [showExportModal, setShowExportModal] = useState(false);
 const [selectedScenarios, setSelectedScenarios] = useState([]);
 const [exportingIds, setExportingIds] = useState([]);
-const [showImportModal, setShowImportModal] = useState(false);
+// const [showImportModal, setShowImportModal] = useState(false);
 const [pageSize, setPageSize] = useState(20);
+
+
+  const [activeImportId, setActiveImportId] = useState(() => {
+  try {
+      const saved = localStorage.getItem("activeImport");
+      return saved ? JSON.parse(saved).importid : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+const [showImportModal, setShowImportModal] = useState(false);
+
 const gridRef = useRef(null);
 const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   
@@ -1434,6 +1447,7 @@ const onGridReady = useCallback((params) => {
                   </Col>
                 </Row>
               )}
+
             </>
           ) : (
             ""
@@ -1460,10 +1474,57 @@ const onGridReady = useCallback((params) => {
       <ScenarioImportModal
         show={showImportModal}
         onHide={() => setShowImportModal(false)}
-        onImportStarted={() => {
-          dispatch(getScenarioList());
+        onImportStarted={(importid) => {
+           setActiveImportId(importid);
         }}
+        onImportFinished={() => {                                      // ← clear banner
+        setActiveImportId(null);
+        // localStorage.removeItem("activeImport");
+      }}
       />
+                    {activeImportId && (
+  <div style={{
+    position:     "fixed",
+    bottom:       "24px",
+    right:        "24px",
+    zIndex:       9999,
+    background:   "#0f1e35",
+    color:        "#fff",
+    padding:      "14px 18px",
+    borderRadius: "14px",
+    display:      "flex",
+    alignItems:   "center",
+    gap:          "12px",
+    boxShadow:    "0 4px 24px rgba(0,0,0,0.4)",
+    border:       "1px solid #1a3a5c",
+    minWidth:     "260px",
+  }}>
+    <i className="fa fa-spinner fa-spin text-info fs-5" />
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: "13px", fontWeight: 600 }}>
+        Import In Progress
+      </div>
+      <div style={{ fontSize: "11px", color: "#8fa3bb", marginTop: "2px" }}>
+        Safe to close — running in background
+      </div>
+    </div>
+    <button
+      onClick={() => setShowImportModal(true)}
+      style={{
+        background:   "#0d6efd",
+        border:       "none",
+        borderRadius: "8px",
+        color:        "#fff",
+        padding:      "5px 14px",
+        fontSize:     "12px",
+        fontWeight:   500,
+        cursor:       "pointer",
+      }}
+    >
+      View
+    </button>
+  </div>
+)}
     </>
   );
 };

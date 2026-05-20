@@ -131,8 +131,6 @@ const ScenarioView = () => {
     };
   });
 
-  console.log("errorDataerrorDataerrorData", errorData);
-
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );

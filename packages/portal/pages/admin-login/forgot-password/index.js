@@ -112,7 +112,6 @@ const Forgetpassword = () => {
   }, [timerval, timeOutCallback]);
 
   const changeHandler = (e) => {
-    console.log("eeee", e)
     setData({ ...data, [e.target.name]: e.target.value });
     if (e.target.name == "orgid") {
       setTimeout(() => {
@@ -120,8 +119,6 @@ const Forgetpassword = () => {
       }, 200);
     }
   };
-
-  console.log("datadata", data)
   const changeHandlerArrow = (e) => {
     let cls = "fa-caret-right";
     if (e == "fa-caret-right") {
@@ -303,9 +300,6 @@ const Forgetpassword = () => {
               orgid: 1,
               otp: data.otp,
             };
-
-            console.log("handleChangepasswordhandleChangepassword", handleChangepassword)
-
             dispatch(dispatchFromForget(payload));
           }
         }
@@ -339,9 +333,6 @@ const Forgetpassword = () => {
       setEventKey("");
     }
   }, [eventKey]);
-
-  console.log("eventKeyeventKey ", eventKey)
-
   useEffect(() => {
     // Add the event listener when the component mounts
     document.addEventListener("keydown", handleKeyPress);

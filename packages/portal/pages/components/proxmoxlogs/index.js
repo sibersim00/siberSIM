@@ -292,7 +292,6 @@ const onGridReady = useCallback((params) => {
     actionButtonRenderer: (props) => <ActionButtonRenderer propsVal={props} />,
 
     responseCodeRenderer: (props) => {
-      console.log("propsprops",props)
   const code = props.value;
   const { message, color } = getResponseInfo(Number(code));
   return (
@@ -326,7 +325,6 @@ const onGridReady = useCallback((params) => {
       hour12: true,
     });
   }
-  console.log("getResponseInfo", getResponseInfo);
   return (
     <>
       <Seo title="SiberSim Logs" />

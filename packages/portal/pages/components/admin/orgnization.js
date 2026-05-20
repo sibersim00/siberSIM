@@ -294,7 +294,6 @@ const onGridReady = useCallback((params) => {
 
   const handleEdit = (props) => {
     handleOneClick(false);
-    console.log("id",props.orgid);
     if (props && props.orgid) {
       setRowValues({
         title: "Edit",

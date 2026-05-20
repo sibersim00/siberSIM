@@ -488,7 +488,6 @@ const ManageScenarios = () => {
       title: "Add", setRowId(props.custom_scenariouuid);
       setView("Form");
       dispatch(handleManageView("Form"));
-      console.log("first", props.custom_scenariouuid);
     }
   };
   useEffect(() => {
@@ -722,10 +721,6 @@ const ManageScenarios = () => {
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
-                      {console.log(
-                        "itemitemitemitemitemitemitemitemitemitem",
-                        item
-                      )}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                           ? "shadow-publish"

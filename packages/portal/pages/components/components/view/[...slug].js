@@ -38,7 +38,6 @@ const ComponentView = () => {
       dispatch(getSingleComponent(query.slug[0]));
     }
   }, [query.slug]);
-  console.log("rowValuesrowValues",rowValues)
   return (
     <>
       <Seo title="Components" />

@@ -952,9 +952,7 @@ const startRestore =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { importid, vmFiles } = req.body;
-      console.log("vmFilesvmFilesvmFiles",vmFiles);
-      
+      const { importid, vmFiles ,storage} = req.body;
       if (!importid) {
         return res.status(400).send({ statusCode: 400, message: "importid is required." });
       }
@@ -963,6 +961,7 @@ const startRestore =
         {
           importid,
           vmFiles,
+          storage,
         },
         {
           headers: {

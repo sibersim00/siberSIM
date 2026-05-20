@@ -61,9 +61,6 @@ const NotificationList = () => {
       errorData: state && state.noticonfigs && state.noticonfigs.error,
     };
   });
-
-  console.log("getUserDataFromLocal-------------------", getUserDataFromLocal?.usertype)
-
   const columnDefs = [
     {
       headerName: "Notifications",

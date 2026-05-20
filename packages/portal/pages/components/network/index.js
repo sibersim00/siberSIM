@@ -42,7 +42,6 @@ const ManageComponent = () => {
       hasFetchNetworkSuccess: state?.networkManage?.networkData,
       hasFetchNetworkSuccesslist: state?.networkManage?.networkDatalist?.data,
     }));
-  console.log("hasFetchNetworkSuccesshasFetchNetworkSuccesshasFetchNetworkSuccess", hasFetchNetworkSuccesslist);
   const columnDefs = [
     {
       headerName: "Sr No.",

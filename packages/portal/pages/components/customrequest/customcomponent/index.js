@@ -71,8 +71,6 @@ const ManageCustomComponent = () => {
       errorData: state && state.customComponent && state.customComponent.error,
     };
   });
-  console.log("hasGetComponentListSucchasGetComponentListSucc", hasGetComponentListSucc);
-
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -372,7 +370,6 @@ const onGridReady = useCallback((params) => {
     },
     vmidWithImageRenderer: function (props) {
       const { data } = props;
-      console.log("data", data)
       const imageUrl = data?.componentimage
         ? `${process.env.API_URL_FILEMANAGER}${data.componentimage}`
         : dummy_network;

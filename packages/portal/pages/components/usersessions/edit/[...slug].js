@@ -1136,36 +1136,7 @@ const DnDFlow = ({
     return map;
   }, [diagram]);
   const getNetKey = (handle) => handle?.split("-")[0];
-//   const buildNetworkPayload = (type) => {
-//     if (!pendingConnection) return null;
 
-//     const sourceNode = nodeMap[pendingConnection.source];
-//     const targetNode = nodeMap[pendingConnection.target];
-// console.log("sourceNodesourceNodesourceNode",sourceNode);
-
-//     if (!sourceNode || !targetNode) return null;
-
-//     const netKey = getNetKey(pendingConnection.sourceHandle);
-
-//     let payload = {
-//       vmid: sourceNode.vmid,
-//       vmType: sourceNode.vmType,
-//       netKey,
-//       mode: type,
-//       source: pendingConnection.source,
-//       sourceHandle: pendingConnection.sourceHandle,
-//       target: pendingConnection.target,
-//       targetHandle: pendingConnection.targetHandle,
-//     };
-//     // LABEL RULES
-//     if (type === "static") {
-//       payload.label = "Network Id";
-//     }
-//     if (type === "existing") {
-//       payload.label = connectPopover?.existingNetwork || null;
-//     }
-//     return payload;
-//   };
 
 const buildNetworkPayload = (type, staticValue) => {
   if (!pendingConnection) return null;
@@ -1512,49 +1483,8 @@ const iconMap = {
     </div>
   );
 };
-  // const handleConnectionType = async (type) => {
-  //   if (!pendingConnection) return;
-  //   const connection = { ...pendingConnection };
-  //   const apiPayload = buildNetworkPayload(type,staticValue);
-  //   try {
-  //     setShowBridgeModal(true);
-  //     setBridgeLoading(true);
-  //     await dispatch(modifyNetworkId(apiPayload));
-  //     // ---------------- EDGE LABEL ----------------
-  //     let label = "";
-  //     if (type === "static") label = "Network Id";
-  //     if (type === "existing") label = connectPopover?.existingNetwork || "";
-  //     if (type === "new") label = "";
-  //     const newEdge = {
-  //       id: `e-${connection.source}-${connection.sourceHandle}-${connection.target}-${connection.targetHandle}-${Date.now()}`,
-  //       source: connection.source,
-  //       sourceHandle: connection.sourceHandle,
-  //       target: connection.target,
-  //       targetHandle: connection.targetHandle,
-  //       type: "custom",
-  //       data: { label },
-  //     };
-  //     // setEdges((eds) => addEdge(newEdge, eds));
-  //     // ✅ CLOSE MODAL AFTER SHORT DELAY
-  //     setTimeout(() => {
-  //       setShowBridgeModal(false);
-  //       setBridgeLoading(false);
-  //     }, 1200);
-
-  //     // cleanup
-  //     setPendingConnection(null);
-  //     setConnectPopover(null);
-  //     setDragStart(null);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setShowBridgeModal(false);
-  //     setBridgeLoading(false);
-  //   }
-  // };
-
 
     const handleConnectionType = async (type,staticValue = null) => {
-      console.log("typetypetypetypetypetypetype",type);
       
       if (!pendingConnection) return;
       const connection = { ...pendingConnection };
@@ -1688,50 +1618,7 @@ const iconMap = {
       dispatch,
     ],
   );
-  // const deleteNode = async (nodeId) => {
-  //   const nodeToDelete = nodes.find((node) => node.id === nodeId);
-  //   if (!nodeToDelete) return;
-  //   const vmid = nodeToDelete?.data?.vmid;
-  //   const vmrequestid = scenario?.vmrequestid;
-  //   try {
-  //     setShowStopDestroyModal(true);
-  //     setStopStep("Stopping");
-  //     if (vmid && vmrequestid) {
-  //       await dispatch(deleteDraggedComponent({ vmid, vmrequestid }));
-  //     }
-  //     setStopStep("Destroying");
-  //     setTimeout(() => {
-  //       setShowStopDestroyModal(false);
-  //     }, 2000);
-  //     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-  //     setEdges((eds) =>
-  //       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
-  //     );
-  //     if (nodeToDelete?.data?.componentId) {
-  //       const imageComponent = nodeToDelete.data.componentId;
-  //       const imageNode = imageNodeData.find(
-  //         (item) => item.id === imageComponent,
-  //       );
-
-  //       if (imageNode) {
-  //         const imageId = imageNode.id;
-
-  //         setDroppedImages((prev) => prev.filter((id) => id !== imageId));
-  //         setDraggedComponent((prev) =>
-  //           prev.filter((item) => item.id !== imageId),
-  //         );
-  //         setImageNodeData((prev) =>
-  //           prev.filter((item) => item.id !== imageId),
-  //         );
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.error("Delete VM failed", err);
-  //     setShowStopDestroyModal(false);
-  //   }
-  // };
-
-
+ 
 const deleteNode = async (nodeId) => {
   const nodeToDelete = nodes.find((node) => node.id === nodeId);
   if (!nodeToDelete) return;

@@ -31,7 +31,6 @@ function ImportAdInstructor({ impUser, setimpUser }) {
        const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const { saveImportAdUserResp, errorData, } =
     useSelector((state) => (
-    console.log('saveImportAdUserResp',state),
     {
        saveImportAdUserResp: state.user?.saveImportUserResp,
       errorData: state && state.user && state.user.error,
@@ -174,9 +173,6 @@ function ImportAdInstructor({ impUser, setimpUser }) {
       suppressMovable: true,
     };
   }, []);
-
-console.log("questionBanlList",questionBanlList);
-
   let columnDefs = [];
 
 if (errorData?.statusCode === 400) {
@@ -339,7 +335,6 @@ if (errorData?.statusCode === 400) {
       const payload = {
         leadImport: finalArray, 
       };
-      console.log("finalArray",finalArray)
       dispatch(saveImportAdUser(finalArray));
       
       

@@ -65,7 +65,6 @@ const ScenarioQuiz = () => {
         setScenarioid(scenarioQuizResp?.questionlist[0]?.scenarioid);
       }
     }
-    console.log("scenarioQuizResp", scenarioQuizResp)
   }, [scenarioQuizResp]);
 
   const handleQuestionModal = () => {
@@ -409,7 +408,6 @@ const ScenarioQuiz = () => {
       status: true,
       answers: []
     });
-    console.log("Adding question with scenarioid:", setRowValues);
     setQuestionModal(true);
     setIsLoading(false);
   };

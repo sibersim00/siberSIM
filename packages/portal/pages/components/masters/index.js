@@ -178,7 +178,6 @@ const Master = () => {
             </Col>
           )}
           <Col md={tabOrNav ? 12 : 10}>
-            {console.log("selectedSubMenu", selectedSubMenu)}
             {selectedSubMenu && (
               <div>
                 {/* {selectedSubMenu.source === "/components" && <Componenets />} */}

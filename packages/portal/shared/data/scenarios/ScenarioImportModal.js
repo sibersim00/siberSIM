@@ -181,7 +181,7 @@ const ZstRow = ({ component, onFileSelect, uploading, transferring, uploaded, re
 
 
 
-const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
+const ScenarioImportModal = ({ show, onHide, onImportStarted ,onImportFinished }) => {
   const dispatch   = useDispatch();
   const fileInput  = useRef(null);
   const idInputRef = useRef(null);
@@ -200,6 +200,9 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
   const [components,   setComponents]   = useState([]);
   const [zstStatus,    setZstStatus]    = useState({});
   const [restoring,    setRestoring]    = useState(false);
+  const [showStorageModal, setShowStorageModal] = useState(false);
+  const [selectedStorage, setSelectedStorage] = useState("tank");
+
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const isImporting     = ["reading", "check_id", "uploading"].includes(phase);
@@ -238,17 +241,36 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
   }, [phase]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const reset = () => {
-    setFile(null); setDragging(false); setPhase("idle"); setProgress(0);
-    setCustomId(""); setIdError(""); setManifestInfo(null); setCheckedItems([]);
-    setImportid(null); setComponents([]); setZstStatus({}); setRestoring(false);
-  };
+const reset = () => {
+  setFile(null); setDragging(false); setPhase("idle"); setProgress(0);
+  setCustomId(""); setIdError(""); setManifestInfo(null); setCheckedItems([]);
+  setImportid(null); setComponents([]); setZstStatus({}); setRestoring(false);
+  localStorage.removeItem("activeImport");
+  if (onImportFinished) onImportFinished(); // ← only when truly resetting
+};
 
+  // const handleClose = () => {
+  //   if (isImporting || restoring || uploadingAny) return;
+  //   reset();
+  //   onHide();
+  // };
   const handleClose = () => {
-    if (isImporting || restoring || uploadingAny) return;
-    reset();
-    onHide();
-  };
+  if (isImporting || restoring || uploadingAny) return;
+
+  // ← if polling in progress, just close modal but keep banner
+  const isPolling = Object.values(zstStatus).some(
+    (s) => s.transferring === true
+  );
+
+  if (isPolling) {
+    onHide(); // ← just close modal, don't reset, don't call onImportFinished
+    return;
+  }
+
+  // ← if not polling, full reset
+  reset();
+  onHide();
+};
 
   const addCheck = (label, status = "ok") =>
     setCheckedItems((prev) => [
@@ -282,6 +304,60 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
     setZstStatus({});
   };
 
+  // resume page  - 
+  useEffect(() => {
+  const saved = localStorage.getItem("activeImport");
+  if (!saved) return;
+
+  try {
+    const { importid: savedImportid, components: savedComponents, timestamp } = JSON.parse(saved);
+
+    // ignore if older than 24 hours
+    if (Date.now() - timestamp > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem("activeImport");
+       if (onImportFinished) onImportFinished(); // ← add here too
+      return;
+    }
+
+    // check current status
+    dispatch(pollImportStatus(savedImportid)).then((action) => {
+      const statusData = action?.data?.data || action?.data;
+      if (!statusData) return;
+
+      const { status } = statusData;
+
+      if (status === "Completed" || status === "Failed") {
+        localStorage.removeItem("activeImport");
+        setPhase("done");
+        if (onImportFinished) onImportFinished();
+        return;
+      }
+
+      if (status === "Running") {
+        setImportid(savedImportid);
+        setComponents(savedComponents);
+
+        // init zst status for each component
+        const initStatus = {};
+        savedComponents.forEach((c) => {
+          initStatus[c.file] = {
+            uploading: false, uploaded: false,
+            transferring: false, restored: false,
+            progress: 0, error: null,
+          };
+        });
+        setZstStatus(initStatus);
+        setPhase("zst_upload");
+        addCheck("Import resumed from previous session ↩", "ok");
+      }
+    });
+
+  } catch (_) {
+    localStorage.removeItem("activeImport");
+     if (onImportFinished) onImportFinished(); // ← add here too
+  }
+}, []);
+
   const onInputChange = (e) => handleFileSelect(e.target.files[0]);
   const onDrop = useCallback((e) => {
     e.preventDefault();
@@ -290,7 +366,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
   }, []);
 
   // ── STEP 1: Submit ZIP → get importid + components ────────────────────────
-  const handleSubmit = async (overrideId = null) => {
+  const handleSubmit = async (overrideId = null,storage = selectedStorage,) => {
     if (!file || isImporting) return;
 
     setCheckedItems([]);
@@ -354,6 +430,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
     const importForm = new FormData();
     importForm.append("zipfile", file);
     importForm.append("userid", "2");
+    importForm.append("storage", storage);
     if (overrideId) importForm.append("customIdentification", overrideId);
     let result;
     try {
@@ -373,16 +450,34 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
     }
     addCheck("Scenario package accepted ✓", "ok");
     setProgress(45);
-    if (newComponents.length === 0) {
-      addCheck("No VM components — triggering restore directly", "warn");
-      setImportid(newImportid);
-      await kickOffRestore(newImportid);
-      return;
-    }
+ if (newComponents.length === 0) {
+  addCheck("No VM components — triggering restore directly", "warn");
+  setImportid(newImportid);
+
+  // ← ADD THESE
+  localStorage.setItem("activeImport", JSON.stringify({
+    importid:   newImportid,
+    components: [],
+    timestamp:  Date.now(),
+  }));
+  // if (onImportStarted) onImportStarted(newImportid); // ← fixes "importid is not defined"
+
+  await kickOffRestore(newImportid);
+  return;
+}
     // VMs found — show ZST upload panel
     addCheck(`Found ${newComponents.length} components — upload .zst files below ↓`, "ok");
     setImportid(newImportid);
     setComponents(newComponents);
+    localStorage.setItem("activeImport", JSON.stringify({
+      importid:   newImportid,
+      components: newComponents,
+      phase:      "zst_upload",
+      timestamp:  Date.now(),
+    }));
+    console.log("newImportidnewImportidnewImportid",newImportid);
+    
+    // if (onImportStarted) onImportStarted(newImportid); // ← show banner
     const initStatus = {};
     newComponents.forEach((c) => {
       initStatus[c.file] = { uploading: false, uploaded: false,restored: false, progress: 0, error: null };
@@ -446,18 +541,41 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
 
       console.log("parsed data:", data);
 
-      if (data?.received || data?.transferring) {
-        // ── Phase 2: transferring Jobs disk → Proxmox (poll) ──────────
-        setZstStatus((prev) => ({
-          ...prev,
-          [component.file]: {
-            uploading: false, transferring: true,
-            uploaded: false, progress: 100, error: null,
-          },
-        }));
-        addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
-        startPollingZstStatus(component);
-      }
+      // if (data?.received || data?.transferring) {
+      //   // ── Phase 2: transferring Jobs disk → Proxmox (poll) ──────────
+      //   setZstStatus((prev) => ({
+      //     ...prev,
+      //     [component.file]: {
+      //       uploading: false, transferring: true,
+      //       uploaded: false, progress: 100, error: null,
+      //     },
+      //   }));
+      //   addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
+      //   startPollingZstStatus(component);
+      // }
+if (data?.transferring || data?.received) {
+  setZstStatus((prev) => ({
+    ...prev,
+    [component.file]: {
+      uploading: false, transferring: true,
+      uploaded: false, progress: 100, error: null,
+    },
+  }));
+  addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
+   if (onImportStarted) onImportStarted(importid); // ← move here
+  startPollingZstStatus(component); // ← polling starts here
+
+}
+      if (data?.uploaded) {
+      setZstStatus((prev) => ({
+        ...prev,
+        [component.file]: {
+          uploading: false, transferring: false,
+          uploaded: true, progress: 100, error: null,
+        },
+      }));
+      addCheck(`${component.name} transferred to Proxmox ✓`, "ok");
+    }
 
     } catch (err) {
       setZstStatus((prev) => ({
@@ -540,7 +658,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
   }, []);
 
   
-  const kickOffRestore = async (id = importid) => {
+  const kickOffRestore = async (id = importid, storage = selectedStorage,) => {
   const thisBatch = components
     .filter((c) => zstStatus[c.file]?.uploaded && !zstStatus[c.file]?.restored)
     .map((c) => c.file);
@@ -556,6 +674,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
     startResult = await dispatch(startScenarioRestore({
       importid: id,
       vmFiles: thisBatch,
+      storage,
     }));
   } catch (err) {
     addCheck("Failed to start restore: " + err.message, "error");
@@ -640,7 +759,9 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
       setProgress(100);
       setPhase("done");
       setRestoring(false);
-      if (onImportStarted) onImportStarted();
+      localStorage.removeItem("activeImport");
+      // if (onImportStarted) onImportStarted();
+       if (onImportFinished) onImportFinished(); // ← add here too
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0">Import completed successfully!</p>,
         { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
@@ -657,6 +778,8 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
         <p className="mx-2 tx-16 d-flex align-items-center mb-0">Restore failed — try again</p>,
         { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
       );
+      localStorage.removeItem("activeImport");
+       if (onImportFinished) onImportFinished(); 
       return;
     }
   }
@@ -664,6 +787,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
       addCheck("Restore timed out", "warn");
       setPhase("zst_upload");
       setRestoring(false);
+      if (onImportFinished) onImportFinished();
     };
       
   
@@ -678,8 +802,38 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
     await handleSubmit(customId.trim());
   };
 
+
+
+
+
+
+  useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    const isUploading = Object.values(zstStatus).some(
+      (s) => s.uploading === true
+    );
+    if (isUploading) {
+      e.preventDefault();
+      e.returnValue = "File upload in progress! Refreshing will cancel the upload.";
+      return e.returnValue;
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, [zstStatus]);
+
+
+const pollingStartedRef = useRef(false);
+const isPollingPhase = Object.values(zstStatus).some(
+  (s) => s.transferring === true || s.uploaded === true
+) && !Object.values(zstStatus).some(
+  (s) => s.uploading === true
+);
+
   // ══════════════════════════════════════════════════════════════════════════
   return (
+    <>
     <Modal
       show={show}
       onHide={handleClose}
@@ -1107,7 +1261,7 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
                     onClick={handleClose} disabled={uploadingAny || restoring}>
                     Cancel
                   </button>
-                  <button
+                  {/* <button
                     className="sim-btn sim-btn--primary"
                     onClick={() => kickOffRestore()}
                     disabled={!anyReadyToRestore || uploadingAny || restoring}  //  any uploaded = enabled
@@ -1123,23 +1277,55 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
                         Start Restore ({components.filter(c => zstStatus[c.file]?.uploaded && !zstStatus[c.file]?.restored).length} ready)
                       </>
                     )}
-                  </button>
+                  </button> */}
+                  <button
+  className="sim-btn sim-btn--primary"
+  onClick={() => setShowStorageModal(true)}
+  disabled={!anyReadyToRestore || uploadingAny || restoring}
+  title={!anyReadyToRestore ? "Upload at least one component file first" : ""}
+>
+  {restoring ? (
+    <><Loader size={14} strokeWidth={2} className="sim-spin" /> Restoring…</>
+  ) : uploadingAny ? (
+    <><Loader size={14} strokeWidth={2} className="sim-spin" /> Uploading…</>
+  ) : (
+    <>
+      <PlayCircle size={14} strokeWidth={2} />
+      Start Restore (
+      {components.filter(
+        c => zstStatus[c.file]?.uploaded && !zstStatus[c.file]?.restored
+      ).length} ready)
+    </>
+  )}
+</button>
                 </>
               )}
 
             {/* Idle / reading / check_id / uploading */}
             {!isDone && !isFailed && !isConflict && !isZstPhase && (
               <>
-                <button className="sim-btn sim-btn--ghost"
+                {/* <button className="sim-btn sim-btn--ghost"
                   onClick={handleClose}
                   disabled={isImporting || restoring}>
                   Cancel
+                </button> */}
+                <button 
+                  className="sim-btn sim-btn--ghost"
+                  onClick={handleClose}
+                  disabled={uploadingAny || restoring}
+                >
+                  Cancel
                 </button>
-                <button
+                {/* <button
                   className="sim-btn sim-btn--primary"
                   onClick={() => handleSubmit()}
                   disabled={!file || isImporting || restoring}
-                >
+                > */}
+                <button
+                    className="sim-btn sim-btn--primary"
+                    onClick={() => setShowStorageModal(true)}
+                    disabled={!file || isImporting || restoring}
+                  >
                   {isImporting ? (
                     <><Loader size={14} strokeWidth={2} className="sim-spin" /> Importing…</>
                   ) : (
@@ -1148,10 +1334,68 @@ const ScenarioImportModal = ({ show, onHide, onImportStarted }) => {
                 </button>
               </>
             )}
+
           </div>
         </div>
       </Modal.Footer>
     </Modal>
+    <Modal
+      show={showStorageModal}
+      onHide={() => setShowStorageModal(false)}
+      centered
+      size="sm"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Select Import Storage</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        <div className="mb-2">
+          <label className="mb-2 fw-semibold">
+            Choose Proxmox Storage
+          </label>
+
+          <select
+            className="form-control"
+            value={selectedStorage}
+            onChange={(e) => setSelectedStorage(e.target.value)}
+          >
+            <option value="cawan">cawan</option>
+            <option value="tank">tank</option>
+          </select>
+
+          <div
+            style={{
+              fontSize: 12,
+              opacity: 0.7,
+              marginTop: 8,
+            }}
+          >
+            VM backups will be restored from this storage.
+          </div>
+        </div>
+      </Modal.Body>
+
+      <Modal.Footer>
+        <button
+        className="sim-btn sim-btn--primary"
+        onClick={() => {
+          setShowStorageModal(false);
+
+          if (isZstPhase) {
+            kickOffRestore(importid, selectedStorage);
+          } else {
+            handleSubmit(null, selectedStorage);
+          }
+        }}
+      >
+        <Cloud size={14} strokeWidth={2} />
+        Continue
+      </button>
+      </Modal.Footer>
+    </Modal>
+    </>
+    
   );
 };
 

@@ -64,8 +64,6 @@ const DnDFlow = ({
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
-  console.log("selectedScenario", selectedScenario);
-
   const resolveImageUrl = (url) => {
     if (!url) return "";
 
@@ -93,8 +91,6 @@ const DnDFlow = ({
     net3: Position.Top,
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa", data);
-    console.log("networkPorts");
     // let portKeys = [];
     // if (Array.isArray(data.networkport)) {
     //   portKeys = data.networkport
@@ -147,7 +143,6 @@ const DnDFlow = ({
     const baseSize = 90;
     const portSpacing = 15;
     const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
-    console.log("portKeyssssssssssssss", portKeys);
 
     return (
       <div
@@ -405,7 +400,6 @@ const DnDFlow = ({
   }, [selectedScenario]);
 
   const onConnect = useCallback((params) => {
-    console.log("params 111", params) /
       setEdges((eds) =>
         addEdge(
           {

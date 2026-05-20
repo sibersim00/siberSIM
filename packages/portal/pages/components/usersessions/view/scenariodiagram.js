@@ -235,7 +235,6 @@ const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
     errorData: state?.usersessionManage?.error,
   }));
   const dispatch = useDispatch();
-  console.log("getSingleScenariosSucc", getSingleScenariosSucc)
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
@@ -301,7 +300,6 @@ const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
               try {
                 const vmrequestid =
                   getSingleScenariosSucc?.[0]?.vmrequestid;
-                  console.log("vmrequestidvmrequestid",vmrequestid);
                 if (!vmrequestid) return;
                 // call API
                 await dispatch(

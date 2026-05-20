@@ -104,8 +104,6 @@ const ScenarioCategory = () => {
         state && state.scenariocategories && state.scenariocategories.error,
     };
   });
-  console.log("listCatDatalistCatData", listCatData);
-
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -613,8 +611,6 @@ const onGridReady = useCallback((params) => {
       const imageUrl = data?.categoryimage
         ? `${process.env.API_URL_FILEMANAGER}${data.categoryimage}`
         : dummy_network;
-
-      console.log("Image URL:", imageUrl);
     },
   };
 

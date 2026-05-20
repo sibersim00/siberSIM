@@ -54,9 +54,6 @@ const ComponentSubCategories = () => {
   const [pageSize, setPageSize] = useState(20);
     const gridRef = useRef(null);
      const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
-
-
-  // console.log("gridDatgridDataa",JSON.parse(localStorage.getItem('user')));
   const { subCatListResp, errorData, deleteSubCatRes, statusChangeSubCatRes } =
     useSelector((state) => {
       return {
@@ -80,7 +77,6 @@ const ComponentSubCategories = () => {
           state.componentsubcategories.error,
       };
     });
-  console.log("statusChangeSubCatRes", statusChangeSubCatRes);
   useEffect(() => {
     if (statusChangeSubCatRes?.statusCode) {
       toast.success(
@@ -139,7 +135,6 @@ const ComponentSubCategories = () => {
     }
   }, [subCatListResp, empStatus]);
   const handleOneClick = (flag) => {
-    console.log("flagflag", flag);
     setOneClick(flag);
   };
 
@@ -318,7 +313,6 @@ const onGridReady = useCallback((params) => {
         props?.value && props?.value.length > 20
           ? `${props?.value.substring(0, 20)}...`
           : props.value;
-      //  console.log("propspropsprops",value);
       const des = value ? (
         <div dangerouslySetInnerHTML={{ __html: value }} />
       ) : (
@@ -466,10 +460,8 @@ const onGridReady = useCallback((params) => {
     setView("Form");
     setRowId(props.componentsubcategoryid);
   };
-  console.log("onClick", oneClick);
   const [viewCatModal, setviewCatModal] = useState(false);
   const handleView = (props) => {
-    console.log("propsprops", props);
     if (props && props.componentsubcategoryid) {
       setView("catView");
       setRowId(props.componentsubcategoryid);

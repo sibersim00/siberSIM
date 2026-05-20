@@ -2052,25 +2052,25 @@ const checkBackupStatus =
             const lines = fileResponse?.data || [];
 
             if (Array.isArray(lines)) {
-              for (const line of lines) {
-                if (line.t && line.t.includes("creating vzdump archive")) {
-                  const match = line.t.match(/dump\/([^ ]+\.zst)/);
-                  if (match) {
-                    extractedFileName = match[1];
-                    break;
-                  }
-                }
+
+            for (const line of lines) {
+            if (line.t && line.t.includes("creating vzdump archive")) {
+              console.log("[DEBUG] Log line:", line.t); // ← see exact log line format
+              const match = line.t.match(/creating vzdump archive '([^']+\.zst)'/);
+              if (match) {
+                extractedFileName = match[1];
+                console.log("[DEBUG] Extracted path:", extractedFileName); // ← confirm full path
+                break;
+              } else {
+                console.warn("[DEBUG] Regex did not match line:", line.t); // ← catch mismatch
               }
+            }
+          }
             }
           } catch (err) {
             console.error("Error fetching filename:", err);
           }
-
-          // Build the full absolute path so controller can copy it
-          // ← THIS IS THE FIX — store full path not just filename
-          const fullFilePath = extractedFileName
-            ? `/var/lib/vz/dump/${extractedFileName}`
-            : null;
+          const fullFilePath = extractedFileName || null;
 
           // Update component_export
           if (newStatus === "Completed" && fullFilePath) {
@@ -5234,7 +5234,9 @@ const s =
 
 const runImportJob =
   ({ db,ip_address }) =>
-  async ({ importid, stagingDir, zipPath, ipAddress, userid, customIdentification, vmFiles, isFinalBatch }) => {
+  async ({ importid, stagingDir, zipPath, ipAddress, userid, customIdentification, vmFiles, isFinalBatch,storage }) => {
+    console.log("storagestoragestoragestorage",storage);
+    
 
     const { NodeSSH } = require("node-ssh");
     const path        = require("path");
@@ -5317,14 +5319,17 @@ const runImportJob =
 
         console.log(`[runImportJob] Restoring: ${vm.name} | ${vmType} | ${zstFile}`);
 
-        const remotePath   = `/var/lib/vz/dump/${zstFile}`;
+        // const remotePath   = `/var/lib/vz/dump/${zstFile}`;
+        const vmManifestEntry = allVms.find((v) => v.file === zstFile);
+        const remotePath = vmManifestEntry?.proxmox_path || `/var/lib/vz/dump/${zstFile}`;
+        console.log(`[runImportJob] Remote path: ${remotePath}`);
         const targetVmid   = await proxmoxService.findFreeVmid(vmType);
         if (!targetVmid) {
           await updateImportStatus({ db })(importid, "Failed", "No free VMID available.");
           return { success: false, message: "No free VMID available." };
         }
 
-        const restoreResp = await proxmoxService.restoreVM({ vmid: targetVmid, zstFile, vmType });
+        const restoreResp = await proxmoxService.restoreVM({ vmid: targetVmid, zstFile, vmType, proxmoxPath: remotePath,storage });
         if (!restoreResp || restoreResp.status !== 200 || !restoreResp?.data?.data) {
           await updateImportStatus({ db })(importid, "Failed", `Restore failed for VMID ${targetVmid}.`);
           return { success: false, message: `Restore failed for VMID ${targetVmid}.` };

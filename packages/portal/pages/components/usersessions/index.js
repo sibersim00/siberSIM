@@ -893,7 +893,6 @@ const footerStyle = {
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
-                      {console.log("itemitemitemitemitem", item)}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${
                           item.scenario_status === "Resume"

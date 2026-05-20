@@ -7,6 +7,7 @@ module.exports = {
    MYSQL_PORT: process.env.MYSQL_PORT || 3306,
    WEB_ORIGIN:process.env.WEB_ORIGIN ,
    IMPORT_STORAGE:process.env.IMPORT_STORAGE ,
+   BACKUP_STORAGE:process.env.BACKUP_STORAGE ,
    VMID_RANGE_START:process.env.VMID_RANGE_START ,
    VMID_RANGE_END:process.env.VMID_RANGE_END 
 };

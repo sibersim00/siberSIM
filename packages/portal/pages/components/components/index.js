@@ -111,8 +111,6 @@ const ManageComponent = () => {
       errorData: state && state.componentManage && state.componentManage.error,
     };
   });
-  console.log("hasGetComponentListSucc",hasGetComponentListSucc);
-  
   const columnDefs = [
     {
       headerName: "Sr No.",
@@ -627,8 +625,6 @@ const onGridReady = useCallback((params) => {
   };
 
   const handleDeletecard = (item) => {
-    console.log("itemitemitemitemitemitemitem",item);
-    
     Swal.fire({
       title: t("common.swal.title"),
       text: t("common.swal.text_delete"),

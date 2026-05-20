@@ -8,14 +8,12 @@ import { clearHasError, handleManageView, getScenarioExportList, getExportCompon
 import Seo from "../../../shared/layout-components/seo/seo";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
-import { useTranslation } from "react-i18next";
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
 const PAGINATION_BAR_HEIGHT = 220;
 
 const ScenarioExportPage = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
 
   const [view, setView] = useState("card");
@@ -28,6 +26,11 @@ const ScenarioExportPage = () => {
   const [pageSize, setPageSize] = useState(20);
   const [columnsPerRow, setColumnsPerRow] = useState(4);
   const [downloadingFile, setDownloadingFile] = useState(null); // tracks which file is downloading
+
+  const [downloadProgress,   setDownloadProgress]   = useState(0);
+  const [downloadedBytes,    setDownloadedBytes]     = useState(0);
+  const [totalBytes,         setTotalBytes]          = useState(0);
+  const abortControllerRef                      = useRef(null);
 
   const colarray = [6, 4, 3, 2];
   const gridRef = useRef(null);
@@ -179,20 +182,92 @@ const handleDownloadZip = async (row) => {
     console.error("ZIP download failed:", error);
   }
 };
+
+const formatBytes = (bytes) => {
+  if (!bytes) return "0 MB";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3)   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+};
+// const handleDownloadComponent = async (exportid, file_name) => {
+//   if (downloadingFile) return;
+
+//   setDownloadingFile(file_name);
+
+//   toast.success(
+//     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+//       Preparing your file for download. This may take a few minutes for large files
+//     </p>,
+//     { position: toast.POSITION.TOP_RIGHT, hideProgressBar: false, theme: "colored", autoClose: 5000 },
+//   );
+
+//   try {
+//     const blob = await dispatch(downloadScenarioComponent({ exportid, file_name }));
+//     if (!blob) return;
+//     const url  = window.URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.href  = url;
+//     link.setAttribute("download", file_name.split("/").pop());
+//     document.body.appendChild(link);
+//     link.click();
+//     link.remove();
+//     window.URL.revokeObjectURL(url);
+//   } catch (error) {
+//     console.error("Component download failed:", error);
+//     toast.error(
+//       <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+//         Download failed: {error.message}
+//       </p>,
+//       { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
+//     );
+//   } finally {
+//     setDownloadingFile(null);
+//   }
+// };
+
+
+const handleCancelDownload = () => {
+  if (abortControllerRef.current) {
+    abortControllerRef.current.abort();
+    abortControllerRef.current = null;
+  }
+  setDownloadingFile(null);
+  setDownloadProgress(0);
+  setDownloadedBytes(0);
+  setTotalBytes(0);
+    toast.success(
+    <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+      Download cancelled successfully.
+    </p>,
+    { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
+  );
+};
+
 const handleDownloadComponent = async (exportid, file_name) => {
   if (downloadingFile) return;
 
-  setDownloadingFile(file_name);
+  const controller = new AbortController();
+  abortControllerRef.current = controller;
 
-  toast.success(
-    <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-      Preparing your file for download. This may take a few minutes for large files
-    </p>,
-    { position: toast.POSITION.TOP_RIGHT, hideProgressBar: false, theme: "colored", autoClose: 5000 },
-  );
+  setDownloadingFile(file_name);
+  setDownloadProgress(0);
+  setDownloadedBytes(0);
+  setTotalBytes(0);
 
   try {
-    const blob = await dispatch(downloadScenarioComponent({ exportid, file_name }));
+    const blob = await dispatch(
+      downloadScenarioComponent({
+        exportid,
+        file_name,
+        signal: controller.signal,
+        onProgress: (pct, loaded, total) => {
+          setDownloadProgress(pct);
+          setDownloadedBytes(loaded);
+          setTotalBytes(total);
+        },
+      })
+    );
+
     if (!blob) return;
     const url  = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -203,15 +278,25 @@ const handleDownloadComponent = async (exportid, file_name) => {
     link.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
+    console.log("errorerrorerrorerrorerror",error);
+    
+    // ← don't show error toast on cancel
+    if (error === "Something went wrong" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
+      return;
+    }
     console.error("Component download failed:", error);
-    toast.error(
-      <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-        Download failed: {error.message}
-      </p>,
-      { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
-    );
+    // toast.error(
+    //   <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+    //     Download failed: {error.message}
+    //   </p>,
+    //   { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
+    // );
   } finally {
+    abortControllerRef.current = null;
     setDownloadingFile(null);
+    setDownloadProgress(0);
+    setDownloadedBytes(0);
+    setTotalBytes(0);
   }
 };
   const handleChangeView = (thisView) => {
@@ -616,7 +701,36 @@ const onPaginationChanged = useCallback((params) => {
   );
 })}
 {/* ── Component Details Modal ── */}
-{componentModal.show && (
+
+              </Row>
+            ) : (
+              <Row>
+                <Col sm={12}>
+                  <Card className="custom-card">
+                    <Card.Body className="overflow-auto pd-t-10">
+                      <Row className="text-center" style={{ height: "70vh" }}>
+                        <Col md={10} className="mx-auto">
+                          <Card style={{ border: "none" }}>
+                            <Card.Body>
+                              <div className="text-center mt-5">
+                                <img
+                                  src={crossEvalicon.src}
+                                  alt="no-data"
+                                  className="wd-150 mt-5"
+                                />
+                                <h5 className="mt-4">Loading...</h5>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      </Row>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            ))}
+        </Col>
+        {componentModal.show && (
   <Modal
     show={componentModal.show}
     onHide={() => setComponentModal({ show: false, item: null })}
@@ -672,91 +786,134 @@ const onPaginationChanged = useCallback((params) => {
 
       ) : (
         <div className="d-flex flex-column gap-3">
-          {(componentDetails[componentModal.item?.exportid] || []).map((c, i) => {
-            const isCompDone   = c.status === "Completed";
-            const isCompFailed = c.status === "Failed";
-            const isProcessing = !isCompDone && !isCompFailed;
+         {(componentDetails[componentModal.item?.exportid] || []).map((c, i) => {
+  const isCompDone   = c.status === "Completed";
+  const isCompFailed = c.status === "Failed";
+  const isProcessing = !isCompDone && !isCompFailed;
+  const isThisDownloading = downloadingFile === c.file_name;
 
-            return (
-              <div key={i} style={{
-                borderRadius: "14px", padding: "14px 16px",
-                border: "1px solid #072c5c",
-                boxShadow: "0 2px 10px rgba(15,23,42,0.06)",
-              }}>
-                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+  return (
+    <div key={i} style={{
+      borderRadius: "14px",
+      border: "1px solid #072c5c",
+      boxShadow: "0 2px 10px rgba(15,23,42,0.06)",
+      overflow: "hidden",
+    }}>
+      {/* ── Main row ── */}
+      <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
 
-                  {/* Left — icon + info */}
-                  <div className="d-flex align-items-center gap-3">
-                    <div style={{
-                      width: "44px", height: "44px", borderRadius: "12px", flexShrink: 0,
-                      background: isCompDone ? "#ecfdf5" : isCompFailed ? "#fef2f2" : "#fff7ed",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <i className={`fa fs-5 ${
-                        isCompDone   ? "fa-check-circle text-success" :
-                        isCompFailed ? "fa-times-circle text-danger"  :
-                                       "fa-sync-alt fa-spin text-warning"
-                      }`} />
-                    </div>
+        {/* Left — icon + info */}
+        <div className="d-flex align-items-center gap-3">
+          <div style={{
+            width: "44px", height: "44px", borderRadius: "12px", flexShrink: 0,
+            background: isCompDone ? "#ecfdf5" : isCompFailed ? "#fef2f2" : "#fff7ed",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <i className={`fa fs-5 ${
+              isCompDone   ? "fa-check-circle text-success" :
+              isCompFailed ? "fa-times-circle text-danger"  :
+                             "fa-sync-alt fa-spin text-warning"
+            }`} />
+          </div>
+          <div>
+            <div className="fw-bold" style={{ fontSize: "14px" }}>{c.componentname}</div>
+            <div className="d-flex align-items-center gap-3 mt-1" style={{ fontSize: "11px", color: "#8fa3bb" }}>
+              <span><i className="fa fa-server me-1" />VMID: {c.vmid}</span>
+              <span><i className="fa fa-file me-1" />{c.file_name?.split("/").pop() || "No file"}</span>
+            </div>
+          </div>
+        </div>
 
-                    <div>
-                      <div className="fw-bold" style={{ fontSize: "14px" }}>
-                        {c.componentname}
-                      </div>
-                      <div className="d-flex align-items-center gap-3 mt-1"
-                        style={{ fontSize: "11px", color: "#8fa3bb" }}>
-                        <span><i className="fa fa-server me-1" />VMID: {c.vmid}</span>
-                        <span><i className="fa fa-file me-1" />{c.file_name?.split("/").pop() || "No file"}</span>
-                      </div>
-                    </div>
-                  </div>
+        {/* Right — status badge + download button */}
+        <div className="d-flex align-items-center gap-2">
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "5px",
+            padding: "5px 11px", borderRadius: "20px",
+            fontSize: "11px", fontWeight: 600,
+            background: isCompDone ? "#dcfce7" : isCompFailed ? "#fee2e2" : "#ffedd5",
+            color:      isCompDone ? "#166534" : isCompFailed ? "#b91c1c" : "#9a3412",
+          }}>
+            <span style={{
+              width: "7px", height: "7px", borderRadius: "50%", background: "currentColor",
+              animation: isProcessing ? "pulse 1.2s infinite" : "none",
+            }} />
+            {isCompDone ? "Completed" : isCompFailed ? "Failed" : "Processing"}
+          </span>
 
-                  {/* Right — status badge + download button */}
-                  <div className="d-flex align-items-center gap-2">
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: "5px",
-                      padding: "5px 11px", borderRadius: "20px",
-                      fontSize: "11px", fontWeight: 600,
-                      background: isCompDone ? "#dcfce7" : isCompFailed ? "#fee2e2" : "#ffedd5",
-                      color:      isCompDone ? "#166534" : isCompFailed ? "#b91c1c" : "#9a3412",
-                    }}>
-                      <span style={{
-                        width: "7px", height: "7px", borderRadius: "50%",
-                        background: "currentColor",
-                        animation: isProcessing ? "pulse 1.2s infinite" : "none",
-                      }} />
-                      {isCompDone ? "Completed" : isCompFailed ? "Failed" : "Processing"}
-                    </span>
-                    {isCompDone && c.file_name && (
-                      <button
-                        onClick={() => handleDownloadComponent(
-                          componentModal.item?.exportid,
-                          c.file_name
-                        )}
-                        disabled={downloadingFile === c.file_name}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: "6px",
-                          padding: "5px 13px", borderRadius: "8px", border: "none",
-                          background: downloadingFile === c.file_name ? "#6c757d" : "#0d6efd",
-                          color: "#fff", fontSize: "12px", fontWeight: 500,
-                          cursor: downloadingFile === c.file_name ? "not-allowed" : "pointer",
-                          whiteSpace: "nowrap", opacity: downloadingFile === c.file_name ? 0.7 : 1,
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        {downloadingFile === c.file_name ? (
-                          <><i className="fa fa-spinner fa-spin" /> Downloading…</>
-                        ) : (
-                          <><i className="fa fa-download" /> Download .zst</>
-                        )}
-                      </button>
-                    )}
-                  </div>
+          {isCompDone && c.file_name && (
+            <button
+              onClick={() => handleDownloadComponent(componentModal.item?.exportid, c.file_name)}
+              disabled={!!downloadingFile}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "5px 13px", borderRadius: "8px", border: "none",
+                background: isThisDownloading ? "#0d6efd" : downloadingFile ? "#6c757d" : "#0d6efd",
+                color: "#fff", fontSize: "12px", fontWeight: 500,
+                cursor: downloadingFile ? "not-allowed" : "pointer",
+                opacity: !isThisDownloading && downloadingFile ? 0.5 : 1,
+                transition: "all 0.2s",
+              }}
+            >
+              <i className={`fa ${isThisDownloading ? "fa-spinner fa-spin" : "fa-download"}`} />
+              {isThisDownloading ? "Downloading…" : "Download .zst"}
+            </button>
+          )}
+        </div>
+      </div>
 
-                </div>
-              </div>
-            );
-          })}
+      {/* ── Progress bar row — shown below when downloading ── */}
+      {isThisDownloading && (
+        <div style={{
+          padding: "0 16px 12px",
+          borderTop: "1px solid #1a3a5c",
+          paddingTop: "10px",
+        }}>
+          {/* Top row — % | size | cancel */}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            alignItems: "center", marginBottom: "6px",
+          }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#0d6efd" }}>
+              {downloadProgress}%
+            </span>
+            <span style={{ fontSize: "11px", color: "#6c757d" }}>
+              {formatBytes(downloadedBytes)} / {formatBytes(totalBytes)}
+            </span>
+            {/* Cancel button */}
+            <button
+              onClick={handleCancelDownload}
+              title="Cancel download"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "4px",
+                padding: "2px 8px", borderRadius: "6px",
+                border: "1px solid #dc3545", background: "transparent",
+                color: "#dc3545", fontSize: "11px", fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              <i className="fa fa-times" /> Cancel
+            </button>
+          </div>
+
+          {/* Progress track — full width */}
+          <div style={{
+            width: "100%", height: "6px", borderRadius: "10px",
+            background: "#1a3a5c", overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%",
+              width: `${downloadProgress}%`,
+              borderRadius: "10px",
+              background: "linear-gradient(90deg, #0d6efd, #0dcaf0)",
+              transition: "width 0.3s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+})}
         </div>
       )}
     </Modal.Body>
@@ -800,34 +957,6 @@ const onPaginationChanged = useCallback((params) => {
     </Modal.Footer>
   </Modal>
 )}
-              </Row>
-            ) : (
-              <Row>
-                <Col sm={12}>
-                  <Card className="custom-card">
-                    <Card.Body className="overflow-auto pd-t-10">
-                      <Row className="text-center" style={{ height: "70vh" }}>
-                        <Col md={10} className="mx-auto">
-                          <Card style={{ border: "none" }}>
-                            <Card.Body>
-                              <div className="text-center mt-5">
-                                <img
-                                  src={crossEvalicon.src}
-                                  alt="no-data"
-                                  className="wd-150 mt-5"
-                                />
-                                <h5 className="mt-4">Loading...</h5>
-                              </div>
-                            </Card.Body>
-                          </Card>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
-            ))}
-        </Col>
       </Row>
     </>
   );

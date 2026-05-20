@@ -1202,6 +1202,9 @@ async function getProxmoxConfig() {
       return null;
     }
   }
+const IMPORT_STORAGE = keys.IMPORT_STORAGE;
+const BACKUP_STORAGE = keys.BACKUP_STORAGE;
+
 
   async function takeBackup(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
@@ -1221,7 +1224,7 @@ async function getProxmoxConfig() {
     params.append("compress", "zstd");
     params.append("mode", "snapshot");
     params.append("vmid", vmid);
-    params.append("storage", "local");
+    params.append("storage", BACKUP_STORAGE);
 
     const config = {
       method: "post",
@@ -2289,7 +2292,6 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   }
 }
 
-const IMPORT_STORAGE = keys.IMPORT_STORAGE;
 const VMID_RANGE_START = keys.VMID_RANGE_START;
 const VMID_RANGE_END = keys.VMID_RANGE_END;
 
@@ -2379,8 +2381,8 @@ async function findFreeVmid() {
   );
 }
 
-async function restoreVM({ vmid, zstFile, vmType }) {
-  console.log("IMPORT_STORAGE:", IMPORT_STORAGE);
+async function restoreVM({ vmid, zstFile, vmType,proxmoxPath,storage }) {
+  console.log("storagestoragestoragestorage:", storage);
 
   if (!accessInfo?.cookie) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
@@ -2389,8 +2391,10 @@ async function restoreVM({ vmid, zstFile, vmType }) {
   const cfg              = await getProxmoxConfig();
   const start            = Date.now();
   const request_datetime = new Date();
+  const storageId = process.env.IMPORT_STORAGE || "bucket";
   const type             = vmType === "qemu" ? "qemu" : "lxc";
-  const volid            = `local:backup/${zstFile}`;
+  // const volid            = `local:backup/${zstFile}`;
+  const volid     = `bucket:backup/${zstFile}`;  
   const url              = `${constants.endpoint}/nodes/${cfg.current_node}/${type}`;
 
   console.log("url:", url);
@@ -2402,12 +2406,12 @@ async function restoreVM({ vmid, zstFile, vmType }) {
     ? {
         archive: volid,       // QEMU uses archive
         vmid:    String(vmid),
-        storage: IMPORT_STORAGE,
+        storage: storage,
       }
     : {
         ostemplate: volid,    // LXC uses ostemplate
         vmid:       String(vmid),
-        storage:    IMPORT_STORAGE,
+        storage:    storage,
         restore:    "1",      // LXC needs restore=1
         unique:     "1"
       };

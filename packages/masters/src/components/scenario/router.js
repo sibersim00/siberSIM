@@ -22,7 +22,6 @@ module.exports = function (iocContainer) {
   router.get("/exportlist",controller.exportList(iocContainer));
   router.get("/exportlist-inprogress", controller.exportListInProgress(iocContainer));
   router.post("/export_components",controller.exportcomponents(iocContainer));
-  router.post("/create-export",controller.createExport(iocContainer));
 
 
 

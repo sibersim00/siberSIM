@@ -278,15 +278,9 @@ const Home = () => {
       }
     }
   };
-
-console.log("directLoginDatadirectLoginData",directLoginData);
-console.log("loginSuccDataloginSuccDataloginSuccData",loginSuccData);
-
   useEffect(() => {
     if (directLoginData?.statusCode == 200) {
       let issuper = directLoginData?.data?.user?.issuper ? directLoginData?.data?.user?.issuper : false;
-      console.log("issuperissuperissuperissuperissuper",issuper);
-      
       if (!issuper && getCompanySettingsData?.redirect == false && getCompanySettingsData?.data?.licenseStatus.isStart==false) {
         let startDate = d_mmm_y(getCompanySettingsData?.data?.licenseStatus.start_date);
         dispatch(clearDispatchDirectLogin());
@@ -302,7 +296,6 @@ console.log("loginSuccDataloginSuccDataloginSuccData",loginSuccData);
         setTimeout(() => {
           if(issuper){
             const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-            console.log("allMatchesallMatchesallMatchesallMatches",allMatches);
             
             const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
             navigate.replace(source, "", { shallow: true });
@@ -367,7 +360,6 @@ console.log("loginSuccDataloginSuccDataloginSuccData",loginSuccData);
     dispatch(dispatchFromLoginOtp(payload));
 
   };
- console.log("setDatasetData",data)
   const [companySettings, setCompanySettings] = useState(null);
 
   useEffect(() => {

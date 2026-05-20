@@ -731,28 +731,63 @@ export function downloadScenarioZIP({ exportid, scenarioid }) {
   };
 }
 
-export function downloadScenarioComponent({ exportid, file_name }) {
+// export function downloadScenarioComponent({ exportid, file_name, onProgress}) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+
+//     try {
+//       const params = new URLSearchParams({ exportid, file_name });
+
+//       // const response = await axios.get(
+//       //   `${api.scenario_trigger_zst}?${params}`,
+//       //   {
+//       //     responseType: "blob",
+//       //   },
+//       // );
+//       const response = await axios.get(`${api.scenario_trigger_zst}`, {
+//         params:       { exportid, file_name },
+//         responseType: "blob",
+//         onDownloadProgress: (e) => {
+//           if (e.total && onProgress) {
+//             const pct = Math.round((e.loaded / e.total) * 100);
+//             onProgress(pct, e.loaded, e.total);
+//           }
+//         },
+//       });
+//       const blob = response?.data instanceof Blob ? response.data : response;
+//       dispatch(slice.actions.downloadScenarioExportSuccess(blob));
+//       return blob;
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+export function downloadScenarioComponent({ exportid, file_name, onProgress, signal }) {
   return async (dispatch) => {
-    dispatch(slice.actions.startLoading());
-
     try {
-      const params = new URLSearchParams({ exportid, file_name });
-
-      const response = await axios.get(
-        `${api.scenario_trigger_zst}?${params}`,
-        {
-          responseType: "blob",
+      const response = await axios.get(`${api.scenario_trigger_zst}`, {
+        params:       { exportid, file_name },
+        responseType: "blob",
+        signal,
+        onDownloadProgress: (e) => {
+          if (e.total && onProgress) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            onProgress(pct, e.loaded, e.total);
+          }
         },
-      );
+      });
       const blob = response?.data instanceof Blob ? response.data : response;
-      dispatch(slice.actions.downloadScenarioExportSuccess(blob));
       return blob;
     } catch (error) {
+      // ← fix cancel check
+      if (error?.name === "CanceledError" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
+        return null; // silent cancel
+      }
       dispatch(slice.actions.hasError(error));
+      throw error;
     }
   };
 }
-
 export function uploadComponentZst(payload, onProgress) {
   return async (dispatch) => {
     try {
@@ -762,6 +797,7 @@ export function uploadComponentZst(payload, onProgress) {
         {
           params:  { importid: payload.importid, vmFile: payload.vmFile },
           headers: { "Content-Type": "application/octet-stream" },
+          timeout: 0,
           onUploadProgress: (e) => {
             if (e.total && onProgress) {
               const pct = Math.round((e.loaded / e.total) * 100);

@@ -527,7 +527,6 @@ const onGridReady = useCallback((params) => {
   }, []);
 
   const handleEdit = (props) => {
-    console.log("propspropspropspropsprops",props)
     handleOneClick(false);
     if (props && props.scenariocategoryid) {
       setRowValues({
@@ -622,8 +621,6 @@ const onGridReady = useCallback((params) => {
       const imageUrl = data?.categoryimage
         ? `${process.env.API_URL_FILEMANAGER}${data.categoryimage}`
         : dummy_network;
-
-      console.log("Image URL:", imageUrl);
     },
   };
 

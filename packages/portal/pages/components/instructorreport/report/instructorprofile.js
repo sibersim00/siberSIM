@@ -314,8 +314,6 @@ const onGridReady = useCallback((params) => {
 
   const handleReturnView = (props) => {
     push(`/normalusers_view/${props?.learner_uuid}`);
-
-    console.log("props", props);
   };
   const frameworkComponents = {
     srNoRender: function (props) {
@@ -463,7 +461,6 @@ const onGridReady = useCallback((params) => {
               {gridData && gridData.length > 0 ? (
                 <Row className="row-sm">
                   {gridData.map((item, index) => {
-                    console.log("item", item);
                     const isValidMobile =
                       item?.mobile &&
                       String(item.mobile).trim() !== "" &&

@@ -138,9 +138,6 @@ const Dashboard = () => {
       (acc, curr) => acc + Number(curr.published_scenarios || 0),
       0,
     ) ?? 0;
-
-  console.log("rowDatarowDatarowData", rowData);
-
   return (
     <>
       <Seo title="Dashboard" />

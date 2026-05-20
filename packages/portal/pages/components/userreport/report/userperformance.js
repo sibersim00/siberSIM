@@ -56,8 +56,6 @@ const Userperformance = () => {
         state.userreportsManage.getuserperformancelist.data,
     };
   });
-  console.log("hasuserperformancelist",hasuserperformancelist)
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"));

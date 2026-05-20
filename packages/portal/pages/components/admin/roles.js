@@ -90,10 +90,6 @@ const Roles = () => {
       errorData: state && state.roles && state.roles.error,
     };
   });
-
-  console.log("listRoleDatalistRoleData",listRoleData);
-  
-
   useEffect(() => {
     dispatch(getListOfRole());
     dispatch(getComponentDetails("/roles"))
@@ -106,8 +102,6 @@ const Roles = () => {
         dispatch(getLocalStorageData("user"));
       }
     }, []);
-
-  console.log("listRoleDatalistRoleData", listRoleData)
   useEffect(() => {
     if (componentData) {
       setTitle(componentData?.title ? componentData.title : "");

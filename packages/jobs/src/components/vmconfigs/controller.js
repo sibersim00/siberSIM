@@ -1150,7 +1150,7 @@ const restartComponent =
       const fileSize = await new Promise((resolve, reject) => {
         sftp.stat(file_name, (err, stats) => {
           if (err) {
-            const e = new Error(`File not found on Proxmox: ${file_name}`);
+            const e = new Error(`File not found: ${file_name}`);
             e.statusCode = 400; // ← add this
             reject(e);
           } else {
@@ -1627,12 +1627,106 @@ const triggerImport =
     });
   };
 
+// const uploadComponentZst =
+//   ({ dao, db }) =>
+//   async (req, res, next) => {
+//     const ssh = new NodeSSH();
+//     try {
+//       const { importid, vmFile } = req.query;
+//       console.log("vmFilevmFilevmFilevmFile",vmFile);
+      
+
+//       if (!importid) return res.status(400).send({ statusCode: 400, message: "importid is required." });
+//       if (!vmFile)   return res.status(400).send({ statusCode: 400, message: "vmFile is required." });
+
+//       const importRecord = await dao.getImportById({ db })(importid);
+//       if (!importRecord) {
+//         return res.status(404).send({ statusCode: 404, message: "Import record not found." });
+//       }
+
+//       // ── Step 1: Save to Jobs disk ──────────────────────────────────
+//       const tmpDir  = path.join(__dirname, "../../..", "zst_tmp");
+//       fs.mkdirSync(tmpDir, { recursive: true });
+//       const tmpPath = path.join(tmpDir, `${importid}_${vmFile}`);
+
+//       await new Promise((resolve, reject) => {
+//         const writeStream = fs.createWriteStream(tmpPath);
+//         req.pipe(writeStream);
+//         writeStream.on("finish", resolve);
+//         writeStream.on("error",  reject);
+//         req.on("error",          reject);
+//       });
+
+//       console.log(`[Jobs] ✓ Saved to disk: ${tmpPath}`);
+
+//       // ── Mark as transferring in DB ─────────────────────────────────
+//       await dao.markComponentTransferring({ db })(importid, vmFile);
+
+//       // ── Respond immediately — don't hold the connection ────────────
+//       res.status(200).send({
+//         statusCode: 200,
+//         message:    "File received. Transferring to Proxmox in background.",
+//         data:       { received: true, transferring: true, vmFile },
+//       });
+
+//       // ── Step 2: Background SFTP transfer ───────────────────────────
+//       setImmediate(async () => {
+//         try {
+//           await ssh.connect({
+//             host:         process.env.PROXMOX_SSH_HOST,
+//             username:     process.env.PROXMOX_SSH_USER,
+//             password:     process.env.PROXMOX_SSH_PASSWORD,
+//             readyTimeout: 30000,
+//           });
+
+//           const sftp = await new Promise((resolve, reject) => {
+//             ssh.connection.sftp((err, s) => (err ? reject(err) : resolve(s)));
+//           });
+
+//           const remotePath  = `/var/lib/vz/dump/${vmFile}`;
+//           const readStream  = fs.createReadStream(tmpPath, {
+//             highWaterMark: 1024 * 1024, // 1MB chunks
+//           });
+//           const writeStream = sftp.createWriteStream(remotePath);
+
+//           await new Promise((resolve, reject) => {
+//             readStream.pipe(writeStream);
+//             writeStream.on("close", resolve);
+//             writeStream.on("error", reject);
+//             readStream.on("error",  reject);
+//           });
+
+//           ssh.dispose();
+//           fs.unlink(tmpPath, () => {});
+
+//           await dao.markComponentUploaded({ db })(importid, vmFile);
+//           console.log(`[Jobs BG] ✓ ${vmFile} → Proxmox done`);
+
+//         } catch (err) {
+//           ssh.dispose();
+//           try { fs.unlink(tmpPath, () => {}); } catch (_) {}
+//           await dao.markComponentFailed({ db })(importid, vmFile, err.message);
+//           console.error(`[Jobs BG] ✗ Transfer failed: ${err.message}`);
+//         }
+//       });
+
+//     } catch (err) {
+//       ssh.dispose();
+//       console.error("[Jobs] Error in uploadComponentZst:", err.message);
+//       if (!res.headersSent) {
+//         res.status(500).send({ statusCode: 500, message: err.message });
+//       }
+//     }
+//   };
+
+
 const uploadComponentZst =
   ({ dao, db }) =>
   async (req, res, next) => {
     const ssh = new NodeSSH();
     try {
       const { importid, vmFile } = req.query;
+      console.log("vmFilevmFilevmFilevmFile", vmFile);
 
       if (!importid) return res.status(400).send({ statusCode: 400, message: "importid is required." });
       if (!vmFile)   return res.status(400).send({ statusCode: 400, message: "vmFile is required." });
@@ -1642,34 +1736,56 @@ const uploadComponentZst =
         return res.status(404).send({ statusCode: 404, message: "Import record not found." });
       }
 
+      // ── Read proxmox_path from manifest ────────────────────────────
+      const manifestPath = path.join(
+        importRecord.extract_path,
+        "assets", "class_export", "class_manifest.json"
+      );
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const vmEntry  = manifest.vms?.find((v) => v.file === vmFile);
+
+      if (!vmEntry?.proxmox_path) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: `proxmox_path not found in manifest for file: ${vmFile}`
+        });
+      }
+
+      const remotePath = vmEntry.proxmox_path;
+      console.log(`[Jobs] Remote path: ${remotePath}`);
+
       // ── Step 1: Save to Jobs disk ──────────────────────────────────
       const tmpDir  = path.join(__dirname, "../../..", "zst_tmp");
       fs.mkdirSync(tmpDir, { recursive: true });
       const tmpPath = path.join(tmpDir, `${importid}_${vmFile}`);
 
-      await new Promise((resolve, reject) => {
-        const writeStream = fs.createWriteStream(tmpPath);
-        req.pipe(writeStream);
-        writeStream.on("finish", resolve);
-        writeStream.on("error",  reject);
-        req.on("error",          reject);
-      });
+      const diskWriteStream = fs.createWriteStream(tmpPath);
+      req.pipe(diskWriteStream); // ← start piping, don't await
 
-      console.log(`[Jobs] ✓ Saved to disk: ${tmpPath}`);
-
-      // ── Mark as transferring in DB ─────────────────────────────────
+      // ── Mark as transferring ───────────────────────────────────────
       await dao.markComponentTransferring({ db })(importid, vmFile);
 
-      // ── Respond immediately — don't hold the connection ────────────
+      // ── Respond immediately ────────────────────────────────────────
       res.status(200).send({
         statusCode: 200,
         message:    "File received. Transferring to Proxmox in background.",
-        data:       { received: true, transferring: true, vmFile },
+        data:       { received: true, transferring: true, uploaded: false, vmFile },
       });
 
-      // ── Step 2: Background SFTP transfer ───────────────────────────
+      // ── Step 2: Background — wait for disk, then SFTP ──────────────
       setImmediate(async () => {
         try {
+
+          // Wait for full file to land on disk
+          await new Promise((resolve, reject) => {
+            diskWriteStream.on("finish", resolve);
+            diskWriteStream.on("error",  reject);
+            req.on("error",              reject);
+          });
+
+          console.log(`[Jobs BG] ✓ Saved to disk: ${tmpPath}`);
+
+          // SSH connect
           await ssh.connect({
             host:         process.env.PROXMOX_SSH_HOST,
             username:     process.env.PROXMOX_SSH_USER,
@@ -1677,25 +1793,46 @@ const uploadComponentZst =
             readyTimeout: 30000,
           });
 
+          console.log(`[Jobs BG] SSH connected`);
+
+          // SFTP
           const sftp = await new Promise((resolve, reject) => {
             ssh.connection.sftp((err, s) => (err ? reject(err) : resolve(s)));
           });
 
-          const remotePath  = `/var/lib/vz/dump/${vmFile}`;
-          const readStream  = fs.createReadStream(tmpPath, {
-            highWaterMark: 1024 * 1024, // 1MB chunks
-          });
-          const writeStream = sftp.createWriteStream(remotePath);
+          const readStream      = fs.createReadStream(tmpPath, { highWaterMark: 1024 * 1024 });
+          const sftpWriteStream = sftp.createWriteStream(remotePath);
+          const totalBytes  = fs.statSync(tmpPath).size;
+          let transferredBytes = 0;
+          let lastLoggedPct    = 0;
 
+          readStream.on("data", (chunk) => {
+            transferredBytes += chunk.length;
+            const pct = Math.floor((transferredBytes / totalBytes) * 100);
+
+            // log every 10%
+            if (pct >= lastLoggedPct + 10) {
+              lastLoggedPct = pct;
+              console.log(
+                `[Jobs BG] Transferring ${vmFile}: ${pct}% ` +
+                `(${(transferredBytes / 1024 / 1024).toFixed(1)} MB / ${(totalBytes / 1024 / 1024).toFixed(1)} MB)`
+              );
+            }
+          });
+
+
+          console.log(`[Jobs BG] Streaming ${vmFile} → Proxmox at ${remotePath}`);
+
+          // Pipe disk → Proxmox
           await new Promise((resolve, reject) => {
-            readStream.pipe(writeStream);
-            writeStream.on("close", resolve);
-            writeStream.on("error", reject);
-            readStream.on("error",  reject);
+            readStream.pipe(sftpWriteStream);
+            sftpWriteStream.on("close", resolve);
+            sftpWriteStream.on("error", reject);
+            readStream.on("error",      reject);
           });
 
           ssh.dispose();
-          fs.unlink(tmpPath, () => {});
+          fs.unlink(tmpPath, () => {});  // ← delete from disk after transfer
 
           await dao.markComponentUploaded({ db })(importid, vmFile);
           console.log(`[Jobs BG] ✓ ${vmFile} → Proxmox done`);
@@ -1716,6 +1853,9 @@ const uploadComponentZst =
       }
     }
   };
+
+
+// polling api for the upload  
 const getZstUploadStatus =
   ({ dao, db }) =>
   async (req, res, next) => {
@@ -1745,7 +1885,7 @@ const startRestore =
   ({ dao, db }) =>
   async (req, res, next) => {
     try {
-      const { importid, vmFiles } = req.body;
+      const { importid, vmFiles,storage } = req.body;
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
@@ -1755,7 +1895,7 @@ const startRestore =
 
       //  vmFiles must be provided and non-empty
       if (!vmFiles || !Array.isArray(vmFiles) || vmFiles.length === 0) {
-        return res.status(400).send({ statusCode: 400, message: "vmFiles array is required." });
+        return res.status(400).send({ statusCode: 400, message: "vmFile is required." });
       }
 
       const importRecord = await dao.getImportById({ db })(importid);
@@ -1790,6 +1930,7 @@ const startRestore =
         customIdentification: importRecord.scenarioidentification,
         vmFiles,              //  only restore these files
         isFinalBatch:         allWillBeRestored, //  only insert to DB on final batch
+        storage,
       }).catch((err) => console.error("[startRestore] job error:", err));
 
     } catch (err) {
