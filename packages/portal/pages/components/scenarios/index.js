@@ -1482,7 +1482,7 @@ const onGridReady = useCallback((params) => {
         // localStorage.removeItem("activeImport");
       }}
       />
-                    {activeImportId && (
+                    {/* {activeImportId && (
   <div style={{
     position:     "fixed",
     bottom:       "24px",
@@ -1524,7 +1524,7 @@ const onGridReady = useCallback((params) => {
       View
     </button>
   </div>
-)}
+)} */}
     </>
   );
 };
