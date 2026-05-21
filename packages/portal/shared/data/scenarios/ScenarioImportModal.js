@@ -1316,16 +1316,16 @@ const isPollingPhase = Object.values(zstStatus).some(
                 >
                   Cancel
                 </button>
-                {/* <button
+                 <button
                   className="sim-btn sim-btn--primary"
                   onClick={() => handleSubmit()}
-                  disabled={!file || isImporting || restoring}
-                > */}
-                <button
+                  disabled={!file || isImporting || restoring} 
+                >
+                {/* <button
                     className="sim-btn sim-btn--primary"
                     onClick={() => setShowStorageModal(true)}
                     disabled={!file || isImporting || restoring}
-                  >
+                  > */}
                   {isImporting ? (
                     <><Loader size={14} strokeWidth={2} className="sim-spin" /> Importing…</>
                   ) : (
