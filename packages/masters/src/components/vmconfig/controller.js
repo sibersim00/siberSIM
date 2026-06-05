@@ -907,6 +907,9 @@ const downloadComponent = () => async (req, res) => {
   ({}) =>
   async (req, res, next) => {
     try {
+      console.log("req.body =", req.body);
+      console.log("readableEnded =", req.readableEnded);
+      console.log("complete =", req.complete);
       const { importid, vmFile } = req.query;
 
       if (!importid) return res.status(400).send({ statusCode: 400, message: "importid is required." });
@@ -914,23 +917,26 @@ const downloadComponent = () => async (req, res) => {
 
       const contentLength = req.headers["content-length"];
       console.log(`[Master] Forwarding ${vmFile} | Size: ${contentLength}`);
-
+      req.on("data", (chunk) => {
+        console.log("[MASTER] chunk", chunk.length);
+      });  
       const response = await axios.post(
-        `${EVENTLEARNER_API_URL}/vmconfigs/upload-zst`,
-        req,
-        {
-          params: { importid, vmFile },
-          headers: {
-            "Content-Type":   "application/octet-stream",
-            "Content-Length": contentLength,
-            authorization:    req.headers.authorization || "",
-          },
-          maxBodyLength:    Infinity,
-          maxContentLength: Infinity,
-          transformRequest: [(data) => data],
-          timeout:          0,
+      `${EVENTLEARNER_API_URL}/vmconfigs/upload-zst`,
+      req.body,                              // ← 2nd arg: the body (pipe req stream directly)
+      {                                 // ← 3rd arg: the config object
+        params: { importid, vmFile },
+        headers: {
+          "Content-Type":   "application/octet-stream",
+          "authorization":  req.headers.authorization || "",
+          "content-length": req.headers["content-length"], // ← forward original size!
+          "connection":     "keep-alive",
         },
-      );
+        maxBodyLength:    Infinity,
+        maxContentLength: Infinity,
+        transformRequest: [(data) => data],
+        timeout:          0,
+      },
+    );
 
       return res.status(200).send({
         statusCode: 200,

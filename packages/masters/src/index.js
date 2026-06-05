@@ -26,8 +26,11 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ limit: "10gb",extended: true }));
+// app.use(express.json());
+// app.use(express.urlencoded({ limit: "10gb",extended: true }));
+app.use(express.raw({ type: "application/octet-stream", limit: "10gb" }));
+app.use(express.json({ limit: "10gb" }));
+app.use(express.urlencoded({ limit: "10gb", extended: true }));
 app.use('/masterapi', router(iocContainer))
 app.get('/masterapi/health', (req, res) => {
     return res.status(200).send({ uptime: process.uptime(),message: 'Ok',date: new Date()});
