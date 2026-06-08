@@ -1204,16 +1204,17 @@ const deleteSnapshot =
       }
       let deleteResult;
 
-      if (vmType.toLowerCase() === "lxc") {
-        deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, snapname);
-      } else if (vmType.toLowerCase() === "qemu") {
-        deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, snapname);
-      } else {
-        return {
-          success: false,
-          message: "Invalid vmType. Must be 'lxc' or 'qemu'.",
-        };
-      }
+      // if (vmType.toLowerCase() === "lxc") {
+      //   deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, snapname);
+      // } else if (vmType.toLowerCase() === "qemu") {
+      //   deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, snapname);
+      // } else {
+      //   return {
+      //     success: false,
+      //     message: "Invalid vmType. Must be 'lxc' or 'qemu'.",
+      //   };
+      // }
+      deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, snapname,vmType);
 
       if (deleteResult?.status !== 200) {
         return {
@@ -1306,11 +1307,12 @@ const restoreSnapshot =
       for (const sname of snapshotsToDelete) {
         let deleteResult;
 
-        if (vmType.toLowerCase() === "lxc") {
-          deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, sname);
-        } else {
-          deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, sname);
-        }
+        // if (vmType.toLowerCase() === "lxc") {
+        //   deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, sname);
+        // } else {
+        //   deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, sname);
+        // }
+        deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, sname,vmType);
 
         if (deleteResult?.status !== 200) {
           return {
@@ -1374,19 +1376,26 @@ async function performRestore(
     return { success: false, message: `We couldn't authenticate with the server.Please try after some time` };
   }
   let restoreResult;
-  if (vmType.toLowerCase() === "lxc") {
-    restoreResult = await proxmoxService.restoreLXCSnapshot(
+  // if (vmType.toLowerCase() === "lxc") {
+  //   restoreResult = await proxmoxService.restoreLXCSnapshot(
+  //     vmid,
+  //     snapname,
+  //     startValue,
+  //   );
+  // } else {
+  //   restoreResult = await proxmoxService.restoreQEMUSnapshot(
+  //     vmid,
+  //     snapname,
+  //     startValue,
+  //   );
+  // }
+
+  restoreResult = await proxmoxService.restoreSnapshot(
       vmid,
       snapname,
       startValue,
+      vmType
     );
-  } else {
-    restoreResult = await proxmoxService.restoreQEMUSnapshot(
-      vmid,
-      snapname,
-      startValue,
-    );
-  }
 
   if (restoreResult?.status === 200) {
     return {
@@ -2055,11 +2064,9 @@ const checkBackupStatus =
 
             for (const line of lines) {
             if (line.t && line.t.includes("creating vzdump archive")) {
-              console.log("[DEBUG] Log line:", line.t); // ← see exact log line format
               const match = line.t.match(/creating vzdump archive '([^']+\.zst)'/);
               if (match) {
                 extractedFileName = match[1];
-                console.log("[DEBUG] Extracted path:", extractedFileName); // ← confirm full path
                 break;
               } else {
                 console.warn("[DEBUG] Regex did not match line:", line.t); // ← catch mismatch
@@ -2540,11 +2547,16 @@ const save =
         }
       }
       let vmDetailResponse;
-      if (vmType === "lxc") {
-        vmDetailResponse = await proxmoxService.LXC_Container_detail(newVmid);
-      } else {
-        vmDetailResponse = await proxmoxService.QEMU_VM_detail(newVmid);
-      }
+      // if (vmType === "lxc") {
+      //   vmDetailResponse = await proxmoxService.LXC_Container_detail(newVmid);
+      // } else {
+      //   vmDetailResponse = await proxmoxService.QEMU_VM_detail(newVmid);
+      // }
+
+        vmDetailResponse = await proxmoxService.VM_detail(newVmid,vmType);
+
+
+
       const proxmoxData = vmDetailResponse?.data?.data || {};
       const safeJson = (obj) =>
         obj && Object.keys(obj).length ? JSON.stringify(obj) : "{}";
@@ -2769,11 +2781,14 @@ const getVmConfig =
       }
       let result;
 
-      if (vmType === "qemu") {
-        result = await proxmoxService.getQemuConfig(vmid);
-      } else {
-        result = await proxmoxService.getLxcConfig(vmid);
-      }
+      // if (vmType === "qemu") {
+      //   result = await proxmoxService.getQemuConfig(vmid);
+      // } else {
+      //   result = await proxmoxService.getLxcConfig(vmid);
+      // }
+
+        result = await proxmoxService.getConfig(vmid,vmType);
+
 
       if (!result?.success) {
         return {
@@ -5274,8 +5289,9 @@ const runImportJob =
       }
 
       let s = {};
+      let scenarioFile = {}; 
       if (fs.existsSync(scenarioPath)) {
-        const scenarioFile = JSON.parse(fs.readFileSync(scenarioPath, "utf8"));
+        scenarioFile = JSON.parse(fs.readFileSync(scenarioPath, "utf8"));
         s = scenarioFile.scenario?.scenario || scenarioFile.scenario || scenarioFile;
       }
 
@@ -5379,58 +5395,181 @@ const runImportJob =
       }
 
       // ──  Only insert scenario to DB + mark Completed on FINAL batch ──
-      if (isFinalBatch) {
-        await updateImportStatus({ db })(importid, "Running", "Creating scenario in database...");
+      // if (isFinalBatch) {
+      //   await updateImportStatus({ db })(importid, "Running", "Creating scenario in database...");
 
-        await db.sequelize.query(
-          `INSERT INTO scenarios
-            (scenariotitle, scenarioidentification, scenariodescription, scenariolevel,
-             scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type,
-             scenarioimage, scenariodiagram, components, component_config, network_config,
-             instruction_file, duration, scenariostatus, status,
-             manipulation_flag, publishedon, createdby, createdon)
-           VALUES
-            (:title, :identification, :description, :level,
-             :categoryid, :subcategoryid, :instructor_id, :learner_id, :type,
-             :image, :diagram, :components, :component_config, :network_config,
-             :instruction_file, :duration, :scenariostatus , 'Active',
-             :manipulation_flag, NOW(), :userid, NOW())`,
-          {
-            replacements: {
-              title:             s.scenariotitle           || "Imported Scenario",
-              identification:    finalId,
-              description:       s.scenariodescription     || null,
-              level:             s.scenariolevel           || null,
-              categoryid:        s.scenariocategoryid      || null,
-              subcategoryid:     s.scenariosubcategoryid   || null,
-              instructor_id:     s.instructor_id           || null,
-              learner_id:        s.learner_id              || null,
-              type:              s.scenario_type           || null,
-              image:             s.scenarioimage           || null,
-              diagram:           s.scenariodiagram         || null,
-              components:        s.components              || null,
-              component_config:  s.component_config        || null,
-              network_config:    s.network_config          || null,
-              instruction_file:  s.instruction_file        || null,
-              duration:          s.duration                || 0,
-              scenariostatus:    s.scenariostatus          || "Publish",
-              manipulation_flag: s.manipulation_flag       || "true",
-              userid,
-            },
-            type: db.sequelize.QueryTypes.INSERT,
-          },
-        );
+      //   await db.sequelize.query(
+      //     `INSERT INTO scenarios
+      //       (scenariotitle, scenarioidentification, scenariodescription, scenariolevel,
+      //        scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type,
+      //        scenarioimage, scenariodiagram, components, component_config, network_config,
+      //        instruction_file, duration, scenariostatus, status,
+      //        manipulation_flag, publishedon, createdby, createdon)
+      //      VALUES
+      //       (:title, :identification, :description, :level,
+      //        :categoryid, :subcategoryid, :instructor_id, :learner_id, :type,
+      //        :image, :diagram, :components, :component_config, :network_config,
+      //        :instruction_file, :duration, :scenariostatus , 'Active',
+      //        :manipulation_flag, NOW(), :userid, NOW())`,
+      //     {
+      //       replacements: {
+      //         title:             s.scenariotitle           || "Imported Scenario",
+      //         identification:    finalId,
+      //         description:       s.scenariodescription     || null,
+      //         level:             s.scenariolevel           || null,
+      //         categoryid:        s.scenariocategoryid      || null,
+      //         subcategoryid:     s.scenariosubcategoryid   || null,
+      //         instructor_id:     s.instructor_id           || null,
+      //         learner_id:        s.learner_id              || null,
+      //         type:              s.scenario_type           || null,
+      //         image:             s.scenarioimage           || null,
+      //         diagram:           s.scenariodiagram         || null,
+      //         components:        s.components              || null,
+      //         component_config:  s.component_config        || null,
+      //         network_config:    s.network_config          || null,
+      //         instruction_file:  s.instruction_file        || null,
+      //         duration:          s.duration                || 0,
+      //         scenariostatus:    s.scenariostatus          || "Publish",
+      //         manipulation_flag: s.manipulation_flag       || "true",
+      //         userid,
+      //       },
+      //       type: db.sequelize.QueryTypes.INSERT,
+      //     },
+      //   );
 
-        console.log(`[runImportJob] ✓ Scenario inserted: ${finalId}`);
+      //   console.log(`[runImportJob] ✓ Scenario inserted: ${finalId}`);
 
-        //  Only cleanup files on final batch
-        try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch (_) {}
-        try { fs.unlinkSync(zipPath); } catch (_) {}
+      //   //  Only cleanup files on final batch
+      //   try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch (_) {}
+      //   try { fs.unlinkSync(zipPath); } catch (_) {}
 
-        await updateImportStatus({ db })(importid, "Completed",
-          `Import completed. ${restoredVmids.length} VM(s) restored.`);
+      //   await updateImportStatus({ db })(importid, "Completed",
+      //     `Import completed. ${restoredVmids.length} VM(s) restored.`);
 
-      } else {
+      // } 
+      // ── Only insert scenario to DB + mark Completed on FINAL batch ──
+if (isFinalBatch) {
+  await updateImportStatus({ db })(
+    importid,
+    "Running",
+    "Creating scenario in database...",
+  );
+
+  // ── Read componentDetails from scenario.json ──────────────────
+  const componentDetails =
+    scenarioFile?.scenario?.componentDetails ||
+    scenarioFile?.componentDetails ||
+    [];
+
+  await db.sequelize.query(
+    `INSERT INTO scenarios
+      (scenariotitle, scenarioidentification, scenariodescription, scenariolevel,
+       scenariocategoryid, scenariosubcategoryid, instructor_id, learner_id, scenario_type,
+       scenarioimage, scenariodiagram, components, component_config, network_config,
+       instruction_file, duration, scenariostatus, status,
+       manipulation_flag, publishedon, createdby, createdon)
+     VALUES
+      (:title, :identification, :description, :level,
+       :categoryid, :subcategoryid, :instructor_id, :learner_id, :type,
+       :image, :diagram, :components, :component_config, :network_config,
+       :instruction_file, :duration, :scenariostatus , 'Active',
+       :manipulation_flag, NOW(), :userid, NOW())`,
+    {
+      replacements: {
+        title: s.scenariotitle || "Imported Scenario",
+        identification: finalId,
+        description: s.scenariodescription || null,
+        level: s.scenariolevel || null,
+        categoryid: s.scenariocategoryid || null,
+        subcategoryid: s.scenariosubcategoryid || null,
+        instructor_id: s.instructor_id || null,
+        learner_id: s.learner_id || null,
+        type: s.scenario_type || null,
+        image: s.scenarioimage || null,
+        diagram: s.scenariodiagram || null,
+        components: s.components || null,
+        component_config: s.component_config || null,
+        network_config: s.network_config || null,
+        instruction_file: s.instruction_file || null,
+        duration: s.duration || 0,
+        scenariostatus: s.scenariostatus || "Publish",
+        manipulation_flag: s.manipulation_flag || "true",
+        userid,
+      },
+      type: db.sequelize.QueryTypes.INSERT,
+    },
+  );
+
+  console.log(`[runImportJob] ✓ Scenario inserted: ${finalId}`);
+
+  // ── Insert each restored VM into components table ─────────────
+  for (const restored of restoredVmids) {
+    // Match restored VM to its original componentDetails entry by name
+    const comp = componentDetails.find(
+      (c) => c.componentname === restored.name,
+    );
+    if (!comp) {
+      console.warn(
+        `[runImportJob] No componentDetails found for "${restored.name}", skipping component insert.`,
+      );
+      continue;
+    }
+
+    await db.sequelize.query(
+      `INSERT INTO components
+        (componentuuid, componentcategoryid, componenttype, vmid, componentname, vmid_name,
+         component_status, componentimage, duration, proxmox_json, network_bridge_name,
+         network_ports, cores, memory, storage, status, createdby, createdon)
+       VALUES
+        (UUID(), :componentcategoryid, :componenttype, :vmid, :componentname, :vmid_name,
+         :component_status, :componentimage, :duration, :proxmox_json, :network_bridge_name,
+         :network_ports, :cores, :memory, :storage, 'Active', :userid, NOW())`,
+      {
+        replacements: {
+          componentcategoryid: comp.componentcategoryid || null,
+          componenttype: (
+            restored.vmType ||
+            comp.componenttype ||
+            "QEMU"
+          ).toUpperCase(),
+          vmid: restored.targetVmid, // ← new VMID from Proxmox
+          componentname: comp.componentname,
+          vmid_name: comp.vmid_name || comp.componentname,
+          component_status: comp.component_status || "Public",
+          componentimage: comp.componentimage || null,
+          duration: comp.duration || 0,
+          proxmox_json: comp.proxmox_json || null,
+          network_bridge_name: comp.network_bridge_name || null,
+          network_ports: comp.network_ports || null,
+          cores: comp.cores || null,
+          memory: comp.memory || null,
+          storage: comp.storage || null,
+          userid,
+        },
+        type: db.sequelize.QueryTypes.INSERT,
+      },
+    );
+
+    console.log(
+      `[runImportJob] ✓ Component inserted: ${comp.componentname} → new VMID ${restored.targetVmid}`,
+    );
+    //  Only cleanup files on final batch
+  }
+  try {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+  } catch (_) {}
+  try {
+    fs.unlinkSync(zipPath);
+  } catch (_) {}
+
+  await updateImportStatus({ db })(
+    importid,
+    "Completed",
+    `Import completed. ${restoredVmids.length} VM(s) restored.`,
+  );
+}
+      
+      else {
         // ── Partial batch done — mark Running so frontend keeps polling ──
         await updateImportStatus({ db })(importid, "Running",
           `BatchCompleted: ${restoredVmids.map((v) => v.name).join(", ")}`);
