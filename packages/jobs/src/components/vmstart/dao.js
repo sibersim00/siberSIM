@@ -379,7 +379,7 @@ const updateCompleteTerminateVMRequest =
     let hasFailed = false;
 
     const [session] = await db.sequelize.query(
-      `SELECT vmrequestid, scenarioid, scenariodiagram,requestedby_id, requestedby_role,
+      `SELECT vmrequestid, scenarioid, node_name,scenariodiagram,requestedby_id, requestedby_role,
               vm_steps, network_bridges
        FROM vm_request
        WHERE vmrequestid = ? LIMIT 1`,
@@ -388,6 +388,9 @@ const updateCompleteTerminateVMRequest =
         type: db.sequelize.QueryTypes.SELECT,
       },
     );
+
+        const selectedNode = session.node_name || null;
+    console.log(`[updateCompleteTerminatelearner] Using node: ${selectedNode}`);
 
     let scenariodiagram;
     if (session?.scenariodiagram) {
@@ -468,6 +471,7 @@ const updateCompleteTerminateVMRequest =
         const stopResult = await proxmoxService.stopVM(
           vmid,
           componenttype.toLowerCase(),
+          selectedNode,
         );
 
         if (stopResult?.status === 200 && stopResult?.data) {
@@ -505,6 +509,7 @@ const updateCompleteTerminateVMRequest =
         const destroyResult = await proxmoxService.destroyVM(
           vmid,
           componenttype.toLowerCase(),
+          selectedNode
         );
         if (destroyResult?.status === 200 && destroyResult?.data) {
           vmConfig[vmid].destroy = true;
@@ -611,7 +616,7 @@ const updateCompleteTerminateVMRequest =
       }
     }
   };
-const deleteScenarioLearner =
+  const deleteScenarioLearner =
   ({ db, ipAddress }) =>
   async (vmrequestid) => {
     const DESTROYED = "Destroyed";
@@ -619,7 +624,7 @@ const deleteScenarioLearner =
 
     // Fetch session info
     const [session] = await db.sequelize.query(
-      `SELECT scenarioid, requestedby_id, vm_steps, network_bridges, scenariodiagram
+      `SELECT scenarioid, requestedby_id, vm_steps,node_name, network_bridges, scenariodiagram
        FROM  vm_request
        WHERE vmrequestid = ? LIMIT 1`,
       {
@@ -631,6 +636,8 @@ const deleteScenarioLearner =
     if (!session) {
       return { success: false, message: "Invalid scenario learner session." };
     }
+        const selectedNode = session.node_name || null;
+    console.log(`[updateCompleteTerminatelearner] Using node: ${selectedNode}`);
 
     // Reset diagram (mark nodes offline + remove attacks)
     let scenariodiagram;
@@ -702,7 +709,7 @@ const deleteScenarioLearner =
         // ----------------------------
         if (vmType === "lxc") {
           // LXC → DIRECT DESTROY
-          const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
+          const destroyRes = await proxmoxService.destroyVM(vmid, vmType,selectedNode);
 
           if (destroyRes?.status === 200) {
             await db.sequelize.query(
@@ -720,7 +727,7 @@ const deleteScenarioLearner =
           }
         } else if (vmType === "qemu") {
           // QEMU → STOP FIRST, THEN DESTROY
-          const stopRes = await proxmoxService.stopVM(vmid, vmType);
+          const stopRes = await proxmoxService.stopVM(vmid, vmType,selectedNode);
 
           if (stopRes?.status !== 200) {
             await handleFailureOnce(
@@ -731,7 +738,7 @@ const deleteScenarioLearner =
           // Wait before destroy (using your delay config)
           await sleep(await getTerminationDelay(db));
 
-          const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
+          const destroyRes = await proxmoxService.destroyVM(vmid, vmType,selectedNode);
 
           if (destroyRes?.status === 200) {
             await db.sequelize.query(
@@ -932,9 +939,24 @@ const startScenarioLearner =
         };
       }
 
+                  const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(`[startScenarioLearner] vmid: ${vmid}, node: ${selectedNode}`);
+
       const startResult = await proxmoxService.startVM(
         vmid,
         vmType.toLowerCase(),
+        selectedNode
       );
 
       if (startResult?.status === 200) {
@@ -976,10 +998,25 @@ const restartscenarioLearner =
         };
       }
 
+            const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(`[restartscenarioLearner] vmid: ${vmid}, node: ${selectedNode}`);
+
       //Stop the VM
       const stopResult = await proxmoxService.stopVM(
         vmid,
         vmType.toLowerCase(),
+        selectedNode
       );
       if (stopResult?.status !== 200) {
         return {
@@ -995,6 +1032,7 @@ const restartscenarioLearner =
       const startResult = await proxmoxService.startVM(
         vmid,
         vmType.toLowerCase(),
+        selectedNode
       );
 
       if (startResult?.status === 200) {
@@ -1023,7 +1061,7 @@ const createSnapshot =
     try {
       // Fetch config with componentname
       const vmConfig = await db.sequelize.query(
-        `SELECT master_vmid, learner_id, scenarioid, componentname
+        `SELECT master_vmid, learner_id, vmrequestid,scenarioid, componentname
          FROM vm_config
          WHERE vmid = ?
          LIMIT 1`,
@@ -1037,7 +1075,7 @@ const createSnapshot =
         return { success: false, message: `VM ID ${vmid} not found.` };
       }
 
-      const { master_vmid, learner_id, scenarioid, componentname } =
+      const { master_vmid, vmrequestid,learner_id, scenarioid, componentname } =
         vmConfig[0];
 
       // Fetch active snapshots (limit = 3)
@@ -1103,10 +1141,20 @@ const createSnapshot =
         return { success: false, message: `Proxmox connection failed.` };
       }
 
+        const [vmRequestRow] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid = ? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestRow?.node_name || null;
+      console.log(`[createSnapshot] vmid: ${vmid}, node: ${selectedNode}`);
+
       let snapshotResult;
 
       if (vmType.toLowerCase() === "lxc") {
-        snapshotResult = await proxmoxService.createLXCSnapshot(vmid, snapname);
+        snapshotResult = await proxmoxService.createLXCSnapshot(vmid, snapname,selectedNode);
       } else {
         if (!vmstate)
           return { success: false, message: "vmstate required for QEMU." };
@@ -1115,6 +1163,7 @@ const createSnapshot =
           vmid,
           snapname,
           vmstate,
+          selectedNode
         );
       }
 
@@ -1166,18 +1215,28 @@ const deleteSnapshot =
           message: `Could not connect to the Proxmox server for VM ID ${vmid}.`,
         };
       }
-      let deleteResult;
+      
+      // ★ Fetch node_name from vm_request using vmid
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(`[deleteSnapshot] vmid: ${vmid}, node: ${selectedNode}`);
 
-      if (vmType.toLowerCase() === "lxc") {
-        deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, snapname);
-      } else if (vmType.toLowerCase() === "qemu") {
-        deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, snapname);
-      } else {
-        return {
-          success: false,
-          message: "Invalid vmType. Must be 'lxc' or 'qemu'.",
-        };
-      }
+      const deleteResult = await proxmoxService.deleteSnapshot(
+        vmid,
+        snapname,
+        vmType,
+        selectedNode,  // ★
+      );
 
       if (deleteResult?.status !== 200) {
         return {
@@ -1249,6 +1308,20 @@ const restoreSnapshot =
         return { success: false, message: `Failed to connect to Proxmox.` };
       }
 
+        const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(`[restoreSnapshot] vmid: ${vmid}, node: ${selectedNode}`);
+
       // If selected snapshot IS the latest → restore directly
       if (snapname === latestSnapshot) {
         const result = await performRestore(
@@ -1258,6 +1331,7 @@ const restoreSnapshot =
           startValue,
           ipAddress,
           db,
+          selectedNode
         );
 
         if (result.success) {
@@ -1285,13 +1359,12 @@ const restoreSnapshot =
 
       // 1️⃣ Delete snapshots AFTER the selected one
       for (const sname of snapshotsToDelete) {
-        let deleteResult;
-
-        if (vmType.toLowerCase() === "lxc") {
-          deleteResult = await proxmoxService.deleteLXCSnapshot(vmid, sname);
-        } else {
-          deleteResult = await proxmoxService.deleteQEMUSnapshot(vmid, sname);
-        }
+        const deleteResult = await proxmoxService.deleteSnapshot(
+          vmid,
+          sname,
+          vmType,
+          selectedNode,  // ★
+        );
 
         if (deleteResult?.status !== 200) {
           return {
@@ -1321,6 +1394,7 @@ const restoreSnapshot =
         startValue,
         ipAddress,
         db,
+        selectedNode
       );
 
       if (restoreResult.success) {
@@ -1354,6 +1428,7 @@ async function performRestore(
   startValue,
   ipAddress,
   db,
+  selectedNode = null,
 ) {
   const proxmoxService = ProxMoxService(
     db,
@@ -1366,21 +1441,13 @@ async function performRestore(
     return { success: false, message: `Failed to connect to Proxmox.` };
   }
 
-  let restoreResult;
-
-  if (vmType.toLowerCase() === "lxc") {
-    restoreResult = await proxmoxService.restoreLXCSnapshot(
-      vmid,
-      snapname,
-      startValue,
-    );
-  } else {
-    restoreResult = await proxmoxService.restoreQEMUSnapshot(
-      vmid,
-      snapname,
-      startValue,
-    );
-  }
+  const restoreResult = await proxmoxService.restoreSnapshot(
+    vmid,
+    snapname,
+    startValue,
+    vmType,
+    selectedNode,  // ★
+  );
 
   if (restoreResult?.status === 200) {
     return {
@@ -1432,6 +1499,17 @@ const pauseScenarioLearner =
           message: "No VM components found for this VM request.",
         };
       }
+
+      const [vmRequestRow] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid = ? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestRow?.node_name || null;
+      console.log(`[pauseScenarioLearner] vmrequestid: ${vmrequestid}, node: ${selectedNode}`);
+
       const hibernateDelayMs = await getHibernateDelay(db);
       let allSuccess = true;
       let proxmoxFailed = false;
@@ -1456,9 +1534,9 @@ const pauseScenarioLearner =
         // -------- Pause / Stop VM --------
         let pauseResult;
         if (vmType === "qemu") {
-          pauseResult = await proxmoxService.pauseVM(vmid, vmType);
+          pauseResult = await proxmoxService.pauseVM(vmid, vmType,selectedNode);
         } else if (vmType === "lxc") {
-          pauseResult = await proxmoxService.stopVM(vmid, vmType);
+          pauseResult = await proxmoxService.stopVM(vmid, vmType,selectedNode);
         } else {
           allSuccess = false;
           proxmoxFailed = true;
@@ -1515,9 +1593,9 @@ const pauseScenarioLearner =
             const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
             await proxmoxService.generateAccessTicket();
             if (vmType === "qemu") {
-              await proxmoxService.resumeVM(vmid, vmType);
+              await proxmoxService.resumeVM(vmid, vmType,selectedNode);
             } else if (vmType === "lxc") {
-              await proxmoxService.startVM(vmid, vmType);
+              await proxmoxService.startVM(vmid, vmType,selectedNode);
             }
             await db.sequelize.query(
               `UPDATE vm_config
@@ -1576,6 +1654,16 @@ const resumeScenarioLearner =
         };
       }
 
+            const [vmRequestRow] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid = ? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestRow?.node_name || null;
+      console.log(`[resumeScenarioLearner] vmrequestid: ${vmrequestid}, node: ${selectedNode}`);
+
       const hibernateDelayMs = await getHibernateDelay(db);
 
       let allSuccess = true;
@@ -1604,9 +1692,9 @@ const resumeScenarioLearner =
         // -------- Resume / Start VM --------
         let resumeResult;
         if (vmType === "qemu") {
-          resumeResult = await proxmoxService.resumeVM(vmid, vmType);
+          resumeResult = await proxmoxService.resumeVM(vmid, vmType,selectedNode);
         } else if (vmType === "lxc") {
-          resumeResult = await proxmoxService.startVM(vmid, vmType);
+          resumeResult = await proxmoxService.startVM(vmid, vmType,selectedNode);
         } else {
           allSuccess = false;
           proxmoxFailed = true;
@@ -1665,9 +1753,9 @@ const resumeScenarioLearner =
             await proxmoxService.generateAccessTicket();
 
             if (vmType === "qemu") {
-              await proxmoxService.pauseVM(vmid, vmType);
+              await proxmoxService.pauseVM(vmid, vmType,selectedNode);
             } else if (vmType === "lxc") {
-              await proxmoxService.stopVM(vmid, vmType);
+              await proxmoxService.stopVM(vmid, vmType,selectedNode);
             }
             await db.sequelize.query(
               `UPDATE vm_config

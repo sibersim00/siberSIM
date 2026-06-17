@@ -69,6 +69,7 @@ class NotiTemplate {
       proxmox_terminate: "proxmox_terminate",
       component_approval: "component_approval",
       component_status_notification: "component_status_notification", 
+      Lab_Start_Reminder: "Lab_Start_Reminder",
     };
     return obj[field];
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -35,6 +35,10 @@ import { useTranslation } from "react-i18next";
 import crossEvalicon from "../../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../../public/assets/img/dummy.jpg";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ScenarioSubCategory = () => {
   const dispatch = useDispatch();
   const [compStatus, setCompStatus] = useState("true");
@@ -55,6 +59,9 @@ const ScenarioSubCategory = () => {
     categoryimage:""
   });
   const [oneClick, setOneClick] = useState(false);
+      const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const {
     listCatData,
     addCatData,
@@ -242,15 +249,33 @@ const ScenarioSubCategory = () => {
   //   const timestamp = new Date().toISOString().replace(/[-T:\.]/g, '').slice(0, 15);// YYYYMMDD_HHMMSS
   //    XLSX.writeFile(workbook,`${formattedMenuName.replace(/\s+/g, '_')}_${timestamp}.xlsx`);
   // };
-
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
+ const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
   const onFilterChanged = (data) => {
     setQuickFilter(data);
@@ -502,7 +527,6 @@ const ScenarioSubCategory = () => {
   }, []);
 
   const handleEdit = (props) => {
-    console.log("propspropspropspropsprops",props)
     handleOneClick(false);
     if (props && props.scenariocategoryid) {
       setRowValues({
@@ -597,8 +621,6 @@ const ScenarioSubCategory = () => {
       const imageUrl = data?.categoryimage
         ? `${process.env.API_URL_FILEMANAGER}${data.categoryimage}`
         : dummy_network;
-
-      console.log("Image URL:", imageUrl);
     },
   };
 
@@ -748,7 +770,11 @@ const ScenarioSubCategory = () => {
                 {view == "list" ? (
                   <div
                     className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="staff_grid"
@@ -759,8 +785,10 @@ const ScenarioSubCategory = () => {
                       columnDefs={columnDefs}
                       pagination={true}
                       onGridReady={onGridReady}
+                      paginationPageSize={20}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                      onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>
                   </div>
                 ) : (

@@ -63,9 +63,6 @@ export default function ProxmoxConsole() {
   const handleSelectSnapshot = (snapshotId) => {
     setSelectedSnapshotId(snapshotId);
   };
-  console.log("snapshotApiDatasnapshotApiData", snapshotApiData);
-  console.log("snapshotApiDatasnapshotApiDat123a", snapshotApiData1);
-
   const updateStatus = (msg) => setStatus(msg);
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -79,7 +76,6 @@ export default function ProxmoxConsole() {
   } else {
     realVmid = vmid || "";
   }
-  console.log("vmType", vmType);
   const fetchVNCTicket = async () => {
     const res = await fetch(
       backend.replace(/^ws/, "http") +
@@ -327,8 +323,6 @@ export default function ProxmoxConsole() {
         snapshot_name: s.snapshot_name,
         createdon: s.createdon,
       }));
-      console.log("formattedformattedformattedformattedformatted", formatted);
-
       setSnapshotList(formatted);
     }
 
@@ -336,8 +330,6 @@ export default function ProxmoxConsole() {
       setLocalSnapshots(snapshotApiData.data);
     }
   }, [snapshotApiData]);
-  console.log("snapshotListsnapshotListsnapshotList", snapshotList);
-
   useEffect(() => {
     if (realVmid && vmType) {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));

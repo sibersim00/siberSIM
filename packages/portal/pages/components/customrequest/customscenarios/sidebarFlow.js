@@ -116,7 +116,6 @@ const sidebarFlow = ({
       setRowValues(getScenarioFlowchart);
     }
   }, [getScenarioFlowchart])
-  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -246,8 +245,6 @@ const handleCategoryChange = (selectedOption) => {
       setcopyModal(true);
     }
   };
-console.log("imageNodeDataimageNodeData",imageNodeData);
-
   useEffect(() => {
   if (imageNodeData && imageNodeData.length > 0) {
     const updated = imageNodeData.map((node) => {
@@ -261,7 +258,6 @@ console.log("imageNodeDataimageNodeData",imageNodeData);
     });
     const changed = JSON.stringify(updated) !== JSON.stringify(imageNodeData);
     if (changed) {
-      console.log("Fixed missing image URLs after render");
       setImageNodeData(updated);
     }
   }

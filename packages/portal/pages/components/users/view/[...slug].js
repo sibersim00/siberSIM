@@ -49,9 +49,6 @@ const NormalUsersView = () => {
         state.normalUSerData.normaluserInfoResp.data,
     };
   });
-
-  console.log("hasgetNormalusersInfoSucc", hasgetNormalusersInfoSucc);
-
   useEffect(() => {
     if (hasgetNormalusersInfoSucc && hasgetNormalusersInfoSucc !== "") {
       setRowValues(hasgetNormalusersInfoSucc);
@@ -64,14 +61,8 @@ const NormalUsersView = () => {
       dispatch(getNormalusersInfo(query.slug[0]));
     }
   }, [query.slug]);
-  console.log("query.slug:", query.slug);
-
   // Static data
-
   const [activeTab, setActiveTab] = useState("profile");
-
-  console.log("rowValues",rowValues);
-
   return (
     <>
       <Seo title="Learners" />

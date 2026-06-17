@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   Row,
@@ -32,6 +32,10 @@ import * as XLSX from "xlsx";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 
+const ROW_HEIGHT = 50;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const Adminuser = () => {
   const dispatch = useDispatch();
   const [openImportModal, setOpenImportModal] = useState(false);
@@ -50,6 +54,10 @@ const Adminuser = () => {
     isactive: true,
     empcode_prefix: "",
   });
+
+      const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
 
   const [oneClick, setOneClick] = useState(false);
   const {
@@ -215,13 +223,33 @@ const Adminuser = () => {
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
+   const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); 
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
   const onFilterChanged = (data) => {
     setQuickFilter(data);
@@ -684,7 +712,11 @@ const Adminuser = () => {
                 {view == "list" ? (
                   <div
                     className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="cat_grid"
@@ -696,8 +728,10 @@ const Adminuser = () => {
                       columnDefs={columnDefs}
                       pagination={true}
                       onGridReady={onGridReady}
+                      paginationPageSize={20}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                        onPaginationChanged={onPaginationChanged} //  track page size changes
                       
                     ></AgGridReact>
                   </div>

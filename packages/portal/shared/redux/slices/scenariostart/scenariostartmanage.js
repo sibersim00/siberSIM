@@ -349,7 +349,6 @@ export function canresumescenario(payload) {
     try {
       const response = await axios.post(`${api.can_resume_admin}`, payload);
       dispatch(slice.actions.hasGetresume(response));
-      console.log("responseresponseresprrrrrrrrrrrronse",response)
       return response.data;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -429,13 +428,11 @@ export function clearSingleScenarios() {
 //   };
 // }
 export function updateSessionStatus(payload) {
-  console.log("payloadpayloadpayloadpayload",payload);
-  
+
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.scenario_status_update}`, payload);
-      console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaa",response);
       dispatch(slice.actions.hasGetUpdateSessionStatusSucc(response));
       return response;
     } catch (error) {
@@ -508,14 +505,11 @@ export function clearGetChatMessages() {
 }
 
 export function saveChatMessage(payload) {
-  console.log("-----------------------------------------")
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
-
-      console.log("response", response)
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -557,16 +551,12 @@ export function clearchatMessageSeen() {
 }
 
 export function getLogs(payload) {
-  console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-
       const response = await axios.post(`${api.get_logs}`, payload);
-
       dispatch(slice.actions.hasGetLogsListData(response.data));
     } catch (error) {
-
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -688,18 +678,6 @@ export function clearGetSnapshot() {
   };
 }
 
-// export function deleteSnapshot(payload) {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.delete(`${api.delete_snapshot}`, payload);
-//       dispatch(slice.actions.hasDeleteSnapshot(response.data));
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
-
 export function deleteSnapshot(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -764,7 +742,6 @@ export function saveCustomComponent(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.save_vmDetails}`, payload);
-      console.log("response", response)
       dispatch(slice.actions.hasGetSaveCustomComponentSucc(response.data.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

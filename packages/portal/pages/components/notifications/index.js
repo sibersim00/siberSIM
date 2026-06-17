@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo} from 'react'
+import React, {useState, useEffect, useMemo , useRef,useCallback } from 'react'
 import { Row,Col,Card,Button,OverlayTrigger,Tooltip} from "react-bootstrap";
 import TB from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
@@ -13,6 +13,10 @@ import { getNotiTemplateList, getSelectors,saveTemplate, clearHasError, clearSav
 import Swal from "sweetalert2";
 import EditViewTemplate from '../../../shared/data/noticonfigs/editViewTemplate';
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const NotiConfigs = () => {
   const { t } = useTranslation();
   const [templateStatus, setTemplateStatus] = useState("Active");
@@ -22,6 +26,9 @@ const NotiConfigs = () => {
   const [gridApi, setGridApi] = useState(null);
   const dispatch = useDispatch();
 	const [openOffcanvas, setOpenOffcanvas] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
 	const [rowValues, setRowValues] = useState({
 		name : "",
 		body : "",
@@ -172,13 +179,32 @@ const NotiConfigs = () => {
   }, []);
 
   const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, // use state variable for page size
-  };
-
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+      headerHeight: HEADER_HEIGHT,
+      rowHeight: ROW_HEIGHT,
+      suppressScrollOnNewData: true,
+    };
+  
+  const onGridReady = useCallback((params) => {
+    gridRef.current = params.api;
+  
+    // Set correct height on first load as well
+    const initialPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(initialPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }, []);
+    
+      // Fires when page size changes via the built-in dropdown
+     const onPaginationChanged = useCallback((params) => {
+    if (params.api) {
+      const newPageSize = params.api.paginationGetPageSize();
+      const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+  
+      // Use whichever is smaller — actual rows vs page size
+      const effectiveRows = Math.min(newPageSize, totalRows);
+      setPageSize(effectiveRows);
+    }
+  }, []);
 	const onFilterChanged = (data) => {
     gridApi.setQuickFilter(data);
     setQuickFilter(data);
@@ -294,8 +320,12 @@ const NotiConfigs = () => {
               </div>
 
 							<div
-								className="ag-theme-alpine mg-t-20"
-								style={{ height: "40.2em", width: "100%" }}
+							 className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
 							>
 								<AgGridReact
 									id="staff_grid"
@@ -304,10 +334,12 @@ const NotiConfigs = () => {
 									columnDefs={columnDefs}
 									pagination={true}
 									onGridReady={onGridReady}
+                  paginationPageSize={20}
 									components={frameworkComponents}
 									defaultColDef={defaultColDef}
 									overlayNoRowsTemplate="No data available"
 									suppressRowClickSelection={true}
+                    onPaginationChanged={onPaginationChanged} //  track page size changes
 								></AgGridReact>
 							</div>
             </Card.Body>

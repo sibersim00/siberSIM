@@ -1,10 +1,282 @@
 const axios = require("axios");
 const constants = require("./constants");
+const keys = require("../../../keys");
 const https = require("https");
 const validator = require("validator");
 let accessInfo = null;
 
 function ProxMoxService(db, payload, ip_address) {
+
+async function getProxmoxConfig() {
+  const [results] = await db.sequelize.query(
+    `SELECT 
+      proxmox_host         AS endpoint,
+      proxmox_username     AS username,
+      proxmox_password     AS password,
+      proxmox_current_node AS current_node,
+      proxmox_other_node   AS other_nodes,
+      cluster_task_type    AS cluster_method
+     FROM web_settings
+     WHERE status = 1
+     LIMIT 1`,
+    { type: db.sequelize.QueryTypes.SELECT }
+  );
+  if (!results) throw new Error("Proxmox config not found in web_settings.");
+
+  return {
+    endpoint:        results.endpoint,
+    username:         results.username,
+    password:         results.password,
+    current_node:     results.current_node,
+    other_nodes:       results.other_nodes,
+    cluster_method:    results.cluster_method || "RoundRobin",
+  };
+}
+
+  // async function selectNode() {
+  //   const cfg = await getProxmoxConfig();
+
+  //   const primary = cfg.current_node?.trim();
+  //   const others = (cfg.other_nodes || "")
+  //     .split(",")
+  //     .map((n) => n.trim())
+  //     .filter(Boolean);
+
+  //   const nodes = [primary, ...others].filter(Boolean);
+
+  //   if (nodes.length <= 1) {
+  //     console.log(`[selectNode] Only one node available: ${nodes[0]}`);
+  //     return nodes[0];
+  //   }
+
+  //   const rows = await db.sequelize.query(
+  //     `SELECT node_name, COUNT(*) AS cnt
+  //      FROM vm_request
+  //      WHERE node_name IN (:nodes)
+  //        AND status NOT IN ('Completed','Terminated','Failed')
+  //      GROUP BY node_name`,
+  //     {
+  //       replacements: { nodes },
+  //       type: db.sequelize.QueryTypes.SELECT,
+  //     }
+  //   );
+
+  //   const countMap = {};
+  //   nodes.forEach((n) => (countMap[n] = 0));
+  //   rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
+
+  //   let selected = nodes[0];
+  //   let minCount = countMap[nodes[0]];
+  //   for (let i = 1; i < nodes.length; i++) {
+  //     if (countMap[nodes[i]] < minCount) {
+  //       minCount = countMap[nodes[i]];
+  //       selected = nodes[i];
+  //     }
+  //   }
+
+  //   console.log(`[selectNode] Counts:`, countMap, `→ selected: ${selected}`);
+  //   return selected;
+  // }
+
+  async function getProxmoxConfig() {
+  const [results] = await db.sequelize.query(
+    `SELECT 
+      proxmox_host         AS endpoint,
+      proxmox_username     AS username,
+      proxmox_password     AS password,
+      proxmox_current_node AS current_node,
+      proxmox_other_node   AS other_nodes,
+      cluster_task_type    AS cluster_method
+     FROM web_settings
+     WHERE status = 1
+     LIMIT 1`,
+    { type: db.sequelize.QueryTypes.SELECT }
+  );
+  if (!results) throw new Error("Proxmox config not found in web_settings.");
+
+  return {
+    endpoint:        results.endpoint,
+    username:         results.username,
+    password:         results.password,
+    current_node:     results.current_node,
+    other_nodes:       results.other_nodes,
+    cluster_method:    results.cluster_method || constants.DEFAULT_CLUSTER_METHOD,
+  };
+}
+
+async function selectNode() {
+  const cfg = await getProxmoxConfig();
+
+  const primary = cfg.current_node?.trim();
+  const others = (cfg.other_nodes || "")
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean);
+
+  const nodes = [primary, ...others].filter(Boolean);
+
+  if (nodes.length <= 1) {
+    console.log(`[selectNode] Only one node available: ${nodes[0]}`);
+    return nodes[0];
+  }
+
+  console.log(`[selectNode] Using cluster method: ${cfg.cluster_method}`);
+
+  switch (cfg.cluster_method) {
+    case constants.CLUSTER_METHODS.ROUND_ROBIN:
+      return await selectNodeRoundRobin(nodes);
+    case constants.CLUSTER_METHODS.LEAST_LOADED:
+      return await selectNodeLeastLoaded(nodes);
+    case constants.CLUSTER_METHODS.WEIGHTED:
+      return await selectNodeWeighted(nodes);
+    case constants.CLUSTER_METHODS.THRESHOLD:
+      return await selectNodeThreshold(nodes, cfg.current_node);
+    default:
+      console.warn(`[selectNode] Unknown method "${cfg.cluster_method}", defaulting to ${constants.DEFAULT_CLUSTER_METHOD}`);
+      return await selectNodeRoundRobin(nodes);
+  }
+}
+
+// ───────────────────────────────────────────────
+// RoundRobin: alternate strictly based on the last assigned node
+// ───────────────────────────────────────────────
+async function selectNodeRoundRobin(nodes) {
+  const [lastRow] = await db.sequelize.query(
+    `SELECT node_name FROM vm_request
+     WHERE node_name IS NOT NULL
+     ORDER BY createdon DESC
+     LIMIT 1`,
+    { type: db.sequelize.QueryTypes.SELECT }
+  );
+
+  if (!lastRow || !lastRow.node_name) {
+    console.log(`[selectNodeRoundRobin] No previous node found, selecting first: ${nodes[0]}`);
+    return nodes[0];
+  }
+
+  const lastIndex = nodes.indexOf(lastRow.node_name);
+  const nextIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % nodes.length;
+  const selected = nodes[nextIndex];
+
+  console.log(`[selectNodeRoundRobin] Last: ${lastRow.node_name} → Next: ${selected}`);
+  return selected;
+}
+
+// ───────────────────────────────────────────────
+// LeastLoaded: pick the node with fewest active VM requests (your original logic)
+// ───────────────────────────────────────────────
+async function selectNodeLeastLoaded(nodes) {
+  const rows = await db.sequelize.query(
+    `SELECT node_name, COUNT(*) AS cnt
+     FROM vm_request
+     WHERE node_name IN (:nodes)
+       AND status NOT IN ('Completed','Terminated','Failed')
+     GROUP BY node_name`,
+    {
+      replacements: { nodes },
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const countMap = {};
+  nodes.forEach((n) => (countMap[n] = 0));
+  rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
+
+  let selected = nodes[0];
+  let minCount = countMap[nodes[0]];
+  for (let i = 1; i < nodes.length; i++) {
+    if (countMap[nodes[i]] < minCount) {
+      minCount = countMap[nodes[i]];
+      selected = nodes[i];
+    }
+  }
+
+  console.log(`[selectNodeLeastLoaded] Counts:`, countMap, `→ selected: ${selected}`);
+  return selected;
+}
+
+// ───────────────────────────────────────────────
+// Weighted: pick node based on assigned weight (capacity ratio)
+// NOTE: requires a weights map — for now sourced from other_nodes string format
+// e.g. "sibersim1:3,sibersim2:1" meaning sibersim1 gets picked 3x more often
+// Adjust the parsing below to match how you plan to store weights.
+// ───────────────────────────────────────────────
+async function selectNodeWeighted(nodes) {
+  const cfg = await getProxmoxConfig();
+
+  // Expect other_nodes optionally formatted as "node:weight,node:weight"
+  // Falls back to equal weight (1) if no weight specified
+  const weightMap = {};
+  nodes.forEach((n) => (weightMap[n] = 1)); // default weight
+
+  (cfg.other_nodes || "").split(",").forEach((entry) => {
+    const [name, weight] = entry.split(":").map((s) => s?.trim());
+    if (name && weight && !isNaN(weight)) {
+      weightMap[name] = parseInt(weight, 10);
+    }
+  });
+
+  const totalWeight = nodes.reduce((sum, n) => sum + (weightMap[n] || 1), 0);
+  let rand = Math.random() * totalWeight;
+
+  let selected = nodes[0];
+  for (const n of nodes) {
+    rand -= weightMap[n] || 1;
+    if (rand <= 0) {
+      selected = n;
+      break;
+    }
+  }
+
+  console.log(`[selectNodeWeighted] Weights:`, weightMap, `→ selected: ${selected}`);
+  return selected;
+}
+
+// ───────────────────────────────────────────────
+// Threshold: stick with current_node until it hits a load threshold,
+// then overflow to other nodes
+// ───────────────────────────────────────────────
+async function selectNodeThreshold(nodes, primaryNode, threshold = constants.NODE_LOAD_THRESHOLD) {
+  const rows = await db.sequelize.query(
+    `SELECT node_name, COUNT(*) AS cnt
+     FROM vm_request
+     WHERE node_name IN (:nodes)
+       AND status NOT IN ('Completed','Terminated','Failed')
+     GROUP BY node_name`,
+    {
+      replacements: { nodes },
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const countMap = {};
+  nodes.forEach((n) => (countMap[n] = 0));
+  rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
+
+  const primaryLoad = countMap[primaryNode] || 0;
+
+  if (primaryLoad < threshold) {
+    console.log(`[selectNodeThreshold] Primary "${primaryNode}" load ${primaryLoad} < ${threshold}, staying on primary`);
+    return primaryNode;
+  }
+
+  // Overflow: pick least loaded among the rest
+  const others = nodes.filter((n) => n !== primaryNode);
+  let selected = others[0];
+  let minCount = countMap[others[0]] ?? 0;
+
+  for (let i = 1; i < others.length; i++) {
+    if ((countMap[others[i]] ?? 0) < minCount) {
+      minCount = countMap[others[i]];
+      selected = others[i];
+    }
+  }
+
+  console.log(`[selectNodeThreshold] Primary "${primaryNode}" overloaded (${primaryLoad}), overflowing to: ${selected}`);
+  return selected;
+}
+
+
   async function logApiRequest({
     api_end_point,
     vm_process,
@@ -72,10 +344,11 @@ function ProxMoxService(db, payload, ip_address) {
   async function generateAccessTicket() {
     const start = Date.now();
     const request_datetime = new Date();
+    const cfg = await getProxmoxConfig(); 
 
     const formData = new URLSearchParams();
-    formData.append("username", constants.username);
-    formData.append("password", constants.password);
+    formData.append("username", cfg.username);
+    formData.append("password", cfg.password);
 
     const config = {
       method: "post",
@@ -133,57 +406,16 @@ function ProxMoxService(db, payload, ip_address) {
       };
     }
   }
-  async function QEMU_List() {
-    if (!accessInfo?.cookie)
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
 
-    const start = Date.now();
-    const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu`;
 
-    const config = {
-      method: "get",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/json",
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.QEMU_LIST,
-      );
-      return response.data;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.QEMU_LIST,
-      );
-      throw error;
-    }
-  }
-  async function QEMU_VM_detail(vmid) {
+  async function VM_detail(vmid,vmType) {
     if (!accessInfo?.cookie) throw new Error("Access info not initialized.");
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/config`;
+    const cfg = await getProxmoxConfig(); 
+      const type = vmType.toLowerCase();
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
+  }
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${type}/${vmid}/config`;
     const config = {
       method: "get",
       url,
@@ -224,179 +456,260 @@ function ProxMoxService(db, payload, ip_address) {
       throw error;
     }
   }
-  async function LXC_List() {
-    if (!accessInfo?.cookie) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
+  // ----------------------------VM Confugration Functions----------------------------------------);
 
-    const start = Date.now();
-    const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc`;
+  // async function cloneVM(vmType, newid, name, sourceVMID,selectedNode = null) {
+  //   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+  //     throw new Error(
+  //       "Access info not initialized. Call generateAccessTicket first.",
+  //     );
+  //   }
+  //   const cfg = await getProxmoxConfig();
+  //   const start = Date.now();
+  //   const request_datetime = new Date();
+  //   const targetNode = selectedNode || cfg.current_node;
+  //   const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${sourceVMID}/clone`;
 
-    const config = {
-      method: "get",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/json",
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
+  //   const params = new URLSearchParams();
+  //   params.append("newid", newid);
+  //   params.append("full", `${constants.full}`);
+  //   if (vmType === constants.VM_TYPES.QEMU) {
+  //     params.append("name", name);
+  //   } else {
+  //     params.append("hostname", name);
+  //   }
 
+  //   const config = {
+  //     method: "post",
+  //     url,
+  //     headers: {
+  //       Cookie: accessInfo.cookie,
+  //       "Content-Type": "application/x-www-form-urlencoded",
+  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+  //     },
+  //     data: params.toString(),
+  //     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  //   };
+
+  //   try {
+  //     const response = await axios.request(config);
+  //     await logApiRequestData(
+  //       start,
+  //       request_datetime,
+  //       config,
+  //       response.status.toString(),
+  //       response.data,
+  //       null,
+  //       constants.VM_PROCESSES.CLONE_VM,
+  //     );
+  //     return response;
+  //   } catch (error) {
+  //     const errorCode = error?.response?.status?.toString() || "ERR";
+  //     const errorMessage = error?.response?.data || error.toString();
+  //     await logApiRequestData(
+  //       start,
+  //       request_datetime,
+  //       config,
+  //       errorCode,
+  //       errorMessage,
+  //       error,
+  //       constants.VM_PROCESSES.CLONE_VM,
+  //     );
+  //     console.error("Error in cloning VM:", errorMessage);
+  //     return false;
+  //   }
+  // }
+
+async function cloneVM(vmType, newid, name, sourceVMID, selectedNode = null) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+
+  const cfg        = await getProxmoxConfig();
+  const sourceNode = cfg.current_node; // "sibersim"
+  const start = Date.now();
+  const request_datetime = new Date();
+
+  //  Clone ALWAYS happens on sourceNode — never cross-node here
+  const url = `${constants.endpoint}/nodes/${sourceNode}/${vmType}/${sourceVMID}/clone`;
+
+  const params = new URLSearchParams();
+  params.append("newid", newid);
+  params.append("full", constants.CLONE_TYPE.FULL);
+
+  if (vmType === constants.VM_TYPES.QEMU) {
+    params.append("name", name);
+  } else {
+    params.append("hostname", name);
+  }
+
+  //  Place the cloned disk on shared storage so migration works later
+  params.append("storage", constants.SHARED_STORAGE);
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data: params.toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+    await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, constants.VM_PROCESSES.CLONE_VM);
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+    await logApiRequestData(start, request_datetime, config, errorCode, errorMessage, error, constants.VM_PROCESSES.CLONE_VM);
+    console.error("Error in cloning VM:", errorMessage);
+    return false;
+  }
+}
+
+async function migrateVM(vmType, vmid, sourceNode, targetNode) {
+  if (!accessInfo?.cookie) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+
+  const start            = Date.now();
+  const request_datetime = new Date();
+  const type             = vmType.toLowerCase();
+
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
+  }
+
+  const url = `${constants.endpoint}/nodes/${sourceNode}/${type}/${vmid}/migrate`;
+
+  const params = new URLSearchParams();
+  params.append("target", targetNode);
+
+  // ✅ Disk is on shared 'bank' — no disk move needed, so drop with-local-disks/targetstorage
+  if (type === constants.VM_TYPES.QEMU) {
+    params.append("online", "0"); // offline migration before start
+  }
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie:              accessInfo.cookie,
+      "Content-Type":      "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data:       params.toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+    await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, constants.VM_PROCESSES.MIGRATE_VM);
+    console.log(`[migrateVM] Migration task started for ${vmid} → ${targetNode}`);
+    return response;
+  } catch (error) {
+    const errorCode    = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+    await logApiRequestData(start, request_datetime, config, errorCode, errorMessage, error, constants.VM_PROCESSES.MIGRATE_VM);
+    console.error("Error in migrating VM:", errorMessage);
+    return null;
+  }
+}
+
+async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_MS, intervalMs = constants.TASK_POLL.INTERVAL_MS) {
+  if (!accessInfo?.cookie) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+  console.log("upidupidupidupidupidupidupid",upid);
+  
+
+  const start            = Date.now();
+  const request_datetime = new Date();
+  const deadline         = Date.now() + timeoutMs;
+  const upidNode = upid.split(":")[1] || node;
+  const encodedUpid = encodeURIComponent(upid);
+  console.log("encodedUpidencodedUpidencodedUpid",encodedUpid);
+  
+  const url = `${constants.endpoint}/nodes/${upidNode}/tasks/${encodedUpid}/status`;
+
+  console.log(`[waitForTask] Polling task on node: ${upidNode}, URL: ${url}`);
+
+  while (Date.now() < deadline) {
     try {
-      const response = await axios.request(config);
+      const config = {
+        method: "get",
+        url,
+        headers: {
+          Cookie:              accessInfo.cookie,
+          CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+        },
+        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      };
+
+      const response   = await axios.request(config);
+      const status     = response.data?.data?.status;
+      const exitStatus = response.data?.data?.exitstatus;
+
+      // Fix 1: Pass only simple scalars — no objects/headers in logApiRequestData
       await logApiRequestData(
         start,
         request_datetime,
-        config,
+        config, // ← strip headers to avoid ? mismatch
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.LXC_LIST,
+        constants.VM_PROCESSES.WAIT_FOR_TASK,
       );
-      return response.data;
+
+      console.log(`[waitForTask] UPID: ${upid} | status: ${status} | exit: ${exitStatus}`);
+
+      if (status === "stopped") {
+        return exitStatus === "OK";
+      }
     } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
+      const errorCode    = error?.response?.status?.toString() || "ERR";
       const errorMessage = error?.response?.data || error.toString();
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.LXC_LIST,
-      );
-      console.error("Error in listing LXC containers:", errorMessage);
-      return null;
+
+      try {
+        await logApiRequestData(
+          start,
+          request_datetime,
+          { method: "get", url, headers: {} },
+          errorCode,
+          errorMessage,
+          error,
+          constants.VM_PROCESSES.WAIT_FOR_TASK,
+        );
+      } catch (logErr) {
+        console.error("[waitForTask] Log error:", logErr.message);
+      }
+
+      console.error("[waitForTask] Poll error:", errorMessage);
     }
+
+    //  Fix 3: inline sleep instead of relying on imported util
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
-  async function LXC_Container_detail(vmid) {
-    if (!accessInfo?.cookie) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
 
-    const start = Date.now();
-    const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/config`;
+  console.error(`[waitForTask] Timed out waiting for task ${upid}`);
+  return false;
+}
 
-    const config = {
-      method: "get",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/json",
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null, // 👈 This is the `error` parameter
-        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL,
-      );
-      return response;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.LXC_CONTAINER_DETAIL,
-      );
-      console.error(
-        `Error in fetching container ${vmid} config:`,
-        errorMessage,
-      );
-      throw error;
-    }
-  }
-  // ----------------------------VM Confugration Functions----------------------------------------
-  console.log("aaaaaaaaaaaaaaaaaaa", accessInfo);
-
-  async function cloneVM(vmType, newid, name, sourceVMID) {
+  async function configureVM(vmid, vmType, networkConfig = {},selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${sourceVMID}/clone`;
-
-    const params = new URLSearchParams();
-    params.append("newid", newid);
-    params.append("full", `${constants.full}`);
-    if (vmType === "qemu") {
-      params.append("name", name);
-    } else {
-      params.append("hostname", name);
-    }
-
-    const config = {
-      method: "post",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/x-www-form-urlencoded",
-        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-      },
-      data: params.toString(),
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.CLONE_VM,
-      );
-      return response;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.CLONE_VM,
-      );
-      console.error("Error in cloning VM:", errorMessage);
-      return false;
-    }
-  }
-
-  async function configureVM(vmid, vmType, networkConfig = {}) {
-    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
-    const start = Date.now();
-    const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
     const params = new URLSearchParams();
     for (const [adapterKey, configStr] of Object.entries(networkConfig)) {
@@ -444,16 +757,18 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function startVM(vmid, vmType) {
+  async function startVM(vmid, vmType, selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/start`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/start`;
 
     const config = {
       method: "post",
@@ -495,72 +810,18 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  // async function stopVM(vmid, vmType) {
-  //   console.log("vmidffff, vmTypeeeee",vmid, vmType)
-  //   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-  //     throw new Error(
-  //       "Access info not initialized. Call generateAccessTicket first."
-  //     );
-  //   }
-
-  //   const start = Date.now();
-  //   const request_datetime = new Date();
-  //   const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/stop`;
-
-  //   const config = {
-  //     method: "post",
-  //     url,
-  //     headers: {
-  //       Cookie: accessInfo.cookie,
-  //       "Content-Type": "application/x-www-form-urlencoded",
-  //       CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-  //     },
-  //     httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-  //   };
-
-  //   try {
-  //     const response = await axios.request(config);
-  //     console.log("responseresponse",response)
-  //     await logApiRequestData(
-  //       start,
-  //       request_datetime,
-  //       config,
-  //       response.status.toString(),
-  //       response.data,
-  //       null,
-  //       constants.VM_PROCESSES.STOP_VM
-  //     );
-  //     return response;
-
-  //   } catch (error) {
-  //     const errorCode = error?.response?.status?.toString() || "ERR";
-  //     const errorMessage = error?.response?.data || error.toString();
-  //     await logApiRequestData(
-  //       start,
-  //       request_datetime,
-  //       config,
-  //       errorCode,
-  //       errorMessage,
-  //       error,
-  //       constants.VM_PROCESSES.STOP_VM
-  //     );
-  //     console.error("Error in stopping VM:", errorMessage);
-  //     return null;
-  //   }
-  // }
-
-  async function stopVM(vmid, vmType) {
-    console.log("vmid, vmType", vmid, vmType);
-
+  async function stopVM(vmid, vmType,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/stop`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/stop`;
 
     const config = {
       method: "post",
@@ -616,16 +877,18 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function destroyVM(vmid, vmType) {
+  async function destroyVM(vmid, vmType,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}`;
 
     const config = {
       method: "delete",
@@ -678,13 +941,14 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
     const config = {
       method: "get",
-      url: `${constants.endpoint}/nodes/${constants.current_node}/network`,
+      url: `${constants.endpoint}/nodes/${cfg.current_node}/network`,
       headers: {
         Cookie: accessInfo.cookie,
         "Content-Type": "application/json",
@@ -721,12 +985,13 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function createQEMUSnapshot(vmid, snapname, vmstate) {
+  async function createQEMUSnapshot(vmid, snapname, vmstate,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     if (!snapname) {
       throw new Error("Snapshot name (snapname) is required.");
@@ -734,8 +999,8 @@ function ProxMoxService(db, payload, ip_address) {
 
     const start = Date.now();
     const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/snapshot`;
 
     const formData = new URLSearchParams();
     formData.append("snapname", snapname);
@@ -786,205 +1051,74 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function deleteQEMUSnapshot(vmid, snapname) {
-    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
-
-    if (!snapname) {
-      throw new Error("Snapshot name (snapname) is required.");
-    }
-
-    const start = Date.now();
-    const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot/${snapname}`;
-
-    const config = {
-      method: "delete",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/x-www-form-urlencoded",
-        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT,
-      );
-
-      return response;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT,
-      );
-
-      console.error("Error deleting QEMU snapshot:", errorMessage);
-      return false;
-    }
+  async function deleteSnapshot(vmid, snapname, vmType,selectedNode = null) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
   }
 
-  async function deleteLXCSnapshot(vmid, snapname) {
-    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
+  const cfg = await getProxmoxConfig();
 
-    if (!snapname) {
-      throw new Error("Snapshot name (snapname) is required.");
-    }
+  if (!snapname) throw new Error("Snapshot name (snapname) is required.");
 
-    const start = Date.now();
-    const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot/${snapname}`;
-
-    const config = {
-      method: "delete",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/x-www-form-urlencoded",
-        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT,
-      );
-
-      return response;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT,
-      );
-
-      console.error("Error deleting LXC snapshot:", errorMessage);
-      return false;
-    }
+  const type = vmType.toLowerCase();
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
-  async function restoreLXCSnapshot(vmid, snapname, startValue) {
+  const logConstant =
+    type === constants.VM_TYPES.QEMU
+      ? constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
+      : constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT;
+
+  const start = Date.now();
+  const request_datetime = new Date();
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}`;
+
+  const config = {
+    method: "delete",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      "Content-Type": "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+    await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, logConstant);
+    return response;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+    await logApiRequestData(start, request_datetime, config, errorCode, errorMessage, error, logConstant);
+    console.error(`Error deleting ${type.toUpperCase()} snapshot:`, errorMessage);
+    return false;
+  }
+}
+
+  async function restoreSnapshot(vmid, snapname, startValue,vmType,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
-
-    if (!snapname) {
-      throw new Error("Snapshot name (snapname) is required.");
-    }
-
-    const start = Date.now();
-    const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot/${snapname}/rollback`;
-
-    const formData = new URLSearchParams();
-    formData.append("start", startValue); // must be passed explicitly (1 or 0)
-
-    const config = {
-      method: "post",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie,
-        "Content-Type": "application/x-www-form-urlencoded",
-        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-      },
-      data: formData.toString(),
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    try {
-      const response = await axios.request(config);
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT,
-      );
-
-      return response;
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorMessage = error?.response?.data || error.toString();
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorMessage,
-        error,
-        constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT,
-      );
-
-      console.error("Error restoring LXC snapshot:", errorMessage);
-      return false;
-    }
+    const cfg = await getProxmoxConfig();
+      const type = vmType.toLowerCase();
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
-  async function restoreQEMUSnapshot(vmid, snapname, startValue) {
-    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
-
     if (!snapname) {
       throw new Error("Snapshot name (snapname) is required.");
     }
 
     const start = Date.now();
     const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/snapshot/${snapname}/rollback`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}/rollback`;
 
     const formData = new URLSearchParams();
     formData.append("start", startValue); // must be provided (1 or 0)
@@ -1001,6 +1135,11 @@ function ProxMoxService(db, payload, ip_address) {
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
 
+    const restoreProcess =
+      type === constants.VM_TYPES.QEMU
+        ? constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
+        : constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT;
+
     try {
       const response = await axios.request(config);
 
@@ -1011,7 +1150,7 @@ function ProxMoxService(db, payload, ip_address) {
         response.status.toString(),
         response.data,
         null,
-        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT,
+        restoreProcess,
       );
 
       return response;
@@ -1026,26 +1165,27 @@ function ProxMoxService(db, payload, ip_address) {
         errorCode,
         errorMessage,
         error,
-        constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT,
+        restoreProcess,
       );
 
-      console.error("Error restoring QEMU snapshot:", errorMessage);
+      console.error(`Error restoring ${type} snapshot:`, errorMessage);
       return false;
     }
   }
 
-  async function pauseVM(vmid, vmType) {
+  async function pauseVM(vmid, vmType,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-
+    const targetNode = selectedNode || cfg.current_node;
     // Suspend URL (QEMU only): /status/suspend
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/suspend`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/suspend`;
 
     const config = {
       method: "post",
@@ -1094,18 +1234,19 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function resumeVM(vmid, vmType) {
+  async function resumeVM(vmid, vmType,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-
+    const targetNode = selectedNode || cfg.current_node;
     // Resume URL: /status/resume
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/status/resume`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/resume`;
 
     const config = {
       method: "post",
@@ -1158,11 +1299,12 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/tasks/${upid}/status`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/status`;
 
     const config = {
       method: "get",
@@ -1206,6 +1348,9 @@ function ProxMoxService(db, payload, ip_address) {
       return null;
     }
   }
+const IMPORT_STORAGE = keys.IMPORT_STORAGE;
+const BACKUP_STORAGE = keys.BACKUP_STORAGE;
+
 
   async function takeBackup(vmid) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
@@ -1213,18 +1358,19 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/vzdump`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/vzdump`;
 
     // Build URL-encoded form-data body
     const params = new URLSearchParams();
     params.append("compress", "zstd");
     params.append("mode", "snapshot");
     params.append("vmid", vmid);
-    params.append("storage", "bucket");
+    params.append("storage", BACKUP_STORAGE);
 
     const config = {
       method: "post",
@@ -1281,11 +1427,12 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/tasks/${upid}/log`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/log`;
 
     const config = {
       method: "get",
@@ -1330,12 +1477,13 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function createLXCSnapshot(vmid, snapname) {
+  async function createLXCSnapshot(vmid, snapname,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     if (!snapname) {
       throw new Error("Snapshot name (snapname) is required.");
@@ -1343,8 +1491,8 @@ function ProxMoxService(db, payload, ip_address) {
 
     const start = Date.now();
     const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/snapshot`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/snapshot`;
 
     const config = {
       method: "post",
@@ -1370,7 +1518,6 @@ function ProxMoxService(db, payload, ip_address) {
         null,
         constants.VM_PROCESSES.SNAPSHOT_LXC,
       );
-      console.log("responseresponse");
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1397,11 +1544,12 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/clone`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/clone`;
 
     const body = new URLSearchParams({
       newid: data.newid,
@@ -1409,9 +1557,6 @@ function ProxMoxService(db, payload, ip_address) {
       full: data.full,
       snapname: data.snapname,
     }).toString();
-
-    console.log("bodyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", body);
-
     const config = {
       method: "post",
       url,
@@ -1423,8 +1568,6 @@ function ProxMoxService(db, payload, ip_address) {
       data: body,
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-    console.log("configconfigconfigconfigconfig", config);
-
     try {
       const response = await axios.request(config);
 
@@ -1437,7 +1580,6 @@ function ProxMoxService(db, payload, ip_address) {
         null,
         constants.VM_PROCESSES.CLONE_LXC,
       );
-      console.log("responseresponseresponse", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1464,14 +1606,13 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/template`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/template`;
     // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
-
-    console.log("urlurlurl", url);
     const config = {
       method: "post",
       url,
@@ -1482,8 +1623,6 @@ function ProxMoxService(db, payload, ip_address) {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-    console.log("configconfigconfigconfig", config);
-
     try {
       const response = await axios.request(config);
 
@@ -1496,7 +1635,6 @@ function ProxMoxService(db, payload, ip_address) {
         null,
         constants.VM_PROCESSES.TEMPLATE_LXC,
       );
-      console.log("responserespon222222222222222", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1540,82 +1678,20 @@ function ProxMoxService(db, payload, ip_address) {
     // }
   }
 
-//   async function cloneQEMU(vmid, newid ,name = null) {
-//     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-//       throw new Error(
-//         "Access info not initialized. Call generateAccessTicket first.",
-//       );
-//     }
-
-//     const start = Date.now();
-//     const request_datetime = new Date();
-
-//     const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
-
-//      // ADD name ONLY if provided
-//     const params = new URLSearchParams({ newid });
-//     if (name) {
-//       params.append("name", name);
-//     }
-//  const body = new URLSearchParams({ newid }).toString();
-
-//     const config = {
-//       method: "post",
-//       url,
-//       headers: {
-//         Cookie: accessInfo.cookie,
-//         "Content-Type": "application/x-www-form-urlencoded",
-//         CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-//       },
-//       data: body,
-//       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-//     };
-
-//     try {
-//       const response = await axios.request(config);
-
-//       await logApiRequestData(
-//         start,
-//         request_datetime,
-//         config,
-//         response.status.toString(),
-//         response.data,
-//         null,
-//         constants.VM_PROCESSES.CLONE_QEMU,
-//       );
-
-//       return response;
-//     } catch (error) {
-//       const errorCode = error?.response?.status?.toString() || "ERR";
-//       const errorMessage = error?.response?.data || error.toString();
-
-//       await logApiRequestData(
-//         start,
-//         request_datetime,
-//         config,
-//         errorCode,
-//         errorMessage,
-//         error,
-//         constants.VM_PROCESSES.CLONE_QEMU,
-//       );
-
-//       console.error("Error in cloneQEMU:", errorMessage);
-//       return null;
-//     }
-//   }
   async function cloneQEMU(vmid, newid, name = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/clone`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/clone`;
 
-    // 🔥 ADD name ONLY if provided
+    // ADD name ONLY if provided
     const params = new URLSearchParams({ newid });
     if (name) {
       params.append("name", name);
@@ -1673,11 +1749,12 @@ function ProxMoxService(db, payload, ip_address) {
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/template`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/template`;
 
     const config = {
       method: "post",
@@ -1702,7 +1779,6 @@ function ProxMoxService(db, payload, ip_address) {
         null,
         constants.VM_PROCESSES.TEMPLATE_QEMU,
       );
-      console.log("response1111111111111", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1722,93 +1798,23 @@ function ProxMoxService(db, payload, ip_address) {
       return null;
     }
   }
-  async function getQemuConfig(vmid) {
-    console.log("vmid:", vmid);
 
+  async function getConfig(vmid,vmType) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
-
-    const start = Date.now();
-    const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/qemu/${vmid}/config`;
-    console.log("URL:", url);
-
-    const config = {
-      method: "get",
-      url,
-      headers: {
-        Cookie: accessInfo.cookie, // ⬅ Same as your Postman header
-        CSRFPreventionToken: accessInfo.CSRFPreventionToken,
-        "Content-Type": "application/json",
-      },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-    };
-
-    console.log("Request Config:", config);
-
-    try {
-      const response = await axios.request(config);
-
-      console.log("QEMU CONFIG SUCCESS:", response.data);
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        response.status?.toString(),
-        response.data,
-        null,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG,
-      );
-
-      return {
-        success: true,
-        vmid,
-        data: response.data,
-        message: "VM config fetched successfully.",
-      };
-    } catch (error) {
-      const errorCode = error?.response?.status?.toString() || "ERR";
-      const errorData = error?.response?.data;
-
-      await logApiRequestData(
-        start,
-        request_datetime,
-        config,
-        errorCode,
-        errorData,
-        error,
-        constants.VM_PROCESSES.GET_QEMU_CONFIG,
-      );
-
-      console.error("Error in getQemuConfig:", errorData);
-
-      return {
-        success: false,
-        vmid,
-        message: "Failed to fetch VM config.",
-        error: errorData,
-      };
-    }
+    const cfg = await getProxmoxConfig();
+     const type = vmType.toLowerCase();
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
-  async function getLxcConfig(vmid) {
-    console.log("vmid:", vmid);
-
-    if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
-      throw new Error(
-        "Access info not initialized. Call generateAccessTicket first.",
-      );
-    }
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/lxc/${vmid}/config`;
-    console.log("URL:", url);
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${type}/${vmid}/config`;
 
     const config = {
       method: "get",
@@ -1820,14 +1826,8 @@ function ProxMoxService(db, payload, ip_address) {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-
-    console.log("Request Config:", config);
-
     try {
       const response = await axios.request(config);
-
-      console.log("QEMU CONFIG SUCCESS:", response.data);
-
       await logApiRequestData(
         start,
         request_datetime,
@@ -1869,17 +1869,21 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
+
+  // not done yet
+
   async function deleteVmNetwork(vmid, vmType, netKey) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
+    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
 
     const config = {
       method: "put",
@@ -1925,20 +1929,20 @@ function ProxMoxService(db, payload, ip_address) {
     }
   }
 
-  async function addVmNetwork(vmid, vmType, netKey, netValue) {
+  async function addVmNetwork(vmid, vmType, netKey, netValue,selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
       );
     }
+    const cfg = await getProxmoxConfig();
 
     const start = Date.now();
     const request_datetime = new Date();
-
-    const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
     const data = new URLSearchParams();
-    console.log("NET KEY:", netKey, "NET VALUE:", netValue);
     data.append(netKey, netValue);
 
     const config = {
@@ -1985,20 +1989,21 @@ function ProxMoxService(db, payload, ip_address) {
       return false;
     }
   }
-async function disconnectVmNetwork(vmid, vmType, netKey, netValue) {
+  
+  async function disconnectVmNetwork(vmid, vmType, netKey, netValue,selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error(
       "Access info not initialized. Call generateAccessTicket first.",
     );
   }
+  const cfg = await getProxmoxConfig();
 
   const start = Date.now();
   const request_datetime = new Date();
-
-  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;        
 
   const data = new URLSearchParams();
-  console.log("DISCONNECT NET KEY:", netKey, "VALUE:", netValue);
 
   // Example:
   // netKey = "net0"
@@ -2052,23 +2057,23 @@ async function disconnectVmNetwork(vmid, vmType, netKey, netValue) {
   }
 }
 
-async function connectVmNetwork(vmid, vmType, netKey, mac, bridge) {
+async function connectVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error(
       "Access info not initialized. Call generateAccessTicket first.",
     );
   }
+  const cfg = await getProxmoxConfig();
 
   const start = Date.now();
   const request_datetime = new Date();
-
-  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   // Build value like curl
   const netValue = `virtio=${mac},bridge=${bridge}`;
 
   const data = new URLSearchParams();
-  console.log("CONNECT NET KEY:", netKey, "VALUE:", netValue);
 
   data.append(netKey, netValue);
 
@@ -2119,17 +2124,18 @@ async function connectVmNetwork(vmid, vmType, netKey, mac, bridge) {
   }
 }
 
-async function getVmNetworkInfo(vmid, vmType) {
+async function getVmNetworkInfo(vmid, vmType,selectedNode = null) {
   if (!accessInfo?.cookie) {
     throw new Error(
       "Access info not initialized. Call generateAccessTicket first.",
     );
   }
+  const cfg = await getProxmoxConfig();
 
   const start = Date.now();
   const request_datetime = new Date();
-
-  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   const config = {
     method: "get",
@@ -2177,43 +2183,34 @@ async function getVmNetworkInfo(vmid, vmType) {
 }
 
 
-async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
-  console.log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvv",vmid, vmType, netKey, mac, bridge)
+async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error(
       "Access info not initialized. Call generateAccessTicket first."
     );
   }
+  const cfg = await getProxmoxConfig();
 
   const start = Date.now();
   const request_datetime = new Date();
-
-  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
-  console.log("urlurlurlurl",url)
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
   let netValue;
-   console.log("netValuenetValue",netValue)
   /* ===================== KEY FIX ===================== */
-  if (vmType === "qemu") {
+  if (vmType === constants.VM_TYPES.QEMU) {
     // Disable cable
     netValue = `virtio=${mac},bridge=${bridge},link_down=1`;
-   console.log("netValuenetValue",netValue)
-
   }
 
-  if (vmType === "lxc") {
+  if (vmType === constants.VM_TYPES.LXC) {
     // Remove bridge = unplug
     const ethIndex = netKey.replace("net", "");
     // netValue = `name=eth0,type=veth`;
     netValue = `name=eth${ethIndex},bridge=${bridge},link_down=1`;
-
-   console.log("gggggggggggggggggggggggggggggggg",netValue)
-
   }
   /* =================================================== */
 
   const data = new URLSearchParams();
-  console.log("datadatadatadata",data)
-  console.log("UNPLUG NET KEY:", netKey, "VALUE:", netValue);
   data.append(netKey, netValue);
 
   const config = {
@@ -2229,7 +2226,6 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
       rejectUnauthorized: false,
     }),
   };
-console.log("configconfig",config)
   try {
     const response = await axios.request(config);
 
@@ -2242,7 +2238,6 @@ console.log("configconfig",config)
       null,
       constants.VM_PROCESSES.UNPLUG_VM_NETWORK
     );
-console.log("responseresponse",response)
     return response;
   } catch (error) {
     const errorCode = error?.response?.status?.toString() || "ERR";
@@ -2263,27 +2258,28 @@ console.log("responseresponse",response)
   }
 }
 
-async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
+async function plugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error(
       "Access info not initialized. Call generateAccessTicket first.",
     );
   }
+  const cfg = await getProxmoxConfig();
 
   const start = Date.now();
   const request_datetime = new Date();
-
-  const url = `${constants.endpoint}/nodes/${constants.current_node}/${vmType}/${vmid}/config`;
+  const targetNode = selectedNode || cfg.current_node;
+  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   let netValue;
 
   /* ===================== DIFFERENCE HERE ===================== */
-  if (vmType === "qemu") {
+  if (vmType === constants.VM_TYPES.QEMU) {
     // QEMU = enable cable
     netValue = `virtio=${mac},bridge=${bridge},link_down=0`;
   }
 
-  if (vmType === "lxc") {
+  if (vmType === constants.VM_TYPES.LXC) {
     // LXC = attach interface to bridge
     const ethIndex = netKey.replace("net", "");
     netValue = `name=eth${ethIndex},bridge=${bridge},hwaddr=${mac},type=veth`;
@@ -2291,8 +2287,6 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   /* ============================================================ */
 
   const data = new URLSearchParams();
-  console.log("PLUG NET KEY:", netKey, "VALUE:", netValue);
-
   data.append(netKey, netValue);
 
   const config = {
@@ -2342,13 +2336,154 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   }
 }
 
+const VMID_RANGE_START = keys.VMID_RANGE_START;
+const VMID_RANGE_END = keys.VMID_RANGE_END;
+
+async function checkVmidStatus(vmid, vmType) {
+  if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
+    throw new Error(
+      "Access info not initialized. Call generateAccessTicket first.",
+    );
+  }
+  const cfg = await getProxmoxConfig();
+  const start = Date.now();
+  const request_datetime = new Date();
+  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/current`;
+  const config = {
+    method: "get",
+    url,
+    headers: {
+      Cookie: accessInfo.cookie,
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    httpsAgent: new (require("https").Agent)({
+      rejectUnauthorized: false,
+    }),
+  };
+
+  try {
+    const response = await axios.request(config);
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      response.status?.toString(),
+      response.data,
+      null,
+      constants.VM_PROCESSES.CHECK_VMID_STATUS,
+    );
+
+    // 200 OK = VMID is already in use
+    return response.status === 200;
+  } catch (error) {
+    const errorCode = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+
+    await logApiRequestData(
+      start,
+      request_datetime,
+      config,
+      errorCode,
+      errorMessage,
+      error,
+      constants.VM_PROCESSES.CHECK_VMID_STATUS,
+    );
+
+    // 404 or 500 = VMID is free
+    const freeStatusCodes = [404, 500];
+    if (freeStatusCodes.includes(error?.response?.status)) {
+      return false;
+    }
+
+    // Unexpected error — bubble it up so findFreeVmid doesn't silently skip
+    console.error(`Unexpected error checking VMID ${vmid} (${vmType}):`, errorMessage);
+    throw error;
+  }
+}
+
+
+// ─── FIND FREE VMID ───────────────────────────────────────────────────────────
+async function findFreeVmid() {
+  for (let vmid = VMID_RANGE_START; vmid <= VMID_RANGE_END; vmid++) {
+    const usedAsQemu = await checkVmidStatus(vmid, constants.VM_TYPES.QEMU);
+    if (usedAsQemu) continue;
+
+    const usedAsLxc = await checkVmidStatus(vmid, constants.VM_TYPES.LXC);
+    if (usedAsLxc) continue;
+
+    // Free in both QEMU and LXC
+    return vmid;
+  }
+
+  throw new Error(
+    `No free VMID available in range ${VMID_RANGE_START}–${VMID_RANGE_END}.`,
+  );
+}
+
+async function restoreVM({ vmid, zstFile, vmType,proxmoxPath,storage }) {
+  if (!accessInfo?.cookie) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+
+  const cfg              = await getProxmoxConfig();
+  const start            = Date.now();
+  const request_datetime = new Date();
+  const storageId = process.env.IMPORT_STORAGE || "bucket";
+  const type = vmType.toLowerCase();
+  if (!constants.VM_TYPES.ALL.includes(type)) {
+    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
+  }
+  // const volid            = `local:backup/${zstFile}`;
+  const volid     = `${storageId}:backup/${zstFile}`;  
+  const url              = `${constants.endpoint}/nodes/${cfg.current_node}/${type}`;
+  // ── Build params based on vmType ──────────────────────────────────
+  const params = vmType === constants.VM_TYPES.QEMU
+    ? {
+        archive: volid,       // QEMU uses archive
+        vmid:    String(vmid),
+        storage: storage,
+      }
+    : {
+        ostemplate: volid,    // LXC uses ostemplate
+        vmid:       String(vmid),
+        storage:    storage,
+        restore:    "1",      // LXC needs restore=1
+        unique:     "1"
+      };
+
+  const config = {
+    method: "post",
+    url,
+    headers: {
+      Cookie:             accessInfo.cookie,
+      "Content-Type":    "application/x-www-form-urlencoded",
+      CSRFPreventionToken: accessInfo.CSRFPreventionToken,
+    },
+    data:       new URLSearchParams(params).toString(),
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  };
+
+  try {
+    const response = await axios.request(config);
+    await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, constants.VM_PROCESSES.RESTORE_VM);
+    return response;
+  } catch (error) {
+    const errorCode    = error?.response?.status?.toString() || "ERR";
+    const errorMessage = error?.response?.data || error.toString();
+    await logApiRequestData(start, request_datetime, config, errorCode, errorMessage, error, constants.VM_PROCESSES.RESTORE_VM);
+    console.error("Error restoring VM:", errorMessage);
+    return null;
+  }
+}
+
+
+
+
 
   return {
     generateAccessTicket,
-    QEMU_List,
-    QEMU_VM_detail,
-    LXC_List,
-    LXC_Container_detail,
+    VM_detail,
     cloneVM,
     configureVM,
     startVM,
@@ -2357,10 +2492,8 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
     GetNodeNetworkInfo,
     createLXCSnapshot,
     createQEMUSnapshot,
-    deleteQEMUSnapshot,
-    deleteLXCSnapshot,
-    restoreLXCSnapshot,
-    restoreQEMUSnapshot,
+    restoreSnapshot,
+    deleteSnapshot,
     resumeVM,
     pauseVM,
     getTaskLog,
@@ -2370,15 +2503,20 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
     templateLXC,
     cloneQEMU,
     templateQEMU,
-    getQemuConfig,
-    getLxcConfig,
+    getConfig,
     deleteVmNetwork,
     addVmNetwork,
     disconnectVmNetwork,
     connectVmNetwork,
     getVmNetworkInfo,
     unplugVmNetwork,
-    plugVmNetwork
+    plugVmNetwork,
+    restoreVM,
+    findFreeVmid,
+    selectNode,
+    migrateVM,
+    getProxmoxConfig,
+    waitForTask
   };
 }
 

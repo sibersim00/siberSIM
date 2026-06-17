@@ -586,6 +586,12 @@ const rejectPendingCustomComponentIfVmStopped =
           replacements: { bridge },
         }
       );
+      await db.sequelize.query(
+  `UPDATE networks 
+   SET status = 'Available', modifiedon = NOW() 
+   WHERE networkname = :bridge AND status = 'In Use'`,
+  { replacements: { bridge } }
+);
 
   return diagram;
 };

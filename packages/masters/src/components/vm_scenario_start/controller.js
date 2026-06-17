@@ -1,6 +1,6 @@
 const getAll = ({ dao, db, validation }) => async (req, res) => {
   try {
-    const user_id = req.user.userid; // ✅ admin user id
+    const user_id = req.user.userid;
 
 
     const result = await dao.getAll({ db })(user_id);
@@ -42,7 +42,6 @@ const startScenario = ({ dao, db, validation }) => async (req, res) => {
    body.requestedby_id = req.user.userid;
    body.requestedby_role = req.user.usertype; // Admin | Instructor
    const user_count_limit = req.user.user_count_limit; // admin user id
-console.log("user_count_limituser_count_limit",user_count_limit);
     const result = await dao.startScenario({ db, validation })(body,user_count_limit);
 
     return res.status(result.statusCode).json(result);

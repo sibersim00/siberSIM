@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback  } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -16,19 +16,7 @@ import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
 import Router, { useRouter } from "next/router";
 import Select from "react-select";
-import {
-  getScenarioList,
-  changeStatusScenarios,
-  changeManipulationStatus,
-  clearchangeManipulationStatus,
-  clearScenariosChangeStatus,
-  deleteScenarios,
-  cleardeleteScenarios,
-  clearHasError,
-  handleManageView,
-  exportSelectedScenariosAction,
-  exportScenario,
-  ScenarioExport,
+import { getScenarioList, changeStatusScenarios, changeManipulationStatus, clearchangeManipulationStatus, clearScenariosChangeStatus, deleteScenarios, cleardeleteScenarios, clearHasError, handleManageView,triggerScenarioExport, createScenarioExport,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 import {
   clearHasErrorr,
@@ -46,28 +34,53 @@ import { Fab } from "@mui/material";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
 import ScenarioModal from "../../../shared/data/scenarios/scenarioModal";
+import ScenarioImportModal from "../../../shared/data/scenarios/ScenarioImportModal";
 // import ImportScenarioZipFile from "../../../shared/data/scenarios/ImportScenarioZipFile";
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
+
 
 const ManageScenarios = () => {
-  const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const [scenStatus, setscenStatus] = useState("true");
-  const [scenType, setScenType] = useState("Public"); // Public/Private
-  const [view, setView] = useState("card");
-  const [rowData, setRowData] = useState([]);
-  const [gridData, setGridData] = useState([]);
-  const [gridApi, setGridApi] = useState(null);
-  const [quickFilter, setQuickFilter] = useState("");
-  const [formModal, setformModal] = useState(false);
-  const { push } = useRouter();
-  const [showListImort, setShowListImport] = useState(true);
-  const [openImportModal, setOpenImportModal] = useState(false);
-  const [oneClick, setOneClick] = useState(false);
-  const [previousView, setPreviousView] = useState("card");
-  const [backview, setBackView] = useState("card");
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedScenarios, setSelectedScenarios] = useState([]);
+const router = useRouter();
+const { t } = useTranslation();
+const dispatch = useDispatch();
+const [scenStatus, setscenStatus] = useState("true");
+const [scenType, setScenType] = useState("Public"); // Public/Private
+const [view, setView] = useState("card");
+const [rowData, setRowData] = useState([]);
+const [gridData, setGridData] = useState([]);
+const [gridApi, setGridApi] = useState(null);
+const [quickFilter, setQuickFilter] = useState("");
+const [formModal, setformModal] = useState(false);
+const { push } = useRouter();
+const [showListImort, setShowListImport] = useState(true);
+const [openImportModal, setOpenImportModal] = useState(false);
+const [oneClick, setOneClick] = useState(false);
+const [previousView, setPreviousView] = useState("card");
+const [backview, setBackView] = useState("card");
+const [showExportModal, setShowExportModal] = useState(false);
+const [selectedScenarios, setSelectedScenarios] = useState([]);
+const [exportingIds, setExportingIds] = useState([]);
+// const [showImportModal, setShowImportModal] = useState(false);
+const [pageSize, setPageSize] = useState(20);
 
+
+  const [activeImportId, setActiveImportId] = useState(() => {
+  try {
+      const saved = localStorage.getItem("activeImport");
+      return saved ? JSON.parse(saved).importid : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+const [showImportModal, setShowImportModal] = useState(false);
+
+const gridRef = useRef(null);
+const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+  
   const [rowValues, setRowValues] = useState({
     title: "Add",
     scenarioid: 0,
@@ -163,7 +176,55 @@ const ManageScenarios = () => {
       }),
     };
   };
+const handleScenarioExport = async (scenarioid) => {
+  setExportingIds((prev) => [...prev, scenarioid]);
+  try {
+    // Step 1: Create export record
+    const createRes = await dispatch(
+      createScenarioExport({
+        scenarioid,
+        learner_id: null,
+        status: "Inprogress",
+      }),
+    );
 
+    const { exportid } = createRes.data;
+    if (!exportid) throw new Error("No exportid returned");
+
+    // Step 2: Fire export job — DO NOT await completion
+    // Backend will process in background, cron updates status
+    dispatch(triggerScenarioExport({ scenarioid, exportid }));
+
+    // Step 3: Redirect immediately to export list page
+    toast.success(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+              Export started! You'll be notified when it's ready
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: true,
+              theme: "colored",
+            }
+          );
+    // push("/scenarioexport/");
+    router.push(`/scenarioexport`);
+
+  } catch (err) {
+    console.error("Export failed:", err);
+    toast.error(
+            <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+              Export failed. Please try again
+            </p>,
+            {
+              position: toast.POSITION.TOP_RIGHT,
+              hideProgressBar: true,
+              theme: "colored",
+            }
+          );
+  } finally {
+    setExportingIds((prev) => prev.filter((id) => id !== scenarioid));
+  }
+};
   const assignedBadgeRenderer = (params) => {
     const { value, data } = params;
     const maxLength = 20; // Set the character limit for the title
@@ -252,14 +313,6 @@ const ManageScenarios = () => {
       floatingFilter: true,
       minWidth: 180,
     },
-    // {
-    //   headerName: "Instruction File",
-    //   field: "instruction_file",
-    //   filter: true,
-    //   flex: 1,
-    //   floatingFilter: true,
-    //   minWidth: 180,
-    // },
     {
       headerName: "Duration",
       field: "duration",
@@ -271,7 +324,7 @@ const ManageScenarios = () => {
       headerName: "Status",
       field: "status",
       pinned: "right",
-      minWidth: 80,
+      maxWidth: 70,
       pinned: "right",
       cellRenderer: "actionSwitchRenderer",
     },
@@ -280,7 +333,7 @@ const ManageScenarios = () => {
       field: "status",
       sortable: false,
       pinned: "right",
-      minWidth: 160,
+      maxWidth: 160,
       pinned: "right",
       cellRenderer: "actionButtonRenderer",
     },
@@ -290,8 +343,9 @@ const ManageScenarios = () => {
   headerName: "Manipulation Status",
   field: "manipulation_flag",
   pinned: "right",
-  minWidth: 100,
+  maxWidth: 100,
   cellRenderer: "actionManipulationSwitchRenderer",
+  headerTooltip: "Toggle to enable or disable manipulation for this record"
 };
 
 const columnDefs = useMemo(() => {
@@ -425,36 +479,33 @@ const columnDefs = useMemo(() => {
 
     XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
   };
-
-  const handleScenarioExport = (scenarioid) => {
-    const payload = {
-      scenarioid: scenarioid,
-      learner_id: null,
-      status: "Inprogress",
-    };
-    dispatch(ScenarioExport(payload));
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
 
-  useEffect(() => {
-    if (hasGetScenarioExportSucc?.exportid) {
-      const exportPayload = {
-        scenarioid: hasGetScenarioExportSucc.scenarioid,
-        exportid: hasGetScenarioExportSucc.exportid,
-      };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
 
-      dispatch(exportScenario(exportPayload));
-    }
-  }, [hasGetScenarioExportSucc]);
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20, // use state variable for page size
-  };
-
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
-
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
   const onFilterChanged = (data) => {
     setQuickFilter(data);
     let val = data.toLowerCase();
@@ -801,8 +852,6 @@ const columnDefs = useMemo(() => {
       }
     });
   };
-  const router = useRouter();
-
   useEffect(() => {
     if (router.query.type) {
       setScenType(router.query.type);
@@ -1011,24 +1060,16 @@ const columnDefs = useMemo(() => {
                         </CustomToggleButton>
                       </ToggleButtonGroup>
                       &nbsp;
-                      {/* <Button
-                        type="button"
-                        variant="outline-info"
-                        onClick={() => setShowExportModal(true)}
-                      >
-                        <i className="fa fa-file-excel-o"></i> Export
-                      </Button>
-                      &nbsp;
                       <Button
                         type="button"
                         variant="outline-warning"
-                        onClick={() => {
-                          setShowListImport(true);
-                          handleImportModal();
-                        }}
+                        onClick={() => setShowImportModal(true)}
+                        className="mx-1"
+                        title="Import Scenario"
                       >
-                        <i className="fa fa-file-excel-o"></i> Import
-                      </Button> */}
+                        <i className="fa fa-upload me-1" /> Import
+                      </Button>
+                      &nbsp;
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -1057,7 +1098,11 @@ const columnDefs = useMemo(() => {
                   {view == "list" ? (
                     <div
                       className="ag-theme-alpine mt-2"
-                      style={{ height: "50em", width: "100%" }}
+                      style={{
+                        height: `${gridHeight}px`, //  dynamic, grows with page size
+                        width: "100%",
+                        overflow: "visible", // no internal scrollbar
+                      }}
                     >
                       <AgGridReact
                         id="cat_grid"
@@ -1069,10 +1114,12 @@ const columnDefs = useMemo(() => {
                         pagination={true}
                         onGridReady={onGridReady}
                         components={frameworkComponents}
+                        paginationPageSize={20}
+                        onPaginationChanged={onPaginationChanged} //  track page size changes
                         defaultColDef={defaultColDef}
-                      //  overlayNoRowsTemplate={
-                      //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
-                      // }
+                        //  overlayNoRowsTemplate={
+                        //   rowData && rowData.length === 0 ? "No Rows to Show" : "Loading..."
+                        // }
                       ></AgGridReact>
                     </div>
                   ) : (
@@ -1090,22 +1137,22 @@ const columnDefs = useMemo(() => {
               {gridData && gridData.length > 0 ? (
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
-                    
                     <Col key={index} md={12 / columnsPerRow}>
                       {/* <Card className="card custom-card our-team h-100 shadow-sm"> */}
                       <Card
-                        className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
+                        className={`card custom-card our-team h-100 custom-scenario-card ${
+                          item.scenariostatus === "Publish"
                             ? "shadow-publish"
                             : item.scenariostatus === "Draft"
                               ? "shadow-draft"
                               : ""
-                          }`}
+                        }`}
                       >
                         <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
                           {item.requestedby_role === "Admin" &&
                             item.vm_steps === "Running" &&
                             ["Start", "Resume", "Pause"].includes(
-                              item.vm_status
+                              item.vm_status,
                             ) && (
                               <span
                                 className="position-absolute top-0 end-0 m-2 px-1 py-1 rounded-pill text-white"
@@ -1146,23 +1193,16 @@ const columnDefs = useMemo(() => {
                               />
                             </div>
 
-                            <h5 className="text-dark mt-2 mb-1 fs-5 pointer">
+                         
+                            <h5 className="text-dark mt-2 mb-1 fs-6 pointer">
                               <OverlayTrigger
                                 placement="top"
                                 overlay={
                                   <Tooltip>{item.scenariotitle}</Tooltip>
                                 }
                               >
-                                <span
-                                  className="d-inline-block text-truncate w-100"
-                                  style={{ maxWidth: "100%" }}
-                                >
-                                  {item.scenariotitle?.length > 30
-                                    ? `${item.scenariotitle.substring(
-                                      0,
-                                      27
-                                    )}...`
-                                    : item.scenariotitle}
+                                <span className="w-100 wrap-text">
+                                  {item.scenariotitle}
                                 </span>
                               </OverlayTrigger>
                             </h5>
@@ -1234,14 +1274,14 @@ const columnDefs = useMemo(() => {
                             {/* Expport */}
                             <div
                               className="btn btn-sm ripple bg-info text-dark rounded-circle"
-                              // onClick={() => handleExport(item.scenarioid)}
                               onClick={() => handleScenarioExport(item.scenarioid)}
+                              style={{ pointerEvents: exportingIds.includes(item.scenarioid) ? "none" : "auto" }}
                             >
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={<Tooltip>Export</Tooltip>}
-                              >
-                                <i className="fa fa-file-excel-o"></i>
+                              <OverlayTrigger placement="bottom" overlay={<Tooltip>Export</Tooltip>}>
+                                {exportingIds.includes(item.scenarioid)
+                                  ? <i className="fa fa-spinner fa-spin" />
+                                  : <i className="fa fa-file-excel-o" />
+                                }
                               </OverlayTrigger>
                             </div>
                             {/* Instruction File Download */}
@@ -1267,18 +1307,18 @@ const columnDefs = useMemo(() => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && ( */}
-                                <div
-                                  className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
-                                  onClick={() => handleEdit(item)}
-                                >
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Update</Tooltip>}
-                                  >
-                                    <i className="fe fe-edit"></i>
-                                  </OverlayTrigger>
-                                </div>
-                              {/* )} */}
+                            <div
+                              className="btn btn-sm ripple bg-info-transparent text-info rounded-circle"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={<Tooltip>Update</Tooltip>}
+                              >
+                                <i className="fe fe-edit"></i>
+                              </OverlayTrigger>
+                            </div>
+                            {/* )} */}
 
                             {/* View Button */}
                             <div
@@ -1336,23 +1376,23 @@ const columnDefs = useMemo(() => {
                               userType === "Instructor" &&
                               item.scenariostatus === "Publish"
                             ) && (
-                                <div className="btn btn-sm ripple me-1">
-                                  <OverlayTrigger
-                                    placement="bottom"
-                                    overlay={<Tooltip>Change Status</Tooltip>}
-                                  >
-                                    <label className="custom-switch mb-0">
-                                      <input
-                                        type="checkbox"
-                                        className="custom-switch-input"
-                                        checked={item?.status === "true"}
-                                        onChange={() => handleStatusSwitch(item)}
-                                      />
-                                      <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                    </label>
-                                  </OverlayTrigger>
-                                </div>
-                              )}
+                              <div className="btn btn-sm ripple me-1">
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Change Status</Tooltip>}
+                                >
+                                  <label className="custom-switch mb-0">
+                                    <input
+                                      type="checkbox"
+                                      className="custom-switch-input"
+                                      checked={item?.status === "true"}
+                                      onChange={() => handleStatusSwitch(item)}
+                                    />
+                                    <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                  </label>
+                                </OverlayTrigger>
+                              </div>
+                            )}
                             {/* {item.manipulation === "1"&& (
                                 <div className="btn btn-sm ripple me-1">
                                   <OverlayTrigger
@@ -1396,7 +1436,7 @@ const columnDefs = useMemo(() => {
                                     alt="user-img"
                                     className="wd-150 mt-5"
                                   />
-                                  <h5 className="mt-4">No data found.</h5>
+                                  <h5 className="mt-4">Loading...</h5>
                                 </div>
                               </Card.Body>
                             </Card>
@@ -1407,106 +1447,13 @@ const columnDefs = useMemo(() => {
                   </Col>
                 </Row>
               )}
+
             </>
           ) : (
             ""
           )}
         </Col>
       </Row>
-      <Modal
-        show={showExportModal}
-        onHide={() => setShowExportModal(false)}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Export Scenarios</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Select Scenarios</Form.Label>
-            <Select
-              theme={(theme) => ({
-                ...theme,
-                colors: {
-                  ...theme.colors,
-                  primary25: "var(--primary-bg-color)",
-                  primary: "var(--primary-bg-color)",
-                },
-              })}
-              isMulti
-              styles={getScenarioSelectStyles()}
-              options={[
-                { value: "all", label: "Select All Scenarios" },
-                ...(Array.isArray(hasGetScenarioListSucc)
-                  ? hasGetScenarioListSucc.map((s) => ({
-                    value: s.scenarioid,
-                    label: s.scenariotitle,
-                  }))
-                  : []),
-              ]}
-              value={selectedScenarios}
-              onChange={(selected) => {
-                if (selected.some((s) => s.value === "all")) {
-                  setSelectedScenarios(
-                    (hasGetScenarioListSucc || []).map((s) => ({
-                      value: s.scenarioid,
-                      label: s.scenariotitle,
-                    }))
-                  );
-                } else {
-                  setSelectedScenarios(selected);
-                }
-              }}
-              placeholder="Select scenarios to Export"
-            />
-          </Form.Group>
-
-          <div className="mt-4 text-center">
-            <Button
-              variant="outline-success"
-              onClick={handleExportExcel}
-              // onClick={handleScenarioExport}
-              className="me-3"
-            >
-              <i className="fa fa-file-excel-o"></i> Export Excel
-            </Button>
-
-            <Button
-              variant="outline-primary"
-              onClick={async () => {
-                if (!selectedScenarios.length)
-                  return alert("Select at least one scenario");
-
-                try {
-                  const blob = await dispatch(
-                    exportSelectedScenariosAction({
-                      scenarioIds: selectedScenarios.map((s) => s.value),
-                    })
-                  );
-
-                  const url = window.URL.createObjectURL(new Blob([blob]));
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.setAttribute("download", `scenarios_export.zip`);
-                  document.body.appendChild(link);
-                  link.click();
-                  link.remove();
-                  window.URL.revokeObjectURL(url);
-                } catch (err) {
-                  console.error(err);
-                  alert("Export failed");
-                }
-              }}
-            >
-              <i className="fa fa-file-archive-o"></i> Export Selected Scenarios
-              Zip
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
-
       {view == "Form" ? (
         <ScenarioForm
           setView={handleReturnFromEdit}
@@ -1518,19 +1465,66 @@ const columnDefs = useMemo(() => {
       ) : (
         <></>
       )}
-      {/* <ImportScenarioZipFile
-              openImportModal={openImportModal}
-              handleImportModal={handleImportModal}
-              showListImort={showListImort}
-              setShowListImport={setShowListImport}
-            /> */}
-
       <ScenarioModal
         openImportModal={openImportModal}
         handleImportModal={handleImportModal}
         showListImort={showListImort}
         setShowListImport={setShowListImport}
       />
+      <ScenarioImportModal
+        show={showImportModal}
+        onHide={() => setShowImportModal(false)}
+        onImportStarted={(importid) => {
+           setActiveImportId(importid);
+        }}
+        onImportFinished={() => {                                      // ← clear banner
+        setActiveImportId(null);
+        // localStorage.removeItem("activeImport");
+      }}
+      />
+                    {/* {activeImportId && (
+  <div style={{
+    position:     "fixed",
+    bottom:       "24px",
+    right:        "24px",
+    zIndex:       9999,
+    background:   "#0f1e35",
+    color:        "#fff",
+    padding:      "14px 18px",
+    borderRadius: "14px",
+    display:      "flex",
+    alignItems:   "center",
+    gap:          "12px",
+    boxShadow:    "0 4px 24px rgba(0,0,0,0.4)",
+    border:       "1px solid #1a3a5c",
+    minWidth:     "260px",
+  }}>
+    <i className="fa fa-spinner fa-spin text-info fs-5" />
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: "13px", fontWeight: 600 }}>
+        Import In Progress
+      </div>
+      <div style={{ fontSize: "11px", color: "#8fa3bb", marginTop: "2px" }}>
+        Safe to close — running in background
+      </div>
+    </div>
+    <button
+      onClick={() => setShowImportModal(true)}
+      style={{
+        background:   "#0d6efd",
+        border:       "none",
+        borderRadius: "8px",
+        color:        "#fff",
+        padding:      "5px 14px",
+        fontSize:     "12px",
+        fontWeight:   500,
+        cursor:       "pointer",
+      }}
+    >
+      View
+    </button>
+  </div>
+)} */}
     </>
   );
 };

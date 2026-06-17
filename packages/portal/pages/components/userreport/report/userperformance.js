@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef,useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import {
   Row,
@@ -22,12 +22,22 @@ import { getStudentListreport } from "../../../../shared/redux/slices/common/mas
 import { getScenarioList } from "../../../../shared/redux/slices/event/eventsManage";
 import { UserPerformanceList } from "../../../../shared/redux/slices/userreports/userreportsManage.js";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const Userperformance = () => {
   const dispatch = useDispatch();
   const [rowData, setRowData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const [studentDropdown, setStudentDropdown] = useState([]);
   const [scenarioDropdown, setscenarioDropdown] = useState([]);
+
+
+   const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+    
 
   const {
     hasGetStudentListSuccreport,
@@ -46,8 +56,6 @@ const Userperformance = () => {
         state.userreportsManage.getuserperformancelist.data,
     };
   });
-  console.log("hasuserperformancelist",hasuserperformancelist)
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       dispatch(getLocalStorageData("user"));
@@ -82,9 +90,6 @@ const Userperformance = () => {
       setscenarioDropdown(dropdownData);
     }
   }, [hasGetScenarioListSuccess]);
-
-  console.log("hasGetStudentListSuccreport", hasGetStudentListSuccreport);
-
   useEffect(() => {
     const payload = {
       learner_id: hasGetStudentListSuccreport?.learner_id,
@@ -266,12 +271,32 @@ const Userperformance = () => {
   };
 
   const gridOptions = {
-    pagination: true,
-    paginationPageSize: 10, // use state variable for page size
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
 
   useEffect(() => {
     if (gridApi) {
@@ -435,7 +460,11 @@ styles={customStyles()}
                 
                   <div
                     className="ag-theme-alpine mt-2"
-                    style={{ height: "40em", width: "100%" }}
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                   >
                     <AgGridReact
                       id="cat_grid"
@@ -446,8 +475,10 @@ styles={customStyles()}
                       columnDefs={columnDefs}
                       pagination={true}
                       onGridReady={onGridReady}
+                      paginationPageSize={20}
                       components={frameworkComponents}
                       defaultColDef={defaultColDef}
+                         onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>
                   </div>
                 

@@ -1,31 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-  OverlayTrigger,
-  Tooltip,
-  Spinner,
-  Alert,
-} from "react-bootstrap";
+import { Row, Col, Card, Button, Form, OverlayTrigger, Tooltip, Spinner, Alert} from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Seo from "../../layout-components/seo/seo";
+import Select from 'react-select'
 import { getComponentDetails } from "../../redux/slices/localstorage/LocalStorage";
 import * as yup from "yup";
 import { useFormik } from "formik";
-import {
-  getWebSettings,
-  addWebSetting,
-  clearAddWebSetting,
-  updateWebSetting,
-  clearUpdateWebSetting,
-  clearHasError,
-  uploadLogo,
-  clearUploadLogo,
-} from "../../redux/slices/web-settings/company-setting";
+import { getWebSettings, addWebSetting, clearAddWebSetting, updateWebSetting, clearUpdateWebSetting, clearHasError, uploadLogo, clearUploadLogo} from "../../redux/slices/web-settings/company-setting";
 import {
   exportMastersAction,
   clearimportMastersAction,
@@ -45,7 +27,7 @@ const FileUploader = dynamic(
   () => {
     return import("./fileuploads/fileuploader");
   },
-  { ssr: false }
+  { ssr: false },
 );
 import { FilePath } from "./fileuploads/filepath";
 import { useRouter } from "next/router";
@@ -100,7 +82,14 @@ const CompanySettingsCommon = ({ isSL }) => {
       errorData: data && data.companySetting && data.companySetting.error,
     };
   });
-  console.log("logoutDatalogoutData", logoutData);
+
+const clusterMethodOptions = [
+  { value: "RoundRobin", label: "Round Robin" },
+  { value: "LeastLoaded", label: "Least Loaded" },
+  { value: "Weighted", label: "Weighted" },
+  { value: "Threshold", label: "Threshold" },
+];
+
   useEffect(() => {
     dispatch(getWebSettings());
     dispatch(getComponentDetails("/company-setting"));
@@ -112,23 +101,23 @@ const CompanySettingsCommon = ({ isSL }) => {
   useEffect(() => {
     if (cmpSettingData) {
       setIsDefaultFavicon(
-        cmpSettingData?.is_default_favicon == "false" ? false : true
+        cmpSettingData?.is_default_favicon == "false" ? false : true,
       );
       setIsDefaultPanel(
-        cmpSettingData?.is_default_ad_logo == "false" ? false : true
+        cmpSettingData?.is_default_ad_logo == "false" ? false : true,
       );
       setIsDefaultWeb(
-        cmpSettingData?.is_default_web_logo == "false" ? false : true
+        cmpSettingData?.is_default_web_logo == "false" ? false : true,
       );
       setisotp_verification(
-        cmpSettingData?.otp_verification == "false" ? false : true
+        cmpSettingData?.otp_verification == "false" ? false : true,
       );
       setiscomponent_approval(
-        cmpSettingData?.component_approval == "true" ? true : false
+        cmpSettingData?.component_approval == "true" ? true : false,
         // -----
       );
       setisscenario_approval(
-        cmpSettingData?.scenario_approval == "true" ? true : false
+        cmpSettingData?.scenario_approval == "true" ? true : false,
         // -----
       );
     }
@@ -146,7 +135,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                 position: toast.POSITION.TOP_RIGHT,
                 hideProgressBar: true,
                 theme: "colored",
-              }
+              },
             );
           })
         : toast.error(
@@ -157,7 +146,7 @@ const CompanySettingsCommon = ({ isSL }) => {
               position: toast.POSITION.TOP_RIGHT,
               hideProgressBar: true,
               theme: "colored",
-            }
+            },
           );
       handleOneClick(false);
       dispatch(clearHasError());
@@ -179,7 +168,7 @@ const CompanySettingsCommon = ({ isSL }) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
       const signOut = () => {
         localStorage.removeItem("user");
@@ -211,7 +200,7 @@ const CompanySettingsCommon = ({ isSL }) => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         dispatch(getWebSettings());
       }
@@ -233,7 +222,7 @@ const CompanySettingsCommon = ({ isSL }) => {
             position: toast.POSITION.TOP_RIGHT,
             hideProgressBar: false,
             theme: "colored",
-          }
+          },
         );
         dispatch(getWebSettings());
       }
@@ -254,7 +243,7 @@ const CompanySettingsCommon = ({ isSL }) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
 
       // close modal AFTER toast
@@ -269,7 +258,7 @@ const CompanySettingsCommon = ({ isSL }) => {
           position: toast.POSITION.TOP_RIGHT,
           hideProgressBar: false,
           theme: "colored",
-        }
+        },
       );
     }
 
@@ -285,43 +274,188 @@ const CompanySettingsCommon = ({ isSL }) => {
     }
   }, [uploadLogoResp]);
 
+  const customStyles = {
+    control: (styles, { isFocused, isDisabled }) => ({
+      ...styles,
+      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#1f1f1f",
+      boxShadow: isDisabled
+        ? null
+        : isFocused
+          ? "0 0 0 0.001rem #00d683"
+          : null,
+      "&:hover": {
+        borderColor: isDisabled
+          ? "#e8e8f7"
+          : isFocused
+            ? "#00d683"
+            : styles.borderColor,
+      },
+    }),
+  };
+    const getSelectStyles = (fieldName) => {
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
+    return error
+      ? {
+        ...customStyles,
+        control: (styles) => ({
+          ...styles,
+          borderColor: "#EB5757",
+          boxShadow: "0 0 0 0.001rem #EB5757",
+        }),
+      }
+      : customStyles;
+  };
+
   const formValidation = useFormik({
     enableReinitialize: true,
+    // initialValues: {
+    //   id: cmpSettingData?.id ? cmpSettingData?.id : 0,
+    //   name: cmpSettingData?.name ? cmpSettingData?.name : "",
+    //   phone_number: cmpSettingData?.phone_number
+    //     ? cmpSettingData?.phone_number
+    //     : "",
+    //   website: cmpSettingData?.website ? cmpSettingData?.website : "",
+    //   otp_verification: cmpSettingData?.otp_verification
+    //     ? cmpSettingData?.otp_verification
+    //     : "",
+
+    //   component_approval: cmpSettingData?.component_approval
+    //     ? cmpSettingData?.component_approval
+    //     : "",
+    //   scenario_approval: cmpSettingData?.scenario_approval
+    //     ? cmpSettingData?.scenario_approval
+    //     : "",
+    //   // -----
+    //   max_questions: cmpSettingData?.max_questions
+    //     ? cmpSettingData?.max_questions
+    //     : "",
+
+    //   email: cmpSettingData?.email ? cmpSettingData?.email : "",
+    //   system_name: cmpSettingData?.system_name
+    //     ? cmpSettingData?.system_name
+    //     : "",
+    //   system_footer: cmpSettingData?.system_footer
+    //     ? cmpSettingData?.system_footer
+    //     : "",
+    //   proxmox_alert_time: cmpSettingData?.proxmox_alert_time
+    //     ? cmpSettingData?.proxmox_alert_time
+    //     : "",
+    //   proxmox_email_sent: cmpSettingData?.proxmox_email_sent
+    //     ? cmpSettingData?.proxmox_email_sent
+    //     : "",
+    //   termination_delay: cmpSettingData?.termination_delay
+    //     ? cmpSettingData?.termination_delay
+    //     : "",
+    //   configuration_delay: cmpSettingData?.configuration_delay
+    //     ? cmpSettingData?.configuration_delay
+    //     : "",
+    //   cloning_delay: cmpSettingData?.cloning_delay
+    //     ? cmpSettingData?.cloning_delay
+    //     : "",
+    //   hibernate_delay: cmpSettingData?.hibernate_delay
+    //     ? cmpSettingData?.hibernate_delay
+    //     : "",
+    //   pause_limit: cmpSettingData?.pause_limit
+    //     ? cmpSettingData?.pause_limit
+    //     : "",
+    //   max_ports: cmpSettingData?.max_ports
+    //     ? cmpSettingData?.max_ports
+    //     : "",
+    //   address: cmpSettingData?.address ? cmpSettingData?.address : "",
+    //   favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
+    //   admin_panel_logo: cmpSettingData?.admin_panel_logo
+    //     ? cmpSettingData?.admin_panel_logo
+    //     : "",
+    //   web_panel_logo: cmpSettingData?.web_panel_logo
+    //     ? cmpSettingData?.web_panel_logo
+    //     : "",
+    //   expiry_date: "",
+    //   license_key: "",
+    //   domail_url: "",
+    // },
+
     initialValues: {
       id: cmpSettingData?.id ? cmpSettingData?.id : 0,
       name: cmpSettingData?.name ? cmpSettingData?.name : "",
       phone_number: cmpSettingData?.phone_number
         ? cmpSettingData?.phone_number
         : "",
-      website: cmpSettingData?.website ? cmpSettingData?.website : "",
-      otp_verification: cmpSettingData?.otp_verification
-        ? cmpSettingData?.otp_verification
-        : "",
-
-      component_approval: cmpSettingData?.component_approval
-        ? cmpSettingData?.component_approval
-        : "",
-      scenario_approval: cmpSettingData?.scenario_approval
-        ? cmpSettingData?.scenario_approval
-        : "",
-      // -----
-      max_questions: cmpSettingData?.max_questions
-        ? cmpSettingData?.max_questions
-        : "",
-
       email: cmpSettingData?.email ? cmpSettingData?.email : "",
+      address: cmpSettingData?.address ? cmpSettingData?.address : "",
+      website: cmpSettingData?.website ? cmpSettingData?.website : "",
+
       system_name: cmpSettingData?.system_name
         ? cmpSettingData?.system_name
         : "",
       system_footer: cmpSettingData?.system_footer
         ? cmpSettingData?.system_footer
         : "",
+
+      domain_url: cmpSettingData?.domain_url ? cmpSettingData?.domain_url : "",
+      license_key: cmpSettingData?.license_key
+        ? cmpSettingData?.license_key
+        : "",
+
+      otp_verification: cmpSettingData?.otp_verification
+        ? cmpSettingData?.otp_verification
+        : false,
+      component_approval: cmpSettingData?.component_approval
+        ? cmpSettingData?.component_approval
+        : true,
+      scenario_approval: cmpSettingData?.scenario_approval
+        ? cmpSettingData?.scenario_approval
+        : true,
+
+      base_clone_vmid: cmpSettingData?.base_clone_vmid
+        ? cmpSettingData?.base_clone_vmid
+        : "",
+      template_clone_vmid: cmpSettingData?.template_clone_vmid
+        ? cmpSettingData?.template_clone_vmid
+        : "",
+      start_network_id: cmpSettingData?.start_network_id
+        ? cmpSettingData?.start_network_id
+        : "",
+      cluster_task_type: cmpSettingData?.cluster_task_type
+        ? cmpSettingData?.cluster_task_type
+        : "",
+
+      max_questions: cmpSettingData?.max_questions
+        ? cmpSettingData?.max_questions
+        : "",
+
+      proxmox_current_node: cmpSettingData?.proxmox_current_node
+        ? cmpSettingData?.proxmox_current_node
+        : "",
+      proxmox_other_node: cmpSettingData?.proxmox_other_node
+        ? cmpSettingData?.proxmox_other_node
+        : "",
+      proxmox_host: cmpSettingData?.proxmox_host
+        ? cmpSettingData?.proxmox_host
+        : "",
+      proxmox_username: cmpSettingData?.proxmox_username
+        ? cmpSettingData?.proxmox_username
+        : "",
+      proxmox_password: cmpSettingData?.proxmox_password
+        ? cmpSettingData?.proxmox_password
+        : "",
+
+      file_server_username: cmpSettingData?.file_server_username
+        ? cmpSettingData?.file_server_username
+        : "",
+      file_server_password: cmpSettingData?.file_server_password
+        ? cmpSettingData?.file_server_password
+        : "",
+
       proxmox_alert_time: cmpSettingData?.proxmox_alert_time
         ? cmpSettingData?.proxmox_alert_time
         : "",
       proxmox_email_sent: cmpSettingData?.proxmox_email_sent
         ? cmpSettingData?.proxmox_email_sent
         : "",
+
       termination_delay: cmpSettingData?.termination_delay
         ? cmpSettingData?.termination_delay
         : "",
@@ -334,13 +468,12 @@ const CompanySettingsCommon = ({ isSL }) => {
       hibernate_delay: cmpSettingData?.hibernate_delay
         ? cmpSettingData?.hibernate_delay
         : "",
+
       pause_limit: cmpSettingData?.pause_limit
         ? cmpSettingData?.pause_limit
         : "",
-      max_ports: cmpSettingData?.max_ports
-        ? cmpSettingData?.max_ports
-        : "",
-      address: cmpSettingData?.address ? cmpSettingData?.address : "",
+      max_ports: cmpSettingData?.max_ports ? cmpSettingData?.max_ports : "",
+
       favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
       admin_panel_logo: cmpSettingData?.admin_panel_logo
         ? cmpSettingData?.admin_panel_logo
@@ -348,16 +481,13 @@ const CompanySettingsCommon = ({ isSL }) => {
       web_panel_logo: cmpSettingData?.web_panel_logo
         ? cmpSettingData?.web_panel_logo
         : "",
-      expiry_date: "",
-      license_key: "",
-      domail_url: "",
     },
     validationSchema: yup.object().shape({
       name: yup.string().required(error?.required),
       system_name: yup.string().required(error?.required),
       system_footer: yup.string().required(error?.required),
 
-      pause_limit: yup 
+      pause_limit: yup
         .number()
         .typeError("Pause limit must be a number")
         .integer("Pause limit must be an integer")
@@ -365,7 +495,7 @@ const CompanySettingsCommon = ({ isSL }) => {
         .required(error?.required),
       max_ports: yup
         .number()
-        .typeError("Pause limit must be a number")  
+        .typeError("Pause limit must be a number")
         .integer("Pause limit must be an integer")
         .max(16, "Maximum port limit should not exceed 16")
         .min(1, "Minimum port limit should be 1")
@@ -375,19 +505,58 @@ const CompanySettingsCommon = ({ isSL }) => {
     onSubmit: (data, action) => {
       const payload = {
         id: data?.id ? data?.id : 0,
+
         name: data?.name ? data?.name : "",
         phone_number: data?.phone_number ? data?.phone_number : "",
-        website: data?.website ? data?.website : "",
-        max_questions: data?.max_questions ? data?.max_questions : "",
         email: data?.email ? data?.email : "",
+        address: data?.address ? data?.address : "",
+        website: data?.website ? data?.website : "",
+
         system_name: data?.system_name ? data?.system_name : "",
         system_footer: data?.system_footer ? data?.system_footer : "",
+
+        domain_url: data?.domain_url ? data?.domain_url : "",
+        license_key: data?.license_key ? data?.license_key : "",
+
+        otp_verification: data?.otp_verification.toString(),
+        component_approval: data?.component_approval.toString(),
+        scenario_approval: data?.scenario_approval.toString(),
+
+        base_clone_vmid: data?.base_clone_vmid ? data?.base_clone_vmid : "",
+        template_clone_vmid: data?.template_clone_vmid
+          ? data?.template_clone_vmid
+          : "",
+        start_network_id: data?.start_network_id ? data?.start_network_id : "",
+        cluster_task_type: data?.cluster_task_type
+          ? data?.cluster_task_type
+          : "",
+
+        max_questions: data?.max_questions ? data?.max_questions : "",
+
+        proxmox_current_node: data?.proxmox_current_node
+          ? data?.proxmox_current_node
+          : "",
+        proxmox_other_node: data?.proxmox_other_node
+          ? data?.proxmox_other_node
+          : "",
+        proxmox_host: data?.proxmox_host ? data?.proxmox_host : "",
+        proxmox_username: data?.proxmox_username ? data?.proxmox_username : "",
+        proxmox_password: data?.proxmox_password ? data?.proxmox_password : "",
+
+        file_server_username: data?.file_server_username
+          ? data?.file_server_username
+          : "",
+        file_server_password: data?.file_server_password
+          ? data?.file_server_password
+          : "",
+
         proxmox_alert_time: data?.proxmox_alert_time
           ? data?.proxmox_alert_time
           : "",
         proxmox_email_sent: data?.proxmox_email_sent
           ? data?.proxmox_email_sent
           : "",
+
         termination_delay: data?.termination_delay
           ? data?.termination_delay
           : "",
@@ -396,22 +565,17 @@ const CompanySettingsCommon = ({ isSL }) => {
           : "",
         cloning_delay: data?.cloning_delay ? data?.cloning_delay : "",
         hibernate_delay: data?.hibernate_delay ? data?.hibernate_delay : "",
+
         pause_limit: data?.pause_limit ? data?.pause_limit : "",
         max_ports: data?.max_ports ? data?.max_ports : "",
-        address: data?.address ? data?.address : "",
 
-        otp_verification: data?.otp_verification.toString(),
-        component_approval: data?.component_approval.toString(),
-        scenario_approval: data?.scenario_approval.toString(),
-        // -----
         favicon: isDefaultFavicon ? "" : data?.favicon || "",
         admin_panel_logo: isDefaultPanel ? "" : data?.admin_panel_logo || "",
         web_panel_logo: isDefaultWeb ? "" : data?.web_panel_logo || "",
+
         is_default_favicon: isDefaultFavicon.toString(),
         is_default_ad_logo: isDefaultPanel.toString(),
         is_default_web_logo: isDefaultWeb.toString(),
-        license_key: data?.license_key ? data?.license_key : "",
-        domail_url: data?.domail_url ? data?.domail_url : "",
       };
       if (data?.id == 0) {
         dispatch(addWebSetting(payload));
@@ -425,7 +589,7 @@ const CompanySettingsCommon = ({ isSL }) => {
   const handleUpload = (name = "", files = "", flag = "") => {
     formValidation.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
     setUploadedFile(
-      files && files.length > 0 && files[0]?.file ? files[0]?.file : {}
+      files && files.length > 0 && files[0]?.file ? files[0]?.file : {},
     );
     formValidation.setFieldValue("flag", flag);
   };
@@ -479,6 +643,135 @@ const CompanySettingsCommon = ({ isSL }) => {
   const handleImportModal = () => {
     setOpenImportModal(!openImportModal);
   };
+
+  function TagInput({ name, value, onChange, placeholder, disabled = false }) {
+    const [inputVal, setInputVal] = useState("");
+    const [error, setError] = useState("");
+    const inputRef = useRef(null);
+
+    const tags = value ? value.split(",").filter(Boolean) : [];
+
+    const addTag = (raw) => {
+      if (disabled) return; // ← block adding
+      const val = raw.trim().replace(/,+$/, "").trim();
+      if (!val) return;
+      if (tags.includes(val)) {
+        setError(`"${val}" is already added`);
+        setTimeout(() => setError(""), 2000);
+        return;
+      }
+      const newVal = [...tags, val].join(",");
+      onChange({ target: { name, value: newVal } }); // works with formik handleChange
+      setError("");
+    };
+
+    const removeTag = (tag) => {
+      if (disabled) return;
+      const newVal = tags.filter((t) => t !== tag).join(",");
+      onChange({ target: { name, value: newVal } });
+    };
+
+    const handleKeyDown = (e) => {
+      // if (disabled) return;
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        addTag(inputVal);
+        setInputVal("");
+      }
+      if (e.key === "Backspace" && inputVal === "" && tags.length > 0) {
+        removeTag(tags[tags.length - 1]);
+      }
+    };
+
+    const handleBlur = () => {
+      if (inputVal.trim()) {
+        addTag(inputVal);
+        setInputVal("");
+      }
+    };
+
+    const handlePaste = (e) => {
+      e.preventDefault();
+      e.clipboardData
+        .getData("text")
+        .split(",")
+        .forEach((v) => {
+          if (v.trim()) addTag(v);
+        });
+      setInputVal("");
+    };
+
+    return (
+      <div
+        className={`tag-input-wrapper form-control d-flex flex-wrap gap-1 align-items-center ${error ? "is-invalid" : ""}`}
+        style={{
+          height: "auto",
+          minHeight: "42px",
+          cursor: "text",
+          padding: "5px 10px",
+        }}
+        onClick={() => inputRef.current?.focus()}
+      >
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="badge d-inline-flex align-items-center gap-1"
+            style={{
+              background: "#E6F1FB",
+              color: "#0C447C",
+              border: "0.5px solid #B5D4F4",
+              borderRadius: "999px",
+              fontWeight: 500,
+              fontSize: "12px",
+              padding: "3px 8px",
+            }}
+          >
+            <i className="fa fa-server" style={{ fontSize: "11px" }} />
+            {tag}
+            {!disabled && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeTag(tag);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  color: "#185FA5",
+                  lineHeight: 1,
+                }}
+                aria-label={`Remove ${tag}`}
+              >
+                <i className="fa fa-times" style={{ fontSize: "11px" }} />
+              </button>
+            )}
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onPaste={handlePaste}
+          placeholder={tags.length === 0 ? placeholder : ""}
+          style={{
+            border: "none",
+            outline: "none",
+            flex: 1,
+            minWidth: "140px",
+            background: "transparent",
+            fontSize: "14px",
+          }}
+          autoComplete="off"
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -607,7 +900,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                           type="text"
                           name="address"
                           autoComplete="off"
-                          placeholder="Enter system footer"
+                          placeholder="Enter Company Address"
                           onChange={formValidation.handleChange}
                           value={formValidation.values.address}
                           isInvalid={
@@ -672,7 +965,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.system_footer}
                         </Form.Control.Feedback>
                       </Form.Group>
-                     
 
                       {/* Quiz / Website */}
                       <Form.Group
@@ -699,44 +991,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                         />
                         <Form.Control.Feedback type="invalid">
                           {formValidation.errors.max_questions}
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                      <Form.Group
-                        as={Col}
-                        md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
-                      >
-                        <div className="d-flex justify-content-between align-items-center">
-                          <Form.Label>Max Hibernate Scenario Limit</Form.Label>
-                          <OverlayTrigger
-                            placement="bottom"
-                            overlay={
-                              <Tooltip>
-                                Cloning delay between the scenario.
-                              </Tooltip>
-                            }
-                          >
-                            <i
-                              className="fa fa-info-circle text-dark"
-                              style={{ cursor: "pointer" }}
-                            ></i>
-                          </OverlayTrigger>
-                        </div>
-                        <Form.Control
-                          type="text"
-                          name="pause_limit"
-                          autoComplete="off"
-                          placeholder="Enter Pause Limit"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.pause_limit}
-                          isInvalid={
-                            formValidation.touched.pause_limit &&
-                            formValidation.errors.pause_limit
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.pause_limit}
                         </Form.Control.Feedback>
                       </Form.Group>
 
@@ -769,52 +1023,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                       <Form.Group
                         as={Col}
                         md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
-                      >
-                        <Form.Label>SiberSim Alert Time (Minutes)</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="proxmox_alert_time"
-                          autoComplete="off"
-                          placeholder="Enter SiberSim Alert Time"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.proxmox_alert_time}
-                          isInvalid={
-                            formValidation.touched.proxmox_alert_time &&
-                            formValidation.errors.proxmox_alert_time
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.proxmox_alert_time}
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                      <Form.Group
-                        as={Col}
-                        md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
-                      >
-                        <Form.Label>SiberSim Email Sent</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="proxmox_email_sent"
-                          autoComplete="off"
-                          placeholder="Enter SiberSim Email Sent"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.proxmox_email_sent}
-                          isInvalid={
-                            formValidation.touched.proxmox_email_sent &&
-                            formValidation.errors.proxmox_email_sent
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.proxmox_email_sent}
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                      <Form.Group
-                        as={Col}
-                        md="4"
                         controlId="validationFormikOtp"
                         className="my-4"
                       >
@@ -839,7 +1047,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setiscomponent_approval(!component_approval);
                                   formValidation.setFieldValue(
                                     "component_approval",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -875,7 +1083,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setisscenario_approval(!scenario_approval);
                                   formValidation.setFieldValue(
                                     "scenario_approval",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -883,31 +1091,6 @@ const CompanySettingsCommon = ({ isSL }) => {
                             </label>
                           </OverlayTrigger>
                         </div>
-                      </Form.Group>
-                       <Form.Group
-                        as={Col}
-                        md="4"
-                        controlid="validationFormik102"
-                        className="mb-3"
-                      >
-                        <Form.Label>
-                          Maximum Ports <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="max_ports"
-                          autoComplete="off"
-                          placeholder="Enter system footer"
-                          onChange={formValidation.handleChange}
-                          value={formValidation.values.max_ports}
-                          isInvalid={
-                            formValidation.touched.max_ports &&
-                            formValidation.errors.max_ports
-                          }
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {formValidation.errors.max_ports}
-                        </Form.Control.Feedback>
                       </Form.Group>
 
                       <Form.Group
@@ -933,7 +1116,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setisotp_verification(!otp_verification);
                                   formValidation.setFieldValue(
                                     "otp_verification",
-                                    e.target.checked
+                                    e.target.checked,
                                   );
                                 }}
                               />
@@ -947,26 +1130,28 @@ const CompanySettingsCommon = ({ isSL }) => {
                         <>
                           <Form.Group as={Col} md="4" className="my-4">
                             <div className="d-flex justify-content-between align-items-center">
-                              <Form.Label className="mb-0">
-                                Export Master Data
-                              </Form.Label>
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={
-                                  <Tooltip>
-                                    Export the Masters of Scenario , Component ,
-                                    Component Category , Scenario Category and
-                                    Scenario Subcategory
-                                  </Tooltip>
-                                }
-                              >
-                                <i
-                                  className="fa fa-info-circle text-dark"
-                                  style={{ cursor: "pointer" }}
-                                ></i>
-                              </OverlayTrigger>
-                            </div>
-                            <div className="mt-3">
+                              <div className="d-flex align-items-center gap-2">
+                                <Form.Label className="mb-0">
+                                  Export Master Data
+                                </Form.Label>
+
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={
+                                    <Tooltip>
+                                      Export the Masters of Scenario, Component,
+                                      Component Category, Scenario Category and
+                                      Scenario Subcategory
+                                    </Tooltip>
+                                  }
+                                >
+                                  <i
+                                    className="fa fa-info-circle text-dark"
+                                    style={{ cursor: "pointer" }}
+                                  ></i>
+                                </OverlayTrigger>
+                              </div>
+
                               <Button
                                 type="button"
                                 variant="outline-info"
@@ -978,26 +1163,28 @@ const CompanySettingsCommon = ({ isSL }) => {
                           </Form.Group>
                           <Form.Group as={Col} md="4" className="my-4">
                             <div className="d-flex justify-content-between align-items-center">
-                              <Form.Label className="mb-0">
-                                Import Master Data
-                              </Form.Label>
-                              <OverlayTrigger
-                                placement="bottom"
-                                overlay={
-                                  <Tooltip>
-                                    Import the Masters of Scenario , Component ,
-                                    Component Category , Scenario Category and
-                                    Scenario Subcategory
-                                  </Tooltip>
-                                }
-                              >
-                                <i
-                                  className="fa fa-info-circle text-dark"
-                                  style={{ cursor: "pointer" }}
-                                ></i>
-                              </OverlayTrigger>
-                            </div>
-                            <div className="mt-3">
+                              <div className="d-flex align-items-center gap-2">
+                                <Form.Label className="mb-0">
+                                  Import Master Data
+                                </Form.Label>
+
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={
+                                    <Tooltip>
+                                      Import the Masters of Scenario, Component,
+                                      Component Category, Scenario Category and
+                                      Scenario Subcategory
+                                    </Tooltip>
+                                  }
+                                >
+                                  <i
+                                    className="fa fa-info-circle text-dark"
+                                    style={{ cursor: "pointer" }}
+                                  ></i>
+                                </OverlayTrigger>
+                              </div>
+
                               <Button
                                 type="button"
                                 variant="outline-warning"
@@ -1086,7 +1273,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
-                          <Form.Label>Configuration Delay (Seconds)</Form.Label>
+                          <Form.Label>Configuration Delay (Sec)</Form.Label>
                           <OverlayTrigger
                             placement="bottom"
                             overlay={
@@ -1126,7 +1313,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
-                          <Form.Label>Hibernate Delay (Seconds)</Form.Label>
+                          <Form.Label>Hibernate Delay (Sec)</Form.Label>
                           <OverlayTrigger
                             placement="bottom"
                             overlay={
@@ -1166,7 +1353,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                         className="mb-3"
                       >
                         <div className="d-flex justify-content-between align-items-center">
-                          <Form.Label>Termination Delay (Seconds)</Form.Label>
+                          <Form.Label>Termination Delay (Sec)</Form.Label>
                           <OverlayTrigger
                             placement="bottom"
                             overlay={
@@ -1198,6 +1385,1181 @@ const CompanySettingsCommon = ({ isSL }) => {
                           {formValidation.errors.termination_delay}
                         </Form.Control.Feedback>
                       </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Max Hibernate Scenario Limit{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Maximum hibernate limit of scenario.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="pause_limit"
+                          autoComplete="off"
+                          placeholder="Enter Pause Limit"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.pause_limit}
+                          isInvalid={
+                            formValidation.touched.pause_limit &&
+                            formValidation.errors.pause_limit
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.pause_limit}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>SiberSim Alert Time (Minutes)</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Proxmox Down Notification Delay Time (In Min).
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="proxmox_alert_time"
+                          autoComplete="off"
+                          placeholder="Enter SiberSim Alert Time"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_alert_time}
+                          isInvalid={
+                            formValidation.touched.proxmox_alert_time &&
+                            formValidation.errors.proxmox_alert_time
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_alert_time}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>SiberSim Email Sent</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Proxmox Down Notification Send On Mail.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="proxmox_email_sent"
+                          autoComplete="off"
+                          placeholder="Enter SiberSim Email Sent"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_email_sent}
+                          isInvalid={
+                            formValidation.touched.proxmox_email_sent &&
+                            formValidation.errors.proxmox_email_sent
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_email_sent}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Maximum Ports <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Maximum number of ports for the manipulation of
+                                scenario.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+                        <Form.Control
+                          type="text"
+                          name="max_ports"
+                          autoComplete="off"
+                          placeholder="Enter system footer"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.max_ports}
+                          isInvalid={
+                            formValidation.touched.max_ports &&
+                            formValidation.errors.max_ports
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.max_ports}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Compute Node Identifier{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Proxmox cluster node where virtual machines will
+                                be deployed.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="proxmox_current_node"
+                          disabled
+                          autoComplete="off"
+                          placeholder="Enter compute node"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_current_node}
+                          isInvalid={
+                            formValidation.touched.proxmox_current_node &&
+                            formValidation.errors.proxmox_current_node
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_current_node}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Host Address <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>Host Address of Proxmox server</Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="proxmox_host"
+                          disabled
+                          autoComplete="off"
+                          placeholder="Enter Host Address"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_host}
+                          isInvalid={
+                            formValidation.touched.proxmox_host &&
+                            formValidation.errors.proxmox_host
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_host}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Login Username{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                username for Proxmox authentication
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="proxmox_username"
+                          autoComplete="off"
+                          placeholder="Enter Login Username"
+                          disabled
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_username}
+                          isInvalid={
+                            formValidation.touched.proxmox_username &&
+                            formValidation.errors.proxmox_username
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_username}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Login Password{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Secure password for Proxmox access
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="proxmox_password"
+                          disabled
+                          autoComplete="off"
+                          placeholder="Enter Login Password"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.proxmox_password}
+                          isInvalid={
+                            formValidation.touched.proxmox_password &&
+                            formValidation.errors.proxmox_password
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.proxmox_password}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>File Server Username</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Username used to access file storage server
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="file_server_username"
+                          disabled
+                          autoComplete="off"
+                          placeholder="Enter File Server Username"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.file_server_username}
+                          isInvalid={
+                            formValidation.touched.file_server_username &&
+                            formValidation.errors.file_server_username
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.file_server_username}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>File Server Password</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Authentication password for file server access
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="file_server_password"
+                          autoComplete="off"
+                          placeholder="Enter File Server Password"
+                          disabled
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.file_server_password}
+                          isInvalid={
+                            formValidation.touched.file_server_password &&
+                            formValidation.errors.file_server_password
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.file_server_password}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Starting VM Identifier (VMID){" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Initial VM ID used for provisioning virtual
+                                machines
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="base_clone_vmid"
+                          autoComplete="off"
+                          disabled
+                          placeholder="Enter Starting VM Identifier"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.base_clone_vmid}
+                          isInvalid={
+                            formValidation.touched.base_clone_vmid &&
+                            formValidation.errors.base_clone_vmid
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.base_clone_vmid}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Custom Component VMID Range Start{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Starting point for custom VM ID allocation range
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="template_clone_vmid"
+                          autoComplete="off"
+                          placeholder="Enter Custom Component VMID Range Start"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.template_clone_vmid}
+                          disabled
+                          isInvalid={
+                            formValidation.touched.template_clone_vmid &&
+                            formValidation.errors.template_clone_vmid
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.template_clone_vmid}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Network Segment ID{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Virtual network segment identifier for VM
+                                connectivity
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Control
+                          type="text"
+                          name="start_network_id"
+                          autoComplete="off"
+                          placeholder="Enter Network Segment ID"
+                          onChange={formValidation.handleChange}
+                          value={formValidation.values.start_network_id}
+                          disabled
+                          isInvalid={
+                            formValidation.touched.start_network_id &&
+                            formValidation.errors.start_network_id
+                          }
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.start_network_id}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+
+                      <Form.Group as={Col} md="4" className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>Other Nodes</Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Additional Proxmox cluster nodes
+                                (comma-separated)
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            />
+                          </OverlayTrigger>
+                        </div>
+
+                        <TagInput
+                          name="proxmox_other_node"
+                          value={formValidation.values.proxmox_other_node}
+                          onChange={formValidation.handleChange}
+                          placeholder="Type node name, press Enter or ,"
+                          disabled={true}
+                        />
+
+                        {formValidation.touched.proxmox_other_node &&
+                          formValidation.errors.proxmox_other_node && (
+                            <div className="invalid-feedback d-block">
+                              {formValidation.errors.proxmox_other_node}
+                            </div>
+                          )}
+                      </Form.Group>
+                      {/* <Form.Group
+                        as={Col}
+                        md="4"
+                        controlId="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Cluster Method{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
+
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Select the load balancing method for the cluster
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Form.Select
+                          name="cluster_task_type"
+                          value={formValidation.values.cluster_task_type}
+                          onChange={formValidation.handleChange}
+                          disabled
+                          isInvalid={
+                            formValidation.touched.cluster_task_type &&
+                            !!formValidation.errors.cluster_task_type
+                          }
+                        >
+                          <option value="">Select Cluster Method</option>
+                          <option value="RoundRobin">Round Robin</option>
+                          <option value="LeastLoaded">Least Loaded</option>
+                          <option value="Weighted">Weighted</option>
+                          <option value="Threshold">Threshold</option>
+                        </Form.Select>
+
+                        <Form.Control.Feedback type="invalid">
+                          {formValidation.errors.cluster_task_type}
+                        </Form.Control.Feedback>
+                      </Form.Group> */}
+                      <Form.Group
+  as={Col}
+  md="4"
+  controlid="validationFormik102"
+  className="mb-3"
+>
+  <div className="d-flex justify-content-between align-items-center">
+    <Form.Label>
+      Cluster Method <span className="text-danger">*</span>
+    </Form.Label>
+
+    <OverlayTrigger
+      placement="bottom"
+      overlay={
+        <Tooltip>
+          Select the load balancing method for the cluster
+        </Tooltip>
+      }
+    >
+      <i
+        className="fa fa-info-circle text-dark"
+        style={{ cursor: "pointer" }}
+      ></i>
+    </OverlayTrigger>
+  </div>
+
+  <Select
+    theme={(theme) => ({
+      ...theme,
+      colors: {
+        ...theme.colors,
+        primary25: "var(--primary-bg-color)",
+        primary: "var(--primary-bg-color)",
+      },
+    })}
+    name="cluster_task_type"
+    styles={getSelectStyles("cluster_task_type")}
+    value={
+      clusterMethodOptions.find(
+        (x) => x.value === formValidation.values.cluster_task_type
+      ) || null
+    }
+    options={clusterMethodOptions}
+    getOptionLabel={(x) => x.label}
+    getOptionValue={(x) => x.value}
+    placeholder="Select Cluster Method"
+    isDisabled
+    onChange={(e) => {
+      console.log("Selected:", e);
+      formValidation.setFieldValue("cluster_task_type", e.value);
+    }}
+    menuPosition="fixed"
+  />
+  {formValidation.errors.cluster_task_type && formValidation.touched.cluster_task_type && (
+    <div className="invalid-tooltiped">
+      {formValidation.errors.cluster_task_type}
+    </div>
+  )}
+</Form.Group>
+
+                      {isSL && (
+                        <>
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Compute Node Identifier{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Proxmox cluster node where virtual machines
+                                    will be deployed.
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_current_node"
+                              autoComplete="off"
+                              placeholder="Enter compute node"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.proxmox_current_node}
+                              isInvalid={
+                                formValidation.touched.proxmox_current_node &&
+                                formValidation.errors.proxmox_current_node
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_current_node}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Host Address{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>Host address of server</Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_host"
+                              autoComplete="off"
+                              placeholder="Enter Host Address"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.proxmox_host}
+                              isInvalid={
+                                formValidation.touched.proxmox_host &&
+                                formValidation.errors.proxmox_host
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_host}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Login Username{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    username for Proxmox authentication
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_username"
+                              autoComplete="off"
+                              placeholder="Enter Login Username"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.proxmox_username}
+                              isInvalid={
+                                formValidation.touched.proxmox_username &&
+                                formValidation.errors.proxmox_username
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_username}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Login Password{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Secure password for Proxmox access
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="proxmox_password"
+                              autoComplete="off"
+                              placeholder="Enter Login Password"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.proxmox_password}
+                              isInvalid={
+                                formValidation.touched.proxmox_password &&
+                                formValidation.errors.proxmox_password
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.proxmox_password}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>File Server Username</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Username used to access file storage server
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="file_server_username"
+                              autoComplete="off"
+                              placeholder="Enter File Server Username"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.file_server_username}
+                              isInvalid={
+                                formValidation.touched.file_server_username &&
+                                formValidation.errors.file_server_username
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.file_server_username}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>File Server Password</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Authentication password for file server
+                                    access
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="file_server_password"
+                              autoComplete="off"
+                              placeholder="Enter File Server Password"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.file_server_password}
+                              isInvalid={
+                                formValidation.touched.file_server_password &&
+                                formValidation.errors.file_server_password
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.file_server_password}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Starting VM Identifier (VMID){" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Initial VM ID used for provisioning virtual
+                                    machines
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="base_clone_vmid"
+                              autoComplete="off"
+                              placeholder="Starting VM Identifier (VMID)"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.base_clone_vmid}
+                              isInvalid={
+                                formValidation.touched.base_clone_vmid &&
+                                formValidation.errors.base_clone_vmid
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.base_clone_vmid}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Custom Component VMID Range Start{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Starting point for custom VM ID allocation
+                                    range
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="template_clone_vmid"
+                              autoComplete="off"
+                              placeholder="Enter Custom Component VMID Range Start"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.template_clone_vmid}
+                              isInvalid={
+                                formValidation.touched.template_clone_vmid &&
+                                formValidation.errors.template_clone_vmid
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.template_clone_vmid}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Network Segment ID{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Virtual network segment identifier for VM
+                                    connectivity
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
+
+                            <Form.Control
+                              type="text"
+                              name="start_network_id"
+                              autoComplete="off"
+                              placeholder="Enter Network Segment ID"
+                              onChange={formValidation.handleChange}
+                              value={formValidation.values.start_network_id}
+                              isInvalid={
+                                formValidation.touched.start_network_id &&
+                                formValidation.errors.start_network_id
+                              }
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {formValidation.errors.start_network_id}
+                            </Form.Control.Feedback>
+                          </Form.Group>
+
+                          <Form.Group as={Col} md="4" className="mb-3">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>Other Nodes</Form.Label>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Additional Proxmox cluster nodes
+                                    (comma-separated)
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                />
+                              </OverlayTrigger>
+                            </div>
+
+                            <TagInput
+                              name="proxmox_other_node"
+                              value={formValidation.values.proxmox_other_node}
+                              onChange={formValidation.handleChange}
+                              placeholder="Type node name, press Enter or ,"
+                            />
+
+                            {formValidation.touched.proxmox_other_node &&
+                              formValidation.errors.proxmox_other_node && (
+                                <div className="invalid-feedback d-block">
+                                  {formValidation.errors.proxmox_other_node}
+                                </div>
+                              )}
+                          </Form.Group>
+
+                                              <Form.Group
+  as={Col}
+  md="4"
+  controlid="validationFormik102"
+  className="mb-3"
+>
+  <div className="d-flex justify-content-between align-items-center">
+    <Form.Label>
+      Cluster Method <span className="text-danger">*</span>
+    </Form.Label>
+
+    <OverlayTrigger
+      placement="bottom"
+      overlay={
+        <Tooltip>
+          Select the load balancing method for the cluster
+        </Tooltip>
+      }
+    >
+      <i
+        className="fa fa-info-circle text-dark"
+        style={{ cursor: "pointer" }}
+      ></i>
+    </OverlayTrigger>
+  </div>
+
+  <Select
+    theme={(theme) => ({
+      ...theme,
+      colors: {
+        ...theme.colors,
+        primary25: "var(--primary-bg-color)",
+        primary: "var(--primary-bg-color)",
+      },
+    })}
+    name="cluster_task_type"
+    styles={getSelectStyles("cluster_task_type")}
+    value={
+      clusterMethodOptions.find(
+        (x) => x.value === formValidation.values.cluster_task_type
+      ) || null
+    }
+    options={clusterMethodOptions}
+    getOptionLabel={(x) => x.label}
+    getOptionValue={(x) => x.value}
+    placeholder="Select Cluster Method"
+    onChange={(e) => {
+      console.log("Selected:", e);
+      formValidation.setFieldValue("cluster_task_type", e.value);
+    }}
+    menuPosition="fixed"
+  />
+  {formValidation.errors.cluster_task_type && formValidation.touched.cluster_task_type && (
+    <div className="invalid-tooltiped">
+      {formValidation.errors.cluster_task_type}
+    </div>
+  )}
+</Form.Group>
+                        </>
+                      )}
                     </Row>
                   </Card.Body>
                 </Card>
@@ -1219,7 +2581,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    SiberSim Logo Settings
+                    Logo Settings
                   </div>
                   <Card.Body>
                     <Row>
@@ -1320,7 +2682,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setIsDefaultPanel(!isDefaultPanel);
                                   formValidation.setFieldValue(
                                     "admin_panel_logo",
-                                    ""
+                                    "",
                                   );
                                 }}
                               />
@@ -1392,7 +2754,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                                   setIsDefaultWeb(!isDefaultWeb);
                                   formValidation.setFieldValue(
                                     "web_panel_logo",
-                                    ""
+                                    "",
                                   );
                                 }}
                               />
@@ -1444,7 +2806,7 @@ const CompanySettingsCommon = ({ isSL }) => {
                     </Row>
                   </Card.Body>
                 </Card>
-                
+
                 <Row>
                   <Col className="d-flex justify-content-end mt-3">
                     {oneClick ? (

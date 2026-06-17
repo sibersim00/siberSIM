@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo ,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -37,6 +37,10 @@ import { Calendar } from "@fullcalendar/core";
 import ActionButtonRenderer from "../../../shared/data/masterButtons/action-button";
 import { useTranslation } from "react-i18next";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const Labs = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -72,6 +76,10 @@ const Labs = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalEvent, setModalEvent] = useState(null);
   const viewType = router.query.view || "card";
+
+   const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
 
   useEffect(() => {
     if (viewType == "") {
@@ -165,9 +173,9 @@ const Labs = () => {
       minWidth: 100,
       maxWidth: 100,
       width: 100,
-      cellRendererFramework: (params) => (
+      cellRenderer: (params) => (
         <button
-          className="btn btn-sm btn-outline-dark"
+          className="btn btn-sm btn-outline-warning mb-2"
           onClick={() => handleAllowedUsersClick(params.data)}
         >
           <i className="fe fe-users"></i>
@@ -183,6 +191,7 @@ const Labs = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
+
   useEffect(() => {
     if (addLabData?.statusCode == 200) {
       setformModal(false);
@@ -322,13 +331,33 @@ const Labs = () => {
     }
   };
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
-  };
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+ const gridOptions = {
+     headerHeight: HEADER_HEIGHT,
+     rowHeight: ROW_HEIGHT,
+     suppressScrollOnNewData: true,
+   };
+ 
+ const onGridReady = useCallback((params) => {
+   gridRef.current = params.api;
+ 
+   // Set correct height on first load as well
+   const initialPageSize = params.api.paginationGetPageSize();
+   const totalRows = params.api.getDisplayedRowCount();
+   const effectiveRows = Math.min(initialPageSize, totalRows);
+   setPageSize(effectiveRows);
+ }, []);
+   
+     // Fires when page size changes via the built-in dropdown
+    const onPaginationChanged = useCallback((params) => {
+   if (params.api) {
+     const newPageSize = params.api.paginationGetPageSize();
+     const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+ 
+     // Use whichever is smaller — actual rows vs page size
+     const effectiveRows = Math.min(newPageSize, totalRows);
+     setPageSize(effectiveRows);
+   }
+ }, []);
 
   const defaultColDef = useMemo(() => {
     return {
@@ -462,7 +491,7 @@ const Labs = () => {
       return (
         <ActionButtonRenderer
           handleEditView={() => handleView(props.data)}
-          handleShowEditView={true}
+          // handleShowEditView={true}
           handleEdit={handleEdit}
           propsVal={props}
           handleDelete={handleDelete}
@@ -660,7 +689,9 @@ const Labs = () => {
                       pagination={true}
                       components={frameworkComponents}
                       onGridReady={onGridReady}
+                      paginationPageSize={20}
                       defaultColDef={defaultColDef}
+                       onPaginationChanged={onPaginationChanged} //  track page size changes
                     ></AgGridReact>
                   </div>
                 ) : (
@@ -783,7 +814,7 @@ const Labs = () => {
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
-                              <div
+                              {/* <div
                                 className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                                 onClick={() => handleView(item)}
                               >
@@ -794,7 +825,7 @@ const Labs = () => {
                                   <i className="fe fe-eye "></i>
                                 </OverlayTrigger>
                               </div>
-                              &nbsp;
+                              &nbsp; */}
                               <div
                                 className="btn btn-sm ripple bg-warning-transparent text-warning rounded-circle"
                                 onClick={() => handleAllowedUsersClick(item)}

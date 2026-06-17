@@ -15,13 +15,10 @@ import { useDispatch, useSelector } from "react-redux";
 import EditableEdge from '../../../../shared/data/scenarios/EditableEdge';
 
 const resolveImageUrl = (url) => {
-  console.log('****', url)
   if (!url) return '';
 
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   const isStatic = url.startsWith('/_next') || url.startsWith('/static') || url.startsWith('/images');
-  console.log(isStatic, 'isAbsolute', isAbsolute, url, `${window.location.origin}${url}`)
-
   if (isAbsolute) {
     return url;
   } else {
@@ -31,9 +28,7 @@ const resolveImageUrl = (url) => {
 };
 
 
-const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-
-  console.log("data.image",data.image);
+const ImageNode = ({ id, data, isConnectable, deleteNode }) => {;
   // const networkPorts = data.networkport || [];
   // const portKeys = networkPorts.flatMap(obj => Object.keys(obj)).sort();
   // //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
@@ -232,14 +227,10 @@ const nodeTypes = {
 };
 
 const ScenarioDiagram = ({ scenarioId, scenariodiagram , rowValues}) => {
-
-  console.log(scenariodiagram, 'props@@@@@');
-  console.log("rowValues", rowValues);
   const dispatch = useDispatch();
   const {
     getScenarioFlowchart
   } = useSelector((state) => {
-    console.log('getMasterCatListData', state);
     return {
       getScenarioFlowchart: state?.commonMaster?.flowchart?.data,
       errorData: state && state.commonMaster && state.commonMaster.error,
@@ -254,24 +245,6 @@ const ScenarioDiagram = ({ scenarioId, scenariodiagram , rowValues}) => {
 
 
   const [elements, setelements] = useState({ nodes: [], edges: [] });
-
-  // useEffect(() => {
-  //   if (scenariodiagram && scenariodiagram !== '') {
-
-  //     const data = scenariodiagram;
-
-  //     console.log("datadatadata",data);
-  //     const parsedData = JSON.parse(data.replace('flowchartData ', ''));
-  //     console.log('parsedData', parsedData);
-  //     if (parsedData && parsedData.nodes) {
-  //       setelements({
-  //         nodes: parsedData.nodes,
-  //         edges: parsedData.edges,
-  //       });
-
-  //     }
-  //   }
-  // }, [scenariodiagram]);
 
 useEffect(() => {
   if (scenariodiagram && scenariodiagram !== '') {
@@ -300,13 +273,6 @@ useEffect(() => {
     }
   }
 }, [scenariodiagram]);
-
-
-
-
-  console.log('Rendering with nodes:', elements.nodes);
-  console.log('Rendering with edges:', elements.edges);
-
   const FlowViewportController = ({ nodes }) => {
     const { setCenter } = useReactFlow();
 

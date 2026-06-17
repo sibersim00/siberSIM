@@ -38,9 +38,12 @@ import {
 } from "../../../shared/redux/slices/learner/learnerManage";
 import dummy_profile from "../../../public/assets/img/dummy_profile.png";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ManageLearner = () => {
   const dispatch = useDispatch();
-  const gridRef = useRef();
   const { push } = useRouter();
   const { t } = useTranslation();
   const [empStatus, setEmpStatus] = useState("true");
@@ -54,6 +57,9 @@ const ManageLearner = () => {
   const [images, setImages] = useState([]);
   const [addLear, setAddLear] = useState(false);
   const [learnerDataItem, setLearnerDataItem] = useState("");
+  const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const { learnersListResp, manageLearnerStatus, errorData } = useSelector(
     (state) => {
       return {
@@ -242,14 +248,33 @@ const ManageLearner = () => {
     };
   }, []);
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
-  };
-
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+   const gridOptions = {
+      headerHeight: HEADER_HEIGHT,
+      rowHeight: ROW_HEIGHT,
+      suppressScrollOnNewData: true,
+    };
+  
+  const onGridReady = useCallback((params) => {
+    gridRef.current = params.api;
+  
+    // Set correct height on first load as well
+    const initialPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(initialPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }, []);
+    
+      // Fires when page size changes via the built-in dropdown
+     const onPaginationChanged = useCallback((params) => {
+    if (params.api) {
+      const newPageSize = params.api.paginationGetPageSize();
+      const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+  
+      // Use whichever is smaller — actual rows vs page size
+      const effectiveRows = Math.min(newPageSize, totalRows);
+      setPageSize(effectiveRows);
+    }
+  }, []);
 
   const onFilterChanged = (data) => {
     if (view == "card") {
@@ -619,8 +644,12 @@ const ManageLearner = () => {
 
               {view == "list" ? (
                 <div
-                  className="ag-theme-alpine mg-t-20"
-                  style={{ height: "40em", width: "100%" }}
+                     className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                 >
                   <AgGridReact
                     id="staff_grid"
@@ -632,9 +661,11 @@ const ManageLearner = () => {
                     onGridReady={onGridReady}
                     components={frameworkComponents}
                     defaultColDef={defaultColDef}
+                    paginationPageSize={20}
                     overlayNoRowsTemplate="No data available"
                     suppressRowClickSelection={true}
                     onFirstDataRendered={autoSizeAll}
+                    onPaginationChanged={onPaginationChanged} //  track page size changes
                   ></AgGridReact>
                 </div>
               ) : (

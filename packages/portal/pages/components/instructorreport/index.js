@@ -28,7 +28,6 @@ const Master = () => {
       dispatch(getLocalStorageData("selectedmenu"));
     }
   }, []);
-  console.log("subMenus", subMenus);
   useEffect(() => {
     if (getSubMenus && getSubMenus?.source == "/report") {
       const checktabnav = getSubMenus.menutype == "Tab Menu" ? true : false;

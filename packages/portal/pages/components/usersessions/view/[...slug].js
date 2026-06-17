@@ -389,12 +389,12 @@ const UserSessionView = () => {
                           </span>
                         </div>
 
-                        <div
+                        {/* <div
                           className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
                           onClick={() => handleToTerminate(rowValues)}
                         >
                           <i className="fas fa-user-lock"></i>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Back Button */}

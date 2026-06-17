@@ -68,7 +68,6 @@ export function UserReportList(payload) {
 
 
 export function UserPerformanceList(payload) {
-  console.log("payload",payload);
   return async (dispatch) => {
     try {
       const response = await axios.post(`${api.user_performance_list}`, payload);

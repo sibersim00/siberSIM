@@ -59,9 +59,6 @@ export default function ScenarioImportDragDrop() {
         state.scenarioManage.scenarioImportData.data,
     };
   });
-
-  console.log("scenarioComponents", scenarioComponents);
-
   const handleDragStart = (item) => setDraggingItem(item);
 
   const handleDrop = () => {

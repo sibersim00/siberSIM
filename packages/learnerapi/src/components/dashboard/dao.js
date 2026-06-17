@@ -65,7 +65,132 @@ const getStudentDashboardData =
       ];
 
       const webBrowserWidgetsQuery = `SELECT webbrowserwidgetid, widget_name, widget_url, \`order\` FROM web_browser_widgets WHERE status = 'Active' AND deletedon IS NULL ORDER BY \`order\` ASC;`;
-      const [completedScenarios, currentScenarioResult, webBrowserWidgets] =
+
+// ==========================================
+// UPCOMING SCENARIOS
+// ==========================================
+
+const upcomingScenariosQuery = `
+SELECT 
+    s.scenarioid,
+    s.scenariouuid,
+    s.scenariotitle,
+    s.scenariolevel,
+    s.duration,
+    sc.categoryname AS category_name
+FROM scenarios s
+INNER JOIN scenario_categories sc 
+    ON sc.scenariocategoryid = s.scenariocategoryid
+WHERE s.scenariostatus = 'Draft'
+AND s.status = 'Active'
+AND s.deletedon IS NULL
+ORDER BY s.createdon DESC
+LIMIT 5;
+`;
+
+
+// ==========================================
+// SKILL PROFICIENCY
+// ==========================================
+
+const skillProficiencyQuery = `
+SELECT 
+    sc.scenariocategoryid,
+    sc.categoryname,
+
+    COUNT(vr.vmrequestid) AS total_sessions,
+
+    SUM(
+        CASE 
+            WHEN vr.status = 'Completed' 
+            THEN 1 
+            ELSE 0 
+        END
+    ) AS completed_sessions,
+
+    ROUND(
+        (
+            SUM(
+                CASE 
+                    WHEN vr.status = 'Completed' 
+                    THEN 1 
+                    ELSE 0 
+                END
+            ) / COUNT(vr.vmrequestid)
+        ) * 100
+    ) AS proficiency_percentage
+
+FROM vm_request vr
+
+INNER JOIN scenarios s
+    ON s.scenarioid = vr.scenarioid
+
+INNER JOIN scenario_categories sc
+    ON sc.scenariocategoryid = s.scenariocategoryid
+
+WHERE vr.requestedby_id = :learner_id
+AND vr.requestedby_role = 'Learner'
+
+GROUP BY sc.scenariocategoryid, sc.categoryname
+
+HAVING COUNT(vr.vmrequestid) > 0
+
+ORDER BY proficiency_percentage DESC
+
+LIMIT 5;
+`;
+
+
+// ==========================================
+// RECENT ACTIVITY
+// ==========================================
+
+const recentActivityQuery = `
+SELECT 
+    vr.vmrequestid,
+    vr.status,
+    vr.createdon,
+    s.scenariotitle,
+    s.scenariolevel
+
+FROM vm_request vr
+
+INNER JOIN scenarios s
+    ON s.scenarioid = vr.scenarioid
+
+WHERE vr.requestedby_id = :learner_id
+AND vr.requestedby_role = 'Learner'
+
+ORDER BY vr.createdon DESC
+
+LIMIT 3;
+`;
+
+
+const weeklySessionsQuery = `
+SELECT 
+  d.day_num,
+  d.day_name,
+  COALESCE(COUNT(vr.vmrequestid), 0) AS total
+FROM (
+  SELECT 2 AS day_num, 'Mon' AS day_name UNION ALL
+  SELECT 3, 'Tue' UNION ALL
+  SELECT 4, 'Wed' UNION ALL
+  SELECT 5, 'Thu' UNION ALL
+  SELECT 6, 'Fri' UNION ALL
+  SELECT 7, 'Sat' UNION ALL
+  SELECT 1, 'Sun'
+) d
+LEFT JOIN vm_request vr 
+  ON DAYOFWEEK(vr.createdon) = d.day_num
+  AND vr.requestedby_id = :learner_id
+  AND vr.requestedby_role = 'Learner'
+  AND YEARWEEK(vr.createdon, 1) = YEARWEEK(CURDATE(), 1)
+GROUP BY d.day_num, d.day_name
+ORDER BY FIELD(d.day_num, 2, 3, 4, 5, 6, 7, 1);
+`;
+
+      const [completedScenarios, currentScenarioResult, webBrowserWidgets, upcomingScenarios,skillProficiency,recentActivity,weeklySessions] =
         await Promise.all([
           db.sequelize.query(completedQuery, {
             type: db.sequelize.QueryTypes.SELECT,
@@ -77,6 +202,25 @@ const getStudentDashboardData =
           db.sequelize.query(webBrowserWidgetsQuery, {
             type: db.sequelize.QueryTypes.SELECT,
           }),
+          db.sequelize.query(upcomingScenariosQuery, {
+            type: db.sequelize.QueryTypes.SELECT,
+          }),
+
+          db.sequelize.query(skillProficiencyQuery, {
+            replacements: { learner_id },
+            type: db.sequelize.QueryTypes.SELECT,
+          }),
+
+          db.sequelize.query(recentActivityQuery, {
+            replacements: { learner_id },
+            type: db.sequelize.QueryTypes.SELECT,
+          }),
+          db.sequelize.query(weeklySessionsQuery, {
+            replacements: { learner_id },
+            type: db.sequelize.QueryTypes.SELECT,
+          }),
+
+
         ]);
       let currentScenario = currentScenarioResult[0] || null;
       if (currentScenario) {
@@ -113,11 +257,25 @@ const getStudentDashboardData =
           throw err;
         }
       }
+
+
+
+
+
+
+
+
+
+
       return {
         completedScenarios,
         currentScenario,
         widgets,
         webBrowserWidgets,
+        upcomingScenarios,
+        skillProficiency,
+        recentActivity,
+        weeklySessions,
       };
     } catch (err) {
       console.error("Error fetching dashboard data:", err);

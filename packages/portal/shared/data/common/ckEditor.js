@@ -3,7 +3,7 @@ import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 
 const Ckcomponent = (props) => {
-  const { onChange, editorLoaded, data,setEditorLoaded } = props;
+  const { onChange, editorLoaded, data = "",setEditorLoaded } = props;
 
   useEffect(()=>{
     setEditorLoaded(true);
@@ -14,7 +14,7 @@ const Ckcomponent = (props) => {
       {editorLoaded ? (
         <CKEditor
           editor={ClassicEditor}
-          data={data}
+          data={data ?? ""}
           config={{}}
           onChange={(event, editor) => {
             const data = editor.getData();

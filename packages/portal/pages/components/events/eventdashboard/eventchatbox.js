@@ -14,7 +14,6 @@ const EventChatBox = ({ showChat, setShowChat, eventTitle,scenarioTitle , rowDat
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  console.log("scenarioTitlescenarioTitle",scenarioTitle)
 
   const chatBodyRef = useRef(null);
 

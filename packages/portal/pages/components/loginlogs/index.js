@@ -28,10 +28,6 @@ const Master = () => {
       dispatch(getLocalStorageData("selectedmenu"));
     }
   }, []);
-  console.log("subMenus", subMenus);
-  console.log("getSubMenusgetSubMenus", getSubMenus);
-
-
   useEffect(() => {
     if (getSubMenus) {
       try {

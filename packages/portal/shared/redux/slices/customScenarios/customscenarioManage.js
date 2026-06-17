@@ -92,7 +92,6 @@ const slice = createSlice({
     state.assignScenario = action.payload;
   },
   hasHandleMAnageSuc(state,action){
-    console.log("action.payloadaction.payload",action.payload)
     state.isLoading = false,
     state.viewNameResp = action.payload;
   }, 
@@ -131,8 +130,6 @@ export function getScenarioList() {
     dispatch(slice.actions.startLoading());
     try {
      const response = await axios.get(`${api.scenario_custom_get }`);
-     console.log("responseresponseddddddd",response);
-     
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
     } catch (error) {
      dispatch(slice.actions.hasError(error));
@@ -214,8 +211,6 @@ export function updateScenarios(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.scenario_custom_update}`,payload);
-      console.log("responseresponseresponserrrrrrrrrrr",response);
-      
       dispatch(slice.actions.hasGetUpdateScenariosSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -234,8 +229,6 @@ export function clearUpdateScenarios() {
 } 
 
 export function getSinglecustomScenarios(id) {
-  console.log("waooooooooo",id);
-  
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
@@ -417,16 +410,13 @@ export function terminateFailedEventLogs() {
 
 // zip file
 export function exportSelectedScenariosAction(payload) {
-  return async (dispatch) => { // ⚠️ Add dispatch param here
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api.scenario_export_zip,payload, {
-        responseType: "arraybuffer", // ✅ use arraybuffer, not blob
+        responseType: "arraybuffer",
       });
-
       dispatch(slice.actions.hasExportSucc(response.data));
-console.log("responseresponseresponseeeeeeeeeeeeeeeeeee",response);
-      // return the binary data
       return response.data;
     } catch (error) {
       dispatch(slice.actions.hasError(error));

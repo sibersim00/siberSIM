@@ -22,40 +22,37 @@ const initialState = {
   saveComponentConfigData: [],
   saveTerminationeventslogs: [],
   importResp: [],
-  success: null,
   scenarioImportData: [],
   ScenarioexportList: [],
   ScenarioExport: [],
   exportscenario:[],
+  exportTriggerResponse:[],
+  exportDownloadResponse:[],
+  getExportComponents:[],
+  getInProgressExports:[],
+  triggerScenarioImport:[],
+  getScenarioImportList:[],
+  checkScenarioIdentification:[],
+  downloadScenarioExport:[],
+  hastriggerScenariostartrestore:[],
+  getzststatus:[],
   exportData: null,
   manipulation: false,
 };
 
 const slice = createSlice({
-  name: "Scenario",
+  name: "scenarioManage",
   initialState,
   reducers: {
     // START LOADING
     startLoading(state) {
       state.isLoading = true;
     },
-    // hasGetScenarioListSucc(state, action) {
-    //   (state.isLoading = false), (state.getScenarioListData = action.payload);
-    // },
     hasGetScenarioListSucc(state, action) {
-  state.isLoading = false;
-
-  // ADDED: store only scenario array (not full payload)
-  state.getScenarioListData = action.payload.data;
-
-  // ADDED: store manipulation flag separately (only once)
-  state.manipulation = action.payload.manipulation;
-},
-
-    // hasGetSaveScenariosSucc(state,action){
-    //     state.isLoading = false,
-    //     state.saveScenarios = action.payload;
-    // },
+    state.isLoading = false;
+    state.getScenarioListData = action.payload.data;
+    state.manipulation = action.payload.manipulation;
+    },
     hasScenariosStatusSucc(state, action) {
       state.isLoading = false;
       state.statusChangeScenarios = action.payload;
@@ -100,15 +97,11 @@ const slice = createSlice({
       (state.isLoading = false), (state.assignScenario = action.payload);
     },
     hasHandleMAnageSuc(state, action) {
-      console.log("action.payloadaction.payload", action.payload);
       (state.isLoading = false), (state.viewNameResp = action.payload);
     },
     hasGetScenarioDigListSucc(state, action) {
       (state.isLoading = false),
         (state.getScenarioDigListData = action.payload);
-    },
-    hasExportSucc(state, action) {
-      (state.isLoading = false), (state.success = action.payload);
     },
     hasGetSaveConfigSucc(state, action) {
       (state.isLoading = false),
@@ -132,6 +125,46 @@ const slice = createSlice({
       state.exportData = action.payload;
       state.success = true;
     },
+    triggerScenarioExportSuccess: (state, action) => {
+      state.isLoading = false;
+      state.exportTriggerResponse = action.payload;
+    },
+    downloadScenarioExportSuccess: (state, action) => {
+      state.isLoading = false;
+      state.exportDownloadResponse = action.payload;
+    },
+    getExportComponentsSuccess: (state, action) => {
+      state.isLoading = false;
+      state.getExportComponents = action.payload;
+    },
+    getInProgressExportsSuccess: (state, action) => {
+      state.isLoading = false;
+      state.getInProgressExports = action.payload;
+    },
+    triggerScenarioImportSuccess: (state, action) => {
+      state.isLoading = false;
+      state.triggerScenarioImport = action.payload;
+    },
+    getScenarioImportListSuccess: (state, action) => {
+      state.isLoading = false;
+      state.getScenarioImportList = action.payload;
+    },
+    checkScenarioIdentificationSuccess: (state, action) => {
+      state.isLoading = false;
+      state.checkScenarioIdentification = action.payload;
+    },
+    downloadScenarioExportSuccess: (state, action) => {
+      state.isLoading = false;
+      state.downloadScenarioExport = action.payload;
+    },
+    triggerScenariostartrestore: (state, action) => {
+      state.isLoading = false;
+      state.hastriggerScenariostartrestore = action.payload;
+    },
+    getzststatussuccess: (state, action) => {
+      state.isLoading = false;
+      state.getzststatus = action.payload;
+    },
     //HAS ERROR
     hasError(state, action) {
       state.isLoading = false;
@@ -151,8 +184,6 @@ export function getScenarioList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.scenario_get}`);
-      console.log("responsecccccccccccccc",response);
-      
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -457,28 +488,6 @@ export function terminateFailedEventLogs() {
   };
 }
 
-// zip file
-export function exportSelectedScenariosAction(payload) {
-  return async (dispatch) => {
-    // ⚠️ Add dispatch param here
-    dispatch(slice.actions.startLoading());
-    try {
-      const response = await axios.post(api.scenario_export_zip, payload, {
-        responseType: "arraybuffer", // ✅ use arraybuffer, not blob
-      });
-
-      dispatch(slice.actions.hasExportSucc(response.data));
-      console.log("responseresponseresponseeeeeeeeeeeeeeeeeee", response);
-      // return the binary data
-      return response.data;
-    } catch (error) {
-      dispatch(slice.actions.hasError(error));
-      throw error;
-    }
-  };
-}
-
-//import
 export function importScenarioZip(formData) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -523,34 +532,295 @@ export function getScenarioExportList() {
   };
 }
 
-export function ScenarioExport(payload) {
+export function createScenarioExport(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.create_export_zip}`, payload);
       dispatch(slice.actions.hasGetScenarioExportSucc(response.data));
+      return response;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
-export function exportScenario(payload) {
-  return async () => {
+
+// triggerScenarioExport — fires and forgets, does NOT wait for ZIP
+export function triggerScenarioExport(payload) {
+  return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.scenario_export_zip}`, payload);
-      dispatch(slice.actions.hasGetScenarioExport(response.data));
+      const response = await axios.post(`${api.scenario_trigger_export}`, payload);
+      dispatch(slice.actions.triggerScenarioExportSuccess(response.data));
+      return response;
+    } catch (error) {
+      console.error("triggerScenarioExport Error:", error);
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function getExportComponents(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(`${api.export_components}`, payload);
+      dispatch(slice.actions.getExportComponentsSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      console.error("getExportComponents Error:", error);
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getInProgressExportsScenario() {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(`${api.export_list_inprogress}`);
+      dispatch(slice.actions.getInProgressExportsSuccess(response.data));
+      // return response.data; // ← must return
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
 }
+
 export function clearScenarioExport() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
       dispatch(slice.actions.hasGetScenarioExportSucc([]));
     } catch (error) {
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+
+export function triggerScenarioImport(formData) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(
+        `${api.scenario_trigger_import}`,  // add to your api config
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      dispatch(slice.actions.triggerScenarioImportSuccess(response.data));
+      return response;
+    } catch (error) {
+      console.error("[triggerScenarioImport] Error:", error);
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function startScenarioRestore(formData) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+
+    try {
+      const response = await axios.post(
+        `${api.scenario_start_restore}`,
+        formData,
+      );
+
+      dispatch(
+        slice.actions.triggerScenariostartrestore(
+          response.data,
+        ),
+      );
+
+      return response;
+
+    } catch (error) {
+
+      console.error(
+        "[triggerScenarioImport] Error:",
+        error,
+      );
+
+      dispatch(slice.actions.hasError(error));
+
+      throw error;
+    }
+  };
+}
+
+export function checkScenarioIdentification(formData) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.post(
+        `${api.scenario_check_import}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      dispatch(slice.actions.checkScenarioIdentificationSuccess(response.data));
+      return response;
+    } catch (error) {
+      console.error("[checkScenarioIdentification] Error:", error);
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
+export function pollImportStatus(importid) {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(`${api.scenario_import_status}/${importid}`);
+      dispatch(slice.actions.getScenarioImportListSuccess(response.data?.data || []));
+      return response;
+    } catch (error) {
+      console.error("[pollImportStatus] Error:", error);
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// export function downloadScenarioZIP({ exportid }) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+
+//     try {
+//       const response = await axios.get(
+//         `${api.scenario_trigger_zip}?exportid=${exportid}`,
+//         {
+//           responseType: "blob",
+//         },
+//       );
+
+//       // interceptor may unwrap response.data — handle both cases
+//       const blob = response?.data instanceof Blob ? response.data : response;
+
+//       dispatch(slice.actions.downloadScenarioExportSuccess(blob));
+
+//       return blob;
+//     } catch (error) {
+//       console.error("downloadScenarioZIP Error:", error);
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+export function downloadScenarioZIP({ exportid, scenarioid }) {
+  return async (dispatch) => {
+    dispatch(slice.actions.startLoading());
+    try {
+      const response = await axios.get(
+        `${api.scenario_trigger_zip}`,
+        {
+          params:       { exportid, scenarioid }, // ← both params
+          responseType: "blob",
+        },
+      );
+
+      const blob = response?.data instanceof Blob ? response.data : response;
+      dispatch(slice.actions.downloadScenarioExportSuccess(blob));
+      return blob;
+    } catch (error) {
+      console.error("downloadScenarioZIP Error:", error);
+      dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+// export function downloadScenarioComponent({ exportid, file_name, onProgress}) {
+//   return async (dispatch) => {
+//     dispatch(slice.actions.startLoading());
+
+//     try {
+//       const params = new URLSearchParams({ exportid, file_name });
+
+//       // const response = await axios.get(
+//       //   `${api.scenario_trigger_zst}?${params}`,
+//       //   {
+//       //     responseType: "blob",
+//       //   },
+//       // );
+//       const response = await axios.get(`${api.scenario_trigger_zst}`, {
+//         params:       { exportid, file_name },
+//         responseType: "blob",
+//         onDownloadProgress: (e) => {
+//           if (e.total && onProgress) {
+//             const pct = Math.round((e.loaded / e.total) * 100);
+//             onProgress(pct, e.loaded, e.total);
+//           }
+//         },
+//       });
+//       const blob = response?.data instanceof Blob ? response.data : response;
+//       dispatch(slice.actions.downloadScenarioExportSuccess(blob));
+//       return blob;
+//     } catch (error) {
+//       dispatch(slice.actions.hasError(error));
+//     }
+//   };
+// }
+export function downloadScenarioComponent({ exportid, file_name, onProgress, signal }) {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(`${api.scenario_trigger_zst}`, {
+        params:       { exportid, file_name },
+        responseType: "blob",
+        signal,
+        onDownloadProgress: (e) => {
+          if (e.total && onProgress) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            onProgress(pct, e.loaded, e.total);
+          }
+        },
+      });
+      const blob = response?.data instanceof Blob ? response.data : response;
+      return blob;
+    } catch (error) {
+      // ← fix cancel check
+      if (error?.name === "CanceledError" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
+        return null; // silent cancel
+      }
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+export function uploadComponentZst(payload, onProgress) {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(
+        `${api.scenario_import_upload_zst}`, // e.g. /scenario/import/upload-zst
+        payload.file,                         // raw File object — no FormData
+        {
+          params:  { importid: payload.importid, vmFile: payload.vmFile },
+          headers: { "Content-Type": "application/octet-stream" },
+          timeout: 0,
+          onUploadProgress: (e) => {
+            if (e.total && onProgress) {
+              const pct = Math.round((e.loaded / e.total) * 100);
+              onProgress(pct);
+            }
+          },
+          maxBodyLength:    Infinity,
+          maxContentLength: Infinity,
+        },
+      );
+      return response;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
+export function pollZstUploadStatus(importid) {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(`${api.poll_Zst_Upload_Status}`,{ params: { importid } });
+      dispatch(slice.actions.getzststatussuccess(response.data?.data || []));
+      return response;
+    } catch (error) {
+      console.error("[pollImportStatus] Error:", error);
       dispatch(slice.actions.hasError(error));
     }
   };

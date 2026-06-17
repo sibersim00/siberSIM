@@ -101,8 +101,6 @@ export function getCategoriesList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-    console.log("ssdsaaaaaaaaaaa");
-
       const response = await axios.get(`${api.scenario_parent_category_list}`);
       dispatch(slice.actions.hasGetParentCategoriesListSucc(response.data));
     } catch (error) { 

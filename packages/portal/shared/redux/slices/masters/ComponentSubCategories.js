@@ -152,7 +152,6 @@ export function clearSaveSubCategories() {
 } 
 
 export function updateSubCategories(payload) {
- // console.log("@@@@@@@@@@22",payload);
   return async () => {
     dispatch(slice.actions.startLoading());
     try {

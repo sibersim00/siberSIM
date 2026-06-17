@@ -30,14 +30,12 @@ const DiagramComponents = (props) => {
       errorData: state && state.scenarioManage && state.scenarioManage.error,
     };
   });
-  console.log("saveComponentConfigRes++++++++++++", hasGetScenarioListSucc)
   const [gridData, setGridData] = useState([]);
   const [gridApi, setGridApi] = useState(null);
   const gridOptions = {
     pagination: true,
     paginationPageSize: 10, // use state variable for page size
   };
-  console.log('hasGetScenarioListSucc', hasGetScenarioListSucc)
   const [rowData, setRowData] = useState([]);
   const [rowData2, setRowData2] = useState([]);
   const [publishedDate, setPublishedDate] = useState(null);
@@ -184,12 +182,6 @@ const DiagramComponents = (props) => {
   }, []);
 
   useEffect(() => {
-    // if (hasGetScenarioListSucc && hasGetScenarioListSucc.component_config && hasGetScenarioListSucc.component_config !== '') {
-    //   console.log('component_config', hasGetScenarioListSucc.component_config)
-    //   const parsedcomponentData = JSON.parse(hasGetScenarioListSucc.component_config);
-    //   setRowData(parsedcomponentData);
-    //   setGridData(parsedcomponentData);
-    // }
     if (hasGetScenarioListSucc && hasGetScenarioListSucc.component_config && hasGetScenarioListSucc.component_config !== '') {
       const parsedcomponentData = JSON.parse(hasGetScenarioListSucc.component_config);
 
@@ -202,15 +194,6 @@ const DiagramComponents = (props) => {
       setRowData(sanitizedData);
       setGridData(sanitizedData);
     }
-    // if (hasGetScenarioListSucc && hasGetScenarioListSucc.network_config) {
-    //   const result = [];
-    //   for (let i = 0; i < hasGetScenarioListSucc.network_config.length; i++) {
-    //     result.push({ networkid: hasGetScenarioListSucc.network_config[i] });
-    //   }
-    //   console.log("networkconfigData", hasGetScenarioListSucc);
-    //   setNetworkconfigData(hasGetScenarioListSucc.network_config);
-    //   setRowData2(result);
-    // }
     if (hasGetScenarioListSucc && hasGetScenarioListSucc.network_config) {
       setNetworkconfigData(hasGetScenarioListSucc.network_config);
 
@@ -231,16 +214,11 @@ const DiagramComponents = (props) => {
     }
 
   }, [hasGetScenarioListSucc]);
-
-
-  console.log('rowData2rowData2rowData2rowData2', rowData)
-
   const onRowDragEnd = useCallback((event) => {
     const updatedData = [];
 
     // Collect the updated order of rows
     event.api.forEachNodeAfterFilterAndSort((node) => {
-      console.log('nodee', node)
       updatedData.push(node.data);
     });
     setRowData(updatedData); // Update the state with the new order
@@ -266,10 +244,8 @@ const DiagramComponents = (props) => {
       scenariostatus: status,
       scenarioid: scenarioId
     }
-    //  console.log('lsitpayload',payload);return false;
     dispatch(saveComponentConfiguration(payload))
   }
-  console.log('nodee', saveComponentConfigRes)
   useEffect(() => {
     if (saveComponentConfigRes && saveComponentConfigRes.statusCode === 200) {
       setScenarioId('');

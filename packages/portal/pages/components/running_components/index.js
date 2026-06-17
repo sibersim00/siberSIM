@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -30,6 +30,10 @@ import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import PaginationComponent from "../../../shared/data/common/pagination.js";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 148;
+
 const RunningComponent = () => {
   const dispatch = useDispatch();
   const [rowData, setRowData] = useState([]);
@@ -38,9 +42,14 @@ const RunningComponent = () => {
   const [learnerOptions, setLearnerOptions] = useState([]);
   const [scenType, setScenType] = useState("Running");
   const [currentPage, setCurrentPage] = useState(1);
-  const [recordSize, setRecordSize] = useState(10);
+  const [recordSize, setRecordSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [searchText, setSearchText] = useState("");
+
+     const [pageSize, setPageSize] = useState(20);
+      const gridRef = useRef(null);
+       const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+
   const totalPages = Math.ceil(totalCount / recordSize);
   const startIndex = (currentPage - 1) * recordSize + 1;
   let endIndex = currentPage * recordSize;
@@ -183,90 +192,148 @@ const RunningComponent = () => {
     };
   }, []);
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+ 
+     const gridOptions = {
+     headerHeight: HEADER_HEIGHT,
+     rowHeight: ROW_HEIGHT,
+     suppressScrollOnNewData: true,
+   };
+ 
+ const onGridReady = useCallback((params) => {
+   gridRef.current = params.api;
+ 
+   // Set correct height on first load as well
+   const initialPageSize = params.api.paginationGetPageSize();
+   const totalRows = params.api.getDisplayedRowCount();
+   const effectiveRows = Math.min(initialPageSize, totalRows);
+   setPageSize(effectiveRows);
+ }, []);
+   
+     // Fires when page size changes via the built-in dropdown
+    const onPaginationChanged = useCallback((params) => {
+   if (params.api) {
+     const newPageSize = params.api.paginationGetPageSize();
+     const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+ 
+     // Use whichever is smaller — actual rows vs page size
+     const effectiveRows = Math.min(newPageSize, totalRows);
+     setPageSize(effectiveRows);
+   }
+ }, []);
   
 
   const frameworkComponents = {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
     },
-    vmStatusRenderer: (props) => {
-      const status = props.value;
+   vmStatusRenderer: (props) => {
+  const status = props.value;
 
-      const getStyle = () => {
-        switch (status) {
-          case "Running":
-            return "rgba(70, 245, 111, 0.16)";
-          case "Initializing":
-          case "Cloning":
-          case "Bridge Configuration":
-          case "Starting":
-            return "rgba(75, 145, 250, 0.35)";
-          case "Pause":
-          case "Hibernate":
-            return "rgba(255, 193, 7, 0.26)";
-          case "Stopped":
-          case "Destroyed":
-            return "rgba(214, 72, 6, 0.15)";
-          case "Failed":
-          case "Operation Failed":
-            return "rgba(220, 53, 70, 0.71)";
-          case "Completed":
-            return "rgba(252, 202, 54, 0.28)";
-          default:
-            return "rgba(173, 181, 189, 0.25)";
-        }
-      };
-      const bg = getStyle();
+  const isDarkMode = document.body.classList.contains("dark");
 
-      const badge = (
-        <span
-          className="badge"
-          style={{
-            backgroundColor: bg,
-            color: "#ffffff",
-            fontSize: "12px",
-            padding: "5px 10px",
-            borderRadius: "12px",
-            border: `1px solid ${bg}`,
-            cursor: status === "Stopped" ? "pointer" : "default",
-          }}
-        >
-          {status}
-        </span>
-      );
-
-      if (status === "Stopped") {
-            const item = props.data;
-      const handleClick = async (e) => {
-        const target = e.currentTarget;
-        await dispatch(getrunningcomponent({ vmrequestid: item.vmrequestid }));
-        setPopoverData({
-          show: true,
-          target: target,
-          row: item,
-        });
-      };
-      return (
-        <OverlayTrigger
-          placement="bottom"
-          overlay={
-            <Tooltip id={`tooltip-${item.vmrequestid}`}>Component List</Tooltip>
-          }
-        >
-          <div
-            onClick={handleClick}
-          >
-             {badge}
-          </div>
-        </OverlayTrigger>
-      );
+  const getStyle = () => {
+    // Dark mode (UNCHANGED)
+    if (isDarkMode) {
+      switch (status) {
+        case "Running":
+          return "rgba(70, 245, 111, 0.16)";
+        case "Initializing":
+        case "Cloning":
+        case "Bridge Configuration":
+        case "Starting":
+          return "rgba(75, 145, 250, 0.35)";
+        case "Pause":
+        case "Hibernate":
+          return "rgba(255, 193, 7, 0.26)";
+        case "Stopped":
+        case "Destroyed":
+          return "rgba(214, 72, 6, 0.15)";
+        case "Failed":
+        case "Operation Failed":
+          return "rgba(220, 53, 70, 0.71)";
+        case "Completed":
+          return "rgba(252, 202, 54, 0.28)";
+        default:
+          return "rgba(173, 181, 189, 0.25)";
       }
+    }
 
-      return badge;
-    },
+    // Light mode → SAME COLORS but darker (so white text is visible)
+    switch (status) {
+      case "Running":
+        return "rgba(10, 173, 48, 0.79)";
+      case "Initializing":
+      case "Cloning":
+      case "Bridge Configuration":
+      case "Starting":
+        return "rgba(27, 114, 245, 0.9)";
+      case "Pause":
+      case "Hibernate":
+        return "rgba(255, 193, 7, 0.86)";
+      case "Stopped":
+      case "Destroyed":
+        return "rgba(214, 72, 6, 0.8)";
+      case "Failed":
+      case "Operation Failed":
+        return "rgba(220, 53, 70, 0.92)";
+      case "Completed":
+        return "rgba(252, 202, 54, 0.87)";
+      default:
+        return "rgba(173, 181, 189, 0.81)";
+    }
+  };
+
+  const bg = getStyle();
+
+  const badge = (
+    <span
+      className="badge"
+      style={{
+        backgroundColor: bg,
+        color: "#ffffff", 
+        fontSize: "12px",
+        padding: "5px 10px",
+        borderRadius: "12px",
+        border: `1px solid ${bg}`,
+        cursor: status === "Stopped" ? "pointer" : "default",
+      }}
+    >
+      {status}
+    </span>
+  );
+
+  if (status === "Stopped") {
+    const item = props.data;
+
+    const handleClick = async (e) => {
+      const target = e.currentTarget;
+      await dispatch(getrunningcomponent({ vmrequestid: item.vmrequestid }));
+      setPopoverData({
+        show: true,
+        target: target,
+        row: item,
+      });
+    };
+
+    return (
+      <OverlayTrigger
+        placement="bottom"
+        overlay={
+          <Tooltip id={`tooltip-${item.vmrequestid}`}>
+            Component List
+          </Tooltip>
+        }
+      >
+        <div onClick={handleClick}>
+          {badge}
+        </div>
+      </OverlayTrigger>
+    );
+  }
+
+  return badge;
+},
+    
     actionButtonRenderer: function (props) {
       const item = props.data;
       const handleClick = async (e) => {
@@ -295,43 +362,62 @@ const RunningComponent = () => {
       );
     },
 
-    scenarioLevelRenderer: (props) => {
-      const level = props.value?.toLowerCase();
+   scenarioLevelRenderer: (props) => {
+  const level = props.value?.toLowerCase();
 
-      const getStyle = () => {
-        switch (level) {
-          case "high":
-          case "hard":
-            return "rgba(220, 53, 70, 0.71)";
-          case "medium":
-            return "rgba(255, 193, 7, 0.26)";
-          case "low":
-          case "easy":
-            return "rgba(70, 245, 111, 0.16)";
-          default:
-            return "rgba(108, 117, 125, 0.4)";
-        }
-      };
+  const isDarkMode = document.body.classList.contains("dark");
 
-      const bg = getStyle();
+  const getStyle = () => {
+    // Dark mode (UNCHANGED)
+    if (isDarkMode) {
+      switch (level) {
+        case "high":
+        case "hard":
+          return "rgba(220, 53, 70, 0.71)";
+        case "medium":
+          return "rgba(255, 193, 7, 0.26)";
+        case "low":
+        case "easy":
+          return "rgba(70, 245, 111, 0.16)";
+        default:
+          return "rgba(108, 117, 125, 0.4)";
+      }
+    }
 
-      return (
-        <span
-          className="badge"
-          style={{
-            backgroundColor: bg,
-            color: "white",
-            fontSize: "12px",
-            padding: "5px 10px",
-            borderRadius: "12px",
-            textTransform: "capitalize",
-            border: `1px solid ${bg}`,
-          }}
-        >
-          {props.value}
-        </span>
-      );
-    },
+    //  Light mode → same colors but darker
+    switch (level) {
+      case "high":
+      case "hard":
+        return "rgba(220, 53, 70, 0.93)";
+      case "medium":
+        return "rgba(255, 193, 7, 0.89)";
+      case "low":
+      case "easy":
+        return "rgba(9, 145, 40, 0.82)";
+      default:
+        return "rgba(108, 117, 125, 0.88)";
+    }
+  };
+
+  const bg = getStyle();
+
+  return (
+    <span
+      className="badge"
+      style={{
+        backgroundColor: bg,
+        color: "white", 
+        fontSize: "12px",
+        padding: "5px 10px",
+        borderRadius: "12px",
+        textTransform: "capitalize",
+        border: `1px solid ${bg}`,
+      }}
+    >
+      {props.value}
+    </span>
+  );
+},
   };
 
   // const handleStartComponent = (comp) => {
@@ -774,8 +860,12 @@ useEffect(() => {
               </Col>
               <Col md={12}>
                 <div
-                  className="ag-theme-alpine mt-2"
-                  style={{ height: "40em", width: "100%" }}
+                 className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                 >
                   <AgGridReact
                     id="cat_grid"
@@ -787,6 +877,7 @@ useEffect(() => {
                     onGridReady={onGridReady}
                     components={frameworkComponents}
                     defaultColDef={defaultColDef}
+                    onPaginationChanged={onPaginationChanged} //  track page size changes
                   />
                 </div>
 

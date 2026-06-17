@@ -410,11 +410,11 @@ const pauseScenarioLearner =
   ({}) =>
   async (req, res, next) => {
     try {
-      const { vmrequestid } = req.body;
+      const { vmrequestid, learner_id} = req.body;
       try {
         const response = await axios.post(
           `${EVENTLEARNER_API_URL}/vmconfigs/pause-scenario-learner`,
-          { vmrequestid },
+          { vmrequestid,learner_id },
         );
         return res.status(200).send({
           statusCode: 200,

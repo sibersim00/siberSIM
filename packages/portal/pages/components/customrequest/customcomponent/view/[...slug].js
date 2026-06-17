@@ -26,8 +26,6 @@ const CustomComponentView = () => {
         state.customComponent.singleComponent.data,
     };
   });
-
-  console.log("getSingleComponentSucc", getSingleComponentSucc)
   useEffect(() => {
     if (getSingleComponentSucc && getSingleComponentSucc !== "") {
       setRowValues(getSingleComponentSucc);
@@ -36,12 +34,10 @@ const CustomComponentView = () => {
 
   useEffect(() => {
     if (query.slug) {
-      console.log("querffffffslug", query.slug)
       setRowId(query.slug[0]);
       dispatch(getSingleComponent(query.slug[0]));
     }
   }, [query.slug]);
-  console.log("rowValuesrowValues", rowValues?.componentimage)
   return (
     <>
       <Seo title="Custom Components" />

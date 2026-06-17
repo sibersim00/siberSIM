@@ -3,15 +3,21 @@ const checkValidate = require("../../middleware/serialLicense")
 
 const getWebSettings =
   ({ db }) =>
-    async () => {
-      let [webSettings] = await db.sequelize.query(
-        `select id, name, phone_number, website,max_questions,otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay,cloning_delay,hibernate_delay,pause_limit,max_ports, address,component_approval,scenario_approval,is_default_web_logo, is_default_ad_logo, is_default_favicon from web_settings where company_id = 1`,
-        {
-          type: db.sequelize.QueryTypes.SELECT,
-        }
-      );
-      return webSettings;
-    };
+  async () => {
+    let [webSettings] = await db.sequelize.query(
+      `select id, name, phone_number, website, max_questions, otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo,
+      proxmox_current_node,proxmox_other_node,cluster_task_type, proxmox_host, proxmox_username, proxmox_password,
+      file_server_username, file_server_password,
+      base_clone_vmid, template_clone_vmid, start_network_id,
+      proxmox_alert_time, proxmox_email_sent, termination_delay, configuration_delay, cloning_delay, hibernate_delay, pause_limit, max_ports, address,
+      component_approval, scenario_approval, is_default_web_logo, is_default_ad_logo, is_default_favicon
+      from web_settings where company_id = 1`,
+      {
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+    return webSettings;
+  };
 
 const getWebFooter =
   ({ db }) =>
@@ -24,102 +30,149 @@ const getWebFooter =
 
 const addWebSettings =
   ({ db }) =>
-    async (body, userid) => {
-      try {
-        await db.sequelize.query(
-          `INSERT INTO web_settings (uuid, createdon, name, phone_number, website,max_questions,otp_verification, email, system_name, system_footer, is_default_favicon,component_approval,scenario_approval, is_default_ad_logo, is_default_web_logo, favicon, admin_panel_logo, web_panel_logo, proxmox_alert_time, proxmox_email_sent,termination_delay,configuration_delay,cloning_delay,hibernate_delay,pause_limit,max_ports, address, createdby, company_id) VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          {
-            replacements: [
-              body.name,
-              body.phone_number,
-              body.website,
-              body.max_questions,
-              body.otp_verification === false ? false : true,
-              body.email,
-              body.system_name,
-              body.system_footer,
-              body.is_default_favicon,
-              body.component_approval,
-              body.scenario_approval,
-              body.is_default_ad_logo,
-              body.is_default_web_logo,
-              body.favicon,
-              body.admin_panel_logo,
-              body.web_panel_logo,
-              body.proxmox_alert_time,
-              body.proxmox_email_sent,
-              body.termination_delay,
-              body.configuration_delay,
-              body.cloning_delay,
-              body.hibernate_delay,
-              body.pause_limit,
-              body.max_ports,
-              body.address,
-              userid,
-              1,
-            ],
-            type: db.sequelize.QueryTypes.INSERT,
-          }
-        );
-        return { statusCode: 200, message: "Web Setting Added Successfully" };
-      } catch (error) {
-        console.error("Error System Config Submit:", error);
-        throw error;
-      }
-    };
+  async (body, userid) => {
+    try {
+      await db.sequelize.query(
+        `INSERT INTO web_settings 
+        (uuid, createdon, name, phone_number, website, max_questions, otp_verification, email, system_name, system_footer,
+        is_default_favicon, component_approval, scenario_approval,
+        is_default_ad_logo, is_default_web_logo,
+        favicon, admin_panel_logo, web_panel_logo,
+        proxmox_current_node,proxmox_other_node,cluster_task_type, proxmox_host, proxmox_username, proxmox_password,
+        file_server_username, file_server_password,
+        base_clone_vmid, template_clone_vmid, start_network_id,
+        proxmox_alert_time, proxmox_email_sent,
+        termination_delay, configuration_delay, cloning_delay, hibernate_delay,
+        pause_limit, max_ports, address, createdby, company_id)
+
+        VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        {
+          replacements: [
+            body.name,
+            body.phone_number,
+            body.website,
+            body.max_questions,
+            body.otp_verification === false ? false : true,
+            body.email,
+            body.system_name,
+            body.system_footer,
+            body.is_default_favicon,
+            body.component_approval,
+            body.scenario_approval,
+            body.is_default_ad_logo,
+            body.is_default_web_logo,
+            body.favicon,
+            body.admin_panel_logo,
+            body.web_panel_logo,
+            body.proxmox_current_node,
+            body.proxmox_other_node ?? null,
+            body.proxmox_host,
+            body.proxmox_username,
+            body.proxmox_password,
+            body.cluster_task_type,
+            body.file_server_username,
+            body.file_server_password,
+            body.base_clone_vmid,
+            body.template_clone_vmid,
+            body.start_network_id,
+            body.proxmox_alert_time,
+            body.proxmox_email_sent,
+            body.termination_delay,
+            body.configuration_delay,
+            body.cloning_delay,
+            body.hibernate_delay,
+            body.pause_limit,
+            body.max_ports,
+            body.address,
+            userid,
+            1,
+          ],
+          type: db.sequelize.QueryTypes.INSERT,
+        }
+      );
+
+      return { statusCode: 200, message: "Web Setting Added Successfully" };
+    } catch (error) {
+      console.error("Error System Config Submit:", error);
+      throw error;
+    }
+  };
 
 const updateWebSettings =
   ({ db }) =>
-    async (body, userid) => {
-      try {
-        const updateQuery = `
+  async (body, userid) => {
+    try {
+      const updateQuery = `
       UPDATE web_settings SET 
-        name = ?, phone_number = ?, website = ?,max_questions = ?,otp_verification = ?,
+        name = ?, phone_number = ?, website = ?, max_questions = ?, otp_verification = ?,
         email = ?, system_name = ?, system_footer = ?,
         is_default_favicon = ?, is_default_ad_logo = ?, is_default_web_logo = ?,
-        favicon = ?, admin_panel_logo = ?, web_panel_logo = ?, proxmox_alert_time = ?, proxmox_email_sent = ?,termination_delay=?,component_approval=?,scenario_approval=?,configuration_delay=?,cloning_delay=?,hibernate_delay=?,pause_limit=?,max_ports=?, address = ?, 
+        favicon = ?, admin_panel_logo = ?, web_panel_logo = ?,
+
+        proxmox_current_node = ?,proxmox_other_node=?, proxmox_host = ?, proxmox_username = ?, proxmox_password = ?,cluster_task_type =?,
+        file_server_username = ?, file_server_password = ?,
+        base_clone_vmid = ?, template_clone_vmid = ?, start_network_id = ?,
+
+        proxmox_alert_time = ?, proxmox_email_sent = ?, termination_delay = ?,
+        component_approval = ?, scenario_approval = ?,
+        configuration_delay = ?, cloning_delay = ?, hibernate_delay = ?,
+        pause_limit = ?, max_ports = ?, address = ?,
         modifiedon = CURRENT_TIMESTAMP, modifiedby = ?
       WHERE id = ?`;
 
-        await db.sequelize.query(updateQuery, {
-          replacements: [
-            body.name ?? "",
-            body.phone_number ?? "",
-            body.website ?? "",
-            body.max_questions,
-            body.otp_verification,
-            body.email ?? "",
-            body.system_name ?? "",
-            body.system_footer ?? "",
-            body.is_default_favicon ?? true,
-            body.is_default_ad_logo ?? true,
-            body.is_default_web_logo ?? true,
-            body.favicon ?? "",
-            body.admin_panel_logo ?? "",
-            body.web_panel_logo ?? "",
-            body.proxmox_alert_time,
-            body.proxmox_email_sent ?? "",
-            body.termination_delay ?? "",
-            body.component_approval ?? "",
-            body.scenario_approval ?? "",
-            body.configuration_delay ?? "",
-            body.cloning_delay ?? "",
-            body.hibernate_delay ?? "",
-            body.pause_limit ?? "",
-            body.max_ports ?? "",
-            body.address ?? "",
-            userid,
-            body.id,
-          ],
-          type: db.sequelize.QueryTypes.UPDATE,
-        });
+      await db.sequelize.query(updateQuery, {
+        replacements: [
+          body.name ?? "",
+          body.phone_number ?? "",
+          body.website ?? "",
+          body.max_questions,
+          body.otp_verification,
+          body.email ?? "",
+          body.system_name ?? "",
+          body.system_footer ?? "",
+          body.is_default_favicon ?? true,
+          body.is_default_ad_logo ?? true,
+          body.is_default_web_logo ?? true,
+          body.favicon ?? "",
+          body.admin_panel_logo ?? "",
+          body.web_panel_logo ?? "",
 
-        return { statusCode: 200, message: "Web Setting Updated Successfully" };
-      } catch (error) {
-        console.error("Error System Config Submit:", error);
-        throw error;
-      }
-    };
+          body.proxmox_current_node ?? "",
+          body.proxmox_other_node ?? "",
+          body.proxmox_host ?? "",
+          body.proxmox_username ?? "",
+          body.proxmox_password ?? "",
+          body.cluster_task_type ?? "",
+          body.file_server_username ?? "",
+          body.file_server_password ?? "",
+          body.base_clone_vmid ?? "",
+          body.template_clone_vmid ?? "",
+          body.start_network_id ?? "",
+
+          body.proxmox_alert_time,
+          body.proxmox_email_sent ?? "",
+          body.termination_delay ?? "",
+          body.component_approval ?? "",
+          body.scenario_approval ?? "",
+          body.configuration_delay ?? "",
+          body.cloning_delay ?? "",
+          body.hibernate_delay ?? "",
+          body.pause_limit ?? "",
+          body.max_ports ?? "",
+          body.address ?? "",
+          userid,
+          body.id,
+        ],
+        type: db.sequelize.QueryTypes.UPDATE,
+      });
+
+      return { statusCode: 200, message: "Web Setting Updated Successfully" };
+    } catch (error) {
+      console.error("Error System Config Submit:", error);
+      throw error;
+    }
+  };
 
 const addWebFooter =
   ({ db }) =>

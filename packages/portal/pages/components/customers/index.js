@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState,useRef,useCallback } from "react";
 import {
   Row,
   Col,
@@ -35,6 +35,12 @@ import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import CustomerModal from "../../../shared/data/admin/modals/CustomerModal";
 import LicenseModal from "../../../shared/data/admin/modals/LicenseModal";
+
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
+
 const copyToClipboard = async (text) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -68,6 +74,10 @@ const Customers = () => {
   const [gridApi, setGridApi] = useState(null);
   const [formModal, setformModal] = useState(false);
   const [openTooltip, setOpenTooltip] = useState({ gridId: null, rowIndex: null });
+  const [pageSize, setPageSize] = useState(20);
+  const gridRef = useRef(null);
+  const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+  
   const [rowValues, setRowValues] = useState({
     title: "Add",
     orgcode: "",
@@ -158,13 +168,27 @@ const Customers = () => {
     }
   }, [hasGetCustomersListSucc, compStatus]);
 
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20,
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
-  const onGridReady = (params) => {
-    setGridApi(params.api);
-  };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -916,7 +940,11 @@ resendLicenseButtonRenderer: function (props) {
               <Col md={12}>
                 <div
                   className="ag-theme-alpine mt-2"
-                  style={{ height: "40em", width: "100%" }}
+                 style={{
+                          height: `${gridHeight}px`,
+                          width: "100%",
+                          overflow: "visible",     
+                        }}
                 >
                   <AgGridReact
                     id="cat_grid"
@@ -1192,7 +1220,8 @@ resendLicenseButtonRenderer: function (props) {
                     rowData={licenseData}
                     columnDefs={licenseColumnDefs}
                     pagination={true}
-                    paginationPageSize={10}
+                    paginationPageSize={20}
+                    onPaginationChanged={onPaginationChanged}
                     defaultColDef={defaultColDef}
                     components={frameworkComponents}
                     context={{ gridId: 'license_grid' }}

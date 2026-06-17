@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import { Row, Col, Card, Button } from "react-bootstrap";
@@ -16,6 +16,10 @@ import ActionButtonRenderer from "../../../shared/data/masterButtons/action-butt
 import ToggleButton from "../../../shared/data/masterButtons/toggleButton.js";
 import "../../../shared/utils/i18n.js";
 import * as XLSX from "xlsx";
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 180;
+
 
 const ManageComponent = () => {
   const dispatch = useDispatch();
@@ -25,6 +29,12 @@ const ManageComponent = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [compStatus, setCompStatus] = useState("Available");
   const [oneClick, setOneClick] = useState(false);
+
+
+  const [pageSize, setPageSize] = useState(20);
+  const gridRef = useRef(null);
+  const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
+    
   const { hasFetchapilogsSuccesslist, errorData,hasFetchApiLogByIdSuccess } = useSelector((state) => ({
     errorData: state?.componentManage?.error,
     hasFetchNetworkSuccess: state?.apilogsManage?.networkData,
@@ -216,9 +226,27 @@ const handleExport = () => {
     }
   }, [errorData, dispatch]);
 
-  const onGridReady = (params) => {
-    setGridApi(params.api);
+    const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount();
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
   const handleShowModal = (log) => {
   const logId = log.id; // assuming the log has an 'id' field
   dispatch(fetchApiLogById(logId));
@@ -264,7 +292,6 @@ const handleExport = () => {
     actionButtonRenderer: (props) => <ActionButtonRenderer propsVal={props} />,
 
     responseCodeRenderer: (props) => {
-      console.log("propsprops",props)
   const code = props.value;
   const { message, color } = getResponseInfo(Number(code));
   return (
@@ -298,7 +325,6 @@ const handleExport = () => {
       hour12: true,
     });
   }
-  console.log("getResponseInfo", getResponseInfo);
   return (
     <>
       <Seo title="SiberSim Logs" />
@@ -327,7 +353,11 @@ const handleExport = () => {
             <Col md={12}>
               <div
                 className="ag-theme-alpine mt-2"
-                style={{ height: "55em", width: "100%" }}
+                style={{
+                          height: `${gridHeight}px`,
+                          width: "100%",
+                          overflow: "visible",     
+                        }}
               >
                 <AgGridReact
                   id="cat_grid"
@@ -336,9 +366,10 @@ const handleExport = () => {
                   rowData={rowData}
                   columnDefs={columnDefs}
                   pagination={true}
-                  paginationPageSize={20}
                   onGridReady={onGridReady}
                   components={frameworkComponents}
+                  paginationPageSize={20}
+                  onPaginationChanged={onPaginationChanged}
                   defaultColDef={defaultColDef}
                   enableBrowserTooltips={true} 
                 />

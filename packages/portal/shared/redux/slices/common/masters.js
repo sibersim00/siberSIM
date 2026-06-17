@@ -217,8 +217,7 @@ export function getStudentList(payload) {
     try {
       const response = await axios.post(`${api.batches_student_get}`,payload);
       dispatch(slice.actions.hasGetStudentListSucc(response.data));
-    } catch (error) { 
-      console.log("Error:", error);
+    } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -230,8 +229,7 @@ export function getStudentListreport(payload) {
     try {
       const response = await axios.get(`${api.student_getlist}`,payload);
     dispatch(slice.actions.hasGetStudentListSuccreport(response.data));
-    } catch (error) { 
-      console.log("Error:", error);
+    } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -244,8 +242,7 @@ export function getBatchesList() {
     try {
       const response = await axios.get(`${api.batches_list}`);
       dispatch(slice.actions.hasGetBatchesListSucc(response.data));
-    } catch (error) { 
-      console.log("Error:", error);
+    } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -314,8 +311,7 @@ export function getInstructorList() {
     try {
       const response = await axios.get(`${api.scenario_instructor_list}`);
       dispatch(slice.actions.hasGetInstructorListSucc(response.data));
-    } catch (error) { 
-      console.log("Error:", error);
+    } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
   };
@@ -363,8 +359,6 @@ export function getCategoriesList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.master_component_cat_get}`);
-      console.log("responserttttttttttesponseresponse",response);
-      
       dispatch(slice.actions.hasGetMasterCatListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -404,10 +398,7 @@ export function getOrSetTheme(theme) {
       const url = theme
         ? `${api.user_theme}?theme=${theme}`
         : `${api.user_theme}`;
-
       const response = await axios.get(url);
-      console.log("responseresponseresponseresponseresponse",response);
-      
       dispatch(slice.actions.hasGetThemeSucc(response.data.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

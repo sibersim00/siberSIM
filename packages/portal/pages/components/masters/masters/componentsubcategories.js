@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -34,6 +34,10 @@ import ComponentSubCategoriesView from "../../../../shared/data/masters/componet
 import ActionButtonRenderer from "../../../../shared/data/masterButtons/action-button";
 import ToggleButton from "../../../../shared/data/masterButtons/toggleButton";
 
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 35;
+const PAGINATION_BAR_HEIGHT = 48;
+
 const ComponentSubCategories = () => {
   const dispatch = useDispatch();
   const [compStatus, setCompStatus] = useState("true");
@@ -46,7 +50,10 @@ const ComponentSubCategories = () => {
   const [gridData, setGridData] = useState([]);
   const [empStatus, setEmpStatus] = useState("true");
   const { t } = useTranslation();
-  // console.log("gridDatgridDataa",JSON.parse(localStorage.getItem('user')));
+
+  const [pageSize, setPageSize] = useState(20);
+    const gridRef = useRef(null);
+     const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const { subCatListResp, errorData, deleteSubCatRes, statusChangeSubCatRes } =
     useSelector((state) => {
       return {
@@ -70,7 +77,6 @@ const ComponentSubCategories = () => {
           state.componentsubcategories.error,
       };
     });
-  console.log("statusChangeSubCatRes", statusChangeSubCatRes);
   useEffect(() => {
     if (statusChangeSubCatRes?.statusCode) {
       toast.success(
@@ -129,16 +135,9 @@ const ComponentSubCategories = () => {
     }
   }, [subCatListResp, empStatus]);
   const handleOneClick = (flag) => {
-    console.log("flagflag", flag);
     setOneClick(flag);
   };
 
-  //Function to Download Excel file
-
-  const gridOptions = {
-    pagination: true,
-    paginationPageSize: 20, // use state variable for page size
-  };
 
   const onFilterChanged = (data) => {
     setQuickFilter(data);
@@ -248,9 +247,35 @@ const ComponentSubCategories = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
-  const onGridReady = (params) => {
-    setGridApi(params.api);
+
+ const gridOptions = {
+    headerHeight: HEADER_HEIGHT,
+    rowHeight: ROW_HEIGHT,
+    suppressScrollOnNewData: true,
   };
+
+const onGridReady = useCallback((params) => {
+  gridRef.current = params.api;
+
+  // Set correct height on first load as well
+  const initialPageSize = params.api.paginationGetPageSize();
+  const totalRows = params.api.getDisplayedRowCount();
+  const effectiveRows = Math.min(initialPageSize, totalRows);
+  setPageSize(effectiveRows);
+}, []);
+  
+    // Fires when page size changes via the built-in dropdown
+   const onPaginationChanged = useCallback((params) => {
+  if (params.api) {
+    const newPageSize = params.api.paginationGetPageSize();
+    const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
+
+    // Use whichever is smaller — actual rows vs page size
+    const effectiveRows = Math.min(newPageSize, totalRows);
+    setPageSize(effectiveRows);
+  }
+}, []);
+
   const defaultColDef = useMemo(() => {
     return {
       sortable: true,
@@ -288,7 +313,6 @@ const ComponentSubCategories = () => {
         props?.value && props?.value.length > 20
           ? `${props?.value.substring(0, 20)}...`
           : props.value;
-      //  console.log("propspropsprops",value);
       const des = value ? (
         <div dangerouslySetInnerHTML={{ __html: value }} />
       ) : (
@@ -436,10 +460,8 @@ const ComponentSubCategories = () => {
     setView("Form");
     setRowId(props.componentsubcategoryid);
   };
-  console.log("onClick", oneClick);
   const [viewCatModal, setviewCatModal] = useState(false);
   const handleView = (props) => {
-    console.log("propsprops", props);
     if (props && props.componentsubcategoryid) {
       setView("catView");
       setRowId(props.componentsubcategoryid);
@@ -615,8 +637,12 @@ const ComponentSubCategories = () => {
                 <Card.Body className="p-3">
                   <Col md={12}>
                     <div
-                      className="ag-theme-alpine mt-2"
-                      style={{ height: "40em", width: "100%" }}
+                          className="ag-theme-alpine mt-2"
+                       style={{
+                          height: `${gridHeight}px`, //  dynamic, grows with page size
+                          width: "100%",
+                          overflow: "visible",        // no internal scrollbar
+                        }}
                     >
                       <AgGridReact
                         id="subcat_grid"
@@ -625,10 +651,12 @@ const ComponentSubCategories = () => {
                         gridOptions={gridOptions}
                         rowData={rowData}
                         columnDefs={columnDefs}
+                        paginationPageSize={20}
                         pagination={true}
                         onGridReady={onGridReady}
                         components={frameworkComponents}
                         defaultColDef={defaultColDef}
+                        onPaginationChanged={onPaginationChanged} //  track page size changes
                       />
                     </div>
                   </Col>

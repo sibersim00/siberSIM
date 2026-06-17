@@ -6,9 +6,10 @@ const CONFIG_VALUES = {
   endpoint: process.env.PROXMOX_ENDPOINT,
   username: process.env.PROXMOX_USERNAME,
   password: process.env.PROXMOX_PASSWORD,
-  user: process.env.PROXMOX_USER,
-  cookie_prefix: process.env.PROXMOX_COOKIE_PREFIX,
   current_node: process.env.PROXMOX_CURRENT_NODE,
+
+  
+  cookie_prefix: process.env.PROXMOX_COOKIE_PREFIX,
   full: "0",
 };
 const VM_PROCESSES = {
@@ -45,6 +46,11 @@ const VM_PROCESSES = {
   GET_VM_NETWORK_INFO:"Network Information",
   UNPLUG_VM_NETWORK:"Unplug Network Port",
   PLUG_VM_NETWORK:"Plug Network Port",
+  GET_VM_STATUS:"Get VM Status",
+  RESTORE_VM:"Restore VM",
+  CHECK_VMID_STATUS:"Check vmid status",
+  MIGRATE_VM:"Migrate VM",
+  WAIT_FOR_TASK:"Status of VM"
 };
 
 module.exports = {

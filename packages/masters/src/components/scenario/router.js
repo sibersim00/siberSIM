@@ -1,4 +1,8 @@
 
+const multer  = require("multer");
+const upload  = multer(); // memory storage — we just forward the file
+
+
 module.exports = function (iocContainer) {
   const { express, controller, validator, validation } = iocContainer;
   const router = express.Router();
@@ -12,14 +16,15 @@ module.exports = function (iocContainer) {
   router.post('/save_diagram', controller.saveDiagram(iocContainer));
   router.get('/scenariodigramlist', controller.scenariodigramlist(iocContainer));
   router.post('/delete', validator(validation.deleteSchema, 'body'), controller.deleteById(iocContainer));
-  router.post('/savecomponentconfiguration',
-    //  validator(validation.componentconfigSchema, 'body'),
-      controller.saveComponentconfiguration(iocContainer));
-  router.get('/exportlist', controller.exportList(iocContainer));
+  router.post('/savecomponentconfiguration',controller.saveComponentconfiguration(iocContainer));
   router.post("/create-export", controller.createExport(iocContainer));
-  router.get(
-    "/tablist",
-    controller.getTabList(iocContainer)
-  );
+  router.get("/tablist",controller.getTabList(iocContainer));
+  router.get("/exportlist",controller.exportList(iocContainer));
+  router.get("/exportlist-inprogress", controller.exportListInProgress(iocContainer));
+  router.post("/export_components",controller.exportcomponents(iocContainer));
+
+
+
+
   return router;
 }

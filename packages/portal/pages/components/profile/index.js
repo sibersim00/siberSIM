@@ -106,7 +106,6 @@ const Index = () => {
   const [uploadedFile, setUploadedFile] = useState({});
   const profile_path = FilePath.profile;
   const ismulti = false;
-  console.log("profileImage", profileImage);
   useEffect(() => {
     dispatch(getProfile());
   }, []);
@@ -177,8 +176,6 @@ const Index = () => {
       dispatch(getProfile());
     }
   }, [changeProfileSucc]);
-
-  console.log("changeProfileSucc", changeProfileSucc);
   useEffect(() => {
     if (setLocalData) {
       dispatch(getLocalStorageData("user"));
@@ -482,7 +479,6 @@ const Index = () => {
 
     const formData = new FormData();
     formData.append("image", file);
-    console.log("imageimage", file);
   };
 
   const handleClick = () => {

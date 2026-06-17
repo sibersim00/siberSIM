@@ -202,13 +202,13 @@ const ScenarioForm = (props) => {
     dispatch(getScenarioSubCategoriesList());
     dispatch(clearSingleScenarios());
   }, []);
-  useEffect(() => {
-    if (rowValues) {
-      setScenarioId(rowValues?.scenariouuid);
-      setIsChecked(rowValues?.status);
-      setInitialHtml(rowValues?.scenariodescription);
-    }
-  }, [rowValues]);
+    useEffect(() => {
+      if (rowValues) {
+        setScenarioId(rowValues?.scenariouuid);
+        setIsChecked(rowValues?.status);
+        setInitialHtml(rowValues?.scenariodescription ?? "");
+      }
+    }, [rowValues]);
 
   const handleUpload = (name = "", files = "", flag = "") => {
     formValidation.setFieldValue("flag", flag); // Set remove or update
@@ -1268,7 +1268,7 @@ const ScenarioForm = (props) => {
                                                       );
                                                     }}
                                                     editorLoaded={editorLoaded}
-                                                    data={initialHtml}
+                                                    data={initialHtml ?? ""}
                                                     setEditorLoaded={
                                                       setEditorLoaded
                                                     }

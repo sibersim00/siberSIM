@@ -194,8 +194,6 @@ const handleClick = (dataobj) => {
 
 
 const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) => {
-  console.log("scenariodiagram",scenariodiagram);
-  
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
@@ -205,11 +203,7 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
 
     try {
       const cleanData = scenariodiagram.replace('flowchartData ', '');
-      console.log("cleanDatacleanDatacleanData",cleanData);
-      
       const parsedData = JSON.parse(cleanData);
-      console.log("parsedDataparsedDataparsedData",parsedData);
-      
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
 
       const updatedNodes = parsedData.nodes.map(node => ({
@@ -259,9 +253,6 @@ useEffect(() => {
   
       // You can also pull labelMap or other shared state from context/store here
       const edges = getEdges(); // all current edges
-      console.log("fffffffffffffffffffffffffff",edges);
-      
-  
       return (
         <EditableEdgeAdmin
           {...edgeProps}

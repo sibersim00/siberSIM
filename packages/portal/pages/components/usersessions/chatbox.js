@@ -19,8 +19,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowData }) => {
     const checkDarkMode = () => {
       setIsDarkMode(document.body.classList.contains("dark-theme"));
     };
-    console.log("rowDatarowDatarowData", rowData);
-
     // Initial check
     checkDarkMode();
 
@@ -130,8 +128,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowData }) => {
   const handleRefresh = () => {
     if (chatMessages?.length) {
       const lastchatobject = chatMessages[chatMessages.length - 1];
-      console.log("lastchatobjectlastchatobjectlastchatobject", lastchatobject);
-
       const payload = {
         learner_id: lastchatobject.learner_id,
         scenarioid: lastchatobject.scenarioid,

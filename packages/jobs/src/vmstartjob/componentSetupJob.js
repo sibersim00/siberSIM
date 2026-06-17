@@ -86,6 +86,19 @@ async function componentSetupJob(
       }
     );
 
+    const proxmoxService = ProxMoxService(db,{}, ipAddress);
+    const selectedNode = await proxmoxService.selectNode();
+    console.log(`[componentSetupJob] Selected node: ${selectedNode}`);
+
+    // ★ Save chosen node before any Proxmox call fires
+    await db.sequelize.query(
+      `UPDATE vm_request SET node_name = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
+      {
+        replacements: [selectedNode, vmrequestid],
+        type: db.sequelize.QueryTypes.UPDATE,
+      },
+    );
+
     const { cloningDelayMs, configurationDelayMs } = await getDelays(db);
 
     // Step 1: Cloning
@@ -95,7 +108,8 @@ async function componentSetupJob(
         db,
         ipAddress,
         component,
-        vmrequestid
+        vmrequestid,
+        selectedNode
       );
       if (!cloneResult?.success) throw new Error(cloneResult.message);
 
@@ -130,6 +144,7 @@ async function componentSetupJob(
       vmrequestid,
       requestedby_id,
       components: updatedComponents,
+      selectedNode
     });
     if (!configureResult?.success) throw new Error(configureResult.message);
 
@@ -145,6 +160,7 @@ async function componentSetupJob(
       vmrequestid,
       requestedby_id,
       components: componentsForStart,
+      selectedNode
     });
     if (!startResult?.success) throw new Error(startResult.message);
 
@@ -178,7 +194,7 @@ async function componentSetupJob(
   }
 }
 
-async function cloneComponentVM(db, ipAddress, component) {
+async function cloneComponentVM(db, ipAddress, component,selectedNode) {
   const { vmconfigurationid, clone_vmid, name, componenttype, source_vmid } =
     component;
   console.log("componentcomponentcomponent", component);
@@ -198,7 +214,8 @@ async function cloneComponentVM(db, ipAddress, component) {
     vmType,
     clone_vmid,
     name,
-    source_vmid
+    source_vmid,
+    selectedNode
   );
   if (!result || result.status !== 200) {
     return {
@@ -207,7 +224,7 @@ async function cloneComponentVM(db, ipAddress, component) {
     };
   }
 
-  console.log(`Clone succeeded for ${clone_vmid}-${name}`);
+  console.log(`Clone succeeded for ${clone_vmid}-${name} on ${selectedNode}`);
 
   await db.sequelize.query(
     `UPDATE vm_config SET status = 'Cloning', modifiedon = NOW() WHERE vmconfigurationid = ?`,
@@ -220,7 +237,7 @@ async function cloneComponentVM(db, ipAddress, component) {
 async function configureComponentVM(
   db,
   ipAddress,
-  { vmrequestid, requestedby_id, components }
+  { vmrequestid, requestedby_id, components ,selectedNode}
 ) {
   for (const component of components) {
     console.log(`Starting component Configure Bridge:`, component);
@@ -243,7 +260,7 @@ async function configureComponentVM(
     }
 
     const bridgeJson = JSON.parse(network_bridge_json || "{}");
-    const result = await proxmoxService.configureVM(vmid, vmType, bridgeJson);
+    const result = await proxmoxService.configureVM(vmid, vmType, bridgeJson,selectedNode);
     if (!result || result.status !== 200 || !result.data) {
       return {
         success: false,
@@ -251,7 +268,7 @@ async function configureComponentVM(
       };
     }
 
-    console.log(`Bridge configure succeeded for ${vmid}-${name}`);
+    console.log(`Bridge configure succeeded for ${vmid}-${name} on ${selectedNode}`);
 
     await db.sequelize.query(
       `UPDATE vm_config SET status = 'Bridge Configuration', modifiedon = NOW() WHERE vmconfigurationid = ?`,
@@ -276,7 +293,7 @@ async function configureComponentVM(
 async function startComponentVM(
   db,
   ipAddress,
-  { scenarioid, vmrequestid, requestedby_id, components }
+  { scenarioid, vmrequestid, requestedby_id, components ,selectedNode}
 ) {
   try {
     for (const component of components) {
@@ -294,7 +311,7 @@ async function startComponentVM(
         };
       }
 
-      const result = await proxmoxService.startVM(vmid, vmType);
+      const result = await proxmoxService.startVM(vmid, vmType,selectedNode);
       if (!result || result.status !== 200 || !result.data) {
         return {
           success: false,
@@ -302,7 +319,7 @@ async function startComponentVM(
         };
       }
 
-      console.log(`Started '${name}' successfully.`);
+      console.log(`Started '${name}' on ${selectedNode} successfully.`);
 
       await db.sequelize.query(
         `UPDATE vm_config SET status = 'Starting', modifiedon = NOW() WHERE vmconfigurationid = ?`,

@@ -34,7 +34,6 @@ const sidebarFlow = ({
     getScenarioDigListData,
     getScenarioFlowchart,
   } = useSelector((state) => {
-    console.log("getMasterCatListData", state);
     return {
       getMasterCatListData:
         state &&
@@ -126,7 +125,6 @@ const sidebarFlow = ({
       setRowValues(getScenarioFlowchart);
     }
   }, [getScenarioFlowchart])
-  console.log("rowValues", rowValues)
   useEffect(() => {
     if (getMasterCatListData && getMasterCatListData.length > 0) {
       let temp = getMasterCatListData.map((cat) => ({
@@ -165,10 +163,6 @@ const sidebarFlow = ({
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
   };
-
-
-console.log("getComponentByCatDatagetComponentByCatData",getComponentByCatData);
-
   useEffect(() => {
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({

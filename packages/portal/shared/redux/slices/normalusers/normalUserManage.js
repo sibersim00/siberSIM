@@ -130,7 +130,6 @@ export function getNormalusersInfo(id) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api?.normalusers_getbyid}/${id}`);
-      console.log("response-----",response);
       dispatch(slice.actions.hasgetNormalusersInfoSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

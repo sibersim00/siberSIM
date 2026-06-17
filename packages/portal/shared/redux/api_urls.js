@@ -184,6 +184,18 @@ const api = {
   scenario_export_zip: "/vmconfig/exports",
   create_export_zip: "/scenario/create-export",
   export_list: "/scenario/exportlist",
+  export_components: "/scenario/export_components",
+  export_list_inprogress: "/scenario/exportlist-inprogress",
+  scenario_trigger_export: "/vmconfig/trigger-export",
+  scenario_export_download: "/vmconfig/download-export",
+  scenario_check_import: "/vmconfig/check-import",
+  scenario_import_status: "/vmconfig/import",
+  scenario_trigger_import: "/vmconfig/trigger-import",
+  scenario_start_restore: "/vmconfig/start-restore",
+  scenario_trigger_zip: "/vmconfig/download-export-zip",
+  scenario_trigger_zst: "/vmconfig/download-component",
+  scenario_import_upload_zst: "/vmconfig/upload-zst",
+  poll_Zst_Upload_Status: "/vmconfig/zst-status",
 
   // --- Scenario sub  Categories -----
 
