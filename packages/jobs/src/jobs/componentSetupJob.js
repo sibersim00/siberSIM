@@ -117,7 +117,7 @@ async function componentSetupJob(
 
     //  Save chosen node before any Proxmox call fires
     await db.sequelize.query(
-      `UPDATE vm_request SET node_name = ?, modifiedo.0n = NOW() WHERE vmrequestid = ?`,
+      `UPDATE vm_request SET node_name = ?, modifiedon = NOW() WHERE vmrequestid = ?`,
       {
         replacements: [selectedNode, vmrequestid],
         type: db.sequelize.QueryTypes.UPDATE,
