@@ -21,8 +21,8 @@ function MyApp({ Component, pageProps }) {
       </Head>
       <Component {...pageProps} />
     </Layout>
-     <Script src="https://checkout.razorpay.com/v1/checkout.js"
-     />
+     {/* <Script src="https://checkout.razorpay.com/v1/checkout.js"
+     /> */}
     </>
    
   )

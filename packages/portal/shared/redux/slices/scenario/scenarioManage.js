@@ -97,7 +97,6 @@ const slice = createSlice({
       (state.isLoading = false), (state.assignScenario = action.payload);
     },
     hasHandleMAnageSuc(state, action) {
-      console.log("action.payloadaction.payload", action.payload);
       (state.isLoading = false), (state.viewNameResp = action.payload);
     },
     hasGetScenarioDigListSucc(state, action) {
@@ -185,8 +184,6 @@ export function getScenarioList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.scenario_get}`);
-      console.log("responsecccccccccccccc",response);
-      
       dispatch(slice.actions.hasGetScenarioListSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

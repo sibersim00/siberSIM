@@ -125,8 +125,6 @@ const getPauselimit = async (db) => {
 const startScenario =
   ({ db, validation }) =>
     async (body, user_count_limit) => {
-      console.log("bodybodydddddddddbody", body);
-
       try {
         const [activeUsersResult] = await db.sequelize.query(
           `SELECT COUNT(*) AS activeUsers
@@ -675,8 +673,6 @@ const canResumeScenario =
   ({ db, validation }) =>
     async (body,user_count_limit) => {
       try {
-        console.log("bodybodybodybodybody", user_count_limit);
-
         const [activeUsersResult] = await db.sequelize.query(
           `SELECT COUNT(*) AS activeUsers
          FROM vm_request

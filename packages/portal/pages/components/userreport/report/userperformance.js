@@ -90,9 +90,6 @@ const Userperformance = () => {
       setscenarioDropdown(dropdownData);
     }
   }, [hasGetScenarioListSuccess]);
-
-  console.log("hasGetStudentListSuccreport", hasGetStudentListSuccreport);
-
   useEffect(() => {
     const payload = {
       learner_id: hasGetStudentListSuccreport?.learner_id,

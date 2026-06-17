@@ -112,8 +112,6 @@ const Organization = () => {
 const [impUser, setimpUser] = useState(false);
 let importAdUsers = (modal) => {
   setimpUser(true);
-
-  console.log("impUser",modal);
   //  [eslint]
   dispatch(clearHasError())
     switch (modal) {            

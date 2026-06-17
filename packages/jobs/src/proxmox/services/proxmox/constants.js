@@ -49,6 +49,8 @@ const VM_PROCESSES = {
   GET_VM_STATUS:"Get VM Status",
   RESTORE_VM:"Restore VM",
   CHECK_VMID_STATUS:"Check vmid status",
+  MIGRATE_VM:"Migrate VM",
+  WAIT_FOR_TASK:"Status of VM"
 };
 
 module.exports = {

@@ -124,20 +124,7 @@ const Dashboard = () => {
       router.push(route);
     }
   };
-
   const rowData = geDashboardListData || {};
-
-  const totalScenarios =
-    rowData?.scenarioCounts?.reduce(
-      (acc, curr) => acc + Number(curr.total_scenarios || 0),
-      0,
-    ) ?? 0;
-
-  const publishedScenarios =
-    rowData?.scenarioCounts?.reduce(
-      (acc, curr) => acc + Number(curr.published_scenarios || 0),
-      0,
-    ) ?? 0;
   return (
     <>
       <Seo title="Dashboard" />
@@ -638,7 +625,7 @@ const Dashboard = () => {
             </Row>
           </Col>
         </Row>
-      </Container>
+      </Container> 
     </>
   );
 };

@@ -475,8 +475,6 @@ const reset = () => {
       phase:      "zst_upload",
       timestamp:  Date.now(),
     }));
-    console.log("newImportidnewImportidnewImportid",newImportid);
-    
     // if (onImportStarted) onImportStarted(newImportid); // ← show banner
     const initStatus = {};
     newComponents.forEach((c) => {
@@ -534,38 +532,19 @@ const reset = () => {
           },
         ),
       );
-      console.log("resultresultresultresultresult",result);
-      
-
       const data = result?.data?.data?.data || result;
-
-      console.log("parsed data:", data);
-
-      // if (data?.received || data?.transferring) {
-      //   // ── Phase 2: transferring Jobs disk → Proxmox (poll) ──────────
-      //   setZstStatus((prev) => ({
-      //     ...prev,
-      //     [component.file]: {
-      //       uploading: false, transferring: true,
-      //       uploaded: false, progress: 100, error: null,
-      //     },
-      //   }));
-      //   addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
-      //   startPollingZstStatus(component);
-      // }
-if (data?.transferring || data?.received) {
-  setZstStatus((prev) => ({
-    ...prev,
-    [component.file]: {
-      uploading: false, transferring: true,
-      uploaded: false, progress: 100, error: null,
-    },
-  }));
-  addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
-   if (onImportStarted) onImportStarted(importid); // ← move here
-  startPollingZstStatus(component); // ← polling starts here
-
-}
+      if (data?.transferring || data?.received) {
+        setZstStatus((prev) => ({
+          ...prev,
+          [component.file]: {
+            uploading: false, transferring: true,
+            uploaded: false, progress: 100, error: null,
+          },
+        }));
+        addCheck(`${component.name} received — transferring to Proxmox...`, "ok");
+        if (onImportStarted) onImportStarted(importid); // ← move here
+        startPollingZstStatus(component); // ← polling starts here
+      }
       if (data?.uploaded) {
       setZstStatus((prev) => ({
         ...prev,
@@ -598,11 +577,7 @@ if (data?.transferring || data?.received) {
     pollIntervals.current[component.file] = setInterval(async () => {
       try {
         const result   = await dispatch(pollZstUploadStatus(importid));
-        console.log("resultresultresultresultresultresudddddltresult",result);
-        
         const statuses = result?.data?.data || result?.data || [];
-        console.log("statusesstatusesstatusesstatuses",statuses);
-        
         // const thisComp = statuses.find((s) => s.vm_file === component.file);
         const PRIORITY = { uploaded: 4, transferring: 3, failed: 2, pending: 1 };
 
@@ -614,9 +589,6 @@ if (data?.transferring || data?.received) {
         const thisComp = allForComp.sort(
           (a, b) => (PRIORITY[b.status] || 0) - (PRIORITY[a.status] || 0)
         )[0];
-
-        console.log("thisComp:", thisComp);
-
         if (!thisComp) return;
 
         if (thisComp.status === "uploaded") {

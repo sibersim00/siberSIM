@@ -165,27 +165,6 @@ export function cleardeleteComponent() {
   };
 }
 
-
-// export function saveComponent(payload) {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.post(`${api.custom_component_save}`, payload);
-
-//       dispatch(slice.actions.hasGetSaveComponentSucc(response.data));
-//     } catch (error) {
-//       console.log("Axios Error:", error);
-
-//       const errorPayload =
-//         error?.response?.data || {
-//           message: error.message || "Something went wrong",
-//         };
-
-//       dispatch(slice.actions.hasError(errorPayload));
-//     }
-//   };
-// }
-
 export function saveComponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startSave());
@@ -204,9 +183,6 @@ export function saveComponent(payload) {
     }
   };
 }
-
-
-
 
 export function clearSaveComponent() {
   return async () => {
@@ -300,9 +276,6 @@ export function getSubCategorybyId(payload) {
     }
   };
 }
-
-
-
 
 export function getVMDetail(payload) {
   return async (dispatch) => {

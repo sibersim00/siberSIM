@@ -189,8 +189,7 @@ export function confirmationInstructorData(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(api?.instructor_verify, payload);
-      console.log("API Response:", response); 
+      const response = await axios.post(api?.instructor_verify, payload); 
       dispatch(slice.actions.hasconfirmationInstructorData(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

@@ -57,14 +57,11 @@ const ImageNode = ({ id, data, isConnectable, deleteNode, isTimerVisible,scenari
 
 
 const handleClick = (dataobj) => {
-  console.log("dataobjdataobjdataobj",dataobj);
-  
     if (scenarioStatus === "Pause") return; 
   // if (!isTimerVisible) return;
   const vmid = dataobj?.vmid;
   const vmType = dataobj?.vmType;
   if (!vmid || !vmType) return;
-  console.log("Inside vmc");
 
   const rawLabel = dataobj?.label || "";
   const namePart = rawLabel.split("-")[1]?.trim() || "";
@@ -225,8 +222,6 @@ const handleClick = (dataobj) => {
 
 
 const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) => {
-  console.log("scenariodiagram",scenariodiagram);
-  
   const [elements, setElements] = useState({ nodes: [], edges: [] });
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
@@ -236,11 +231,7 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
 
     try {
       const cleanData = scenariodiagram.replace('flowchartData ', '');
-      console.log("cleanDatacleanDatacleanData",cleanData);
-      
       const parsedData = JSON.parse(cleanData);
-      console.log("parsedDataparsedDataparsedData",parsedData);
-      
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
 
       const updatedNodes = parsedData.nodes.map(node => ({
@@ -254,9 +245,6 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
               : node.data.image,
         },
       }));
-      console.log("updatedNodesupdatedNodesupdatedNodes",updatedNodes);
-
-
       setElements({ nodes: updatedNodes, edges: parsedData.edges });
     } catch (err) {
       console.error('Failed to parse scenariodiagram:', err);
@@ -280,9 +268,6 @@ useEffect(() => {
     const EditableEdgeWrapper = (edgeProps) => {
       const { getEdges, setEdges } = useReactFlow();
       const edges = getEdges(); // all current edges
-      console.log("fffffffffffffffffffffffffff",edges);
-      
-  
       return (
         <EditableEdge
           {...edgeProps}

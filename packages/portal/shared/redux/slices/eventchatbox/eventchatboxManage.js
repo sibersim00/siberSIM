@@ -111,8 +111,6 @@ export function saveChatMessage(payload) {
     try {
       const response = await axios.post(`${api.event_chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
-
-      console.log("response", response)
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }

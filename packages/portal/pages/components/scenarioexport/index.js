@@ -15,6 +15,7 @@ const PAGINATION_BAR_HEIGHT = 220;
 
 const ScenarioExportPage = () => {
   const dispatch = useDispatch();
+  const [allActiveDownloads, setAllActiveDownloads] = useState({});
 
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
@@ -151,8 +152,8 @@ const handleCardClick = async (item) => {
       dispatch(clearHasError());
     }
   }, [errorData]);
-const handleDownloadZip = async (row) => {
-  console.log("rowrowrowrowrowrow",row);
+    const handleDownloadZip = async (row) => {
+    console.log("rowrowrowrowrowrow",row);
   
   try {
     const blob = await dispatch(
@@ -189,20 +190,49 @@ const formatBytes = (bytes) => {
   if (bytes < 1024 ** 3)   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 };
+
+// const handleCancelDownload = () => {
+//   if (abortControllerRef.current) {
+//     abortControllerRef.current.abort();
+//     abortControllerRef.current = null;
+//   }
+//   setDownloadingFile(null);
+//   setDownloadProgress(0);
+//   setDownloadedBytes(0);
+//   setTotalBytes(0);
+//     toast.success(
+//     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+//       Download cancelled successfully.
+//     </p>,
+//     { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
+//   );
+// };
+
 // const handleDownloadComponent = async (exportid, file_name) => {
 //   if (downloadingFile) return;
 
-//   setDownloadingFile(file_name);
+//   const controller = new AbortController();
+//   abortControllerRef.current = controller;
 
-//   toast.success(
-//     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-//       Preparing your file for download. This may take a few minutes for large files
-//     </p>,
-//     { position: toast.POSITION.TOP_RIGHT, hideProgressBar: false, theme: "colored", autoClose: 5000 },
-//   );
+//   setDownloadingFile(file_name);
+//   setDownloadProgress(0);
+//   setDownloadedBytes(0);
+//   setTotalBytes(0);
 
 //   try {
-//     const blob = await dispatch(downloadScenarioComponent({ exportid, file_name }));
+//     const blob = await dispatch(
+//       downloadScenarioComponent({
+//         exportid,
+//         file_name,
+//         signal: controller.signal,
+//         onProgress: (pct, loaded, total) => {
+//           setDownloadProgress(pct);
+//           setDownloadedBytes(loaded);
+//           setTotalBytes(total);
+//         },
+//       })
+//     );
+
 //     if (!blob) return;
 //     const url  = window.URL.createObjectURL(blob);
 //     const link = document.createElement("a");
@@ -213,92 +243,137 @@ const formatBytes = (bytes) => {
 //     link.remove();
 //     window.URL.revokeObjectURL(url);
 //   } catch (error) {
+//     console.log("errorerrorerrorerrorerror",error);
+    
+//     // ← don't show error toast on cancel
+//     if (error === "Something went wrong" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
+//       return;
+//     }
 //     console.error("Component download failed:", error);
-//     toast.error(
-//       <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-//         Download failed: {error.message}
-//       </p>,
-//       { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
-//     );
+//     // toast.error(
+//     //   <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+//     //     Download failed: {error.message}
+//     //   </p>,
+//     //   { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
+//     // );
 //   } finally {
+//     abortControllerRef.current = null;
 //     setDownloadingFile(null);
+//     setDownloadProgress(0);
+//     setDownloadedBytes(0);
+//     setTotalBytes(0);
 //   }
 // };
-
 
 const handleCancelDownload = () => {
   if (abortControllerRef.current) {
     abortControllerRef.current.abort();
     abortControllerRef.current = null;
   }
+  
   setDownloadingFile(null);
   setDownloadProgress(0);
   setDownloadedBytes(0);
   setTotalBytes(0);
-    toast.success(
+  
+  // ← Clear from tracking
+  setAllActiveDownloads((prev) => {
+    const newState = { ...prev };
+    delete newState[downloadingFile?.split("/").pop()];
+    return newState;
+  });
+
+  toast.success(
     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
       Download cancelled successfully.
     </p>,
     { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
   );
 };
+  const handleDownloadComponent = async (exportid, file_name) => {
+    if (downloadingFile) return;
 
-const handleDownloadComponent = async (exportid, file_name) => {
-  if (downloadingFile) return;
+    const fileName = file_name.split("/").pop();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-  const controller = new AbortController();
-  abortControllerRef.current = controller;
-
-  setDownloadingFile(file_name);
-  setDownloadProgress(0);
-  setDownloadedBytes(0);
-  setTotalBytes(0);
-
-  try {
-    const blob = await dispatch(
-      downloadScenarioComponent({
-        exportid,
-        file_name,
-        signal: controller.signal,
-        onProgress: (pct, loaded, total) => {
-          setDownloadProgress(pct);
-          setDownloadedBytes(loaded);
-          setTotalBytes(total);
-        },
-      })
-    );
-
-    if (!blob) return;
-    const url  = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href  = url;
-    link.setAttribute("download", file_name.split("/").pop());
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.log("errorerrorerrorerrorerror",error);
+    setDownloadingFile(file_name);
     
-    // ← don't show error toast on cancel
-    if (error === "Something went wrong" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
-      return;
+    // ← Add to tracking
+    setAllActiveDownloads((prev) => ({
+      ...prev,
+      [fileName]: { progress: 0, downloadedBytes: 0, totalBytes: 0 },
+    }));
+
+    try {
+      const blob = await dispatch(
+        downloadScenarioComponent({
+          exportid,
+          file_name,
+          signal: controller.signal,
+          onProgress: (pct, loaded, total) => {
+            setDownloadProgress(pct);
+            setDownloadedBytes(loaded);
+            setTotalBytes(total);
+            
+            // ← update tracking
+            setAllActiveDownloads((prev) => ({
+              ...prev,
+              [fileName]: { progress: pct, downloadedBytes: loaded, totalBytes: total },
+            }));
+          },
+        })
+      );
+
+      if (!blob) return;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      if (error === "Something went wrong" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
+        setAllActiveDownloads((prev) => {
+          const newState = { ...prev };
+          delete newState[fileName];
+          return newState;
+        });
+        return;
+      }
+      console.error("Component download failed:", error);
+    } finally {
+      abortControllerRef.current = null;
+      setDownloadingFile(null);
+      setDownloadProgress(0);
+      setDownloadedBytes(0);
+      setTotalBytes(0);
+      
+      // ← remove from tracking
+      setAllActiveDownloads((prev) => {
+        const newState = { ...prev };
+        delete newState[fileName];
+        return newState;
+      });
     }
-    console.error("Component download failed:", error);
-    // toast.error(
-    //   <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-    //     Download failed: {error.message}
-    //   </p>,
-    //   { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
-    // );
-  } finally {
-    abortControllerRef.current = null;
-    setDownloadingFile(null);
-    setDownloadProgress(0);
-    setDownloadedBytes(0);
-    setTotalBytes(0);
-  }
-};
+  };
+
+
+  const downloadCount = Object.keys(allActiveDownloads).length;
+
+useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    if (downloadingFile) {
+      e.preventDefault();
+      e.returnValue = ""; 
+    }
+  };
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, [downloadingFile]);
   const handleChangeView = (thisView) => {
     setQuickFilter("");
     dispatch(handleManageView(thisView));
@@ -447,11 +522,11 @@ const onPaginationChanged = useCallback((params) => {
             padding: "5px 10px",
             borderRadius: "12px",
           }}
-        >
+        > 
           {label}
         </span>
       );
-    },
+    },               
 
     actionButtonRenderer: (props) => {
       const status = props.data.status;
@@ -518,6 +593,12 @@ const onPaginationChanged = useCallback((params) => {
                           Checking status every 5s...
                         </small>
                       )}
+                       {downloadCount > 0 && (
+                    <small className="text-info">
+                      <i className="fa fa-cloud-download-alt me-1 fa-spin" />
+                      {downloadCount} file{downloadCount > 1 ? 's' : ''} downloading...
+                    </small>
+                  )}
                     </div>
                     <div className="d-flex align-items-center">
                       {view === "card" && (
@@ -539,7 +620,7 @@ const onPaginationChanged = useCallback((params) => {
                           &nbsp;
                         </>
                       )}
-                      <Button
+                      <Button 
                         type="button"
                         title="Card View"
                         variant="outline-success"
@@ -616,6 +697,12 @@ const onPaginationChanged = useCallback((params) => {
             const isDownloading = downloadingIds.includes(item.exportid);
             // const isExpanded = expandedExportId === item.exportid;
             const components = componentDetails[item.exportid] || [];
+  const thisExportDownloads = Object.keys(allActiveDownloads).filter((fileName) => {
+    // Check if this file belongs to this export's components
+    const components = componentDetails[item.exportid] || [];
+    return components.some(c => c.file_name.includes(fileName) || fileName.includes(c.file_name?.split("/").pop()));
+  }).length;
+
 
             // Status-based box shadow
             const cardShadow = isDone
@@ -629,8 +716,34 @@ const onPaginationChanged = useCallback((params) => {
       <Card
         className="custom-card h-100 export-card"
         style={{ boxShadow: cardShadow, cursor: "pointer", transition: "all 0.2s ease-in-out" }}
-        onClick={() => handleCardClick(item)}
+         onClick={() => {
+          if (!isDone) return;
+          handleCardClick(item);
+        }}
       >
+             {thisExportDownloads > 0 && (
+          <div style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            fontSize: "11px",
+            fontWeight: 700,
+            padding: "6px 12px",
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #0d6efd, #0dcaf0)",
+            color: "#fff",
+            boxShadow: "0 4px 12px rgba(13, 110, 253, 0.3)",
+            zIndex: 10,
+          }}>
+            <i className="fa fa-cloud-download-alt fa-spin" />
+            {thisExportDownloads}
+          </div>
+        )}
+
         <Card.Body className="p-3 d-flex flex-column justify-content-between text-center">
           <div>
          
@@ -694,6 +807,18 @@ const onPaginationChanged = useCallback((params) => {
                 <i className="fa fa-spinner fa-spin" />Processing backup…
               </span>
             )}
+                  {/* {downloadCount > 0 && (
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: "5px",
+                      fontSize: "11px", fontWeight: 600, padding: "4px 10px",
+                      borderRadius: "20px", marginTop: "6px", marginLeft: "6px",
+                      background: "#e3f2fd",
+                      color: "#1976d2",
+                    }}>
+                      <i className="fa fa-cloud-download-alt me-1" />
+                      {downloadCount} downloading...
+                    </span>
+                  )} */}
           </div>
         </Card.Body>
       </Card>

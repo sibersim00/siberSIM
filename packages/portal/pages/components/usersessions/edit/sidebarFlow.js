@@ -75,8 +75,6 @@ const SidebarFlow = ({
       errorData: state && state.commonMaster && state.commonMaster.error,
     };
   });
-  console.log("getComponentByCatDatagetComponentByCatData", getComponentByCatData)
-
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
     const theme = localStorage.getItem("theme_preference") || "light";
@@ -84,31 +82,19 @@ const SidebarFlow = ({
   }, []);
   useEffect(() => {
     dispatch(getCategoriesList());
-    // dispatch(getSenarioDigramList());
   }, []);
-  // useEffect(() => {
-  //   if (scenarioId) {
-  //     console.log("scenarioIdscenarioIdscenarioId", scenarioId)
-  //     const payload = { scenarioid: scenarioId };
-  //     dispatch(getSingleScenarios(scenarioId));
-  //   }
-  // }, [scenarioId]);
 
   useEffect(() => {
     if (query.slug) {
-      // setRowId(query.slug[0]);
-      // dispatch(getSingleScenarios(query.slug[0]));
       dispatch(getSingleUserSession(query.slug[0]));
-
     }
   }, [query.slug]);
   const handleDragStart = (e, node) => {
-    console.log("nodeeeeeeeeeeeeee", node)
     const normalizedNode = {
        ...node,
       componentid: node.componentid || node.componentId || node.id,
       vmType:
-      node.vmType || node.componenttype || node.componentType || "", // ✅ SAFE FALLBACK
+      node.vmType || node.componenttype || node.componentType || "", // SAFE FALLBACK
       vmid:
         node.vmid ||
         (() => {
@@ -169,8 +155,6 @@ const SidebarFlow = ({
     const previouslySelected = componentCache[selectedOption.value];
     setSelectedComponent(previouslySelected || []);
   };
-  console.log("getComponentByCatDatagetComponentByCatDatagetComponentByCatData", getComponentByCatData);
-
   useEffect(() => {
     if (getComponentByCatData && getComponentByCatData.length > 0) {
       let filteredData = getComponentByCatData.map((cat) => ({
@@ -186,25 +170,14 @@ const SidebarFlow = ({
       setComponentDropDown(filteredData);
     }
   }, [getComponentByCatData]);
-  console.log("selectedComponentselectedComponent", selectedComponent);
-
   useEffect(() => {
     if (selectedComponent && selectedComponent.length > 0) {
-      // setToBeDragComponent((prev) => {
-      //   const existingIds = new Set(prev.map((item) => item.value));
-      //   const newItems = selectedComponent.filter(
-      //     (item) => !existingIds.has(item.value)
-      //   );
-      //   return [...prev, ...newItems];
-      // });
     setToBeDragComponent(selectedComponent);
 
     }
   }, [selectedComponent]);
   useEffect(() => {
     if (toBeDragComponent && toBeDragComponent.length > 0) {
-      console.log("toBeDragComponenttoBeDragComponent", toBeDragComponent)
-
       const newNodes = toBeDragComponent.map((cat) => ({
         id: cat?.value,
         imageUrl: cat?.subcategoryimage
@@ -217,7 +190,6 @@ const SidebarFlow = ({
         duration: cat?.duration,
         componentid: cat?.componentid,
       }));
-      console.log("newNodesnewNodes", newNodes)
       setImageNodeData((prevData) => {
         const existingIds = new Set(prevData.map((item) => item.id));
         const merged = [...prevData];
@@ -232,138 +204,6 @@ const SidebarFlow = ({
       });
     }
   }, [toBeDragComponent]);
-
-  // useEffect(() => {
-  //   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
-  //     return;
-  //   const scenario = getSingleScenariosSucc[0];
-  //   console.log("scenarioscenario", scenario);
-  //   if (!scenario) return;
-  //   /* ---------- restore diagram ---------- */
-  //   if (scenario.scenariodiagram?.trim()) {
-  //     const parsed = JSON.parse(
-  //       scenario.scenariodiagram.replace("flowchartData ", "")
-  //     );
-  //     if (parsed?.nodes && parsed?.edges) {
-  //       setNodes(parsed.nodes);
-  //       setEdges(parsed.edges);
-  //     }
-  //   }
-  //   /* ---------- restore components ---------- */
-  //   if (!scenario.components) return;
-  //   let parsedComponents = [];
-  //   console.log("componentssssssssssss", scenario.components)
-  //   try {
-  //     parsedComponents = JSON.parse(scenario.components);
-  //     console.log("parsedComponentsparsedComponents", parsedComponents)
-  //   } catch (e) {
-  //     console.error("Invalid components JSON", e);
-  //     return;
-  //   }
-  //   const normalized = parsedComponents.map((node) => ({
-  //     ...node,
-  //     id: node.id || node.nodeid,
-  //     componentid: node.componentid || node.componentId || node.id,
-  //     imageUrl: normalizeImageUrl(
-  //       node.imageUrl || node.subcategoryimage
-  //     ),
-  //     networkport: node.networkport || [],
-  //   }
-  //   ));
-  //   console.log("normalizednormalized", normalized)
-
-  //   setImageNodeData(normalized);
-  //   setDraggedComponent(normalized);
-  //   setDroppedImages(normalized.map((n) => n.id));
-  // }, [getSingleScenariosSucc]);
-
-  // //-new component dragged 
-  // // useEffect(() => {
-  // //   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
-  // //     return;
-  // //   const scenario = getSingleScenariosSucc[0];
-  // //   console.log("scenarioscenario", scenario);
-  // //   if (!scenario) return;
-
-  // //   /* ---------- restore diagram ---------- */
-  // //   let parsedDiagram = null;
-
-  // //   if (scenario.scenariodiagram?.trim()) {
-  // //     try {
-  // //       parsedDiagram = JSON.parse(
-  // //         scenario.scenariodiagram.replace("flowchartData ", "")
-  // //       );
-
-  // //       if (parsedDiagram?.nodes && parsedDiagram?.edges) {
-  // //         setNodes(parsedDiagram.nodes);
-  // //         setEdges(parsedDiagram.edges);
-  // //       }
-  // //     } catch (e) {
-  // //       console.error("Invalid scenariodiagram JSON", e);
-  // //       return;
-  // //     }
-  // //   }
-
-  // //   /* ---------- restore components FROM DIAGRAM (source of truth) ---------- */
-  // //   if (!parsedDiagram?.nodes) return;
-
-  // //   const diagramComponents = parsedDiagram.nodes
-  // //     .filter((n) => n.type === "imageNode" && n.data)
-  // //     .map((node) => ({
-  // //       id: node.id,
-  // //       nodeid: node.id,
-
-  // //       // IMPORTANT: keep compatibility with old code
-  // //       componentid: node.data.componentId || node.data.componentid || node.id,
-
-  // //       label: node.data.label || "",
-  // //       duration: node.data.duration ?? "",
-  // //       vmid: node.data.vmid,
-  // //       vmType: node.data.vmType,
-
-  // //       imageUrl: normalizeImageUrl(node.data.image),
-  // //       networkport: node.data.networkport || [],
-  // //     }));
-
-  // //   console.log("diagramComponents ", diagramComponents);
-
-  // //   // sidebar data
-  // //   setImageNodeData(diagramComponents);
-
-  // //   // drag state
-  // //   setDraggedComponent(diagramComponents);
-
-  // //   // track dropped images (for preventing duplicate drop)
-  // //   setDroppedImages(diagramComponents.map((n) => n.id));
-
-  // // }, [getSingleScenariosSucc]);
-
-  // useEffect(() => {
-  //   if (!imageNodeData?.length) return;
-  //   console.log("imageNodeDataimageNodeDataimageNodeData",imageNodeData);
-    
-
-  //   setNodes((prevNodes) =>
-  //     prevNodes.map((node) => {
-  //       const match = imageNodeData.find(
-  //         (img) => String(img.id) === String(node.id)
-  //       );
-
-  //       if (!match) return node;
-
-  //       return {
-  //         ...node,
-  //         data: {
-  //           ...node.data,
-  //           image: match.imageUrl,          //  image visible
-  //           networkport: match.networkport, //  ports visible
-  //           componentId: match.componentid,
-  //           label: match.label || node.data?.label,
-  //         },
-  //       };
-  //     })
-  //   );
-  // }, [imageNodeData]);
 useEffect(() => {
   if (!Array.isArray(getSingleScenariosSucc) || !getSingleScenariosSucc.length)
     return;
@@ -386,7 +226,6 @@ useEffect(() => {
     }
   }
   /* ---------- restore components ---------- */
-  console.log("scenarioscenarioscenario",scenario);
   
   if (!scenario.components) return;
   let parsedComponents = [];
@@ -396,29 +235,6 @@ useEffect(() => {
     console.error("Invalid components JSON", e);
     return;
   }
-  // const normalized = parsedComponents.map((node) => {
-  //   console.log("nodenodenodddddddddddddenode",node);
-    
-  //   const componentId = node.componentid || node.componentId || node.id;
-  //   let updatedImage = "";
-  //   if (parsedDiagram?.nodes?.length) {
-  //     const matchedNode = parsedDiagram.nodes.find(
-  //       (n) => String(n?.data?.componentId) === String(componentId)
-  //     );
-  //     if (matchedNode?.data?.image) {
-  //       updatedImage = matchedNode.data.image;
-  //     }
-  //   }
-  //   return {
-  //     ...node,
-  //     id: node.id || node.nodeid,
-  //     componentid: componentId,
-  //     imageUrl: normalizeImageUrl(
-  //       updatedImage || node.imageUrl || node.subcategoryimage
-  //     ),
-  //     networkport: node.networkport || [],
-  //   };
-  // });
   const normalized = parsedComponents.map((node) => {
   const componentId = node.componentid || node.componentId || node.id;
 

@@ -1,16 +1,7 @@
-import React, { useState, useEffect, useMemo,useRef,useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Seo from "../../../shared/layout-components/seo/seo";
-import {
-  Row,
-  Col,
-  Card,
-  Button,
-  OverlayTrigger,
-  Tooltip,
-  Nav,
-  Tab,
-} from "react-bootstrap";
+import { Row, Col, Card, Button, OverlayTrigger, Tooltip, Nav, Tab} from "react-bootstrap";
 import { getScenariosList } from "../../../shared/redux/slices/scenarios/scenarios";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import { AgGridReact } from "ag-grid-react";
@@ -45,10 +36,10 @@ const Scenarios = () => {
   const [showSubcategoryCard, setShowSubcategoryCard] = useState(false);
   const [indexId, setIndexId] = useState("tab1");
   const [showTabs, setShowTabs] = useState(true);
-    const [pageSize, setPageSize] = useState(20);
-    const gridRef = useRef(null);
-     const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
-  
+  const [pageSize, setPageSize] = useState(20);
+  const gridRef = useRef(null);
+  const gridHeight =
+    HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
 
   useEffect(() => {
     dispatch(getScenariosList());
@@ -60,69 +51,162 @@ const Scenarios = () => {
     }
   }, [scenariosListData]);
 
-  const Breadcrumb = ({
+  // const Breadcrumb = ({
+  //   selectedCategory,
+  //   selectedSubcategory,
+  //   onCategoryClick,
+  //   onSubcategoryClick,
+  // }) => {
+  //   return (
+  //     <div className="d-flex align-items-center">
+  //       <span
+  //         className="breadcrumb-item text-primary"
+  //         style={{ cursor: "pointer" }}
+  //         onClick={() => {
+  //           onCategoryClick(null);
+  //           onSubcategoryClick(null);
+  //         }}
+  //       >
+  //         Home
+  //       </span>
+
+  //       {selectedCategory && (
+  //         <>
+  //           <span className="mx-2">/</span>
+  //           <span
+  //             className="breadcrumb-item text-primary"
+  //             style={{ cursor: "pointer" }}
+  //             onClick={() => onSubcategoryClick(null)}
+  //           >
+  //             {selectedCategory.scenariocategory_name}
+  //           </span>
+  //         </>
+  //       )}
+
+  //       {selectedSubcategory && (
+  //         <>
+  //           <span className="mx-2">/</span>
+  //           <span className="text-primary">
+  //             {selectedSubcategory.scenariosubcategory_name}
+  //           </span>
+  //         </>
+  //       )}
+  //     </div>
+  //   );
+  // };
+  const StepBreadcrumb = ({
     selectedCategory,
     selectedSubcategory,
     onCategoryClick,
     onSubcategoryClick,
   }) => {
+    const steps = [
+      {
+        label: "Categories",
+        active: !selectedCategory,
+        done: !!selectedCategory,
+        onClick: () => {
+          onCategoryClick(null);
+          onSubcategoryClick(null);
+        },
+      },
+      {
+        label: selectedCategory?.scenariocategory_name || "Sub-category",
+        active: selectedCategory && !selectedSubcategory,
+        done: !!selectedSubcategory,
+        onClick: () => selectedCategory && onSubcategoryClick(null),
+      },
+      {
+        label: selectedSubcategory?.scenariosubcategory_name || "Scenario",
+        active: !!selectedSubcategory,
+        done: false,
+        onClick: null,
+      },
+    ];
+
     return (
-      <div className="d-flex align-items-center">
-        <span
-          className="breadcrumb-item text-primary"
-          style={{ cursor: "pointer" }}
-          onClick={() => {
-            onCategoryClick(null);
-            onSubcategoryClick(null);
-          }}
-        >
-          Home
-        </span>
-
-        {selectedCategory && (
-          <>
-            <span className="mx-2">/</span>
-            <span
-              className="breadcrumb-item text-primary"
-              style={{ cursor: "pointer" }}
-              onClick={() => onSubcategoryClick(null)}
+      <div
+        className="d-flex align-items-center gap-2 px-2 py-2 rounded-3 bg-light border"
+        style={{ fontSize: "13px" }}
+      >
+        {steps.map((step, i) => (
+          <React.Fragment key={i}>
+            <div
+              className="d-flex align-items-center gap-1"
+              onClick={step.onClick}
+              style={{ cursor: step.onClick ? "pointer" : "default" }}
             >
-              {selectedCategory.scenariocategory_name}
-            </span>
-          </>
-        )}
-
-        {selectedSubcategory && (
-          <>
-            <span className="mx-2">/</span>
-            <span className="text-primary">
-              {selectedSubcategory.scenariosubcategory_name}
-            </span>
-          </>
-        )}
+              <div
+                className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{
+                  width: 24,
+                  height: 24,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  background: step.done
+                    ? "#185FA5"
+                    : step.active
+                      ? "#185FA5"
+                      : "#e9ecef",
+                  color: step.done || step.active ? "white" : "#6c757d",
+                  flexShrink: 0,
+                }}
+              >
+                {step.done ? (
+                  <i className="fe fe-check" style={{ fontSize: 11 }} />
+                ) : (
+                  i + 1
+                )}
+              </div>
+              <span
+                style={{
+                  color: step.done
+                    ? "#185FA5"
+                    : step.active
+                      ? "#afc1d3"
+                      : "#6c757d",
+                  fontWeight: step.active ? 600 : 400,
+                  maxWidth: 140,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <i
+                className="fe fe-chevron-right text-muted"
+                style={{ fontSize: 12 }}
+              />
+            )}
+          </React.Fragment>
+        ))}
       </div>
     );
   };
+
   const uniqueCategories = Array.from(
     new Map(
-      scenariosListData?.map((item) => [item.scenariocategoryid, item])
-    ).values()
+      scenariosListData?.map((item) => [item.scenariocategoryid, item]),
+    ).values(),
   ).sort((a, b) =>
-    a.scenariocategory_name.localeCompare(b.scenariocategory_name)
+    a.scenariocategory_name.localeCompare(b.scenariocategory_name),
   );
   const uniqueSubcategories = selectedCategory
     ? Array.from(
-      new Map(
-        scenariosListData
-          .filter(
-            (item) =>
-              item.scenariocategoryid === selectedCategory.scenariocategoryid
-          )
-          .map((item) => [item.scenariosubcategory_name, item])
-      ).values()
-    ).sort((a, b) =>
-      a.scenariosubcategory_name?.localeCompare(b.scenariosubcategory_name)
-    )
+        new Map(
+          scenariosListData
+            .filter(
+              (item) =>
+                item.scenariocategoryid === selectedCategory.scenariocategoryid,
+            )
+            .map((item) => [item.scenariosubcategory_name, item]),
+        ).values(),
+      ).sort((a, b) =>
+        a.scenariosubcategory_name?.localeCompare(b.scenariosubcategory_name),
+      )
     : [];
 
   useEffect(() => {
@@ -132,13 +216,13 @@ const Scenarios = () => {
       return;
     }
     let filtered = scenariosListData.filter(
-      (item) => item.scenariocategoryid === selectedCategory.scenariocategoryid
+      (item) => item.scenariocategoryid === selectedCategory.scenariocategoryid,
     );
     if (selectedSubcategory) {
       filtered = filtered.filter(
         (item) =>
           item.scenariosubcategory_name ===
-          selectedSubcategory.scenariosubcategory_name
+          selectedSubcategory.scenariosubcategory_name,
       );
     }
     setFilteredData(filtered);
@@ -161,14 +245,14 @@ const Scenarios = () => {
       if (selectedCategory) {
         filtered = filtered.filter(
           (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
+            item.scenariocategoryid === selectedCategory.scenariocategoryid,
         );
       }
       if (selectedSubcategory) {
         filtered = filtered.filter(
           (item) =>
             item.scenariosubcategory_name ===
-            selectedSubcategory.scenariosubcategory_name
+            selectedSubcategory.scenariosubcategory_name,
         );
       }
       setFilteredData(filtered);
@@ -180,7 +264,7 @@ const Scenarios = () => {
     // Restore category
     if (router.query.categoryId) {
       const category = scenariosListData.find(
-        (item) => item.scenariocategoryid === Number(router.query.categoryId)
+        (item) => item.scenariocategoryid === Number(router.query.categoryId),
       );
       if (category) setSelectedCategory(category);
     }
@@ -188,7 +272,8 @@ const Scenarios = () => {
     // Restore subcategory
     if (router.query.subcategoryName) {
       const subcategory = scenariosListData.find(
-        (item) => item.scenariosubcategory_name === router.query.subcategoryName
+        (item) =>
+          item.scenariosubcategory_name === router.query.subcategoryName,
       );
       if (subcategory) setSelectedSubcategory(subcategory);
     }
@@ -270,7 +355,7 @@ const Scenarios = () => {
   //   pagination: true,
   //   paginationPageSize: 10,
   // };
-      const gridOptions = {
+  const gridOptions = {
     headerHeight: HEADER_HEIGHT,
     rowHeight: ROW_HEIGHT,
     suppressScrollOnNewData: true,
@@ -281,26 +366,25 @@ const Scenarios = () => {
   // };
   const onGridReady = useCallback((params) => {
     gridRef.current = params.api;
-  
+
     // Set correct height on first load as well
     const initialPageSize = params.api.paginationGetPageSize();
     const totalRows = params.api.getDisplayedRowCount();
     const effectiveRows = Math.min(initialPageSize, totalRows);
     setPageSize(effectiveRows);
   }, []);
-    
-      // Fires when page size changes via the built-in dropdown
-     const onPaginationChanged = useCallback((params) => {
+
+  // Fires when page size changes via the built-in dropdown
+  const onPaginationChanged = useCallback((params) => {
     if (params.api) {
       const newPageSize = params.api.paginationGetPageSize();
-      const totalRows = params.api.getDisplayedRowCount(); // ✅ actual rows in data
-  
+      const totalRows = params.api.getDisplayedRowCount();
+
       // Use whichever is smaller — actual rows vs page size
       const effectiveRows = Math.min(newPageSize, totalRows);
       setPageSize(effectiveRows);
     }
   }, []);
-  
 
   const defaultColDef = useMemo(() => {
     return {
@@ -309,6 +393,14 @@ const Scenarios = () => {
       flex: 1,
     };
   }, []);
+
+  const categoryCounts = useMemo(() => {
+    if (!scenariosListData) return {};
+    return scenariosListData.reduce((acc, item) => {
+      acc[item.scenariocategoryid] = (acc[item.scenariocategoryid] || 0) + 1;
+      return acc;
+    }, {});
+  }, [scenariosListData]);
 
   const handleChangeView = (thisView) => {
     setView(thisView);
@@ -326,7 +418,7 @@ const Scenarios = () => {
       } else if (selectedCategory && !selectedSubcategory) {
         const filtered = scenariosListData.filter(
           (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
+            item.scenariocategoryid === selectedCategory.scenariocategoryid,
         );
         setFilteredSubcategories(filtered);
         setFilteredData([]);
@@ -335,7 +427,7 @@ const Scenarios = () => {
           (item) =>
             item.scenariocategoryid === selectedCategory.scenariocategoryid &&
             item.scenariosubcategory_name ===
-            selectedSubcategory.scenariosubcategory_name
+              selectedSubcategory.scenariosubcategory_name,
         );
         setFilteredData(filtered);
       }
@@ -358,7 +450,7 @@ const Scenarios = () => {
       const filtered = scenariosListData
         .filter(
           (item) =>
-            item.scenariocategoryid === selectedCategory.scenariocategoryid
+            item.scenariocategoryid === selectedCategory.scenariocategoryid,
         )
         .filter((item) => {
           const match = item.scenariosubcategory_name
@@ -377,7 +469,7 @@ const Scenarios = () => {
           (item) =>
             item.scenariocategoryid === selectedCategory.scenariocategoryid &&
             item.scenariosubcategory_name ===
-            selectedSubcategory.scenariosubcategory_name
+              selectedSubcategory.scenariosubcategory_name,
         )
         .filter((item) => {
           const titleMatch = item.scenariotitle?.toLowerCase().includes(val);
@@ -452,7 +544,6 @@ const Scenarios = () => {
     <>
       <Seo title="Scenarios" />
       <Row className="mg-b-10 text-wrap">
-
         <div className="panel panel-primary tabs-style-2">
           <div className="tab-menu-heading">
             <div className="tabs-menu">
@@ -460,7 +551,6 @@ const Scenarios = () => {
                 activeKey={indexId}
                 onSelect={(k) => setIndexId(k)}
               >
-
                 {showTabs && (
                   <Row id="tabs-style-2" className="pd-l-30 pd-r-30">
                     <Nav className="d-flex align-items-center panel-body tabs-menu-body pills bd-b pb-0 pt-1 bg-white">
@@ -502,7 +592,7 @@ const Scenarios = () => {
                       <Card.Body className="p-3 ">
                         <Col md={12}>
                           <div className="d-flex justify-content-between align-items-center">
-                            <Breadcrumb
+                            <StepBreadcrumb
                               selectedCategory={selectedCategory}
                               selectedSubcategory={selectedSubcategory}
                               onCategoryClick={(cat) => {
@@ -579,7 +669,7 @@ const Scenarios = () => {
                             <div
                               className="ag-theme-alpine mt-2"
                               style={{
-                                height: `${gridHeight}px`, 
+                                height: `${gridHeight}px`,
                                 width: "100%",
                                 overflow: "visible",
                               }}
@@ -607,9 +697,8 @@ const Scenarios = () => {
                     </Card>
 
                     {view === "card" && (
-
                       <Row className="row-sm">
-                        {!selectedCategory &&
+                        {/* {!selectedCategory &&
                           (filteredCategories.length > 0
                             ? filteredCategories
                             : uniqueCategories
@@ -657,9 +746,180 @@ const Scenarios = () => {
                                 </Card.Body>
                               </Card>
                             </Col>
-                          ))}
+                          ))} */}
+                        {!selectedCategory &&
+                          (filteredCategories.length > 0
+                            ? filteredCategories
+                            : uniqueCategories
+                          ).map((item, idx) => {
+                            // Each category gets a color pair: [accentColor, bgColor, textColor]
+                            const COLOR_PAIRS = [
+                              ["#185FA5", "#E6F1FB", "#0C447C"],
+                              ["#3B6D11", "#EAF3DE", "#27500A"],
+                              ["#854F0B", "#FAEEDA", "#633806"],
+                              ["#A32D2D", "#FCEBEB", "#791F1F"],
+                              ["#534AB7", "#EEEDFE", "#3C3489"],
+                              ["#0F6E56", "#E1F5EE", "#085041"],
+                              ["#993556", "#FBEAF0", "#72243E"],
+                              ["#5F5E5A", "#F1EFE8", "#444441"],
+                            ];
+                            const [accent, iconBg, iconText] =
+                              COLOR_PAIRS[idx % COLOR_PAIRS.length];
 
-                        {selectedCategory &&
+                            return (
+                              <Col
+                                md={columnsPerRow}
+                                className="p-2"
+                                key={item.scenariocategoryid}
+                              >
+                                <Card
+                                  className="h-100 pointer"
+                                  style={{
+                                    borderLeft: `3px solid ${accent}`,
+                                    borderRadius: 16,
+                                    overflow: "hidden",
+                                    cursor: "pointer",
+                                    transition: "transform .15s",
+                                  }}
+                                  // onMouseEnter={(e) => {
+                                  //   e.currentTarget.style.borderColor =
+                                  //     "#adb5bd";
+                                  //   e.currentTarget.style.transform =
+                                  //     "translateY(-2px)";
+                                  // }}
+                                  // onMouseLeave={(e) => {
+                                  //   e.currentTarget.style.borderColor =
+                                  //     "#dee2e6";
+                                  //   e.currentTarget.style.transform =
+                                  //     "translateY(0)";
+                                  // }}
+                                  onClick={() => handleCategoryClick(item)}
+                                >
+                                  {/* Colored top accent bar */}
+                                  {/* <div
+                                    style={{ height: 3, background: accent }}
+                                  /> */}
+
+                                  <Card.Body
+                                    className="p-3"
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    {/* Icon box */}
+                                    <div className="text-center mb-2">
+                                      <div
+                                        style={{
+                                          width: 90,
+                                          height: 90,
+                                          borderRadius: "50%",
+                                          background: iconBg,
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          margin: "0 auto",
+                                        }}
+                                      >
+                                        <img
+                                          alt="category"
+                                          onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = dummy_network.src;
+                                          }}
+                                          style={{
+                                            width: 70,
+                                            height: 70,
+                                            objectFit: "contain",
+                                            borderRadius: "50%",
+                                          }}
+                                          src={
+                                            item?.category_image
+                                              ? `${process.env.API_URL_FILEMANAGER}${item?.category_image}`
+                                              : dummy_network.src
+                                          }
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Name + count */}
+                                    <div className="text-center">
+                                      <div
+                                        style={{
+                                          fontSize: 16,
+                                          fontWeight: 600,
+                                          color: "#8d969e",
+                                          lineHeight: 1.35,
+                                        }}
+                                      >
+                                        {item?.scenariocategory_name || ""}
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontSize: 12,
+                                          color: "#6c757d",
+                                          marginTop: 2,
+                                        }}
+                                      >
+                                        {categoryCounts[
+                                          item.scenariocategoryid
+                                        ] ?? 0}{" "}
+                                        scenarios
+                                      </div>
+                                    </div>
+                                  </Card.Body>
+
+                                  {/* Footer */}
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      padding: "8px 14px",
+                                      // borderTop: "0.5px solid #dee2e6",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 5,
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        padding: "3px 10px",
+                                        borderRadius: 20,
+                                        background: iconBg,
+                                        color: iconText,
+                                      }}
+                                    >
+                                      <i className="fe fe-book-open" />
+                                      {categoryCounts[
+                                        item.scenariocategoryid
+                                      ] ?? 0}
+                                    </span>
+                                    <div
+                                      style={{
+                                        width: 26,
+                                        height: 26,
+                                        borderRadius: "50%",
+                                        border: "0.5px solid #dee2e6",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#6c757d",
+                                        fontSize: 14,
+                                      }}
+                                    >
+                                      <i className="fe fe-arrow-right" />
+                                    </div>
+                                  </div>
+                                </Card>
+                              </Col>
+                            );
+                          })}
+
+                        {/* {selectedCategory &&
                           !selectedSubcategory &&
                           (filteredSubcategories.length > 0
                             ? filteredSubcategories
@@ -704,25 +964,100 @@ const Scenarios = () => {
                                 </Card.Body>
                               </Card>
                             </Col>
-                          ))}
+                          ))} */}
+                          {selectedCategory &&
+  !selectedSubcategory &&
+  (filteredSubcategories.length > 0 ? filteredSubcategories : uniqueSubcategories).map((item, idx) => {
+    const COLOR_PAIRS = [
+      ["#185FA5", "#E6F1FB", "#0C447C"],
+      ["#3B6D11", "#EAF3DE", "#27500A"],
+      ["#854F0B", "#FAEEDA", "#633806"],
+      ["#A32D2D", "#FCEBEB", "#791F1F"],
+      ["#534AB7", "#EEEDFE", "#3C3489"],
+      ["#0F6E56", "#E1F5EE", "#085041"],
+      ["#993556", "#FBEAF0", "#72243E"],
+      ["#5F5E5A", "#F1EFE8", "#444441"],
+    ];
+    const [accent, iconBg, iconText] = COLOR_PAIRS[idx % COLOR_PAIRS.length];
+
+    return (
+      <Col md={columnsPerRow} className="p-2" key={idx}>
+        <Card
+          className="h-100 pointer"
+          style={{
+            borderLeft: `3px solid ${accent}`,
+            borderRadius: 16,
+            overflow: "hidden",
+            cursor: "pointer",
+            transition: "transform .15s",
+          }}
+          onClick={() => handleSubcategoryClick(item)}
+        >
+          <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="text-center mb-2">
+              <div
+                style={{
+                  width: 90, height: 90, borderRadius: "50%",
+                  background: iconBg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto",
+                }}
+              >
+                <img
+                  alt="subcategory"
+                  onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
+                  style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
+                  src={item?.subcategory_image
+                    ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
+                    : dummy_network.src}
+                />
+              </div>
+            </div>
+            <div className="text-center">
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35 }}>
+                {item?.scenariosubcategory_name || ""}
+              </div>
+            </div>
+          </Card.Body>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              fontSize: 11, fontWeight: 500, padding: "3px 10px",
+              borderRadius: 20, background: iconBg, color: iconText,
+            }}>
+              <i className="fe fe-layers" />
+              {scenariosListData?.filter(s => s.scenariosubcategory_name === item.scenariosubcategory_name).length ?? 0} scenarios
+            </span>
+            <div style={{
+              width: 26, height: 26, borderRadius: "50%",
+              border: "0.5px solid #dee2e6",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#6c757d", fontSize: 14,
+            }}>
+              <i className="fe fe-arrow-right" />
+            </div>
+          </div>
+        </Card>
+      </Col>
+    );
+  })}
 
                         {selectedCategory &&
                           selectedSubcategory &&
                           filteredData.length > 0 &&
                           ["Easy", "Medium", "Hard"].map((level) => {
-                   
                             const levelData = filteredData
                               .filter((item) => item.scenariolevel === level)
                               .sort((a, b) => {
-                             
                                 const titleCompare =
                                   a.scenariotitle.localeCompare(
-                                    b.scenariotitle
+                                    b.scenariotitle,
                                   );
                                 if (titleCompare !== 0) {
                                   return titleCompare;
                                 }
-                             
+
                                 return (a.duration ?? 0) - (b.duration ?? 0);
                               });
 
@@ -733,15 +1068,16 @@ const Scenarios = () => {
                                     {[0, 1, 2].map((i) => (
                                       <i
                                         key={i}
-                                        className={`fa ${i <
-                                            (level === "Hard"
-                                              ? 3
-                                              : level === "Medium"
-                                                ? 2
-                                                : 1)
+                                        className={`fa ${
+                                          i <
+                                          (level === "Hard"
+                                            ? 3
+                                            : level === "Medium"
+                                              ? 2
+                                              : 1)
                                             ? "fa-star"
                                             : "fa-star-o"
-                                          }`}
+                                        }`}
                                         style={{
                                           color:
                                             level === "Hard"
@@ -765,7 +1101,7 @@ const Scenarios = () => {
                                       className="p-2 pb-3"
                                       key={index}
                                     >
-                                      <Card
+                                      {/* <Card
                                         className="h-100 shadow-sm rounded-4 pointer"
                                         style={{
                                           // backgroundColor: "#f8f9fc",
@@ -866,7 +1202,80 @@ const Scenarios = () => {
                                             </div>
                                           </div>
                                         </Card.Body>
-                                      </Card>
+                                      </Card> */}
+                                     <Card
+  className="h-100 pointer"
+  style={{
+    border: item.isnotitermination === "Yes" ? "0.1px solid #f0997b" : "0.1px solid #424242",
+    borderLeft: `3px solid ${
+      level === "Hard" ? "#A32D2D" : level === "Medium" ? "#854F0B" : "#3B6D11"
+    }`,
+    borderRadius: 16,
+    overflow: "hidden",
+    cursor: "pointer",
+    transition: "transform .15s",
+  }}
+  onClick={e => { e.stopPropagation(); handleReturnView(item); }}
+>
+  <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+    {/* Image */}
+    <div className="text-center mb-1">
+      <div style={{
+        width: 90, height: 90, borderRadius: "50%",
+        background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto",
+      }}>
+        <img
+          alt="scenario"
+          onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
+          style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
+          src={item?.scenarioimage
+            ? `${process.env.API_URL_FILEMANAGER}${item?.scenarioimage}`
+            : dummy_network.src}
+        />
+      </div>
+    </div>
+
+    {/* Title */}
+    <div className="text-center">
+      <OverlayTrigger placement="bottom" overlay={<Tooltip>{item.scenariotitle}</Tooltip>}>
+        <div style={{
+          fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35,
+          display: "-webkit-box", WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical", overflow: "hidden",
+        }}>
+          {item.scenariotitle}
+        </div>
+      </OverlayTrigger>
+    </div>
+
+  </Card.Body>
+
+  {/* Footer */}
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
+      background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
+      color: level === "Hard" ? "#791F1F" : level === "Medium" ? "#633806" : "#27500A",
+    }}>
+      <i className="fe fe-clock" /> {item.duration ?? 0} Mins
+    </span>
+    <div
+      style={{
+        width: 26, height: 26, borderRadius: "50%",
+        border: "0.5px solid #dee2e6",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#6c757d", fontSize: 14,
+      }}
+      onClick={e => { e.stopPropagation(); setShowTabs(false); handleReturnView(item); }}
+    >
+      <i className="fe fe-eye" />
+    </div>
+  </div>
+</Card>
                                     </Col>
                                   ))}
                                 </Row>

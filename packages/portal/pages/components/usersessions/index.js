@@ -322,13 +322,9 @@ const footerStyle = {
 
   const handleReturnView = (props) => {
     push(`/usersession_view/${props?.scenariolearneruuid}`);
-
-    console.log("props", props);
   };
 
   const handleSentTerminationNotification = (data) => {
-    console.log("data", data);
-
     // Check if termination notification is already sent
     const isTerminationSent = data?.isnotitermination === "Yes";
 

@@ -800,56 +800,6 @@ const downloadExport = () => async (req, res) => {
   }
 };
 
-// const downloadComponent = () => async (req, res) => {
-//   try {
-//     const exportid  = req.body?.exportid  || req.query?.exportid;
-//     const file_name = req.body?.file_name || req.query?.file_name;
-
-//     const response = await axios.get(
-//       `${EVENTLEARNER_API_URL}/vmconfigs/download-component`,
-//       {
-//         params:       { exportid, file_name },
-//         responseType: "stream",
-//       },
-//     );
-
-//     const fileName = file_name.split("/").pop();
-
-//     res.setHeader("Content-Type", "application/octet-stream");
-//     res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-//     if (response.headers["content-length"]) {
-//       res.setHeader("Content-Length", response.headers["content-length"]);
-//     }
-
-//     response.data.pipe(res);
-//   } catch (err) {
-//   const status = err?.response?.status || 500;
-//   const upstreamData = err?.response?.data;
-
-//   if (upstreamData) {
-//     // upstream returned a stream (responseType: "stream") — read it first
-//     const chunks = [];
-//     upstreamData.on("data", (chunk) => chunks.push(chunk));
-//     upstreamData.on("end", () => {
-//       let body = {};
-//       try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch {}
-//       console.error("downloadComponent upstream error:", body);
-//       if (!res.headersSent) {
-//         res.status(status).json({ message: body?.message || err.message });
-//       }
-//     });
-//     upstreamData.on("error", () => {
-//       if (!res.headersSent) {
-//         res.status(status).json({ message: err.message });
-//       }
-//     });
-//   } else {
-//     if (!res.headersSent) {
-//       res.status(status).json({ message: err.message });
-//     }
-//   }
-// }
-// };
 
 
 const downloadComponent = () => async (req, res) => {
@@ -903,7 +853,48 @@ const downloadComponent = () => async (req, res) => {
   }
 };
  
-  const uploadComponentZst =
+  // const uploadComponentZst =
+  // ({}) =>
+  // async (req, res, next) => {
+  //   try {
+  //     const { importid, vmFile } = req.query;
+  //     if (!importid) return res.status(400).send({ statusCode: 400, message: "importid is required." });
+  //     if (!vmFile)   return res.status(400).send({ statusCode: 400, message: "vmFile is required." });
+  //     const contentLength = req.headers["content-length"];
+  //     const response = await axios.post(
+  //     `${EVENTLEARNER_API_URL}/vmconfigs/upload-zst`,
+  //     req.body,                            
+  //     {                          
+  //       params: { importid, vmFile },
+  //       headers: {
+  //         "Content-Type":   "application/octet-stream",
+  //         "authorization":  req.headers.authorization || "",
+  //         "content-length": req.headers["content-length"], // ← forward original size!
+  //         "connection":     "keep-alive",
+  //       },
+  //       maxBodyLength:    Infinity,
+  //       maxContentLength: Infinity,
+  //       transformRequest: [(data) => data],
+  //       timeout:          0,
+  //     },
+  //   );
+
+  //     return res.status(200).send({
+  //       statusCode: 200,
+  //       message:    response.data.message || "File received. Transfer started.",
+  //       data:       response.data,
+  //     });
+
+  //   } catch (err) {
+  //     const statusCode = err.response?.status || 500;
+  //     const message    = err.response?.data?.message || err.message;
+  //     console.error("[Master] uploadComponentZst error:", message);
+  //     return res.status(statusCode).send({ statusCode, message });
+  //   }
+  // };
+
+
+    const uploadComponentZst =
   ({}) =>
   async (req, res, next) => {
     try {
@@ -951,6 +942,7 @@ const downloadComponent = () => async (req, res) => {
       return res.status(statusCode).send({ statusCode, message });
     }
   };
+
 
 
 

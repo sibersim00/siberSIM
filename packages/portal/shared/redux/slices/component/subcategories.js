@@ -107,8 +107,6 @@ export function clearSubCatChangeStatus() {
 }
 
 export function deleteSubCat(id) {
-  console.log(`${api.component_subcategories_delete}`,'#####',id, api.component_subcategories_delete/id);
-
     return async () => {
       dispatch(slice.actions.startLoading());
       try {

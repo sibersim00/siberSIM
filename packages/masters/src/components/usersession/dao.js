@@ -1,16 +1,7 @@
 const listScenarios =
   ({ db }) =>
     async (usertype, session_userid) => {
-      console.log("usertypeusertypeusertype",usertype);
-      console.log("session_userid",session_userid);
-      
-
       let condition = `vr.status IN ('Pause','Start','Resume')`;
-
-      // if (usertype === "Instructor") {
-      //   condition += ` AND vr.requestedby_role = 'Learner'
-      //                AND vr.requestedby_id = :session_userid`;
-      // }
       if (usertype === "Instructor") {
   condition += ` AND vr.requestedby_role = 'Learner'
                  AND l.instructor_id = :session_userid`;
@@ -261,7 +252,7 @@ const terminateScenario =
       const transaction = await db.sequelize.transaction();
 
       try {
-        // 1️⃣ Fetch VM request details
+        // Fetch VM request details
         const [request] = await db.sequelize.query( ` SELECT vmrequestid, scenarioid, requestedby_id, requestedby_role, status FROM vm_request WHERE vmrequestid = :vmrequestid
         `,
           {
@@ -280,8 +271,6 @@ const terminateScenario =
         }
 
         const now = new Date();
-
-        // 2️⃣ Update vm_request
         await db.sequelize.query( ` UPDATE vm_request SET status = 'Terminated', isnotitermination = 'No', terminatedon = :now, modifiedon = :now WHERE vmrequestid = :vmrequestid AND status != 'Completed' `,
           {
             replacements: { vmrequestid, now },
@@ -289,7 +278,6 @@ const terminateScenario =
             transaction,
           }
         );
-        // 3️⃣ Insert log into vm_request_logs
         await db.sequelize.query( ` INSERT INTO vm_request_logs ( vmrequestid, scenarioid, requestedby_id, requestedby_role, status, remark, createdon ) VALUES ( :vmrequestid, :scenarioid, :requestedby_id, :requestedby_role, 'Terminated', :remark, :now ) `,
           {
             replacements: {

@@ -32,7 +32,7 @@ import PaginationComponent from "../../../shared/data/common/pagination.js";
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
-const PAGINATION_BAR_HEIGHT = 48;
+const PAGINATION_BAR_HEIGHT = 148;
 
 const RunningComponent = () => {
   const dispatch = useDispatch();

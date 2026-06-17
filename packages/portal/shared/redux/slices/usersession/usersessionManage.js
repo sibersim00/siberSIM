@@ -53,7 +53,6 @@ const slice = createSlice({
         (state.getUserSessionListData = action.payload);
     },
     hasHandleMAnageSuc(state, action) {
-      console.log("action.payloadaction.payload", action.payload);
       (state.isLoading = false), (state.viewNameResp = action.payload);
     },
 
@@ -192,14 +191,10 @@ export function clearGetChatMessages() {
 }
 
 export function getSingleUserSession(id) {
-  console.log("idididididididididididididididididididid", id);
-
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.usersession_getbyId}/${id}`);
-      console.log("responseresponserespocccccccccccnseresponse", response);
-
       dispatch(slice.actions.hasGetSingleUserSessionSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -219,7 +214,6 @@ export function clearSingleUserSession() {
 }
 
 export function getLogs(payload) {
-  console.log("getLogsgetLogsgetLogsgetLogsgetLogs");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
@@ -231,41 +225,13 @@ export function getLogs(payload) {
     }
   };
 }
-// export function terminateScenario(payload) {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.post(`${api.termination_save}`, payload);
-//       console.log("response",response)
-//       dispatch(slice.actions.hasGetTerminationSucc(response.data));
-
-//       console.log("response", response)
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
-
-// export function clearTerminateScenario() {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       dispatch(slice.actions.hasGetTerminationSucc([]));
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
 
 export function saveChatMessage(payload) {
-  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -308,7 +274,6 @@ export function clearchatMessageSeen() {
 
 // ----------------------------------------------------------------------
 export function getUserSessionList() {
-  console.log("notification_sendnotification_send");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
@@ -344,17 +309,15 @@ export function getSingleScenarios(id) {
 }
 
 export function sentNotification(payload) {
-  console.log("notification_send77777777777777777");
   return async (dispatch) => {
     // Corrected here
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api.notification_send, payload);
       dispatch(slice.actions.hasSendNotificationSucc(response.data));
-      console.log("Response from sendNotification:", response.data); // Log response data
     } catch (error) {
       dispatch(slice.actions.hasError(error));
-      console.error("Error sending notification:", error); // Log any errors
+      console.error("Error sending notification:", error);
     }
   };
 }
@@ -371,18 +334,11 @@ export function clearSentNotification() {
 }
 
 export function terminateScenario(payload) {
-  console.log(
-    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
-    payload
-  );
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.termination_send}`, payload);
-      console.log("response", response);
       dispatch(slice.actions.hasGetTerminationSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -401,18 +357,11 @@ export function clearTerminateScenario() {
 }
 
 export function terminateScenarioByAdInst(payload) {
-  console.log(
-    "++++++++++++++++++++++++++++++++=======+++++++++++++++++++++",
-    payload
-  );
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.terminated}`, payload);
-      console.log("response", response);
       dispatch(slice.actions.hasGetTerminationByAdInstSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -539,21 +488,7 @@ export function clearGetSnapshot() {
     }
   };
 }
-///----------manipulation slice----------
-// export function addNetworkPort(payload) {
-//   console.log("-----------------------------------------")
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.post(`${api.add_network}`, payload);
-//       dispatch(slice.actions.hasGetAddNetworkSucc(response.data));
 
-//       console.log("response", response)
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
 export function addNetworkPort(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -590,14 +525,11 @@ export function clearSaveNetworkPort() {
   };
 }
 export function modifyNetworkPort(payload) {
-  console.log("-----------------------------------------")
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.modify_network}`, payload);
       dispatch(slice.actions.hasGetModifyNetworkSucc(response.data));
-
-      console.log("response", response)
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -614,14 +546,11 @@ export function clearModifyNetworkPort() {
   };
 }
 export function deleteNetworkPort(payload) {
-  console.log("-----------------------------------------")
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.delete_network}`, payload);
       dispatch(slice.actions.hasGetDeleteNetworkSucc(response.data));
-
-      console.log("response", response)
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -711,7 +640,6 @@ export function plugNetworkPort(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api.plug_networPort, payload);
-      console.log("rrrrrrrrrrrrrrrrrrrrrr", response)
       dispatch(slice.actions.plugNetworkPortSucc(response.data));
       return response;
     } catch (error) {
@@ -867,7 +795,6 @@ export function deletebridge(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.delete_bridge}`, payload);
-      console.log("responseresponseresponseresponse",response);
       dispatch(slice.actions.hasdeletebridge(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

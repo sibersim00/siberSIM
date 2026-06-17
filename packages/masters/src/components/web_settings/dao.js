@@ -6,7 +6,7 @@ const getWebSettings =
   async () => {
     let [webSettings] = await db.sequelize.query(
       `select id, name, phone_number, website, max_questions, otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo,
-      proxmox_current_node, proxmox_host, proxmox_username, proxmox_password,
+      proxmox_current_node,proxmox_other_node,cluster_task_type, proxmox_host, proxmox_username, proxmox_password,
       file_server_username, file_server_password,
       base_clone_vmid, template_clone_vmid, start_network_id,
       proxmox_alert_time, proxmox_email_sent, termination_delay, configuration_delay, cloning_delay, hibernate_delay, pause_limit, max_ports, address,
@@ -38,16 +38,14 @@ const addWebSettings =
         is_default_favicon, component_approval, scenario_approval,
         is_default_ad_logo, is_default_web_logo,
         favicon, admin_panel_logo, web_panel_logo,
-
-        proxmox_current_node, proxmox_host, proxmox_username, proxmox_password,
+        proxmox_current_node,proxmox_other_node,cluster_task_type, proxmox_host, proxmox_username, proxmox_password,
         file_server_username, file_server_password,
         base_clone_vmid, template_clone_vmid, start_network_id,
-
         proxmox_alert_time, proxmox_email_sent,
         termination_delay, configuration_delay, cloning_delay, hibernate_delay,
         pause_limit, max_ports, address, createdby, company_id)
 
-        VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         {
           replacements: [
@@ -67,17 +65,17 @@ const addWebSettings =
             body.favicon,
             body.admin_panel_logo,
             body.web_panel_logo,
-
             body.proxmox_current_node,
+            body.proxmox_other_node ?? null,
             body.proxmox_host,
             body.proxmox_username,
             body.proxmox_password,
+            body.cluster_task_type,
             body.file_server_username,
             body.file_server_password,
             body.base_clone_vmid,
             body.template_clone_vmid,
             body.start_network_id,
-
             body.proxmox_alert_time,
             body.proxmox_email_sent,
             body.termination_delay,
@@ -112,7 +110,7 @@ const updateWebSettings =
         is_default_favicon = ?, is_default_ad_logo = ?, is_default_web_logo = ?,
         favicon = ?, admin_panel_logo = ?, web_panel_logo = ?,
 
-        proxmox_current_node = ?, proxmox_host = ?, proxmox_username = ?, proxmox_password = ?,
+        proxmox_current_node = ?,proxmox_other_node=?, proxmox_host = ?, proxmox_username = ?, proxmox_password = ?,cluster_task_type =?,
         file_server_username = ?, file_server_password = ?,
         base_clone_vmid = ?, template_clone_vmid = ?, start_network_id = ?,
 
@@ -141,9 +139,11 @@ const updateWebSettings =
           body.web_panel_logo ?? "",
 
           body.proxmox_current_node ?? "",
+          body.proxmox_other_node ?? "",
           body.proxmox_host ?? "",
           body.proxmox_username ?? "",
           body.proxmox_password ?? "",
+          body.cluster_task_type ?? "",
           body.file_server_username ?? "",
           body.file_server_password ?? "",
           body.base_clone_vmid ?? "",

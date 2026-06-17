@@ -26,6 +26,9 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
+// app.use(express.json({limit: "10gb",}));
+// app.use(express.urlencoded({ extended: true, limit: "10gb", }));
+// app.use(xss());
 app.use(express.raw({ type: "application/octet-stream", limit: "10gb" }));
 app.use(express.json({limit: "10gb",}));
 app.use(express.urlencoded({ extended: true, limit: "10gb", }));
@@ -34,7 +37,6 @@ app.use((req, res, next) => {
   if (ct.includes("application/octet-stream")) return next();
   xss()(req, res, next);
 });
-// app.use(xss());
 app.use('/jobapi',router(iocContainer))
 app.get('/jobapi/health', (req, res) => {
     return res.status(200).send({ uptime: process.uptime(),message: 'Ok',date: new Date()});
@@ -47,8 +49,8 @@ app.all('*', (req, res, next) => {
 // app.use(errorLogger);
 const server = http.createServer(app); 
 server.listen((keys.JOBS_PORT || 4005), async () => {
-   startJob(iocContainer)   
+//    startJob(iocContainer)   
 });
 server.on('listening', () => { 
-    console.log(`Job Service Started On Port - ${keys.JOBS_PORT}`);
+    console.log(`Job Service Started On Port - ${keys.JOBS_PORT}`   );
 });

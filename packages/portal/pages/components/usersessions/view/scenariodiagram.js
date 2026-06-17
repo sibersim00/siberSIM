@@ -310,8 +310,6 @@ const ScenarioDiagram = ({ scenariodiagram, scenarioId ,manipulationFlag }) => {
                 router.push(`/scenarios_edit/${scenarioId}`);
 
               } catch (error) {
-                console.log("errorerrorerrorerror",error);
-                
                 //  LOCK CASE (409)
                 if (error?.statusCode === 400) {
                   toast.error(

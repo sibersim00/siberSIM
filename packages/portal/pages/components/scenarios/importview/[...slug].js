@@ -54,9 +54,6 @@ useEffect(() => {
   dispatch(getScenarioImport(id));
 }, [query.slug]);
 
-
-  console.log("rowValues", rowValues);
-  console.log("rowId", rowId);
   const baseUrl = process.env.API_URL_FILEMANAGER;
   const pdfUrl = rowValues?.instruction_file
     ? `${baseUrl}${rowValues.instruction_file}`

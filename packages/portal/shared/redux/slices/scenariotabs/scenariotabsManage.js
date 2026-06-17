@@ -76,8 +76,6 @@ export function getsceanriotabwidget() {
 
  
 export function savescenariotab(payload) {
-  console.log("Payload type:", typeof payload, Array.isArray(payload), payload);
-
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {

@@ -82,8 +82,6 @@ export function getCategoriesList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-    console.log("ssdsaaaaaaaaaaa");
-
       const response = await axios.get(`${api.component_categories_get}`);
       dispatch(slice.actions.hasGetCategoriesListSucc(response.data));
     } catch (error) { 

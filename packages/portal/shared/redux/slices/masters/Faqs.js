@@ -76,10 +76,7 @@ export function getFaqList() {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-    console.log("ssdsaaaaaaaaaaa");
-
       const response = await axios.get(`${api.faq_getall}`);
-      console.log("response",response.data);
       dispatch(slice.actions.hasGetFaqListSucc(response.data));
     } catch (error) { 
       dispatch(slice.actions.hasError(error));

@@ -427,14 +427,14 @@ const getSelectStyles = (fieldName) => {
                 </Form.Label>
 
                 <Select
-                //  theme={(theme) => ({
-                //     ...theme,
-                //     colors: {
-                //       ...theme.colors,
-                //       primary25: "var(--primary-bg-color)",
-                //       primary: "var(--primary-bg-color)",
-                //     },
-                //   })}
+                  //  theme={(theme) => ({
+                  //     ...theme,
+                  //     colors: {
+                  //       ...theme.colors,
+                  //       primary25: "var(--primary-bg-color)",
+                  //       primary: "var(--primary-bg-color)",
+                  //     },
+                  //   })}
                   name="accesslevel"
                   classNamePrefix="custom-select"
                   styles={getSelectStyles("accesslevel")}
@@ -465,17 +465,16 @@ const getSelectStyles = (fieldName) => {
                 <Form.Label>
                   Person In Charge <span className="text-danger">*</span>
                 </Form.Label>
-                
-                <Select
 
-                //  theme={(theme) => ({
-                //     ...theme,
-                //     colors: {
-                //       ...theme.colors,
-                //       primary25: "var(--primary-bg-color)",
-                //       primary: "var(--primary-bg-color)",
-                //     },
-                //   })}
+                <Select
+                  //  theme={(theme) => ({
+                  //     ...theme,
+                  //     colors: {
+                  //       ...theme.colors,
+                  //       primary25: "var(--primary-bg-color)",
+                  //       primary: "var(--primary-bg-color)",
+                  //     },
+                  //   })}
                   name="personincharge"
                   classNamePrefix="custom-select"
                   styles={getSelectStyles("personincharge")}
@@ -540,13 +539,13 @@ const getSelectStyles = (fieldName) => {
                   styles={getSelectStyles("allowedusers")}
                   onBlur={() => formik.setFieldTouched("allowedusers", true)}
                   //  theme={(theme) => ({
-                //     ...theme,
-                //     colors: {
-                //       ...theme.colors,
-                //       primary25: "var(--primary-bg-color)",
-                //       primary: "var(--primary-bg-color)",
-                //     },
-                //   })}
+                  //     ...theme,
+                  //     colors: {
+                  //       ...theme.colors,
+                  //       primary25: "var(--primary-bg-color)",
+                  //       primary: "var(--primary-bg-color)",
+                  //     },
+                  //   })}
                   menuPosition="fixed"
                   placeholder="Select Allowed Users"
                   onChange={(selectedList) => {
@@ -554,9 +553,14 @@ const getSelectStyles = (fieldName) => {
 
                     if (selectedList.length > reserved) {
                       toast.error(
-                        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+                        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
                           You can select only {reserved} users!
                         </p>,
+                        {
+                          position: toast.POSITION.TOP_RIGHT,
+                          hideProgressBar: false,
+                          theme: "colored",
+                        },
                       );
                       return;
                     }

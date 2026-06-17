@@ -413,8 +413,6 @@ const scenariodigramlist = ({ db }) => async (scenarioid) => {
 
 
 const saveComponentconfiguration = ({ db, validation }) => async (body, session_userid) => {
-  console.log("bodybodybodybodybodybodybody",body);
-  
   try {
     if (
       !body.scenarioid ||
@@ -428,10 +426,6 @@ const saveComponentconfiguration = ({ db, validation }) => async (body, session_
         statusCode: 400, message: 'Missing or invalid required fields',
       };
     }
-
-    console.log("bodydddddddddddddd",body);
-    
-
     const updateQuery = `UPDATE scenarios SET component_config = ?, network_config = ?, scenariostatus = ?, modifiedon = CURRENT_TIMESTAMP, modifiedby = ?, publishedon = NOW() WHERE scenariouuid = ?`;
     const updateParams = [JSON.stringify(body.component_config), JSON.stringify(body.network_config), body.scenariostatus, session_userid, body.scenarioid,
     ];

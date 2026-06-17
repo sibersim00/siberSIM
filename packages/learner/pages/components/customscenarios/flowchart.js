@@ -88,7 +88,6 @@ const DnDFlow = ({
   };
   //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    // console.log("datadatadatadatadatadata",data);
     
     // const networkPorts = data.networkport || [];
     // const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
@@ -383,7 +382,6 @@ const DnDFlow = ({
   }, [selectedScenario]);
 
   const onConnect = useCallback((params) => {
-    console.log("jjjjjjjjjjjjjjjj",params)
       setEdges((eds) =>
         addEdge(
           {
@@ -594,10 +592,6 @@ const DnDFlow = ({
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
       const selectedNode = nodes.find((node) => node.selected);
-      console.log(
-        "selectedNodeId",
-        nodes.find((node) => node.selected)
-      );
 
       if (selectedNode) {
         deleteNode(selectedNode.id);
