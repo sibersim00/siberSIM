@@ -33,77 +33,6 @@ async function getProxmoxConfig() {
   };
 }
 
-  // async function selectNode() {
-  //   const cfg = await getProxmoxConfig();
-
-  //   const primary = cfg.current_node?.trim();
-  //   const others = (cfg.other_nodes || "")
-  //     .split(",")
-  //     .map((n) => n.trim())
-  //     .filter(Boolean);
-
-  //   const nodes = [primary, ...others].filter(Boolean);
-
-  //   if (nodes.length <= 1) {
-  //     console.log(`[selectNode] Only one node available: ${nodes[0]}`);
-  //     return nodes[0];
-  //   }
-
-  //   const rows = await db.sequelize.query(
-  //     `SELECT node_name, COUNT(*) AS cnt
-  //      FROM vm_request
-  //      WHERE node_name IN (:nodes)
-  //        AND status NOT IN ('Completed','Terminated','Failed')
-  //      GROUP BY node_name`,
-  //     {
-  //       replacements: { nodes },
-  //       type: db.sequelize.QueryTypes.SELECT,
-  //     }
-  //   );
-
-  //   const countMap = {};
-  //   nodes.forEach((n) => (countMap[n] = 0));
-  //   rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
-
-  //   let selected = nodes[0];
-  //   let minCount = countMap[nodes[0]];
-  //   for (let i = 1; i < nodes.length; i++) {
-  //     if (countMap[nodes[i]] < minCount) {
-  //       minCount = countMap[nodes[i]];
-  //       selected = nodes[i];
-  //     }
-  //   }
-
-  //   console.log(`[selectNode] Counts:`, countMap, `→ selected: ${selected}`);
-  //   return selected;
-  // }
-
-  async function getProxmoxConfig() {
-  const [results] = await db.sequelize.query(
-    `SELECT 
-      proxmox_host         AS endpoint,
-      proxmox_username     AS username,
-      proxmox_password     AS password,
-      proxmox_current_node AS current_node,
-      proxmox_other_node   AS other_nodes,
-      cluster_task_type    AS cluster_method
-     FROM web_settings
-     WHERE status = 1
-     LIMIT 1`,
-    { type: db.sequelize.QueryTypes.SELECT }
-  );
-  if (!results) throw new Error("Proxmox config not found in web_settings.");
-
-  return {
-    endpoint:        results.endpoint,
-    username:         results.username,
-    password:         results.password,
-    current_node:     results.current_node,
-    other_nodes:       results.other_nodes,
-    cluster_method:    results.cluster_method || constants.DEFAULT_CLUSTER_METHOD,
-  };
-}
-
 async function selectNode() {
   const cfg = await getProxmoxConfig();
 
@@ -123,16 +52,16 @@ async function selectNode() {
   console.log(`[selectNode] Using cluster method: ${cfg.cluster_method}`);
 
   switch (cfg.cluster_method) {
-    case constants.CLUSTER_METHODS.ROUND_ROBIN:
+    case "RoundRobin":
       return await selectNodeRoundRobin(nodes);
-    case constants.CLUSTER_METHODS.LEAST_LOADED:
+    case "LeastLoaded":
       return await selectNodeLeastLoaded(nodes);
-    case constants.CLUSTER_METHODS.WEIGHTED:
+    case "Weighted":
       return await selectNodeWeighted(nodes);
-    case constants.CLUSTER_METHODS.THRESHOLD:
+    case "Threshold":
       return await selectNodeThreshold(nodes, cfg.current_node);
     default:
-      console.warn(`[selectNode] Unknown method "${cfg.cluster_method}", defaulting to ${constants.DEFAULT_CLUSTER_METHOD}`);
+      console.warn(`[selectNode] Unknown method "${cfg.cluster_method}", defaulting to RoundRobin`);
       return await selectNodeRoundRobin(nodes);
   }
 }
@@ -236,7 +165,7 @@ async function selectNodeWeighted(nodes) {
 // Threshold: stick with current_node until it hits a load threshold,
 // then overflow to other nodes
 // ───────────────────────────────────────────────
-async function selectNodeThreshold(nodes, primaryNode, threshold = constants.NODE_LOAD_THRESHOLD) {
+async function selectNodeThreshold(nodes, primaryNode, threshold = 10) {
   const rows = await db.sequelize.query(
     `SELECT node_name, COUNT(*) AS cnt
      FROM vm_request
@@ -412,7 +341,7 @@ async function selectNodeThreshold(nodes, primaryNode, threshold = constants.NOD
     if (!accessInfo?.cookie) throw new Error("Access info not initialized.");
     const cfg = await getProxmoxConfig(); 
       const type = vmType.toLowerCase();
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
     const url = `${constants.endpoint}/nodes/${cfg.current_node}/${type}/${vmid}/config`;
@@ -533,18 +462,17 @@ async function cloneVM(vmType, newid, name, sourceVMID, selectedNode = null) {
   //  Clone ALWAYS happens on sourceNode — never cross-node here
   const url = `${constants.endpoint}/nodes/${sourceNode}/${vmType}/${sourceVMID}/clone`;
 
-  const params = new URLSearchParams();
-  params.append("newid", newid);
-  params.append("full", constants.CLONE_TYPE.FULL);
-
-  if (vmType === constants.VM_TYPES.QEMU) {
-    params.append("name", name);
-  } else {
-    params.append("hostname", name);
-  }
+    const params = new URLSearchParams();
+    params.append("newid", newid);
+    params.append("full", "1");
+    if (vmType === "qemu") {
+      params.append("name", name);
+    } else {
+      params.append("hostname", name);
+    }
 
   //  Place the cloned disk on shared storage so migration works later
-  params.append("storage", constants.SHARED_STORAGE);
+  params.append("storage", "bank");
 
   const config = {
     method: "post",
@@ -580,7 +508,7 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
   const request_datetime = new Date();
   const type             = vmType.toLowerCase();
 
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
@@ -590,7 +518,7 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
   params.append("target", targetNode);
 
   // ✅ Disk is on shared 'bank' — no disk move needed, so drop with-local-disks/targetstorage
-  if (type === constants.VM_TYPES.QEMU) {
+  if (type === "qemu") {
     params.append("online", "0"); // offline migration before start
   }
 
@@ -608,6 +536,8 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
 
   try {
     const response = await axios.request(config);
+    console.log("responseresponseresponse",response);
+    
     await logApiRequestData(start, request_datetime, config, response.status.toString(), response.data, null, constants.VM_PROCESSES.MIGRATE_VM);
     console.log(`[migrateVM] Migration task started for ${vmid} → ${targetNode}`);
     return response;
@@ -620,7 +550,7 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
   }
 }
 
-async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_MS, intervalMs = constants.TASK_POLL.INTERVAL_MS) {
+async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
   if (!accessInfo?.cookie) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
   }
@@ -1050,7 +980,6 @@ async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_M
       return false;
     }
   }
-
   async function deleteSnapshot(vmid, snapname, vmType,selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
@@ -1061,12 +990,12 @@ async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_M
   if (!snapname) throw new Error("Snapshot name (snapname) is required.");
 
   const type = vmType.toLowerCase();
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
   const logConstant =
-    type === constants.VM_TYPES.QEMU
+    type === "qemu"
       ? constants.VM_PROCESSES.DELETE_QEMU_SNAPSHOT
       : constants.VM_PROCESSES.DELETE_LXC_SNAPSHOT;
 
@@ -1107,7 +1036,7 @@ async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_M
     }
     const cfg = await getProxmoxConfig();
       const type = vmType.toLowerCase();
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
@@ -1136,7 +1065,7 @@ async function waitForTask(node, upid, timeoutMs = constants.TASK_POLL.TIMEOUT_M
     };
 
     const restoreProcess =
-      type === constants.VM_TYPES.QEMU
+      type === "qemu"
         ? constants.VM_PROCESSES.RESTORE_QEMU_SNAPSHOT
         : constants.VM_PROCESSES.RESTORE_LXC_SNAPSHOT;
 
@@ -1807,7 +1736,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     }
     const cfg = await getProxmoxConfig();
      const type = vmType.toLowerCase();
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
@@ -2197,12 +2126,12 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = 
   const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
   let netValue;
   /* ===================== KEY FIX ===================== */
-  if (vmType === constants.VM_TYPES.QEMU) {
+  if (vmType === "qemu") {
     // Disable cable
     netValue = `virtio=${mac},bridge=${bridge},link_down=1`;
   }
 
-  if (vmType === constants.VM_TYPES.LXC) {
+  if (vmType === "lxc") {
     // Remove bridge = unplug
     const ethIndex = netKey.replace("net", "");
     // netValue = `name=eth0,type=veth`;
@@ -2274,12 +2203,12 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = nu
   let netValue;
 
   /* ===================== DIFFERENCE HERE ===================== */
-  if (vmType === constants.VM_TYPES.QEMU) {
+  if (vmType === "qemu") {
     // QEMU = enable cable
     netValue = `virtio=${mac},bridge=${bridge},link_down=0`;
   }
 
-  if (vmType === constants.VM_TYPES.LXC) {
+  if (vmType === "lxc") {
     // LXC = attach interface to bridge
     const ethIndex = netKey.replace("net", "");
     netValue = `name=eth${ethIndex},bridge=${bridge},hwaddr=${mac},type=veth`;
@@ -2406,10 +2335,10 @@ async function checkVmidStatus(vmid, vmType) {
 // ─── FIND FREE VMID ───────────────────────────────────────────────────────────
 async function findFreeVmid() {
   for (let vmid = VMID_RANGE_START; vmid <= VMID_RANGE_END; vmid++) {
-    const usedAsQemu = await checkVmidStatus(vmid, constants.VM_TYPES.QEMU);
+    const usedAsQemu = await checkVmidStatus(vmid, "qemu");
     if (usedAsQemu) continue;
 
-    const usedAsLxc = await checkVmidStatus(vmid, constants.VM_TYPES.LXC);
+    const usedAsLxc = await checkVmidStatus(vmid,"lxc");
     if (usedAsLxc) continue;
 
     // Free in both QEMU and LXC
@@ -2431,14 +2360,14 @@ async function restoreVM({ vmid, zstFile, vmType,proxmoxPath,storage }) {
   const request_datetime = new Date();
   const storageId = process.env.IMPORT_STORAGE || "bucket";
   const type = vmType.toLowerCase();
-  if (!constants.VM_TYPES.ALL.includes(type)) {
+  if (!["qemu", "lxc"].includes(type)) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
   // const volid            = `local:backup/${zstFile}`;
   const volid     = `${storageId}:backup/${zstFile}`;  
   const url              = `${constants.endpoint}/nodes/${cfg.current_node}/${type}`;
   // ── Build params based on vmType ──────────────────────────────────
-  const params = vmType === constants.VM_TYPES.QEMU
+ const params = vmType === "qemu"
     ? {
         archive: volid,       // QEMU uses archive
         vmid:    String(vmid),
