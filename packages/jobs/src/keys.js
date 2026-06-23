@@ -9,5 +9,6 @@ module.exports = {
    IMPORT_STORAGE:process.env.IMPORT_STORAGE ,
    BACKUP_STORAGE:process.env.BACKUP_STORAGE ,
    VMID_RANGE_START:process.env.VMID_RANGE_START ,
-   VMID_RANGE_END:process.env.VMID_RANGE_END 
+   VMID_RANGE_END:process.env.VMID_RANGE_END ,
+   CLONE_STORAGE:process.env.CLONE_STORAGE 
 };

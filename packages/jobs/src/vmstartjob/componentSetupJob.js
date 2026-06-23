@@ -43,6 +43,7 @@ async function componentSetupJob(
   );
 
   const statusVal = "Initializing";
+  let selectedNode = null;
 
   try {
     // Fetch VM Config rows for this request
@@ -87,7 +88,7 @@ async function componentSetupJob(
     );
 
     const proxmoxService = ProxMoxService(db,{}, ipAddress);
-    const selectedNode = await proxmoxService.selectNode();
+    selectedNode = await proxmoxService.selectNode();
     console.log(`[componentSetupJob] Selected node: ${selectedNode}`);
 
     // ★ Save chosen node before any Proxmox call fires
@@ -185,6 +186,7 @@ async function componentSetupJob(
     await stopAndDestroyComponentVM(db, ipAddress, {
       scenarioid,
       vmrequestid,
+      selectedNode,
     });
     // await stopAndDestroyComponentVM(db, ipAddress, { vmrequestid });
     console.error(
@@ -201,6 +203,8 @@ async function cloneComponentVM(db, ipAddress, component,selectedNode) {
 
   const vmType = componenttype.toLowerCase();
   const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
+   const cfg            = await proxmoxService.getProxmoxConfig();
+  const sourceNode     = cfg.current_node; // "sibersim"
   const tokenResult = await proxmoxService.generateAccessTicket();
 
   if (!tokenResult || tokenResult.status != "200") {
@@ -225,6 +229,57 @@ async function cloneComponentVM(db, ipAddress, component,selectedNode) {
   }
 
   console.log(`Clone succeeded for ${clone_vmid}-${name} on ${selectedNode}`);
+    const cloneTaskId = result.data?.data;
+  if (cloneTaskId) {
+    console.log(`[cloneComponentVM] Waiting for clone task ${cloneTaskId}...`);
+    const cloneDone = await proxmoxService.waitForTask(sourceNode, cloneTaskId);
+    if (!cloneDone) {
+      return { success: false, message: `${clone_vmid}-${name} - Clone task timed out or failed.` };
+    }
+  }
+
+
+     if (selectedNode && selectedNode !== sourceNode) {
+
+
+    
+  // if (vmType === "lxc") {
+  //   console.log(`[cloneComponentVM] Stopping LXC ${clone_vmid} before migration...`);
+  //   const stopResult = await proxmoxService.stopVM(clone_vmid,vmType, sourceNode);
+  //   if (!stopResult || stopResult.status !== 200) {
+  //     return { success: false, message: `${clone_vmid}-${name} - Failed to stop LXC before migration.` };
+  //   }
+  //   console.log("stopResultstopResult",stopResult);
+    
+  //   const stopTaskId = stopResult.data?.data;
+  //   if (stopTaskId) {
+  //     const stopDone = await proxmoxService.waitForTask(sourceNode, stopTaskId);
+  //     if (!stopDone) {
+  //       return { success: false, message: `${clone_vmid}-${name} - LXC stop task timed out or failed.` };
+  //     }
+  //   }
+  //   console.log(`[cloneComponentVM] LXC ${clone_vmid} stopped successfully.`);
+  // }
+  
+    console.log(`[cloneComponentVM] Migrating ${clone_vmid}-${name} from ${sourceNode} → ${selectedNode}`);
+
+    const migrateResult = await proxmoxService.migrateVM(vmType, clone_vmid, sourceNode, selectedNode);
+
+    if (!migrateResult || migrateResult.status !== 200) {
+      return { success: false, message: `${clone_vmid}-${name} - Migration failed after cloning.` };
+    }
+
+    const migrateTaskId = migrateResult.data?.data;
+    if (migrateTaskId) {
+      console.log(`[cloneComponentVM] Waiting for migration task ${migrateTaskId}...`);
+      const migrateDone = await proxmoxService.waitForTask(sourceNode, migrateTaskId);
+      if (!migrateDone) {
+        return { success: false, message: `${clone_vmid}-${name} - Migration task timed out or failed.` };
+      }
+    }
+
+    console.log(`Migration complete for ${clone_vmid}-${name} on ${selectedNode}`);
+  }
 
   await db.sequelize.query(
     `UPDATE vm_config SET status = 'Cloning', modifiedon = NOW() WHERE vmconfigurationid = ?`,
@@ -551,7 +606,7 @@ const getTerminationDelay = async (db) => {
 async function stopAndDestroyComponentVM(
   db,
   ipAddress,
-  { scenarioid, learnerid, vmrequestid }
+  { scenarioid, learnerid, vmrequestid,selectedNode }
 ) {
   const OP_FAILED = "Operation Failed";
   let hasFailed = false;
@@ -614,7 +669,7 @@ async function stopAndDestroyComponentVM(
         );
 
         if (component.status === "Starting" || component.status === "Running") {
-          const stopResult = await proxmoxService.stopVM(vmid, vmType);
+          const stopResult = await proxmoxService.stopVM(vmid, vmType,selectedNode);
           if (stopResult?.status === 200 && stopResult?.data) {
             console.log(`Stopped '${name}' (VMID: ${vmid})`);
             vmConfig[vmid].stop = true;
@@ -656,7 +711,7 @@ async function stopAndDestroyComponentVM(
         continue;
       }
 
-      const destroyResult = await proxmoxService.destroyVM(vmid, vmType);
+      const destroyResult = await proxmoxService.destroyVM(vmid, vmType,selectedNode);
       if (destroyResult?.status === 200 && destroyResult?.data) {
         console.log(`Destroyed '${name}' (VMID: ${vmid})`);
         vmConfig[vmid].destroy = true;

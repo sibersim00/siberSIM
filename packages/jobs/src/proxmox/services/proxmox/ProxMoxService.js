@@ -449,6 +449,9 @@ async function selectNodeThreshold(nodes, primaryNode, threshold = 10) {
   //   }
   // }
 
+const CLONE_STORAGE = keys.CLONE_STORAGE;
+
+
 async function cloneVM(vmType, newid, name, sourceVMID, selectedNode = null) {
   if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
@@ -464,15 +467,17 @@ async function cloneVM(vmType, newid, name, sourceVMID, selectedNode = null) {
 
     const params = new URLSearchParams();
     params.append("newid", newid);
-    params.append("full", "1");
+    params.append("full", "0");
+    // params.append("full", "1");
+    // working perfectly
     if (vmType === "qemu") {
       params.append("name", name);
-    } else {
+    } else {  
       params.append("hostname", name);
     }
 
   //  Place the cloned disk on shared storage so migration works later
-  params.append("storage", "bank");
+  // params.append("storage", CLONE_STORAGE);
 
   const config = {
     method: "post",
@@ -517,10 +522,18 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
   const params = new URLSearchParams();
   params.append("target", targetNode);
 
-  // ✅ Disk is on shared 'bank' — no disk move needed, so drop with-local-disks/targetstorage
-  if (type === "qemu") {
-    params.append("online", "0"); // offline migration before start
+  //  Disk is on shared 'bank' — no disk move needed, so drop with-local-disks/targetstorage
+  if (type === "qemu") { 
+    params.append("online", "1"); // offline migration before start
   }
+
+//   if (type === "qemu") {
+//   params.append("online", "1");
+//   // params.append("with-local-disks", "1");
+//   // params.append("targetstorage", CLONE_STORAGE);
+// } else if (type === "lxc") {
+//   params.append("restart", "1");  // auto-start on target node after migrate
+// }
 
   const config = {
     method: "post",
