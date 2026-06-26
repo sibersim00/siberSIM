@@ -1962,7 +1962,6 @@ const clusterMethodOptions = [
                           value={formValidation.values.proxmox_other_node}
                           onChange={formValidation.handleChange}
                           placeholder="Type node name, press Enter or ,"
-                          disabled={true}
                         />
 
                         {formValidation.touched.proxmox_other_node &&
