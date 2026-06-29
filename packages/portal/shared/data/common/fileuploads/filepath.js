@@ -13,4 +13,5 @@ export const FilePath = {
     'programs_seo':'Programs/{program_id}/seo',
     'logos' : 'Logos/{name}',
     'profile': 'Profile',
+    'labs':'labs',
 }

@@ -379,6 +379,7 @@ const Labs = () => {
         title: "Edit Lab Session",
         lab_id: props.lab_id,
         bookingname: props.bookingname,
+        labimage: props.labimage,
         datetime: new Date(props.datetime),
         duration: props.duration,
         accesslevel: props.accesslevel,
@@ -727,8 +728,9 @@ const Labs = () => {
                                     height: "100px",
                                   }}
                                   src={
-                                    `${process.env.API_URL_FILEMANAGER}${item?.componentimage}` ||
-                                    dummy_network.src
+                                    item?.labimage
+                                      ? `${process.env.API_URL_FILEMANAGER}${item.labimage}`
+                                      : dummy_network.src
                                   }
                                   onError={(e) => {
                                     e.target.onerror = null;
@@ -1176,3 +1178,4 @@ const Labs = () => {
 };
 Labs.layout = "Contentlayout";
 export default Labs;
+

@@ -232,6 +232,94 @@ const update =
     }
   };
 
+const deleteById =
+  ({ db }) =>
+  async (body, session_userid) => {
+    try {
+      const scenarioId = body.custom_scenarioid;
+
+      const [customScenario] = await db.sequelize.query(
+        `SELECT custom_scenarioid, custom_scenariouuid, scenarioid
+         FROM custom_scenarios
+         WHERE custom_scenarioid = :scenarioId
+           AND deletedon IS NULL
+         LIMIT 1`,
+        {
+          replacements: { scenarioId },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+
+      if (!customScenario) {
+        return {
+          status: false,
+          message: "Custom scenario not found or already deleted.",
+        };
+      }
+
+      if (customScenario.scenarioid) {
+        const [activeRequest] = await db.sequelize.query(
+          `SELECT 1
+           FROM vm_request
+           WHERE scenarioid = :scenarioId
+             AND status IN ('Pending', 'Initializing', 'Start', 'Running', 'Resume', 'Pause')
+           LIMIT 1`,
+          {
+            replacements: { scenarioId: customScenario.scenarioid },
+            type: db.sequelize.QueryTypes.SELECT,
+          },
+        );
+
+        if (activeRequest) {
+          return {
+            status: false,
+            message:
+              "Scenario is currently active or in progress and cannot be deleted.",
+          };
+        }
+
+        await db.sequelize.query(
+          `UPDATE scenarios
+           SET deletedon = NOW(), modifiedby = :modifiedBy, modifiedon = CURRENT_TIMESTAMP
+           WHERE scenarioid = :scenarioId
+             AND deletedon IS NULL`,
+          {
+            replacements: {
+              scenarioId: customScenario.scenarioid,
+              modifiedBy: session_userid,
+            },
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
+      }
+
+      await db.sequelize.query(
+        `UPDATE custom_scenarios
+         SET deletedon = NOW(), modifiedby = :modifiedBy, modifiedon = CURRENT_TIMESTAMP
+         WHERE custom_scenarioid = :scenarioId
+           AND deletedon IS NULL`,
+        {
+          replacements: {
+            scenarioId,
+            modifiedBy: session_userid,
+          },
+          type: db.sequelize.QueryTypes.UPDATE,
+        },
+      );
+
+      return {
+        status: true,
+        message: "Custom scenario has been deleted successfully.",
+      };
+    } catch (error) {
+      console.error("Error deleting custom scenario:", error);
+      return {
+        status: false,
+        message: "Failed to delete custom scenario due to database error.",
+      };
+    }
+  };
+
 const saveDiagram =
   ({ db, validation }) =>
   async (body, session_userid) => {
@@ -538,4 +626,5 @@ module.exports = {
   scenariodigramlist,
   saveComponentconfiguration,
   getScenarioInstructionFiles,
+  deleteById,
 };

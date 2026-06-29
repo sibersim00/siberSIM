@@ -107,10 +107,10 @@ const statusSchema = joi.object({
 });
 
 const deleteSchema = joi.object({
-  scenarioid: joi.number().strict(true).required().messages({
-    "number.base": `Scenario id should be a integer`,
-    "number.empty": `Scenario id cannot be empty`,
-    "any.required": `Scenario id is required.`,
+  custom_scenarioid: joi.number().strict(true).required().messages({
+    "number.base": `Custom scenario id should be a integer`,
+    "number.empty": `Custom scenario id cannot be empty`,
+    "any.required": `Custom scenario id is required.`,
   })
 });
 

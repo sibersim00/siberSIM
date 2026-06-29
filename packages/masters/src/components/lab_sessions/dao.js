@@ -11,7 +11,7 @@ const labSessionList =
     }
 
     const [res] = await db.sequelize.query(
-      `SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
+      `SELECT  ls.labid AS lab_id, ls.labuuid, ls.bookingname, ls.labimage, DATE_FORMAT(ls.datetime, '%Y-%m-%d %H:%i:%s') AS datetime, ls.duration, ls.accesslevel, ls.personincharge, CONCAT(u.firstname, ' ', u.lastname) AS personincharge_name, ls.reservedseats, (  SELECT  CONCAT( '[', GROUP_CONCAT( CONCAT( '{"learner_id":"', l.learner_id, '","name":"', l.firstname, ' ', IFNULL(l.lastname,''), '"}' ) ), ']' ) FROM learners l WHERE JSON_CONTAINS( ls.allowedusers, CONCAT('"', l.learner_id, '"'), '$' ) ) AS allowed_user_details, CASE WHEN ls.status = 'Active' THEN 'true' ELSE 'false' END AS status, DATE_FORMAT(ls.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(ls.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon FROM lab_sessions ls LEFT JOIN ad_users u  ON u.userid = ls.personincharge ${whereClause} ORDER BY ls.bookingname ASC;
       `,
       { replacements },
     );
@@ -238,14 +238,15 @@ const save =
       /* ---------------- INSERT ---------------- */
       const insertQuery = `
         INSERT INTO lab_sessions 
-        (labuuid, bookingname, datetime, duration, accesslevel, personincharge, reservedseats, allowedusers, status, createdby, createdon) 
+        (labuuid, bookingname, labimage, datetime, duration, accesslevel, personincharge, reservedseats, allowedusers, status, createdby, createdon) 
         VALUES 
-        (UUID(), :bookingname, :datetime, :duration, :accesslevel, :personincharge, :reservedseats, :allowedusers, 'Active', :createdby, CURRENT_TIMESTAMP)
+        (UUID(), :bookingname, :labimage, :datetime, :duration, :accesslevel, :personincharge, :reservedseats, :allowedusers, 'Active', :createdby, CURRENT_TIMESTAMP)
       `;
 
       await db.sequelize.query(insertQuery, {
         replacements: {
           bookingname: body.bookingname?.trim() || null,
+          labimage: body.labimage || null,
           datetime: body.datetime || null,
           duration: body.duration || null,
           accesslevel: body.accesslevel || null,
@@ -539,6 +540,7 @@ const update =
       const updateQuery = `
         UPDATE lab_sessions 
         SET bookingname = :bookingname,
+            labimage = :labimage,
             datetime = :datetime,
             duration = :duration,
             accesslevel = :accesslevel,
@@ -555,6 +557,7 @@ const update =
         replacements: {
           lab_id: body.lab_id,
           bookingname: body.bookingname?.trim() || null,
+          labimage: body.labimage || null,
           datetime: body.datetime || null,
           duration: body.duration || null,
           accesslevel: body.accesslevel || null,
@@ -677,3 +680,4 @@ module.exports = {
   deleteById,
   changeStatus,
 };
+

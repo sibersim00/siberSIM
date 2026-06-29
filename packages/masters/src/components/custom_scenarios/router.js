@@ -20,6 +20,11 @@ module.exports = function (iocContainer) {
     validator(validation.updateSchema, "body"),
     controller.update(iocContainer)
   );
+  router.post(
+    "/delete",
+    validator(validation.deleteSchema, "body"),
+    controller.deleteById(iocContainer)
+  );
   router.post("/save_diagram", controller.saveDiagram(iocContainer));
   router.get(
     "/scenariodigramlist",

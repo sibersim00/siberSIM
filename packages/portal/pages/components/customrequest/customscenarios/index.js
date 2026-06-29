@@ -19,6 +19,9 @@ import Select from "react-select";
 import {
   getScenarioList,
   handleManageView,
+  deleteScenarios,
+  cleardeleteScenarios,
+  clearHasError,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
 import CustomToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
@@ -71,12 +74,12 @@ const ManageScenarios = () => {
         state.customScenario &&
         state.customScenario.getScenarioListData.data,
       deleteScenariosRes:
-        state && state.scenarioManage && state.scenarioManage.deleteScenarios,
+        state && state.customScenario && state.customScenario.deleteScenarios,
       hasScenariosStatusSucc:
         state &&
-        state.scenarioManage &&
-        state.scenarioManage.statusChangeScenarios,
-      errorData: state && state.scenarioManage && state.scenarioManage.error,
+        state.customScenario &&
+        state.customScenario.statusChangeScenarios,
+      errorData: state && state.customScenario && state.customScenario.error,
       getUserDataFromLocal:
         state && state.localData && state.localData.getLocalData,
       viewNameResp:
@@ -496,6 +499,39 @@ const ManageScenarios = () => {
       handleApprovalFilter(router.query.filter);
     }
   }, [router.query.filter]);
+
+  useEffect(() => {
+    if (errorData?.statusCode) {
+      toast.error(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+          {errorData?.message || "Something went wrong"}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: true,
+          theme: "colored",
+        }
+      );
+      dispatch(clearHasError());
+    }
+  }, [errorData]);
+
+  useEffect(() => {
+    if (deleteScenariosRes?.statusCode === 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0">
+          {deleteScenariosRes?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+      dispatch(getScenarioList());
+      dispatch(cleardeleteScenarios());
+    }
+  }, [deleteScenariosRes]);
   const handleReturnView = (props) => {
     push({
       pathname: `/custom_scenarios_view/${props?.custom_scenariouuid}`,
@@ -506,6 +542,29 @@ const ManageScenarios = () => {
   const handleReturnFromEdit = () => {
     setView(previousView);
     dispatch(handleManageView(previousView));
+  };
+
+  const handleDeleteCard = (item) => {
+    Swal.fire({
+      title: t("common.swal.title"),
+      text: t("common.swal.text_delete"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: t("common.swal.yes"),
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteScenarios({ custom_scenarioid: item?.custom_scenarioid }));
+      }
+    });
+  };
+
+  const handleDelete = (props, flag) => {
+    if (flag === true) {
+      dispatch(deleteScenarios({ custom_scenarioid: props?.custom_scenarioid }));
+    }
   };
   const handleFiles = (props, action = "view") => {
     if (props?.instruction_file) {
@@ -539,6 +598,7 @@ const ManageScenarios = () => {
         <ActionButtonRenderer
           handleEdit={handleEdit}
           handleEditView={handleReturnView}
+          handleDelete={handleDelete}
           handleShowEditView={true}
           propsVal={props}
           handleShowEdit={approvalStatus === "pending"}
@@ -797,6 +857,21 @@ const ManageScenarios = () => {
                                   </OverlayTrigger>
                                 </div>
                               )}
+
+                            {["pending", "reject"].includes(item.approval_status?.toLowerCase()) && (
+                              <div
+                                className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle"
+                                style={{ width: "28px", height: "28px", padding: "2px", fontSize: "14px",marginLeft:"3px" }}
+                                onClick={() => handleDeleteCard(item)}
+                              >
+                                <OverlayTrigger
+                                  placement="bottom"
+                                  overlay={<Tooltip>Delete</Tooltip>}
+                                >
+                                  <i className="fe fe-trash"></i>
+                                </OverlayTrigger>
+                              </div>
+                            )}
 
                             {/* View Button */}
                             <div

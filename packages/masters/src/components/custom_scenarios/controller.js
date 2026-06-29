@@ -78,6 +78,26 @@ const update =
     }
   };
 
+const deleteById =
+  ({ dao, db }) =>
+  async (req, res) => {
+    try {
+      const session_userid = req.user.userid;
+      const result = await dao.deleteById({ db })(req.body, session_userid);
+
+      return res.status(result.status ? 200 : 400).send({
+        statusCode: result.status ? 200 : 400,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error("Error deleting custom scenario:", error.message);
+      return res.status(500).json({
+        statusCode: 500,
+        error: "An error occurred. Please try again later.",
+      });
+    }
+  };
+
 const saveDiagram =
   ({ dao, db, validation }) =>
   async (req, res) => {
@@ -163,6 +183,7 @@ module.exports = {
   getById,
   create,
   update,
+  deleteById,
   saveDiagram,
   scenariodigramlist,
   saveComponentconfiguration,

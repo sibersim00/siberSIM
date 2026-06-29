@@ -24,3 +24,8 @@ ADD `cluster_task_type` varchar(100) COLLATE 'utf8mb4_general_ci' NULL DEFAULT '
 
 ALTER TABLE `web_settings`
 CHANGE `cluster_task_type` `cluster_task_type` varchar(100) COLLATE 'utf8mb4_general_ci' NULL DEFAULT 'RoundRobin' COMMENT 'Cluster method type' AFTER `proxmox_other_node`;
+
+
+
+ALTER TABLE `lab_sessions`
+ADD `labimage` text NULL COMMENT 'Labs Image' AFTER `reservedseats`;
