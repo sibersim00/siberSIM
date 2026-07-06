@@ -107,17 +107,6 @@ const updateSchema = joi.object({
     "string.empty": `Status cannot be empty`,
     "any.required": `Status is required.`,
   }),
-
-  scenariocategoryid: joi.number().strict(true).required().messages({
-    "number.base": `Scenario category id should be a integer`,
-    "number.empty": `Scenario category id cannot be empty`,
-    "any.required": `Scenario category id is required.`,
-  }),
-  scenariosubcategoryid: joi.number().strict(true).required().messages({
-    "number.base": `Scenario subcategory id should be a integer`,
-    "number.empty": `Scenario subcategory id cannot be empty`,
-    "any.required": `Scenario subcategory id is required.`,
-  }),
 });
 
 const statusSchema = joi.object({
