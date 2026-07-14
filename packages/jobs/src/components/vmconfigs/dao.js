@@ -7,7 +7,7 @@ const NotiTemplate = require("../../utils/notiUtility");
 const MailTemplate = require("../../utils/mailUtility");
 
 const setScenarioLearnerConfiguration =
-  ({ db }) =>
+  ({ db,ipAddress }) =>
   async (scenarioid, requestedby_id, vmrequestid) => {
     try {
       const statusVal = "Initializing";
@@ -74,67 +74,113 @@ const setScenarioLearnerConfiguration =
       const baseCloneVmid = parseInt(webSettings?.base_clone_vmid || 1000);
 
       const componentConfig = JSON.parse(scenario.component_config);
-      const networkConfig = JSON.parse(scenario.network_config);
-
-      if (networkConfig.length === 0) {
-        await handleComponentFailure(
-          db,
-          scenarioid,
-          requestedby_id,
-          vmrequestid,
-          statusVal,
-          ERROR_MESSAGES.NETWORK_BRIDGES,
-        );
-        return {
-          success: false,
-          message: ERROR_MESSAGES.NETWORK_BRIDGES,
-        };
-      }
+const networkConfig = JSON.parse(scenario.network_config).filter(
+  (label) => label !== "Network Id",
+);
+      // if (networkConfig.length === 0) {
+      //   await handleComponentFailure(
+      //     db,
+      //     scenarioid,
+      //     requestedby_id,
+      //     vmrequestid,
+      //     statusVal,
+      //     ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   );
+      //   return {
+      //     success: false,
+      //     message: ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   };
+      // }
 
       //Allocate Networks
-      const availableNetworks = await db.sequelize.query(
-        `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
-        {
-          replacements: [networkConfig.length],
-          type: db.sequelize.QueryTypes.SELECT,
-        },
-      );
+      // const availableNetworks = await db.sequelize.query(
+      //   `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
+      //   {
+      //     replacements: [networkConfig.length],
+      //     type: db.sequelize.QueryTypes.SELECT,
+      //   },
+      // );
 
-      if (availableNetworks.length < networkConfig.length) {
-        await handleComponentFailure(
-          db,
-          scenarioid,
-          requestedby_id,
-          vmrequestid,
-          statusVal,
-          ERROR_MESSAGES.NETWORK_BRIDGES,
+      // if (availableNetworks.length < networkConfig.length) {
+      //   await handleComponentFailure(
+      //     db,
+      //     scenarioid,
+      //     requestedby_id,
+      //     vmrequestid,
+      //     statusVal,
+      //     ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   );
+      //   return {
+      //     success: false,
+      //     message: ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   };
+      // }
+
+      // const networkIds = availableNetworks.map((n) => n.networkid);
+      // await db.sequelize.query(
+      //   `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
+      //   {
+      //     replacements: { networkIds },
+      //     type: db.sequelize.QueryTypes.UPDATE,
+      //   },
+      // );
+
+      // const networkArray = networkConfig.reduce((acc, key, index) => {
+      //   availableNetworks[index].networkkey = key;
+      //   acc[key] = availableNetworks[index];
+      //   return acc;
+      // }, {});
+      let availableNetworks = [];
+      let networkArray = {};
+
+      if (networkConfig.length > 0) {
+        //Allocate Networks
+        availableNetworks = await db.sequelize.query(
+          `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
+          {
+            replacements: [networkConfig.length],
+            type: db.sequelize.QueryTypes.SELECT,
+          },
         );
-        return {
-          success: false,
-          message: ERROR_MESSAGES.NETWORK_BRIDGES,
-        };
+
+        if (availableNetworks.length < networkConfig.length) {
+          await handleComponentFailure(
+            db,
+            scenarioid,
+            requestedby_id,
+            vmrequestid,
+            statusVal,
+            ERROR_MESSAGES.NETWORK_BRIDGES,
+          );
+          return {
+            success: false,
+            message: ERROR_MESSAGES.NETWORK_BRIDGES,
+          };
+        }
+
+        const networkIds = availableNetworks.map((n) => n.networkid);
+        await db.sequelize.query(
+          `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
+          {
+            replacements: { networkIds },
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
+
+        networkArray = networkConfig.reduce((acc, key, index) => {
+          availableNetworks[index].networkkey = key;
+          acc[key] = availableNetworks[index];
+          return acc;
+        }, {});
       }
-
-      const networkIds = availableNetworks.map((n) => n.networkid);
-      await db.sequelize.query(
-        `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
-        {
-          replacements: { networkIds },
-          type: db.sequelize.QueryTypes.UPDATE,
-        },
-      );
-
-      const networkArray = networkConfig.reduce((acc, key, index) => {
-        availableNetworks[index].networkkey = key;
-        acc[key] = availableNetworks[index];
-        return acc;
-      }, {});
 
       //  Prepare components
       let allFound = true;
       const preparedComponents = [];
+      console.log("componentConfigcomponentConfig",componentConfig);
+      
 
-      for (const item of componentConfig) {
+      componentLoop: for (const item of componentConfig) {
         const {
           vmid,
           order,
@@ -144,6 +190,8 @@ const setScenarioLearnerConfiguration =
           duration,
           network_ids,
         } = item;
+        console.log("itemitemitemitemitem",item);
+        
 
         let network_bridge_name = "{}";
         const [componentInfo] = await db.sequelize.query(
@@ -164,10 +212,49 @@ const setScenarioLearnerConfiguration =
         const prefixMap = JSON.parse(network_bridge_name);
         const bridgeMap = networkArray;
         const network_bridge_json = {};
+        // for (const [netKey, netId] of Object.entries(network_ids)) {
+        //   const prefix = prefixMap[netKey];
+        //   const bridgeName = bridgeMap[netId]?.networkname;
+        //   if (prefix && bridgeName) {
+        //     network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
+        //   }
+        // }
+
+        console.log("network_idsnetwork_idsnetwork_idsnetwork_ids",network_ids);
+        
         for (const [netKey, netId] of Object.entries(network_ids)) {
           const prefix = prefixMap[netKey];
-          const bridgeName = bridgeMap[netId]?.networkname;
-          if (prefix && bridgeName) {
+          if (!prefix) continue;
+          let bridgeName;
+          console.log("netIdnetIdnetIdnetIdnetIdnetId",netId);
+          
+          if (netId === "Network Id") {
+            // Reuse the bridge from the connected node/port in the diagram. Prefer the target side first for this learner flow.
+            const proxmoxService = ProxMoxService(db, {}, ipAddress);
+                  const tokenResult = await proxmoxService.generateAccessTicket();
+                  if (!tokenResult || tokenResult.status !== "200") {
+                    return {
+                      success: false,
+                      message:
+                        "Could not connect to the server while destroying components.",
+                    };
+                  }
+
+            const sourceVmInfo = await proxmoxService.getVmNetworkInfo(vmid, componentInfo.componenttype?.toLowerCase());
+            console.log("sourceVmInfosourceVmInfosourceVmInfo",sourceVmInfo);
+            
+            // Response shape: { data: { net0: "virtio=...,bridge=vmbr10", net1: "..." } }
+            const netLine = sourceVmInfo?.data?.[netKey];
+            const match = netLine?.match(/bridge=([^,]+)/);
+            bridgeName = match ? match[1] : null;
+            if (!bridgeName) {
+              allFound = false;
+              break componentLoop;
+            }
+          } else {
+            bridgeName = bridgeMap[netId]?.networkname;
+          }
+          if (bridgeName) {
             network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
           }
         }
@@ -6624,3 +6711,4 @@ module.exports = {
   markComponentTransferring,
   markComponentFailed
 };
+

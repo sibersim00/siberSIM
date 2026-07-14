@@ -541,7 +541,8 @@ async function startComponentVM(
     vc.vmid,
     vc.componentname,
     vc.nodeid,
-    vc.componenttype
+    vc.componenttype,
+    vc.network_bridge_json
   FROM vm_config vc
   INNER JOIN vm_request vr
     ON vr.vmrequestid = vc.vmrequestid
@@ -558,13 +559,29 @@ async function startComponentVM(
     );
 
     const vmMap = {};
+    const nodeBridgeMap = {};
+    // componentDetails.forEach((comp) => {
+    //   vmMap[comp.nodeid] = {
+    //     vmid: comp.vmid,
+    //     componenttype: comp.componenttype?.toLowerCase(),
+    //     componentname: comp.componentname,
+    //   };
+    // });
     componentDetails.forEach((comp) => {
-      vmMap[comp.nodeid] = {
-        vmid: comp.vmid,
-        componenttype: comp.componenttype?.toLowerCase(),
-        componentname: comp.componentname,
-      };
-    });
+  vmMap[comp.nodeid] = {
+    vmid: comp.vmid,
+    componenttype: comp.componenttype?.toLowerCase(),
+    componentname: comp.componentname,
+  };
+
+  const bridgeJson = JSON.parse(comp.network_bridge_json || "{}");
+  const resolved = {};
+  for (const [netKey, val] of Object.entries(bridgeJson)) {
+    const match = val?.match(/bridge=([^,"}]+)/);
+    if (match) resolved[netKey] = match[1];
+  }
+  nodeBridgeMap[comp.nodeid] = resolved;
+});
 
     if (Array.isArray(diagram.nodes)) {
       diagram.nodes = diagram.nodes.map((node) => {
@@ -596,19 +613,50 @@ async function startComponentVM(
         JSON.stringify(request.network_bridges),
       );
 
-      diagram.edges = diagram.edges.map((edge) => {
-        const currentLabel = edge.data?.label?.toString();
-        const matchedBridge = networkBridges.find(
-          (bridge) => bridge.networkkey?.toString() === currentLabel,
-        );
+      // diagram.edges = diagram.edges.map((edge) => {
+      //   const currentLabel = edge.data?.label?.toString();
+      //   const matchedBridge = networkBridges.find(
+      //     (bridge) => bridge.networkkey?.toString() === currentLabel,
+      //   );
 
-        if (matchedBridge) {
-          edge.data.label = matchedBridge.networkname;
-        } else {
-          console.log(`No match found for label ${currentLabel}`);
-        }
-        return edge;
-      });
+      //   if (matchedBridge) {
+      //     edge.data.label = matchedBridge.networkname;
+      //   } else {
+      //     console.log(`No match found for label ${currentLabel}`);
+      //   }
+      //   return edge;
+      // });
+    diagram.edges = diagram.edges.map((edge) => {
+  const currentLabel = edge.data?.label?.toString();
+
+    if (currentLabel === "Network Id") {
+    // Resolve from the connected node that owns the matching port.
+    // In this flow the bridge you want is on the target side (e.g. vmbr1).
+    console.log("NETWORK_ID_EDGE_DEBUG", JSON.stringify(edge), "nodeBridgeMap:", JSON.stringify(nodeBridgeMap));
+    const netKey = edge.targetHandle?.replace("-target", "") || edge.sourceHandle?.replace("-source", "");
+    const bridgeName = nodeBridgeMap[edge.target]?.[netKey] || nodeBridgeMap[edge.source]?.[netKey];
+
+    if (bridgeName) {
+      edge.data.label = bridgeName;
+    } else {
+      console.log(`No resolved bridge found for Network Id edge on ${edge.target || edge.source} (${netKey})`);
+    }
+    return edge;
+  }
+
+  // Existing pool-allocated behavior, unchanged
+  const matchedBridge = networkBridges.find(
+    (bridge) => bridge.networkkey?.toString() === currentLabel,
+  );
+
+  if (matchedBridge) {
+    edge.data.label = matchedBridge.networkname;
+  } else {
+    console.log(`No match found for label ${currentLabel}`);
+  }
+  return edge;
+});
+    
     }
 
     if (Array.isArray(diagram.edges)) {
@@ -1029,3 +1077,5 @@ module.exports = {
   handleComponentFailure,
   sendProxmoxDownAlerts,
 };
+
+
