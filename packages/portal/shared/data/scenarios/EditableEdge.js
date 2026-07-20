@@ -42,8 +42,6 @@ const EditableEdge = ({
   };
 
   const [label, setLabel] = useState(getInitialLabel);
-console.log('parameter',label)
-
   const saveLabel = () => {
     setIsEditing(false);
     setEdges((eds) =>
@@ -66,8 +64,6 @@ useEffect(() => {
 const shouldAnimate1=
   data?.animationStart === data?.source &&
   data?.animationEnd === data?.target;
-console.log('shouldAnimate',shouldAnimate,data?.source)
-
   return (
     <>
       <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />

@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { Button } from "react-bootstrap";
+import { Button, Form, Modal } from "react-bootstrap";
 import { toast } from "react-toastify";
 import {
   ReactFlow,
@@ -37,6 +37,215 @@ import {
   getScenarioList,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 
+const COMPONENT_ANIMATION_OPTIONS = [
+  {
+    value: "circle",
+    name: "Circular orbit",
+    description: "Moves continuously around its saved position in a smooth circle.",
+    icon: "↻",
+  },
+  {
+    value: "spiral",
+    name: "Spiral movement",
+    description: "Expands outward in a spiral, then returns and repeats.",
+    icon: "◎",
+  },
+  {
+    value: "leftToRight",
+    name: "Left to right",
+    description: "Enters from the left, pauses in the middle, and exits right.",
+    icon: "→",
+  },
+  {
+    value: "diagonalTopLeft",
+    name: "Top-left to bottom-right",
+    description: "Crosses diagonally, pausing at the canvas centre.",
+    icon: "↘",
+  },
+  {
+    value: "diagonalTopRight",
+    name: "Top-right to bottom-left",
+    description: "Crosses along the opposite diagonal with a centre pause.",
+    icon: "↙",
+  },
+];
+
+const DEFAULT_COMPONENT_ANIMATION = {
+  type: "circle",
+  pauseSeconds: 2,
+};
+
+const FLOW_NODE_PALETTES = [
+  { accent: "#ff3d5a", glow: "rgba(255, 61, 90, 0.34)" },
+  { accent: "#ff4fb3", glow: "rgba(255, 79, 179, 0.34)" },
+  { accent: "#9b6cff", glow: "rgba(155, 108, 255, 0.34)" },
+  { accent: "#22d3ee", glow: "rgba(34, 211, 238, 0.34)" },
+  { accent: "#18d9bd", glow: "rgba(24, 217, 189, 0.34)" },
+  { accent: "#f8c51c", glow: "rgba(248, 197, 28, 0.34)" },
+  { accent: "#7bdc16", glow: "rgba(123, 220, 22, 0.34)" },
+  { accent: "#ff8a00", glow: "rgba(255, 138, 0, 0.34)" },
+];
+
+const getFlowNodePalette = (value = "") => {
+  const hash = String(value)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+  return FLOW_NODE_PALETTES[hash % FLOW_NODE_PALETTES.length];
+};
+
+const getFlowComponentDetails = (data = {}) => {
+  const label = String(data.label || "Unnamed component").trim();
+  const separatorIndex = label.indexOf("-");
+  return {
+    title:
+      separatorIndex > -1 ? label.slice(separatorIndex + 1).trim() : label,
+    vmId:
+      data.vmid ||
+      (separatorIndex > -1 ? label.slice(0, separatorIndex).trim() : ""),
+  };
+};
+
+const ComponentAnimationModal = ({
+  show,
+  node,
+  draft,
+  imageUrl,
+  onChange,
+  onClose,
+  onApply,
+  onClear,
+}) => {
+  const [previewKey, setPreviewKey] = useState(0);
+  const selectedOption = COMPONENT_ANIMATION_OPTIONS.find(
+    (option) => option.value === draft.type,
+  );
+  const usesPause = [
+    "leftToRight",
+    "diagonalTopLeft",
+    "diagonalTopRight",
+  ].includes(draft.type);
+  const { title, vmId } = getFlowComponentDetails(node?.data);
+
+  return (
+    <Modal
+      show={show}
+      onHide={onClose}
+      centered
+      size="lg"
+      dialogClassName="component-animation-modal"
+    >
+      <Modal.Header closeButton>
+        <div>
+          <Modal.Title>Component animation</Modal.Title>
+          <div className="component-animation-modal-subtitle">
+            {title || "Select a movement"}
+          </div>
+        </div>
+      </Modal.Header>
+      <Modal.Body>
+        <div className="component-animation-layout">
+          <div className="component-animation-options" role="radiogroup">
+            {COMPONENT_ANIMATION_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={draft.type === option.value}
+                className={`component-animation-option ${
+                  draft.type === option.value ? "is-selected" : ""
+                }`}
+                onClick={() => {
+                  onChange({ ...draft, type: option.value });
+                  setPreviewKey((value) => value + 1);
+                }}
+              >
+                <span className="component-animation-option-icon">
+                  {option.icon}
+                </span>
+                <span>
+                  <strong>{option.name}</strong>
+                  <small>{option.description}</small>
+                </span>
+                <span className="component-animation-radio" />
+              </button>
+            ))}
+          </div>
+
+          <div className="component-animation-preview-panel">
+            <div className="component-animation-preview-heading">
+              <span>Live preview</span>
+              <span className="component-animation-preview-status">
+                {selectedOption?.name}
+              </span>
+            </div>
+            <div className="component-animation-stage">
+              <div
+                key={`${draft.type}-${previewKey}`}
+                className={`component-animation-demo component-animation-demo--${draft.type}`}
+              >
+                <div
+                  className="component-animation-demo-image"
+                  style={{ backgroundImage: `url("${imageUrl || ""}")` }}
+                />
+                <strong>{title}</strong>
+                {vmId && <small>VM ID: {vmId}</small>}
+              </div>
+              <span className="component-animation-stage-centre">Centre pause</span>
+            </div>
+
+            {usesPause && (
+              <Form.Group className="component-animation-pause-field">
+                <Form.Label>Pause at centre</Form.Label>
+                <div className="component-animation-pause-control">
+                  <Form.Control
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={draft.pauseSeconds}
+                    onChange={(event) =>
+                      onChange({
+                        ...draft,
+                        pauseSeconds: Math.min(
+                          10,
+                          Math.max(1, Number(event.target.value) || 1),
+                        ),
+                      })
+                    }
+                  />
+                  <span>seconds</span>
+                </div>
+              </Form.Group>
+            )}
+
+            <Button
+              type="button"
+              variant="outline-info"
+              className="component-animation-watch-button"
+              onClick={() => setPreviewKey((value) => value + 1)}
+            >
+              Watch demo again
+            </Button>
+          </div>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        {node?.data?.componentAnimation?.type && (
+          <Button variant="outline-danger" onClick={onClear}>
+            Remove animation
+          </Button>
+        )}
+        <div className="ms-auto d-flex gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={onApply}>
+            Apply animation
+          </Button>
+        </div>
+      </Modal.Footer>
+    </Modal>
+  );
+};
 const DnDFlow = ({
   numLans,
   toBeDragComponent,
@@ -90,28 +299,28 @@ const DnDFlow = ({
     net2: Position.Left,
     net3: Position.Top,
   };
+  const [animationNodeId, setAnimationNodeId] = useState(null);
+  const [animationDraft, setAnimationDraft] = useState(
+    DEFAULT_COMPONENT_ANIMATION,
+  );
+
+  const openAnimationModal = useCallback((nodeId, nodeData) => {
+    setAnimationNodeId(nodeId);
+    setAnimationDraft({
+      ...DEFAULT_COMPONENT_ANIMATION,
+      ...(nodeData?.componentAnimation || {}),
+    });
+  }, []);
+
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    // let portKeys = [];
-    // if (Array.isArray(data.networkport)) {
-    //   portKeys = data.networkport
-    //     .flatMap(obj => Object.keys(obj))
-    //     .sort();
-    // }
-
-    // else if (typeof data.networkport === "object" && data.networkport !== null) {
-    //   portKeys = Object.keys(data.networkport).sort();
-    // } else {
-    //   portKeys = [];
-    // }
     let portKeys = [];
-
     if (Array.isArray(data.networkport)) {
       portKeys = data.networkport
         .flatMap((obj) =>
           Object.entries(obj).map(([key, value]) => {
-            const tagMatch = value.match(/tag=(\d+)/);
+            const tagMatch = String(value).match(/tag=(\d+)/);
             return {
-              key, // net0 / net1
+              key,
               label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
             };
           }),
@@ -123,178 +332,99 @@ const DnDFlow = ({
     ) {
       portKeys = Object.entries(data.networkport)
         .map(([key, value]) => {
-          const tagMatch = value.match(/tag=(\d+)/);
+          const tagMatch = String(value).match(/tag=(\d+)/);
           return {
             key,
             label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
           };
         })
         .sort((a, b) => a.key.localeCompare(b.key));
-    } else {
-      portKeys = [];
     }
 
-    const totalPorts = portKeys.length;
-
     const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.ceil(totalPorts / 4);
+    const portsPerSide = Math.max(1, Math.ceil(portKeys.length / 4));
     const spacingRatio = 100 / (portsPerSide + 1);
-
-    const baseSize = 90;
-    const portSpacing = 15;
-    const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const palette = getFlowNodePalette(data.componentId || id || data.label);
+    const { title, vmId } = getFlowComponentDetails(data);
+    const animationOption = COMPONENT_ANIMATION_OPTIONS.find(
+      (option) => option.value === data.componentAnimation?.type,
+    );
 
     return (
       <div
+        className="portal-flow-node"
         style={{
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          "--portal-flow-accent": palette.accent,
+          "--portal-flow-glow": palette.glow,
         }}
       >
-        <div
-          style={{
-            width: nodeSize,
-            height: nodeSize,
-            position: "relative",
-            borderRadius: "8px",
-            border: "2px solid #ccc",
-            // background: '#fff',
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          {/* Delete Button */}
-          <button
-            onClick={() => deleteNode(id)}
-            style={{
-              position: "absolute",
-              top: 2,
-              right: 2,
-              color: "black",
-              border: "none",
-              borderRadius: "50%",
-              width: 14,
-              height: 14,
-              fontSize: 10,
-              fontWeight: "bold",
-              cursor: "pointer",
-              background: "#fff",
-              zIndex: 2,
-            }}
-          >
-            ×
-          </button>
+        <div className="portal-flow-node-glow" aria-hidden="true" />
+        <div className="portal-flow-node-card">
+          <div className="portal-flow-node-actions nodrag">
+            <button
+              type="button"
+              className="portal-flow-node-action portal-flow-node-action--motion"
+              title="Configure component animation"
+              aria-label="Configure component animation"
+              onClick={(event) => {
+                event.stopPropagation();
+                openAnimationModal(id, data);
+              }}
+            >
+              ✦
+            </button>
+            <button
+              type="button"
+              className="portal-flow-node-action portal-flow-node-action--delete"
+              title="Delete component"
+              aria-label="Delete component"
+              onClick={(event) => {
+                event.stopPropagation();
+                deleteNode(id);
+              }}
+            >
+              ×
+            </button>
+          </div>
 
-          {/* Image */}
-          <div
-            style={{
-              width: nodeSize * 0.6,
-              height: nodeSize * 0.6,
-              backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-          {/* Ports */}
+          <div className="portal-flow-node-icon-frame">
+            <div
+              className="portal-flow-node-icon"
+              style={{
+                backgroundImage: `url("${resolveImageUrl(data.image)}")`,
+              }}
+            />
+          </div>
+
+          <div className="portal-flow-node-copy">
+            <strong title={title}>{title || "Unnamed component"}</strong>
+            <small>{vmId ? `VM ID: ${vmId}` : "Component"}</small>
+            {animationOption && (
+              <button
+                type="button"
+                className="portal-flow-node-motion-badge nodrag"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openAnimationModal(id, data);
+                }}
+              >
+                <span>{animationOption.icon}</span>
+                {animationOption.name}
+              </button>
+            )}
+          </div>
+
           {portKeys.map((port, index) => {
             const sideIndex = Math.floor(index / portsPerSide);
             const side = sides[sideIndex];
             const positionIndex = index % portsPerSide;
-            let offsetPercent;
-            if (side === "Right" || side === "Top") {
-              offsetPercent = (positionIndex + 1) * spacingRatio;
-            } else {
-              // Reverse direction for Bottom (right-to-left) and Left (bottom-to-top)
-              offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-            }
-
-            const baseHandleStyle = {
-              position: "absolute",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: "#005eff",
-              border: "1px solid white",
-              zIndex: 2,
+            const offsetPercent =
+              side === "Right" || side === "Top"
+                ? (positionIndex + 1) * spacingRatio
+                : (portsPerSide - positionIndex) * spacingRatio;
+            const offsetStyle = {
+              "--portal-port-offset": `${offsetPercent}%`,
             };
-
-            const labelStyle = {
-              position: "absolute",
-              fontSize: 6,
-              // background: '#fff',
-              padding: "1px 3px",
-              whiteSpace: "nowrap",
-              zIndex: 5,
-            };
-
-            let handleStyle = {};
-            let labelPosition = {};
-
-            switch (side) {
-              case "Top":
-                handleStyle = {
-                  ...baseHandleStyle,
-                  top: -5,
-                  left: `${offsetPercent}%`,
-                  transform: "translateX(-50%)",
-                };
-                labelPosition = {
-                  ...labelStyle,
-                  top: -20,
-                  left: `${offsetPercent}%`,
-                  transform: "translateX(-50%)",
-                };
-                break;
-              case "Right":
-                handleStyle = {
-                  ...baseHandleStyle,
-                  right: -5,
-                  top: `${offsetPercent}%`,
-                  transform: "translateY(-50%)",
-                };
-                labelPosition = {
-                  ...labelStyle,
-                  right: -60,
-                  top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
-                };
-                break;
-              case "Bottom":
-                handleStyle = {
-                  ...baseHandleStyle,
-                  bottom: -5,
-                  left: `${offsetPercent}%`,
-                  transform: "translateX(-50%)",
-                };
-                labelPosition = {
-                  ...labelStyle,
-                  bottom: -20,
-                  left: `${offsetPercent}%`,
-                  transform: "translateX(-50%)",
-                };
-                break;
-              case "Left":
-                handleStyle = {
-                  ...baseHandleStyle,
-                  left: -5,
-                  top: `${offsetPercent}%`,
-                  transform: "translateY(-50%)",
-                };
-                labelPosition = {
-                  ...labelStyle,
-                  left: -60,
-                  top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
-                };
-                break;
-              default:
-                break;
-            }
 
             return (
               <React.Fragment key={port.key}>
@@ -302,41 +432,32 @@ const DnDFlow = ({
                   type="source"
                   position={Position[side]}
                   id={`${port.key}-source`}
-                  style={handleStyle}
+                  className={`portal-flow-port portal-flow-port--${side.toLowerCase()}`}
+                  style={offsetStyle}
                   isConnectable={isConnectable}
                 />
                 <Handle
                   type="target"
                   position={Position[side]}
                   id={`${port.key}-target`}
-                  style={handleStyle}
+                  className={`portal-flow-port portal-flow-port--${side.toLowerCase()}`}
+                  style={offsetStyle}
                   isConnectable={isConnectable}
                 />
-                <div style={labelPosition}>{port.label}</div>
+                <div
+                  className={`portal-flow-port-label portal-flow-port-label--${side.toLowerCase()}`}
+                  style={offsetStyle}
+                  title={port.label}
+                >
+                  {port.label}
+                </div>
               </React.Fragment>
             );
           })}
         </div>
-
-        {/* Node Label */}
-        <div
-          style={{
-            marginTop: 18,
-            fontSize: 10,
-            textAlign: "center",
-            width: "100%",
-            zIndex: 10,
-            position: "relative",
-            // background: '#fff',
-            padding: "0 2px",
-          }}
-        >
-          {data.label || "Unnamed"}
-        </div>
       </div>
     );
   };
-
   const idRef = useRef(0);
   const getId = () => `dndnode_${idRef.current++}`;
   const { saveScenarioFlowChart, getScenarioFlowchart } = useSelector(
@@ -585,11 +706,46 @@ const DnDFlow = ({
       setTabIndex("tab3");
     }
   }, [saveScenarioFlowChart]);
+  const animationNode = nodes.find((node) => node.id === animationNodeId);
+  const closeAnimationModal = () => setAnimationNodeId(null);
+  const applyComponentAnimation = () => {
+    if (!animationNodeId) return;
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === animationNodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                componentAnimation: {
+                  type: animationDraft.type,
+                  pauseSeconds: Number(animationDraft.pauseSeconds) || 2,
+                },
+              },
+            }
+          : node,
+      ),
+    );
+    closeAnimationModal();
+  };
+  const clearComponentAnimation = () => {
+    if (!animationNodeId) return;
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+        if (node.id !== animationNodeId) return node;
+        const dataWithoutAnimation = { ...node.data };
+        delete dataWithoutAnimation.componentAnimation;
+        return { ...node, data: dataWithoutAnimation };
+      }),
+    );
+    closeAnimationModal();
+  };
+
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => <ImageNode {...props} deleteNode={deleteNode} />,
     }),
-    [deleteNode],
+    [deleteNode, openAnimationModal],
   );
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
@@ -671,6 +827,16 @@ const DnDFlow = ({
           </ReactFlow>
         </div>
       </div>
+      <ComponentAnimationModal
+        show={Boolean(animationNode)}
+        node={animationNode}
+        draft={animationDraft}
+        imageUrl={resolveImageUrl(animationNode?.data?.image)}
+        onChange={setAnimationDraft}
+        onClose={closeAnimationModal}
+        onApply={applyComponentAnimation}
+        onClear={clearComponentAnimation}
+      />
       <div className="justify-content-end d-flex">
         <div className="pull-left">
           <small className="text-warning d-block mt-2">
