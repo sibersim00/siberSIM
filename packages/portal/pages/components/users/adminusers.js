@@ -62,6 +62,7 @@ const Adminuser = () => {
   const [oneClick, setOneClick] = useState(false);
   const {
     listUserData,
+    isLoading,
     addUserData,
     editUserData,
     editStatusUserResData,
@@ -74,6 +75,8 @@ const Adminuser = () => {
         state.user &&
         state.user.getUserData &&
         state.user.getUserData.data,
+      isLoading:
+        state && state.user && state.user.isLoading,
 
       addUserData: state && state.user && state.user.addUserData,
 
@@ -746,7 +749,20 @@ const onGridReady = useCallback((params) => {
         <Col md={12}>
           {view == "card" ? (
             <>
-              {gridData && gridData.length > 0 ? (
+              {isLoading ? (
+                <Row>
+                  <Col sm={12}>
+                    <Card className="custom-card">
+                      <Card.Body className="d-flex align-items-center justify-content-center" style={{ minHeight: "70vh" }}>
+                        <div className="text-center">
+                          <div className="spinner-border text-primary" role="status" aria-label="Loading" />
+                          <h5 className="mt-3 mb-0">Loading...</h5>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              ) : gridData && gridData.length > 0 ? (
                 <Row className="row-sm">
                   {gridData.map((item, index) => {
                     const isValidMobile =
@@ -759,8 +775,8 @@ const onGridReady = useCallback((params) => {
 
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team">
-                          <Card.Body>
+                        <Card className="card custom-card our-team" style={{ minHeight: "300px", height: "300px" }}>
+                          <Card.Body className="d-flex flex-column">
                             <div className="picture avatar-lg online text-center">
                               <div
                                 className="rounded-circle pointer"
@@ -880,7 +896,7 @@ const onGridReady = useCallback((params) => {
                                   <img
                                     src={crossEvalicon.src}
                                     alt="user-img"
-                                    className="wd-150 mt-5`"
+                                    className="wd-150 mt-5"
                                     onClick={() => handleFormModal(true)}
                                   />
                                   <h5 className="mt-4">No data found.</h5>
@@ -920,3 +936,5 @@ const onGridReady = useCallback((params) => {
 
 Adminuser.layout = "Contentlayout";
 export default Adminuser;
+
+

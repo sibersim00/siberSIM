@@ -17,16 +17,7 @@ import defaultFavicon from "../../../public/assets/img/brand/favicon.png";
 import { useTranslation } from "react-i18next";
 import "../../../shared/utils/i18n";
 
-import {
-  getCompanyList,
-  dispatchDirectLogin,
-  clearDispatchDirectLogin,
-  dispatchFromUserPass,
-  cleardispatchFromUserPass,
-  getEventList,
-  verifyLogin,
-  clearVerifyLogin,
-  clearHasError
+import { getCompanyList, dispatchDirectLogin, clearDispatchDirectLogin, dispatchFromUserPass, cleardispatchFromUserPass, getEventList, verifyLogin, clearVerifyLogin, clearHasError
 } from "../../../shared/redux/slices/eventLogin/eventLogin";
 
 import { d_mmm_y } from "../../../shared/data/helperFunctions/dateCustom";
@@ -50,14 +41,10 @@ const Home = () => {
   const [userInfo, setUserInfo] = useState({});
   let [timerval, settimerval] = useState(0);
   const [eventlistDropDown, setEventListDropDown] = useState([]);
-
-
   const timeOutCallback = useCallback(
     () => settimerval((currTimer) => currTimer - 1),
     []
   );
-
-
   useEffect(() => {
     timerval > 0 && setTimeout(timeOutCallback, 1000);
   }, [timerval, timeOutCallback]);

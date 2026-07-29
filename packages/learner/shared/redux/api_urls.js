@@ -30,6 +30,7 @@ const api = {
   get_student_dashboard: "/dashboard/get-student-dashboard",
   scenario_single_custom_get: "/custom_scenarios/get",
   // profile
+  dismiss_password_reset: '/profile/dismiss-password-reset',
   profile_get: "/profile",
   changePassword: "/profile/change-password",
   profile_update: "/profile/save-profile",

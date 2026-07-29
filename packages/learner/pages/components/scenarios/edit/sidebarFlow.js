@@ -245,33 +245,7 @@ useEffect(() => {
     console.error("Invalid components JSON", e);
     return;
   }
-  // const normalized = parsedComponents.map((node) => {
-  //   console.log("nodenodenodddddddddddddenode",node);
-    
-  //   const componentId = node.componentid || node.componentId || node.id;
-  //   let updatedImage = "";
-  //   if (parsedDiagram?.nodes?.length) {
-  //     const matchedNode = parsedDiagram.nodes.find(
-  //       (n) => String(n?.data?.componentId) === String(componentId)
-  //     );
-  //     if (matchedNode?.data?.image) {
-  //       updatedImage = matchedNode.data.image;
-  //     }
-  //     console.log("matchedNodematchedNodematchedNode",matchedNode);
-  //   }
-    
-  //   return {
-  //     ...node,
-  //     id: node.id || node.nodeid,
-  //     componentid: componentId,
-  //     imageUrl: normalizeImageUrl(
-  //       updatedImage || node.imageUrl || node.subcategoryimage
-  //     ),
-  //     networkport: node.networkport || [],
-  //     vmType: node.vmType || node.componenttype || "", // ✅ ADD THIS
-  //   };
-  // });
-  
+
   const normalized = parsedComponents.map((node) => {
   const componentId = node.componentid || node.componentId || node.id;
 
@@ -303,8 +277,6 @@ useEffect(() => {
       "",
   };
 });
-  // console.log("normalizednormassssssssssssssssssslizednormalizednormalized",normalized);
-  
   setImageNodeData(normalized);
   setDraggedComponent(normalized);
   setDroppedImages(normalized.map((n) => n.id));
@@ -326,7 +298,7 @@ useEffect(() => {
             networkport: match.networkport, //  ports visible
             componentId: match.componentid,
             label: match.label || node.data?.label,
-            vmType: match.vmType || node.data?.vmType, // ✅ ADD
+            vmType: match.vmType || node.data?.vmType, 
           },
         };
       })

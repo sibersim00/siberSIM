@@ -47,7 +47,6 @@ const CreateQuestions = (props) => {
 		scenarioid,
 	} = props;
 
-	console.log("openModalopenModal", openModal)
 	const dispatch = useDispatch();
 	const questionType = [{ value: "MCQ", label: "MCQ" }, { value: "SCQ", label: "SCQ" }]
 	const [initialAnswers, setinitialAnswers] = useState([]);

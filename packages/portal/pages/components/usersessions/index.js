@@ -478,67 +478,9 @@ const footerStyle = {
             }
             propsVal={props}
           />
-
-          {/* SHOW ONLY WHEN RUNNING */}
-
-          {/* <OverlayTrigger placement="bottom" overlay={<Tooltip>Profile</Tooltip>}>
-                <Button
-                  id="viewBtnCommon"
-                  type="button"
-                  variant="outline-success"
-                  className="mg-r-3"
-                  size="sm"
-                  onClick={(e) => handleOnView(propsVal?.data)}
-                >
-                  <i className="ti ti-id-badge"></i>
-                </Button>
-              </OverlayTrigger> */}
-          {/* {isRunning && (
-            <OverlayTrigger
-              placement="bottom"
-              overlay={<Tooltip>Component List</Tooltip>}
-            >
-              <Button
-                id="componentListBtn"
-                type="button"
-                variant="outline-info"
-                className="mg-r-3"
-                size="sm"
-                onClick={() => {
-                  setSelectedScenario(item);
-                 setShowComponentModal(true);
-                 dispatch(
-                    getrunningcomponent({
-                      vmrequestid: item.vmrequestid,
-                    }),
-                  );
-                }}
-              >
-                <i className="fe fe-list"></i>
-              </Button>
-            </OverlayTrigger>
-          )} */}
         </div>
       );
     },
-
-    // actionButtonRenderer: function (props) {
-    //   console.log("propspropspropspropsprops", props)
-    //   return (
-    //     <ActionButtonRenderer
-    //       handleEditView={handleReturnView}
-    //       handleShowEditView={true}
-    //       terminationNotification={handleSentTerminationNotification}
-    //       handleShowTerminationNotification={true}
-    //       terminateStudent={handleToTerminate}
-    //       handleShowTerminateStudent={true}
-    //       raiseRequest={handleToSentRaiserequest} // Open chat on raiseRequest
-    //       handleShowRaiseRequest={props?.data?.requestedby_role !== "Admin" && props?.data?.requestedby_role !== "Instructor" && props?.data?.requestedby_role !== "Event"} // Open chat on raiseRequest
-    //       propsVal={props}
-    //     />
-
-    //   );
-    // },
   };
 
   const [columnsPerRow, setColumnsPerRow] = useState(4); // Default value

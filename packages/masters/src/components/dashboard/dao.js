@@ -67,6 +67,48 @@ WHERE usertype = 'Admin'
       { type: db.sequelize.QueryTypes.SELECT }
     );
 
+    // 5b. SCENARIO EXPORT STATS
+    let scenarioExportQuery = `
+      SELECT
+        COUNT(*) AS total_exports,
+        SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed_exports,
+        SUM(CASE WHEN status IN ('Inprogress', 'Running') THEN 1 ELSE 0 END) AS running_exports,
+        SUM(CASE WHEN status = 'Failed' THEN 1 ELSE 0 END) AS failed_exports
+      FROM scenario_export se
+      WHERE se.deletedon IS NULL`;
+    if (usertype === 'Instructor') {
+      scenarioExportQuery += ` AND se.userid = :userid`;
+    }
+    const [scenarioExportStats = {
+      total_exports: 0,
+      completed_exports: 0,
+      running_exports: 0,
+      failed_exports: 0,
+    }] = await db.sequelize.query(scenarioExportQuery, {
+      replacements: { userid },
+      type: db.sequelize.QueryTypes.SELECT,
+    });
+
+    // 5c. LAB SESSION STATS
+    let labSessionQuery = `
+      SELECT
+        COUNT(*) AS total_labs,
+        SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_labs,
+        SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) AS inactive_labs
+      FROM lab_sessions ls
+      WHERE ls.deletedon IS NULL`;
+    if (usertype === 'Instructor') {
+      labSessionQuery += ` AND ls.createdby = :userid`;
+    }
+    const [labSessionStats = {
+      total_labs: 0,
+      active_labs: 0,
+      inactive_labs: 0,
+    }] = await db.sequelize.query(labSessionQuery, {
+      replacements: { userid },
+      type: db.sequelize.QueryTypes.SELECT,
+    });
+
     // 6. NETWORK STATS
     const [networkStats = { total_networks: 0, available_networks: 0 }] = await db.sequelize.query(
       `SELECT
@@ -392,6 +434,8 @@ await db.sequelize.query(
       adminStats,
       eventStats,
       componentStats,
+      scenarioExportStats,
+      labSessionStats,
       networkStats,
       scenarioCounts,
       topScenarios: topScenarios || [],
@@ -419,4 +463,5 @@ await db.sequelize.query(
 module.exports = {
   getDashboardStats,
 };
+
 

@@ -39,8 +39,6 @@ const PauseScenarios = () => {
           state && state.customScenario && state.customScenario.viewNameResp,
       };
     });
-  console.log("hasGetScenariospauseListData", hasGetScenariospauseListData);
-
   useEffect(() => {
     if (hasGetScenariospauseListData) {
       const normalized = hasGetScenariospauseListData.map((item) => ({
@@ -167,7 +165,6 @@ const PauseScenarios = () => {
                   {gridData.map((item, index) => (
 
                     <Col key={index} md={12 / columnsPerRow}>
-                      {console.log("itemitemitemitemitemitem", item)}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                           ? "shadow-publish"
@@ -242,8 +239,6 @@ const PauseScenarios = () => {
                             <div
                               className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                               onClick={() => {
-                                console.log("Clicked Item:", item);
-
                                 push({
                                   pathname: `/scenarios_view/${item?.scenariouuid}`,
                                   query: { from: "pause" },

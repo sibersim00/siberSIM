@@ -172,9 +172,6 @@ const ScenariosView = () => {
 
     errorData: state?.scenarios?.error,
   }));
-
-  console.log("hasGetLearnersByVmRequestDataData",hasGetLearnersByVmRequestDataData?.length > 0);
-  
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData,
   );

@@ -361,19 +361,6 @@ const ListParticipantModal = (props) => {
       team_name: props.team_name,
       team_description: props.team_description,
     });
-    console.log("rowDaltarowDaltarowDalta here we are", {
-      title: "Update",
-      eventid: "",
-      learner_id: props.learner_id,
-      firstname: props.firstname,
-      lastname: props.lastname,
-      email: props.email,
-      mobile: props.mobile,
-      username: props.username,
-      team_name: props.team_name,
-      team_description: props.team_description,
-    });
-
     handlelistModal(false);
     // setTimeout(() => {
     //   handleFormModal(true);

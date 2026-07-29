@@ -85,9 +85,6 @@ const LabsAdd = ({
       label: s.Student_name,
       value: s.learner_id,
     })) || [];
-
-  console.log("userOptions==>>", userOptions);
-
   useEffect(() => {
     if (openFlag) handleOneClick(false);
   }, [openFlag]);
@@ -171,29 +168,8 @@ const LabsAdd = ({
       }
 
       handleOneClick(false);
-
-      // if (result.meta.requestStatus === "fulfilled") {
-      //   toast.success(
-      //     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-      //       {rowValues
-      //         ? "Lab session updated successfully!"
-      //         : "Lab session saved successfully!"}
-      //     </p>,
-      //     {
-      //       position: toast.POSITION.TOP_RIGHT,
-      //       hideProgressBar: false,
-      //       theme: "colored",
-      //     }
-      //   );
-
-      //   handleFormModal(false);
-      // } else {
-      //   alert(result.payload?.errors?.[0] || "Failed to save.");
-      // }
     },
   });
-
-  console.log("formikformik", formik);
   const { values, errors, touched, handleChange, handleSubmit, setFieldValue } =
     formik;
 

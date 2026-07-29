@@ -24,7 +24,6 @@ const HeadDropDown = () => {
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData
   );
-console.log("getUserDataFromLocal",getUserDataFromLocal)
   const { notificationData, logoutData, markReadNotiResp, theme, errorData } =
     useSelector((state) => {
       return {
@@ -75,8 +74,6 @@ useEffect(() => {
   }, [theme]);
 
   useEffect(() => {
-    console.log("notificationData: ", notificationData);
-
     if (notificationData && notificationData.length > 0) {
       let date = new Date();
       date.setDate(date.getDate() - 2);
@@ -101,8 +98,6 @@ useEffect(() => {
       setShowLessNotifications(enhanced);
     }
   }, [notificationData]);
-
-  console.log("notificationData", notificationData);
   const handleReadNoti = (data) => {
     if (data?.is_read == 0) {
       const payload = {

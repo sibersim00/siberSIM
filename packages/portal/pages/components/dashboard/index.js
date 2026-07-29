@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Container, Row, Col, Card } from "react-bootstrap";
+import { Container, Row, Col, Card, Badge } from "react-bootstrap";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import {
   getDashboardListData,
@@ -11,6 +11,44 @@ import Seo from "../../../shared/layout-components/seo/seo";
 import LicenseExpiryPopup from "../../../shared/data/admin/modals/licenseExpiryPopup";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+const StatCard = ({
+  title,
+  value,
+  helper,
+  icon,
+  tone = "primary",
+  onClick,
+  accent,
+  stagger = 0,
+}) => (
+  // <Card
+  //   className={`dashboard-stat-card dashboard-tone-${tone} dashboard-animate-card ${onClick ? "is-clickable" : ""}`}
+  //   onClick={onClick}
+  //   style={{ animationDelay: `${stagger}ms` }}
+  // >
+  <Card
+  className={`dashboard-stat-card dashboard-tone-${tone} dashboard-animate-card ${onClick ? "is-clickable" : ""}`}
+  onClick={onClick}
+  style={{ animationDelay: `${stagger}ms`, "--stat-delay": `${stagger}ms` }}
+>
+    <Card.Body>
+      <div className="dashboard-stat-top">
+        <div>
+          <p className="dashboard-stat-label">{title}</p>
+          <h2 className="dashboard-stat-value">{value}</h2>
+        </div>
+        <div className="dashboard-stat-icon" aria-hidden="true">
+          <i className={icon}></i>
+        </div>
+      </div>
+      <div className="dashboard-stat-footer">
+        <span>{helper}</span>
+        {accent ? <strong>{accent}</strong> : null}
+      </div>
+    </Card.Body>
+  </Card>
+);
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -23,25 +61,17 @@ const Dashboard = () => {
     companyName: "",
   });
 
-  const { geDashboardListData, getUserDataFromLocal, hasHandleManageSuc } =
-    useSelector((state) => ({
-      geDashboardListData: state?.dashboarData?.getDashboardData?.data,
-      hasHandleManageSuc: state?.dashboarData?.viewNameResp,
-      getUserDataFromLocal:
-        state && state.localData && state.localData.getLocalData,
-    }));
+  const { geDashboardListData, getUserDataFromLocal } = useSelector((state) => ({
+    geDashboardListData: state?.dashboarData?.getDashboardData?.data,
+    getUserDataFromLocal: state?.localData?.getLocalData,
+  }));
 
-  const { webBrowserWidgets = [] } = geDashboardListData || {};
+  const rowData = geDashboardListData || {};
+  const webBrowserWidgets = rowData?.webBrowserWidgets || [];
 
   useEffect(() => {
-    if (getUserDataFromLocal) {
-      try {
-        if (getUserDataFromLocal?.usertype) {
-          setUserType(getUserDataFromLocal.usertype);
-        }
-      } catch (error) {
-        console.error("Error retrieving user data:", error);
-      }
+    if (getUserDataFromLocal?.usertype) {
+      setUserType(getUserDataFromLocal.usertype);
     }
   }, [getUserDataFromLocal]);
 
@@ -49,58 +79,58 @@ const Dashboard = () => {
     dispatch(getDashboardListData());
     checkLicenseAndShowPopup();
   }, [dispatch]);
+
   const checkLicenseAndShowPopup = () => {
-    const isLicenseExpiryFlag =
-      localStorage.getItem("is_license_expiry") === "true";
+    const isLicenseExpiryFlag = localStorage.getItem("is_license_expiry") === "true";
     const storedSettings = localStorage.getItem("company_settings");
-    if (storedSettings) {
-      try {
-        const parsedSettings = JSON.parse(storedSettings);
-        let licenseData;
+    if (!storedSettings) return;
 
-        if (parsedSettings?.data?.licenseStatus) {
-          licenseData = parsedSettings.data;
-        } else if (parsedSettings?.licenseStatus) {
-          licenseData = parsedSettings;
-        } else if (parsedSettings?.statusCode === 200 && parsedSettings?.data) {
-          licenseData = parsedSettings.data;
-        }
-        if (licenseData && licenseData.licenseStatus?.expiry_date) {
-          const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
-          const currentDate = new Date();
-          const expiryUTC = Date.UTC(
-            expiryDate.getUTCFullYear(),
-            expiryDate.getUTCMonth(),
-            expiryDate.getUTCDate(),
-          );
-          const currentUTC = Date.UTC(
-            currentDate.getUTCFullYear(),
-            currentDate.getUTCMonth(),
-            currentDate.getUTCDate(),
-          );
+    try {
+      const parsedSettings = JSON.parse(storedSettings);
+      const licenseData = parsedSettings?.data?.licenseStatus
+        ? parsedSettings.data
+        : parsedSettings?.licenseStatus
+          ? parsedSettings
+          : parsedSettings?.statusCode === 200 && parsedSettings?.data
+            ? parsedSettings.data
+            : null;
 
-          const timeDiff = expiryUTC - currentUTC;
-          const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-          const formatDateDDMMYYYY = (dateObj) => {
-            const day = String(dateObj.getUTCDate()).padStart(2, "0");
-            const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
-            const year = dateObj.getUTCFullYear();
-            return `${day}-${month}-${year}`;
-          };
-          if (daysLeft <= 30 && isLicenseExpiryFlag) {
-            setLicenseInfo({
-              daysLeft,
-              expiryDate: formatDateDDMMYYYY(expiryDate),
-              companyName: licenseData.name || "Your Company",
-            });
-            setShowLicensePopup(true);
-          }
+      if (licenseData?.licenseStatus?.expiry_date) {
+        const expiryDate = new Date(licenseData.licenseStatus.expiry_date);
+        const currentDate = new Date();
+        const expiryUTC = Date.UTC(
+          expiryDate.getUTCFullYear(),
+          expiryDate.getUTCMonth(),
+          expiryDate.getUTCDate(),
+        );
+        const currentUTC = Date.UTC(
+          currentDate.getUTCFullYear(),
+          currentDate.getUTCMonth(),
+          currentDate.getUTCDate(),
+        );
+        const daysLeft = Math.ceil((expiryUTC - currentUTC) / (1000 * 3600 * 24));
+
+        const formatDateDDMMYYYY = (dateObj) => {
+          const day = String(dateObj.getUTCDate()).padStart(2, "0");
+          const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+          const year = dateObj.getUTCFullYear();
+          return `${day}-${month}-${year}`;
+        };
+
+        if (daysLeft <= 30 && isLicenseExpiryFlag) {
+          setLicenseInfo({
+            daysLeft,
+            expiryDate: formatDateDDMMYYYY(expiryDate),
+            companyName: licenseData.name || "Your Company",
+          });
+          setShowLicensePopup(true);
         }
-      } catch (err) {
-        console.error("Error checking license expiry:", err);
       }
+    } catch (err) {
+      console.error("Error checking license expiry:", err);
     }
   };
+
   const handleLicensePopupClose = () => {
     setShowLicensePopup(false);
     localStorage.setItem("is_license_expiry", "false");
@@ -117,6 +147,7 @@ const Dashboard = () => {
       scenario: "/scenarios",
       event: "/events",
       usersession: "/user-sessions",
+      labs: "/labs",
     };
 
     const route = routeMap[viewName];
@@ -124,11 +155,110 @@ const Dashboard = () => {
       router.push(route);
     }
   };
-  const rowData = geDashboardListData || {};
+
+  const scenarioCountTotal =
+    rowData?.scenarioCounts?.reduce((acc, curr) => acc + Number(curr?.total_scenarios || 0), 0) ?? 0;
+  const scenarioPublishedTotal =
+    rowData?.scenarioCounts?.reduce((acc, curr) => acc + Number(curr?.published_scenarios || 0), 0) ?? 0;
+  const runningSessionTotal = Number(rowData?.sessionStats?.running_sessions || 0);
+  const vmTotals = rowData?.vmStatsTotals || [];
+
+  const cards = [
+    {
+      title: "Total SIMUser",
+      value: rowData?.learnerCounts?.totalaccounts || 0,
+      helper: `${rowData?.learnerCounts?.active_verified_accounts || 0} active & verified`,
+      icon: "mdi mdi-account-multiple",
+      tone: "primary",
+      onClick: () => handleCardClick("learner"),
+    },
+    ...(userType !== "Instructor"
+      ? [
+          {
+            title: "Total SIMManager",
+            value: rowData?.instructorCounts?.total_instructors || 0,
+            helper: `${rowData?.instructorCounts?.active_verified_instructors || 0} active & verified`,
+            icon: "mdi mdi-account-multiple",
+            tone: "warning",
+            onClick: () => handleCardClick("instructor"),
+          },
+          {
+            title: "Total SIMMaster",
+            value: rowData?.adminStats?.total_admins || 0,
+            helper: `${rowData?.adminStats?.active_admins || 0} active admins`,
+            icon: "mdi mdi-account-multiple",
+            tone: "danger",
+            onClick: () => handleCardClick("adminuser"),
+          },
+        ]
+      : []),
+    {
+      title: "Total Event Count",
+      value: rowData?.eventStats?.total_events || 0,
+      helper: `${rowData?.eventStats?.completed_events || 0} completed`,
+      icon: "fa fa-calendar",
+      tone: "warning",
+      onClick: () => handleCardClick("event"),
+    },
+    {
+      title: "Total Component",
+      value: rowData?.componentStats?.total_components || 0,
+      helper: `${rowData?.componentStats?.active_components || 0} active components`,
+      icon: "fa fa-cubes",
+      tone: "success",
+      onClick: () => handleCardClick("component"),
+    },
+    {
+      title: "Total Network",
+      value: rowData?.networkStats?.total_networks || 0,
+      helper: `${rowData?.networkStats?.available_networks || 0} available networks`,
+      icon: "fa fa-podcast",
+      tone: "info",
+      onClick: () => handleCardClick("network"),
+    },
+    {
+      title: "Total Scenarios",
+      value: scenarioCountTotal,
+      helper: `${scenarioPublishedTotal} published scenarios`,
+      icon: "fa fa-cube",
+      tone: "primary",
+      onClick: () => handleCardClick("scenario"),
+    },
+    {
+      title: "Running User Sessions",
+      value: runningSessionTotal,
+      helper: `${Number(rowData?.sessionStats?.pause_resume_count || 0)} lifecycle events`,
+      icon: "fa fa-server",
+      tone: "warning",
+      onClick: () => handleCardClick("usersession"),
+    },
+    {
+      title: "Scenario Exports",
+      value: rowData?.scenarioExportStats?.total_exports || 0,
+      helper: `${rowData?.scenarioExportStats?.completed_exports || 0} completed`,
+      icon: "fa fa-file-archive-o",
+      tone: "success",
+      onClick: () => handleCardClick("scenario"),
+      accent: `${rowData?.scenarioExportStats?.running_exports || 0} in progress`,
+    },
+    {
+      title: "Lab Sessions",
+      value: rowData?.labSessionStats?.total_labs || 0,
+      helper: `${rowData?.labSessionStats?.active_labs || 0} active`,
+      icon: "fa fa-flask",
+      tone: "danger",
+      onClick: () => handleCardClick("labs"),
+      accent: `${rowData?.labSessionStats?.inactive_labs || 0} inactive`,
+    },
+  ];
+
+  const featured = cards.slice(0, 3);
+  const secondary = cards.slice(3, 6);
+  const tertiary = cards.slice(6);
+
   return (
     <>
       <Seo title="Dashboard" />
-      {/* Add License Expiry Popup with props */}
       {showLicensePopup && (
         <LicenseExpiryPopup
           show={showLicensePopup}
@@ -137,495 +267,124 @@ const Dashboard = () => {
         />
       )}
 
-      <Container fluid>
-        <Row className="g-4">
+      <Container fluid className="dashboard-shell">
+        <div className="dashboard-hero">
+          <div className="dashboard-hero-copy">
+            <Badge className="dashboard-hero-badge">Operations overview</Badge>
+            <h1>Dashboard</h1>
+            <p>
+              A cleaner command center for learners, scenarios, exports, labs, and the infrastructure behind them.
+            </p>
+          </div>
+          <div className="dashboard-hero-metrics">
+            <div><span>Scenarios</span><strong>{scenarioCountTotal}</strong></div>
+            <div><span>Components</span><strong>{rowData?.componentStats?.total_components || 0}</strong></div>
+            <div><span>Labs</span><strong>{rowData?.labSessionStats?.total_labs || 0}</strong></div>
+          </div>
+        </div>
+
+        <Row className="g-4 gy-2 dashboard-grid">
+
+           {featured.map((card, index) => (
+            <Col key={card.title} md={4} sm={12} className="d-flex">
+              <StatCard {...card} stagger={180 + index * 70} />
+            </Col>
+          ))}
+
+
+          {secondary.map((card, index) => (
+            <Col key={card.title} md={4} sm={12} className="d-flex">
+              <StatCard {...card} stagger={180 + index * 70} />
+            </Col>
+          ))}
+
+          {tertiary.map((card, index) => (
+            <Col key={card.title} md={6} sm={12} className="d-flex">
+              <StatCard {...card} stagger={360 + index * 70} />
+            </Col>
+          ))}
+
           <Col md={12}>
-            <Row className="mb-2"></Row>
-            <Row className="row-sm">
-              <Col sm={12} md={6} lg={6} xl={userType === "Instructor" ? 4 : 3}>
+            <Card className="dashboard-panel dashboard-vm-panel dashboard-animate-card">
+              <Card.Body>
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-panel-kicker">System capacity</p>
+                    <h3>Virtual resources</h3>
+                  </div>
+                  <Badge bg="light" text="dark" className="dashboard-chip">
+                    Live totals
+                  </Badge>
+                </div>
+                <Row className="g-3">
+                  <Col xl={4} lg={4} sm={12}>
+                    <div className="dashboard-metric-block">
+                      <span>Total Virtual CPU</span>
+                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_cores || 0), 0)}</strong>
+                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                    </div>
+                  </Col>
+                  <Col xl={4} lg={4} sm={12}>
+                    <div className="dashboard-metric-block">
+                      <span>Total Virtual Memory</span>
+                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_memory || 0), 0)}</strong>
+                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                    </div>
+                  </Col>
+                  <Col xl={4} lg={4} sm={12}>
+                    <div className="dashboard-metric-block">
+                      <span>Total Storage Size</span>
+                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_storage || 0), 0)}</strong>
+                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col md={12}>
+            <div className="dashboard-section-header mt-3">
+              <div>
+                <h3>Web widgets</h3>
+              </div>
+            </div>
+          </Col>
+
+          {webBrowserWidgets.length > 0 ? (
+            webBrowserWidgets.map((widget, index) => (
+              <Col key={widget.webbrowserwidgetid} md={12} className="d-flex">
                 <Card
-                  className="custom-card"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleCardClick("learner")}
+                  className="dashboard-panel dashboard-widget-panel dashboard-animate-card w-100"
+                  style={{ animationDelay: `${index * 80}ms` }}
                 >
                   <Card.Body>
-                    <div className="card-order">
-                      <label className="main-content-label mb-3 pt-1">
-                        Total SIMUser
-                      </label>
-                      <h2 className="text-end card-item-icon card-icon">
-                        <i className="mdi mdi-account-multiple float-start text-primary"></i>
-                        <span className="font-weight-bold">
-                          {rowData?.learnerCounts?.totalaccounts || 0}
-                        </span>
-                      </h2>
-                      <p className="mb-0 text-success">
-                        Active & Verified
-                        <span className="float-end">
-                          {rowData?.learnerCounts?.active_verified_accounts ||
-                            0}
-                        </span>
-                      </p>
+                    <div className="dashboard-widget-head">
+                      <div>
+                        <p className="dashboard-panel-kicker"></p>
+                        <h4 title={widget.widget_name}>{widget.widget_name}</h4>
+                      </div>
+                    </div>
+                    <div className="dashboard-iframe-wrap">
+                      <iframe
+                        src={widget.widget_url.startsWith("http") ? widget.widget_url : `https://${widget.widget_url}`}
+                        title={widget.widget_name}
+                        className="w-100 h-100 border-0"
+                      />
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-              {/* <!-- COL END --> */}
-
-              {userType !== "Instructor" ? (
-                <>
-                  {/* Instructor Card */}
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("instructor")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total SIMManager
-                          </label>
-                          <h2 className="text-end">
-                            <i className="mdi mdi-account-multiple float-start text-warning"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.instructorCounts?.total_instructors ||
-                                0}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Active & Verified
-                            <span className="float-end">
-                              {rowData?.instructorCounts
-                                ?.active_verified_instructors || 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  {/* Admin Card */}
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("adminuser")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total SIMMaster
-                          </label>
-                          <h2 className="text-end">
-                            <i className="mdi mdi-account-multiple float-start text-danger"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.adminStats?.total_admins || 0}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Active
-                            <span className="float-end">
-                              {rowData?.adminStats?.active_admins || 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  {/* Event Count  */}
-
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("event")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Event Count
-                          </label>
-                          <h2 className="text-end">
-                            <i className="ti ti-dropbox float-start text-secondary"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.eventStats?.total_events || 0}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Completed{" "}
-                            <span className="float-end">
-                              {rowData?.eventStats?.completed_events || 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("component")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Component
-                          </label>
-                          <h2 className="text-end">
-                            <i className="fa fa-cubes float-start text-secondary"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.componentStats?.total_components || 0}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Active LXC & QMU{" "}
-                            <span className="float-end">
-                              {rowData?.componentStats?.active_components || 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  {/* 2. Total Network Count */}
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("network")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Network
-                          </label>
-                          <h2 className="text-end">
-                            <i className="fa fa-podcast float-start text-primary"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.networkStats?.total_networks || 0}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Available Network
-                            <span className="float-end">
-                              {rowData?.networkStats?.available_networks || 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("scenario")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Scenario
-                          </label>
-
-                          <h2 className="text-end">
-                            <i className="fa fa-cube float-start text-info"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr?.total_scenarios || 0),
-                                0,
-                              ) ?? 0}
-                            </span>
-                          </h2>
-
-                          <p className="mb-0 text-success">
-                            Published
-                            <span className="float-end">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr?.published_scenarios || 0),
-                                0,
-                              ) ?? 0}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  {/* 3. Total Running Scenarios */}
-                  <Col sm={12} md={6} lg={6} xl={3}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("usersession")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Running User Session
-                          </label>
-                          <h2 className="text-end">
-                            <i className="	fa fa-server float-start text-mute"></i>
-                            <span className="font-weight-bold">
-                              {Number(
-                                rowData?.sessionStats?.pause_resume_count || 0,
-                              )}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Running{" "}
-                            <span className="float-end">
-                              {Number(
-                                rowData?.sessionStats?.running_sessions || 0,
-                              )}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col md={12}>
-                    <Card className="custom-card p-0">
-                      <Row className="g-0">
-                        {" "}
-                        {/* removes all gutters between columns */}
-                        {/* CPU */}
-                        <Col xl={4} lg={4} sm={12} className="border-end">
-                          <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">
-                              TOTAL VIRTUAL CPU
-                            </label>
-                            <h2 className="d-flex justify-content-between align-items-center">
-                              <i className="fe fe-cpu text-danger"></i>
-                              <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce(
-                                  (acc, curr) =>
-                                    acc + Number(curr.total_cores || 0),
-                                  0,
-                                )}
-                              </span>
-                            </h2>
-                            <p className="mb-0 text-success d-flex justify-content-between">
-                              <span>Status</span>
-                              <span>
-                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
-                              </span>
-                            </p>
-                          </Card.Body>
-                        </Col>
-                        {/* Memory */}
-                        <Col xl={4} lg={4} sm={12} className="border-end">
-                          <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">
-                              TOTAL VIRTUAL MEMORY
-                            </label>
-                            <h2 className="d-flex justify-content-between align-items-center">
-                              <i className="fe fe-box text-warning"></i>
-                              <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce(
-                                  (acc, curr) =>
-                                    acc + Number(curr.total_memory || 0),
-                                  0,
-                                )}
-                              </span>
-                            </h2>
-                            <p className="mb-0 text-success d-flex justify-content-between">
-                              <span>Status</span>
-                              <span>
-                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
-                              </span>
-                            </p>
-                          </Card.Body>
-                        </Col>
-                        {/* Storage */}
-                        <Col xl={4} lg={4} sm={12}>
-                          <Card.Body className="d-flex flex-column justify-content-between h-100">
-                            <label className="main-content-label mb-2 pt-1">
-                              TOTAL STORAGE SIZE
-                            </label>
-                            <h2 className="d-flex justify-content-between align-items-center">
-                              <i className="fe fe-hard-drive text-success"></i>
-                              <span className="font-weight-bold">
-                                {rowData?.vmStatsTotals?.reduce(
-                                  (acc, curr) =>
-                                    acc + Number(curr.total_storage || 0),
-                                  0,
-                                )}
-                              </span>
-                            </h2>
-                            <p className="mb-0 text-success d-flex justify-content-between">
-                              <span>Status</span>
-                              <span>
-                                {rowData?.vmStatsTotals?.[0]?.status || "N/A"}
-                              </span>
-                            </p>
-                          </Card.Body>
-                        </Col>
-                      </Row>
-                    </Card>
-                  </Col>
-
-                  {/* <Row className="row-sm"> */}
-                  <Col md={12}>
-                    {webBrowserWidgets?.length > 0 ? (
-                      webBrowserWidgets.map((widget) => (
-                        <Card
-                          key={widget.webbrowserwidgetid}
-                          className="mb-4 shadow-sm"
-                        >
-                          <Card.Body>
-                            <h6
-                              className="mb-3 text-truncate"
-                              title={widget.widget_name}
-                            >
-                              {widget.widget_name}
-                            </h6>
-
-                            <div
-                              className="position-relative overflow-hidden border rounded"
-                              style={{ height: "900px" }}
-                            >
-                              <iframe
-                                src={
-                                  widget.widget_url.startsWith("http")
-                                    ? widget.widget_url
-                                    : `https://${widget.widget_url}`
-                                }
-                                title={widget.widget_name}
-                                className="w-100 h-100 border-0"
-                              />
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      ))
-                    ) : (
-                      <p className="text-muted text-center"></p>
-                    )}
-                  </Col>
-                  {/* </Row> */}
-                </>
-              ) : (
-                <>
-                  {/* Instructor-Specific: Total Scenarios Card */}
-                  <Col sm={12} md={6} lg={6} xl={4}>
-                    <Card className="custom-card">
-                      <Card.Body
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleCardClick("scenario")}
-                      >
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total Scenarios
-                          </label>
-                          <h2 className="text-end">
-                            <i className="mdi mdi-file-document float-start text-info"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.total_scenarios || 0),
-                                0,
-                              )}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Published{" "}
-                            <span className="float-end">
-                              {rowData?.scenarioCounts?.reduce(
-                                (acc, curr) =>
-                                  acc + Number(curr.published_scenarios || 0),
-                                0,
-                              )}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  {/* Instructor-Specific: Total User Sessions Card */}
-                  <Col sm={12} md={6} lg={6} xl={4}>
-                    <Card
-                      className="custom-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleCardClick("usersession")}
-                    >
-                      <Card.Body>
-                        <div className="card-widget">
-                          <label className="main-content-label mb-3 pt-1">
-                            Total User Sessions
-                          </label>
-                          <h2 className="text-end">
-                            <i className="mdi mdi-timer-sand float-start text-dark"></i>
-                            <span className="font-weight-bold">
-                              {rowData?.runningSessions?.reduce(
-                                (sum, s) =>
-                                  sum + Number(s.running_sessions || 0),
-                                0,
-                              )}
-                            </span>
-                          </h2>
-                          <p className="mb-0 text-success">
-                            Running{" "}
-                            <span className="float-end">
-                              {rowData?.runningSessions?.reduce(
-                                (sum, s) =>
-                                  sum + Number(s.running_sessions || 0),
-                                0,
-                              )}
-                            </span>
-                          </p>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-
-                  <Col md={12}>
-                    {webBrowserWidgets?.length > 0 ? (
-                      webBrowserWidgets.map((widget) => (
-                        <Card
-                          key={widget.webbrowserwidgetid}
-                          className="mb-4 shadow-sm"
-                        >
-                          <Card.Body>
-                            <h6
-                              className="mb-3 text-truncate"
-                              title={widget.widget_name}
-                            >
-                              {widget.widget_name}
-                            </h6>
-
-                            <div
-                              className="position-relative overflow-hidden border rounded"
-                              style={{ height: "300px" }}
-                            >
-                              <iframe
-                                src={
-                                  widget.widget_url.startsWith("http")
-                                    ? widget.widget_url
-                                    : `https://${widget.widget_url}`
-                                }
-                                title={widget.widget_name}
-                                className="w-100 h-100 border-0"
-                              />
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      ))
-                    ) : (
-                      <p className="text-muted text-center"></p>
-                    )}
-                  </Col>
-                </>
-              )}
-            </Row>
-          </Col>
+            ))
+          ) : (
+            <Col md={12}>
+              <Card className="dashboard-panel dashboard-empty-panel w-100">
+                <Card.Body>No active widgets are configured yet.</Card.Body>
+              </Card>
+            </Col>
+          )}
         </Row>
-      </Container> 
+      </Container>
     </>
   );
 };

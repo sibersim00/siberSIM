@@ -13,7 +13,6 @@ import {
 import { useFormik } from "formik";
 import { toast, ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/router";
 import { error } from "../../../shared/data/common/vaidationMessage/formValidationMsg";
 import {
   getListOfUser,
@@ -38,7 +37,6 @@ function ImportAdUser({ impUser, setimpUser }) {
     
   const { saveImportAdUserResp, errorData } = useSelector(
     (state) => (
-      console.log("saveImportAdUserResp", state),
       {
         saveImportAdUserResp: state.user?.saveImportUserResp,
         errorData: state && state.user && state.user.error,
@@ -126,16 +124,6 @@ function ImportAdUser({ impUser, setimpUser }) {
     suppressScrollOnNewData: true,
   };
 
-const onGridReady = useCallback((params) => {
-  gridRef.current = params.api;
-
-  // Set correct height on first load as well
-  const initialPageSize = params.api.paginationGetPageSize();
-  const totalRows = params.api.getDisplayedRowCount();
-  const effectiveRows = Math.min(initialPageSize, totalRows);
-  setPageSize(effectiveRows);
-}, []);
-  
     // Fires when page size changes via the built-in dropdown
    const onPaginationChanged = useCallback((params) => {
   if (params.api) {

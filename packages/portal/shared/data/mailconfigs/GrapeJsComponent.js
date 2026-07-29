@@ -121,8 +121,6 @@ const EmailTemplateBuilder = (props) => {
       const theHtml = editor.getHtml();
       const el = document.createElement("span");
       const theCss = editor.getCss();
-      // console.log(theHtml, "theHtml");
-
       // Combine HTML and CSS
       const combinedCode = `<style>${theCss}</style>${theHtml}`;
       setInitialHtml(combinedCode);

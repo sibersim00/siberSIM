@@ -86,8 +86,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
       setChatMessages(uniqueArr);
     }
   }, [getRefreshMsg]);
-console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
-
   const handleSend = () => {
     // if (!chatInput.trim()) return;
     if (!chatInput.replace(/\s/g, "")) return;
@@ -127,8 +125,6 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
   const handleRefresh = () => {
     if (chatMessages?.length) {
       const lastchatobject = chatMessages[chatMessages.length - 1];
-      console.log("lastchatobjectlastchatobject", lastchatobject);
-
       const payload = {
         learner_id: lastchatobject.learner_id,
         scenarioid: lastchatobject.scenarioid,

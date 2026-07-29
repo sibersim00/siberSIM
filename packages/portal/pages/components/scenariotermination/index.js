@@ -41,22 +41,6 @@ const ManageScenarioTermination = () => {
       state?.scenarioManage?.saveTerminationeventslogs?.data || [],
     hasGetterminateFailedEvent: state?.scenarioManage?.saveTerminationevents,
   }));
-
-  // Fetch logs when tab changes
-  // useEffect(() => {
-  //   if (activeTab === "scenario") {
-  //     setLoadingScenarioTab(true);
-  //     dispatch(terminateFailedLogs()).finally(() =>
-  //       setLoadingScenarioTab(false)
-  //     );
-  //   } else {
-  //     setLoadingEventTab(true);
-  //     dispatch(terminateFailedEventLogs()).finally(() =>
-  //       setLoadingEventTab(false)
-  //     );
-  //   }
-  // }, [dispatch, activeTab]);
-
   useEffect(() => {
   const fetchLogs = async () => {
     try {
@@ -92,9 +76,6 @@ const logs = activeTab === "scenario"
       dispatch(clearterminateFailedScenario());
     }
   }, [hasGetterminateFailedScenario, dispatch]);
-
-  // Success toast for Event
-  
   useEffect(() => {
     if (hasGetterminateFailedEvent?.statusCode === 200) {
       toast.success(hasGetterminateFailedEvent.message, {

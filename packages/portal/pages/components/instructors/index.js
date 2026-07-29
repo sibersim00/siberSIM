@@ -66,6 +66,7 @@ const Instructors = () => {
   const {
     hasGetinstructorSucc,
     addInstructorData,
+    isLoading,
     editInstructorData,
     editStatusUserResData,
     confirmationRedData,
@@ -78,7 +79,8 @@ const Instructors = () => {
         state.InstructorData &&
         state.InstructorData.listinstructorData &&
         state.InstructorData.listinstructorData.data,
-
+      isLoading:
+        state && state.InstructorData && state.InstructorData.isLoading,
       addInstructorData:
         state && state.InstructorData && state.InstructorData.addInstructorData,
       editInstructorData:
@@ -827,7 +829,20 @@ const Instructors = () => {
         <Col md={12}>
           {view == "card" ? (
             <>
-              {gridData && gridData.length > 0 ? (
+              {isLoading ? (
+                <Row>
+                  <Col sm={12}>
+                    <Card className="custom-card">
+                      <Card.Body className="d-flex align-items-center justify-content-center" style={{ minHeight: "70vh" }}>
+                        <div className="text-center">
+                          <div className="spinner-border text-primary" role="status" aria-label="Loading" />
+                          <h5 className="mt-3 mb-0">Loading...</h5>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              ) : gridData && gridData.length > 0 ? (
                 <Row className="row-sm">
                   {gridData.map((item, index) => {
                     const isValidMobile =
@@ -839,8 +854,8 @@ const Instructors = () => {
                     const mobileDisplay = isValidMobile ? item.mobile : "NA";
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team">
-                          <Card.Body>
+                        <Card className="card custom-card our-team" style={{ minHeight: "340px", height: "340px" }}>
+                          <Card.Body className="d-flex flex-column">
                             <div className="picture avatar-lg online text-center">
                               <div className="rounded-circle">
                                 <img alt="avatar" src={dummy_profile.src} />
@@ -1000,7 +1015,7 @@ const Instructors = () => {
                                 // backgroundColor: "#f6f7fb",
                               }}
                             >
-                              <Card.Body>
+                              <Card.Body className="d-flex flex-column">
                                 <div className="text-center mt-5">
                                   <img
                                     src={crossEvalicon.src}
@@ -1040,3 +1055,9 @@ const Instructors = () => {
 
 Instructors.layout = "Contentlayout";
 export default Instructors;
+
+
+
+
+
+

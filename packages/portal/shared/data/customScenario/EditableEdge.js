@@ -42,8 +42,6 @@ const EditableEdge = ({
   };
 
   const [label, setLabel] = useState(getInitialLabel);
-console.log('parameter',label)
-
   const saveLabel = () => {
     setIsEditing(false);
     setEdges((eds) =>

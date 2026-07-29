@@ -50,7 +50,8 @@ const VM_PROCESSES = {
   RESTORE_VM:"Restore VM",
   CHECK_VMID_STATUS:"Check vmid status",
   MIGRATE_VM:"Migrate VM",
-  WAIT_FOR_TASK:"Status of VM"
+  WAIT_FOR_TASK:"Status of VM",
+  GET_NODE_NETWORK_INFO:"Get node network information"
 };
 
 module.exports = {

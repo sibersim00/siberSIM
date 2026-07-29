@@ -101,7 +101,6 @@ const TreeViews = (props) => {
         state.roles.addIdRoleMenu,
     };
   });
-console.log("TreeDatas",TreeDatas)
   useEffect(() => {
     if(updateTreeDatas?.statusCode === 200){
       toast.success(
@@ -149,7 +148,6 @@ console.log("TreeDatas",TreeDatas)
   }, [TreeDatas]);
 
   const renderTreeItems = (nodes, parentId = undefined) => {
-    console.log("nodes, parentId",nodes, parentId)
     if (!nodes || !Array.isArray(nodes)) {
       return null;
     }

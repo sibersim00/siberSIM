@@ -52,6 +52,7 @@ import { verifylearnerData } from "../../../shared/redux/slices/authentication/A
 
 import * as XLSX from "xlsx";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
+import ImportNormalUsers from './import-normalusers';
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
@@ -89,6 +90,7 @@ const Normaluser = () => {
        const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT + 4; // +4 for borders
   const {
     listUserData,
+    isLoading,
     addUserData,
     editUserData,
     editStatusUserResData,
@@ -105,6 +107,8 @@ const Normaluser = () => {
         state.normalUSerData &&
         state.normalUSerData.getNormalusersData &&
         state.normalUSerData.getNormalusersData.data,
+      isLoading:
+        state && state.normalUSerData && state.normalUSerData.isLoading,
       addUserData:
         state &&
         state.normalUSerData &&
@@ -762,21 +766,29 @@ const Normaluser = () => {
       setIsLoadingMore(false);
     }, 100);
   };
+const observerInstance = useRef(null);
 
-  const observerRef = useCallback(
-    (node) => {
-      if (!node) return;
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore();
-        }
-      });
-      observer.observe(node);
-      return () => observer.disconnect();
-    },
-    [handleLoadMore],
-  );
+const observerRef = useCallback(
+  (node) => {
+    if (observerInstance.current) {
+      observerInstance.current.disconnect();
+    }
+    if (!node) return;
+    observerInstance.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        handleLoadMore();
+      }
+    });
+    observerInstance.current.observe(node);
+  },
+  [handleLoadMore],
+);
 
+useEffect(() => {
+  return () => {
+    if (observerInstance.current) observerInstance.current.disconnect();
+  };
+}, []);
 
   return (
     <>
@@ -851,7 +863,15 @@ const Normaluser = () => {
                         Inactive
                       </CustomToggleButton>
                     </ToggleButtonGroup>
-                    &nbsp;&nbsp; &nbsp;
+                     &nbsp;&nbsp;
+                    <Button
+                      type='button'
+                      variant='outline-warning'
+                      onClick={() => setOpenImportModal(true)}
+                    >
+                      <i className='fe fe-upload me-1'></i> Import
+                    </Button>
+                    &nbsp;&nbsp;
                     <Button
                       type="button"
                       variant="outline-info"
@@ -859,7 +879,7 @@ const Normaluser = () => {
                     >
                       <i className="fa fa-file-excel-o"></i> Export
                     </Button>
-                    &nbsp;
+                    &nbsp;&nbsp;
                     <Button
                       type="button"
                       variant="outline-primary"
@@ -914,7 +934,20 @@ const Normaluser = () => {
         <Col md={12}>
           {view == "card" ? (
             <>
-              {gridData && gridData.length > 0 ? (
+              {isLoading ? (
+                <Row>
+                  <Col sm={12}>
+                    <Card className="custom-card">
+                      <Card.Body className="d-flex align-items-center justify-content-center" style={{ minHeight: "70vh" }}>
+                        <div className="text-center">
+                          <div className="spinner-border text-primary" role="status" aria-label="Loading" />
+                          <h5 className="mt-3 mb-0">Loading...</h5>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              ) : gridData && gridData.length > 0 ? (
                 <>
                   <Row className="row-sm">
                     {gridData.map((item, index) => {
@@ -932,8 +965,8 @@ const Normaluser = () => {
                           md={12 / columnsPerRow}
                           className="p-0"
                         >
-                          <Card className="card custom-card our-team">
-                            <Card.Body>
+                          <Card className="card custom-card our-team" style={{ minHeight: "340px", height: "340px" }}>
+                            <Card.Body className="d-flex flex-column">
                               {/* <div className="picture avatar-lg online text-center">
                                 <div
                                   className="rounded-circle pointer"
@@ -1219,9 +1252,9 @@ const Normaluser = () => {
           rowValues={rowValues}
         />
       )}
-      <ImportAdUser
-        impUser={impUser}
-        setimpUser={setimpUser}
+      <ImportNormalUsers
+        show={openImportModal}
+        onHide={() => setOpenImportModal(false)}
         questionData={"questionData"}
       />
     </>
@@ -1230,3 +1263,7 @@ const Normaluser = () => {
 
 Normaluser.layout = "Contentlayout";
 export default Normaluser;
+
+
+
+

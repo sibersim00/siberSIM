@@ -110,11 +110,9 @@ const sidebarFlow = ({
   const [scenarioDropDownData, setScenarioDropDownData] = useState([]);
   const [componentDropDownData, setComponentDropDown] = useState([]);
   const [componentCache, setComponentCache] = useState({});
-  const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
-  const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
-  //  const [drggerdComponent,setDraggedComponent] = useState([]);
+  const [imageNodeData, setImageNodeData] = useState([]);
+  const [droppedImages, setDroppedImages] = useState([]); 
   const [toBeDragComponent, setToBeDragComponent] = useState([]);
-  // States to track selected values
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedScenario, setSelectedScenario] = useState(null);
@@ -261,22 +259,6 @@ const sidebarFlow = ({
       setcopyModal(true);
     }
   };
-
-// useEffect(() => {
-//   if (!getScenarioFlowchart) return;
-
-//   const parsedComponents = JSON.parse(getScenarioFlowchart.components);
-
-//   const normalizedComponents = parsedComponents.map((node) => ({
-//     ...node,
-//     componentid: node.componentid || node.componentId || node.id,
-//     imageUrl: normalizeImageUrl(
-//       node.imageUrl || node.subcategoryimage
-//     ),
-//   }));
-
-//   setImageNodeData(normalizedComponents);
-// }, [getScenarioFlowchart]);
 useEffect(() => {
   if (!getScenarioFlowchart?.components) {
     setImageNodeData([]);
@@ -416,19 +398,6 @@ useEffect(() => {
           }}
           isMulti
           styles={customStyles()}
-        // styles={{
-        //   ...customStyles,
-        //   multiValue: (base) => ({
-        //     ...base,
-        //     overflow: "hidden",
-        //     textOverflow: "ellipsis",
-        //     whiteSpace: "nowrap",
-        //     borderRadius: "2px",
-        //     fontSize: "85%",
-        //     padding: "3px 3px 3px 6px",
-        //     boxSizing: "border-box",
-        //   }),
-        // }}
         />
       </div>
 

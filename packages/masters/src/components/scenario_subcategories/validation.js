@@ -9,6 +9,10 @@ const saveSchema = joi.object({
         "string.base": "Scenario category should be a string",
         "string.empty": "Scenario category cannot be empty",
     }),
+    parentscenariocategoryid: joi.number().strict().optional().messages({
+        "number.base": "Parent scenario category ID should be a number",
+        "any.required": "Parent scenario category is required",
+    })
 });
 const updateSchema = joi.object({
     categoryname: joi.string().trim().required().messages({
@@ -19,7 +23,12 @@ const updateSchema = joi.object({
     parentscenariocategoryid: joi.number().strict().optional().messages({
         "number.base": "Parent scenario category ID should be a number",
         "any.required": "Parent scenario category is required",
-    })
+    }),
+        scenariocategoryid: joi.number().integer().required().messages({
+        "number.base": "Scenario category ID should be an integer",
+        "number.empty": "Scenario category ID cannot be empty",
+        "any.required": "Scenario category ID is required",
+    }),
 });
 const deleteSchema = joi.object({
     scenariocategoryid: joi.number().integer().required().messages({

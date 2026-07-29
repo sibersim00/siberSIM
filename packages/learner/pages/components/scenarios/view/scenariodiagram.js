@@ -91,8 +91,11 @@ const COMPONENT_ANIMATION_TYPES = new Set([
   "circle",
   "spiral",
   "leftToRight",
+  "rightToLeft",
   "diagonalTopLeft",
   "diagonalTopRight",
+  "diagonalBottomLeft",
+  "diagonalBottomRight",
 ]);
 
 const getConfiguredAnimationOffset = (
@@ -161,10 +164,25 @@ const getConfiguredAnimationOffset = (
   if (type === "leftToRight") {
     return { x: distanceProgress * horizontalTravel, y: 0 };
   }
+  if (type === "rightToLeft") {
+    return { x: -distanceProgress * horizontalTravel, y: 0 };
+  }
   if (type === "diagonalTopLeft") {
     return {
       x: distanceProgress * horizontalTravel,
       y: distanceProgress * verticalTravel,
+    };
+  }
+  if (type === "diagonalBottomLeft") {
+    return {
+      x: distanceProgress * horizontalTravel,
+      y: -distanceProgress * verticalTravel,
+    };
+  }
+  if (type === "diagonalBottomRight") {
+    return {
+      x: -distanceProgress * horizontalTravel,
+      y: -distanceProgress * verticalTravel,
     };
   }
   return {
@@ -590,8 +608,11 @@ const ScenarioDiagram = ({
               basePositionsRef.current.get(node.id) || node.position;
             const crossesCanvas = [
               "leftToRight",
+              "rightToLeft",
               "diagonalTopLeft",
               "diagonalTopRight",
+              "diagonalBottomLeft",
+              "diagonalBottomRight",
             ].includes(configuredAnimation?.type);
             const animationAnchor =
               crossesCanvas && canvasCentre

@@ -206,7 +206,6 @@ const ImportFaqsList = ({ openImportModal, handleImportModal, showListImort, set
 
     const onGridReady = (params) => {
         setGridApi(params.api);
-        console.log("params.data.question", params)
     };
 
     const gridOptions = {

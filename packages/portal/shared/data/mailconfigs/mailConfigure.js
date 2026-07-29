@@ -102,8 +102,6 @@ const MailConfigure = (props) => {
   const handleOneClick = (flag) => {
     setOneClick(flag);
   };
-
-  console.log(getTemplateDataFromLocal,"getTemplateDataFromLocal")
   useEffect(() => {
     if (errorData?.statusCode) {
       errorData.errors && errorData.errors.length > 0

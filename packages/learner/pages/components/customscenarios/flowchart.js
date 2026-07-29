@@ -29,7 +29,7 @@ import {
 } from "../../../shared/redux/slices/customScenarios/customscenarioManage";
 import "../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
-import Router, { useRouter } from "next/router";
+import { useRouter } from "next/router";
 import {
   clearSingleScenarios,
   getScenarioList,
@@ -48,7 +48,6 @@ const DnDFlow = ({
 
   const reactFlowWrapper = useRef(null);
   const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
-  const { push } = useRouter();
   const [initialNodes, setInitialNodes] = useState(() => {
     const nodesArray = [];
 
@@ -80,20 +79,9 @@ const DnDFlow = ({
     return `${window.location.origin}${url}`;
   };
 
-  const portPositionMap = {
-    net0: Position.Right,
-    net1: Position.Bottom,
-    net2: Position.Left,
-    net3: Position.Top,
-  };
   //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    
-    // const networkPorts = data.networkport || [];
-    // const portKeys = networkPorts.flatMap((obj) => Object.keys(obj)).sort();
-    // //  const portKeys = Array.from({ length: 12 }, (_, i) => `net${i}`); // Or based on data
-            let portKeys = [];
-
+    let portKeys = [];
     if (Array.isArray(data.networkport)) {
       portKeys = data.networkport
         .flatMap((obj) =>

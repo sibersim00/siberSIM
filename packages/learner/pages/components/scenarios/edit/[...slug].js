@@ -1530,7 +1530,7 @@ const iconMap = {
               // alert("Enter valid vmbr (700–1000)");
               // toast.error(
               //             <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-              //               Enter valid number (50–999)
+              //               Enter valid a number (50–999)
               //             </p>,
               //             {
               //               position: toast.POSITION.TOP_RIGHT,
@@ -2047,13 +2047,11 @@ const onConnectEnd = () => {
       // setEdges([]);
     }
   }, [addNetwordId]);
-  console.log("addNetwordIdaddNetwordIdaddNetwordIdaddNetwordId",addNetwordId);
-  
   useEffect(() => {
     if (addNetwordId?.statusCode === 400) {
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          Ggggggggggggggggggggggg
+          Added Successfully
         </p>,
         {
           position: toast.POSITION.TOP_RIGHT,

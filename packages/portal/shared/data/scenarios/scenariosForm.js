@@ -74,7 +74,6 @@ const ScenarioForm = (props) => {
   const [initialHtml, setInitialHtml] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { t, i18n } = useTranslation();
-  //   const banner_path = FilePath.componenet_subcategories;
   const category_path = FilePath.scenario_instruction;
   const scenario_path = FilePath.scenario_image;
   const ismulti = false;
@@ -261,9 +260,6 @@ useEffect(() => {
       scenariocategoryid: cat?.scenariocategoryid,
     }));
     setCatDropDownData(temp);
-    console.log("catDropDownDatacatDropDownDatacatDropDownData",catDropDownData);
-    
-
     if (!categoryPrefilledRef.current && rowValues?.scenariocategoryid) {
       const selectedcategory = temp.find(
         (obj) => obj?.scenariocategoryid === rowValues?.scenariocategoryid,
@@ -508,8 +504,6 @@ useEffect(() => {
       ? formValidation.values.scenarioimage.split(",")
       : [formValidation.values.scenarioimage];
   }, [formValidation.values.scenarioimage, ismulti]);
-  console.log("RENDER - scenariocategoryids value:", formValidation.values.scenariocategoryids);
-
   return (
     <>
       <Seo title="Scenario" />

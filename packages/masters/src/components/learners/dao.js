@@ -1,7 +1,6 @@
 const MailTemplate = require("../../utils/mailUtility");
 const bcrypt = require("bcryptjs");
 const constants = require("../../services/proxmox/constants");
-const ProxMoxService = require("../../services/proxmox/ProxMoxService");
 const { v4: uuidv4 } = require("uuid");
 const generateUUID = () => uuidv4();
 
@@ -495,7 +494,70 @@ const mailConfirmation = ({ db, validation }) => async (learner_id) => {
 
 }
 
-const learnerImport =
+const normalizeImportRow = (row, index) => ({
+  rowNumber: row.rowNumber || index + 2,
+  firstname: String(row.firstname || '').trim(),
+  lastname: String(row.lastname || '').trim(),
+  email: String(row.email || '').trim().toLowerCase(),
+  mobile: row.mobile == null ? '' : String(row.mobile).trim(),
+  username: String(row.username || '').trim(),
+  status: row.status || 'Active',
+});
+
+const getExistingImportValues = async (db, field, values) => {
+  if (!values.length) return new Set();
+  const rows = await db.sequelize.query(
+    `SELECT ${field} FROM learners WHERE LOWER(${field}) IN (:values) AND deletedon IS NULL`,
+    {
+      replacements: { values: values.map((value) => value.toLowerCase()) },
+      type: db.sequelize.QueryTypes.SELECT,
+    }
+  );
+  return new Set(rows.map((row) => String(row[field]).toLowerCase()));
+};
+
+const addDuplicateIssues = (row, issues, seen, existingEmails, existingMobiles, existingUsernames) => {
+  const fields = [
+    ['email', row.email.toLowerCase(), existingEmails, 'email'],
+    ['mobile', row.mobile.toLowerCase(), existingMobiles, 'mobile number'],
+    ['username', row.username.toLowerCase(), existingUsernames, 'username'],
+  ];
+  fields.forEach(([field, value, existing, label]) => {
+    if (!value) return;
+    if (existing.has(value)) issues.push({ field, message: `This ${label} is already registered.` });
+    else if (seen[field].has(value)) issues.push({ field, message: `This ${label} is repeated in the file.` });
+    seen[field].add(value);
+  });
+};
+
+const verifyLearnerImport = ({ db, validation }) => async (body) => {
+  const rows = body.map(normalizeImportRow);
+  const emails = [...new Set(rows.map((row) => row.email).filter(Boolean))];
+  const mobiles = [...new Set(rows.map((row) => row.mobile).filter(Boolean))];
+  const usernames = [...new Set(rows.map((row) => row.username).filter(Boolean))];
+  const [existingEmails, existingMobiles, existingUsernames] = await Promise.all([
+    getExistingImportValues(db, 'email', emails),
+    getExistingImportValues(db, 'mobile', mobiles),
+    getExistingImportValues(db, 'username', usernames),
+  ]);
+  const seen = { email: new Set(), mobile: new Set(), username: new Set() };
+  const result = { success: [], errors: [], total: rows.length };
+  const rowSchema = validation.importRowSchema;
+
+  rows.forEach((row) => {
+    const issues = [];
+    const checked = rowSchema.validate(row, { abortEarly: false });
+    if (checked.error) checked.error.details.forEach((detail) => {
+      issues.push({ field: detail.path[0] || 'row', message: detail.message });
+    });
+    addDuplicateIssues(row, issues, seen, existingEmails, existingMobiles, existingUsernames);
+    const verifiedRow = { ...row, issues };
+    result[issues.length ? 'errors' : 'success'].push(verifiedRow);
+  });
+  return result;
+};
+
+const learnerImportLegacy =
   ({ db }) =>
     async ({ body, session_userid }) => {
       try {
@@ -541,7 +603,7 @@ const learnerImport =
 
         // Second Pass: Insert all data if validation passed
         for (const row of body) {
-          const insertQuery = `INSERT INTO learners (learner_uuid, firstname, lastname, email, mobile, username, password, createdby, createdon) 
+          const insertQuery = `INSERT INTO learners (learner_uuid, firstname, lastname, email, mobile, username, password,isverified,is_password_reset, createdby, createdon) 
                            VALUES (UUID(), ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`;
 
           const queryParams = [
@@ -551,6 +613,8 @@ const learnerImport =
             row.mobile,
             row.username,
             password,
+            "Yes",
+            "True",
             createdby,
           ];
 
@@ -575,6 +639,62 @@ const learnerImport =
       }
     };
 
+
+const learnerImport = ({ db, validation }) => async ({ body, session_userid }) => {
+  const verification = await verifyLearnerImport({ db, validation })(body);
+  if (verification.errors.length) {
+    return {
+      statusCode: 400,
+      message: 'Some learners are no longer valid. Review the errors and verify the file again.',
+      data: verification,
+    };
+  }
+  const imported = [];
+  const transaction = await db.sequelize.transaction();
+  try {
+    for (const row of verification.success) {
+      imported.push(await insertImportedLearner(db, row, session_userid, transaction));
+    }
+    await transaction.commit();
+    imported.forEach(({ learnerId, generatedPassword }) => {
+      new MailTemplate(db, 'learner_welcome_email', { learner_id: learnerId, password: generatedPassword });
+    });
+    return {
+      statusCode: 200,
+      message: `${imported.length} learner${imported.length === 1 ? '' : 's'} imported successfully.`,
+      data: { imported: imported.length },
+    };
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error importing learners:', error);
+    throw error;
+  }
+};
+
+const insertImportedLearner = async (db, row, session_userid, transaction) => {
+  const generatedPassword = `${row.firstname}@${row.username}`;
+  const password = await bcrypt.hash(generatedPassword, 10);
+  const [result] = await db.sequelize.query(
+    `INSERT INTO learners (learner_uuid, firstname, lastname, email, mobile, username, password, instructor_id, status, isverified,is_password_reset, createdby, createdon)
+     VALUES (UUID(), :firstname, :lastname, :email, :mobile, :username, :password, :instructor_id, :status, :isverified, :is_password_reset, :createdby, CURRENT_TIMESTAMP)`,
+    {
+      replacements: {
+        firstname: row.firstname, lastname: row.lastname || null, email: row.email,
+        mobile: row.mobile || null, username: row.username, password,
+        instructor_id: session_userid, status: row.status, isverified: "Yes",is_password_reset:"True", createdby: session_userid,
+      },
+      type: db.sequelize.QueryTypes.INSERT,
+      transaction,
+    }
+  );
+  const learnerId = result && result.insertId ? result.insertId : result;
+  await db.sequelize.query(
+    `INSERT INTO learner_instructor_map (learner_id, instructor_id, createdby, createdon)
+     VALUES (:learner_id, :instructor_id, :createdby, CURRENT_TIMESTAMP)`,
+    { replacements: { learner_id: learnerId, instructor_id: session_userid, createdby: session_userid }, transaction }
+  );
+  return { learnerId, generatedPassword };
+};
 
 const getById = ({ db }) => async (learner_uuid) => {
   console.log("uuuuuuuuuuuuuuuuuuuuuuu", learner_uuid)
@@ -919,21 +1039,7 @@ const deleteById =
       }
       return res;
     };
-const generateProxmoxAccessToken = ({ db, payload }) => async (ip_address) => {
-  const proxmox = ProxMoxService(db, payload, ip_address);
-  const result = await proxmox.generateAccessTicket();
-  const ticket = result?.data?.ticket;
-  return {
-    statusCode: result.status === "200" ? 200 : 500,
-    message: result.message,
-    data: ticket
-      ? {
-        ticket,
-        cookie: constants.cookie_prefix + ticket,
-      }
-      : null,
-  };
-};
+
 module.exports = {
   getAll,
   update,
@@ -944,7 +1050,7 @@ module.exports = {
   save,
   saveMappedInstructors,
   learnerImport,
+  verifyLearnerImport,
   deleteById,
   getById,
-  generateProxmoxAccessToken
 };

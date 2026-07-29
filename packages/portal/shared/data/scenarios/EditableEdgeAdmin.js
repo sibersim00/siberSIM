@@ -25,12 +25,10 @@ const EditableEdgeAdmin = ({
     targetPosition,
     borderRadius: 20,
   });
-console.log('allEdgesallEdgesallEdgesallEdges',allEdges)
   const getInitialLabel = () => {
     if (data?.label) return data.label;
     const currentEdge = allEdges.find((e) => e.id === id);
     
-    console.log('allEdges',allEdges)
     const existing = allEdges.find(
       (e) =>
         e.id !== id &&
@@ -53,10 +51,8 @@ console.log('allEdgesallEdgesallEdgesallEdges',allEdges)
   };
 
 const currentEdge = allEdges.find(e => e.id === id);
-console.log("currentEdge",currentEdge);
 
 const shouldAnimate = currentEdge?.isAttacked === "Yes";
-console.log('shouldAnimate', shouldAnimate, allEdges.find(e => e.id === id));
 
 
   return (

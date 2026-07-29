@@ -29,8 +29,6 @@ const FileBrowser = ({ name, sourcepath, uploadpath, ismulti, handleBrowse, exte
         }
       })
       .then((response) => {
-          console.log('selectedfiles',response.data.uploadedFiles);
-          console.log('oldFiles',oldFiles)
           if(oldFiles && !ismulti)
           {
             console.log('Remove function called with source:', oldFiles); 
@@ -52,7 +50,6 @@ const FileBrowser = ({ name, sourcepath, uploadpath, ismulti, handleBrowse, exte
       }
   } 
   const deleteDataAndRefreshUI = async (payload) => {
-    console.log('Browse In Remove',payload)
      // Replace 'your-api-endpoint' with your actual API endpoint
      axios.post(process.env.API_URL_FILEMANAGER+'/fm/delete', payload, {
        headers: {

@@ -34,7 +34,7 @@ const updateProfile = ({ db }) => async (body,learner_sessionid) => {
 
 const changePassword = ({ db, validation }) => async (body, learner_sessionid) => {
   const checkPasswordQuery = `SELECT password FROM learners WHERE learner_id = ?;`;
-  const updatePasswordQuery = `UPDATE learners SET password = ? WHERE learner_id = ?;`;
+  const updatePasswordQuery = `UPDATE learners SET password = ?, is_password_reset = 'False', modifiedon = CURRENT_TIMESTAMP WHERE learner_id = ?;`;
   try {
     if (!learner_sessionid) {
       return { status: false, errors: ["Invalid learner ID."] };
@@ -54,11 +54,16 @@ const changePassword = ({ db, validation }) => async (body, learner_sessionid) =
     if (!body.password) {
       return { status: false, errors: ["New password is required."] };
     }
+    const isSamePassword = await bcrypt.compare(body.password, existingLearner.password);
+    if (isSamePassword) {
+      return { status: false, errors: ['Your new password must be different from your current password.'] };
+    }
     const hashedNewPassword = await bcrypt.hash(body.password, 10);
-    const [result] = await db.sequelize.query(updatePasswordQuery, {
+    const [, affectedRows] = await db.sequelize.query(updatePasswordQuery, {
       replacements: [hashedNewPassword, learner_sessionid],
+      type: db.sequelize.QueryTypes.UPDATE,
     });
-    if (result && result.affectedRows > 0) {
+    if (affectedRows > 0) {
       return {status: true, message: validation?.messages?.password_update || "Password updated successfully.",
       };
     } else {
@@ -70,6 +75,14 @@ const changePassword = ({ db, validation }) => async (body, learner_sessionid) =
     return {status: false, errors: [validation?.messages?.something_wrong_try_later || "Something went wrong. Please try again later."],
     };
   }
+};
+
+const dismissPasswordReset = ({ db }) => async (learner_sessionid) => {
+  await db.sequelize.query(
+    `UPDATE learners SET is_password_reset = 'False', modifiedon = CURRENT_TIMESTAMP WHERE learner_id = :learner_id`,
+    { replacements: { learner_id: learner_sessionid }, type: db.sequelize.QueryTypes.UPDATE }
+  );
+  return { status: true, message: 'The first-login password reminder has been dismissed.' };
 };
 
 const updateProfileImage = ({ db, validation }) => async (body, learner_sessionid) => {
@@ -90,5 +103,6 @@ module.exports = {
   profile,
   updateProfile,
   changePassword,
+  dismissPasswordReset,
   updateProfileImage
 }

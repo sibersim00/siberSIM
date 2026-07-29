@@ -12,6 +12,8 @@ const initialState = {
   getTerminatedgScenarioData: [],
   getCompletedScenarioData: [],
   getStudentDashboardData: [],
+  firstLoginActionLoading: false,
+  firstLoginActionError: null,
 };
 
 
@@ -46,6 +48,21 @@ const slice = createSlice({
     hasGetStudentDashboardListSucc(state,action){
       state.isLoading = false,
       state.getStudentDashboardData = action.payload;
+    },
+    firstLoginActionStart(state) {
+      state.firstLoginActionLoading = true;
+      state.firstLoginActionError = null;
+    },
+    firstLoginActionSuccess(state) {
+      state.firstLoginActionLoading = false;
+      state.firstLoginActionError = null;
+      if (state.getStudentDashboardData?.data) {
+        state.getStudentDashboardData.data.is_password_reset = 'False';
+      }
+    },
+    firstLoginActionFailed(state, action) {
+      state.firstLoginActionLoading = false;
+      state.firstLoginActionError = action.payload;
     },
 
     hasError(state, action) {
@@ -147,6 +164,44 @@ export function clearHasError() {
       dispatch(slice.actions.hasError([]));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+const getApiErrorMessage = (error, fallback) => {
+  const message = error?.response?.data?.message;
+  if (Array.isArray(message)) return message[0] || fallback;
+  return message || error?.response?.data?.errors?.[0] || fallback;
+};
+
+export function changeFirstLoginPassword(payload) {
+  return async (dispatch) => {
+    dispatch(slice.actions.firstLoginActionStart());
+    try {
+      const response = await axios.post(api.changePassword, payload, {
+        suppressErrorToast: true,
+      });
+      dispatch(slice.actions.firstLoginActionSuccess());
+      return { success: true, data: response.data };
+    } catch (error) {
+      const message = getApiErrorMessage(error, 'Unable to change your password. Please try again.');
+      dispatch(slice.actions.firstLoginActionFailed(message));
+      return { success: false, message };
+    }
+  };
+}
+
+export function dismissFirstLoginPassword() {
+  return async (dispatch) => {
+    dispatch(slice.actions.firstLoginActionStart());
+    try {
+      const response = await axios.post(api.dismiss_password_reset, {});
+      dispatch(slice.actions.firstLoginActionSuccess());
+      return { success: true, data: response.data };
+    } catch (error) {
+      const message = getApiErrorMessage(error, 'Unable to dismiss the reminder. Please try again.');
+      dispatch(slice.actions.firstLoginActionFailed(message));
+      return { success: false, message };
     }
   };
 }

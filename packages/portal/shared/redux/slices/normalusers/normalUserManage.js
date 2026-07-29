@@ -14,6 +14,7 @@ const initialState = {
   normaluserInfoResp: [],
   registerNormaluserResp: [],
   saveImportNormaluserResp: [],
+  verifyImportNormaluserResp: null,
   deleteNormalUser: [[]],
   saveMappedInstructorRes: [],
   getMappedInstructorByIdRes: [],
@@ -53,6 +54,10 @@ const slice = createSlice({
     saveImportNormalusersucc(state, action) {
       state.isLoading = false;
       state.saveImportNormaluserResp = action.payload;
+    },
+    verifyImportNormalusersucc(state, action) {
+      state.isLoading = false;
+      state.verifyImportNormaluserResp = action.payload;
     },
     hasGetdeleteNormalUser(state, action) {
       state.isLoading = false;
@@ -221,14 +226,39 @@ export function cleareditUserData() {
   };
 }
 
+export function verifyImportNormaluser(payload) {
+  return async () => {
+    dispatch(slice.actions.startLoading());
+    dispatch(slice.actions.verifyImportNormalusersucc(null));
+    dispatch(slice.actions.hasError(null));
+    try {
+      const response = await axios.post(api.normalusers_verify_import, payload);
+      dispatch(slice.actions.verifyImportNormalusersucc(response.data));
+    } catch (error) {
+      if (error?.response?.data?.data) {
+        dispatch(slice.actions.verifyImportNormalusersucc({ data: error.response.data.data }));
+      }
+      dispatch(slice.actions.hasError(error?.response?.data || error));
+    }
+  };
+}
+
+export function clearVerifyImportNormaluser() {
+  return async () => dispatch(slice.actions.verifyImportNormalusersucc(null));
+}
+
 export function saveImportNormaluser(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
+    dispatch(slice.actions.hasError(null));
     try {
-      const response = await axios.post(`${api?.normalusers_import}`, payload);
+      const response = await axios.post(api.normalusers_import, payload);
       dispatch(slice.actions.saveImportNormalusersucc(response.data));
     } catch (error) {
-      dispatch(slice.actions.hasError(error));
+      if (error?.response?.data?.data) {
+        dispatch(slice.actions.verifyImportNormalusersucc({ data: error.response.data.data }));
+      }
+      dispatch(slice.actions.hasError(error?.response?.data || error));
     }
   };
 }

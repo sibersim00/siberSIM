@@ -268,6 +268,8 @@ const api = {
   normalusers_update: "/learners/update",
   normalusers_delete: "/learners/delete",
   normalusers_getbyid: "/learners/get",
+  normalusers_verify_import: '/learners/verify-import',
+  normalusers_import: '/learners/import',
   //---------------------flowchart------------------
   scenario_flowchart_get: "/commons/getactivescenariodiagram",
   scenario_flowchart_save: "/scenario/save_diagram",

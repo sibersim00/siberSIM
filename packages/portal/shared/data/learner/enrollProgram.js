@@ -36,7 +36,6 @@ const EnrollProgram = ({learnerDetails}) => {
         {learnerDetails &&
           learnerDetails.length > 0 &&
           learnerDetails.map((program) => {
-            console.log(learnerDetails,"dasdasdasdas")
             return (
               <>
                 <Col md={4}>

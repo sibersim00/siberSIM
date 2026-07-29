@@ -14,7 +14,6 @@ import {
   useNodesState,
   useEdgesState,
   Background,
-  StraightEdge,
   Handle,
   Position,
   useReactFlow,
@@ -30,9 +29,8 @@ import {
 } from "../../../shared/redux/slices/common/masters";
 import "../../../shared/utils/i18n";
 import { useTranslation } from "react-i18next";
-import Router, { useRouter } from "next/router";
+import { useRouter } from "next/router";
 import {
-  getSingleScenarios,
   clearSingleScenarios,
   getScenarioList,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
@@ -57,6 +55,12 @@ const COMPONENT_ANIMATION_OPTIONS = [
     icon: "→",
   },
   {
+    value: "rightToLeft",
+    name: "Right to left",
+    description: "Enters from the right, pauses in the middle, and exits left.",
+    icon: "←",
+  },
+  {
     value: "diagonalTopLeft",
     name: "Top-left to bottom-right",
     description: "Crosses diagonally, pausing at the canvas centre.",
@@ -67,6 +71,18 @@ const COMPONENT_ANIMATION_OPTIONS = [
     name: "Top-right to bottom-left",
     description: "Crosses along the opposite diagonal with a centre pause.",
     icon: "↙",
+  },
+  {
+    value: "diagonalBottomLeft",
+    name: "Bottom-left to top-right",
+    description: "Enters from the bottom-left, pauses at centre, and exits top-right.",
+    icon: "↗",
+  },
+  {
+    value: "diagonalBottomRight",
+    name: "Bottom-right to top-left",
+    description: "Enters from the bottom-right, pauses at centre, and exits top-left.",
+    icon: "↖",
   },
 ];
 
@@ -121,8 +137,11 @@ const ComponentAnimationModal = ({
   );
   const usesPause = [
     "leftToRight",
+    "rightToLeft",
     "diagonalTopLeft",
     "diagonalTopRight",
+    "diagonalBottomLeft",
+    "diagonalBottomRight",
   ].includes(draft.type);
   const { title, vmId } = getFlowComponentDetails(node?.data);
 
@@ -260,12 +279,6 @@ const DnDFlow = ({
 
   const reactFlowWrapper = useRef(null);
   const [imageNodeData, setImageNodeData] = useState([]); // sidebar data
-  const { push } = useRouter();
-  const [initialNodes, setInitialNodes] = useState(() => {
-    const nodesArray = [];
-
-    return nodesArray;
-  });
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
 
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -277,28 +290,16 @@ const DnDFlow = ({
     if (!url) return "";
 
     const backendBaseUrl =
-      process.env.API_URL_FILEMANAGER || window.location.origin + "/jobapi";
-
-    // If URL is already absolute, use it directly
+    process.env.API_URL_FILEMANAGER || window.location.origin + "/jobapi";
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
-
-    // If URL starts with /uploads, prefix with backendBaseUrl
     if (url.startsWith("/uploads")) {
       return `${backendBaseUrl}${url}`;
     }
-
-    // Otherwise, treat it as static/public path
     return `${window.location.origin}${url}`;
   };
 
-  const portPositionMap = {
-    net0: Position.Right,
-    net1: Position.Bottom,
-    net2: Position.Left,
-    net3: Position.Top,
-  };
   const [animationNodeId, setAnimationNodeId] = useState(null);
   const [animationDraft, setAnimationDraft] = useState(
     DEFAULT_COMPONENT_ANIMATION,

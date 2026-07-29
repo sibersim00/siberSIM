@@ -1,37 +1,12 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Modal,
-  Button,
-  OverlayTrigger,
-  Tooltip,
-  Offcanvas,
-  Form,
-  Table,
-  Row,
-  Col,
-  Spinner,
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Modal, Button, OverlayTrigger, Tooltip, Offcanvas, Form, Table, Row, Col, Spinner,
 } from "react-bootstrap";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import Select from "react-select";
-import {
-  saveComponent,
-  clearSaveComponent,
-  saveCustomComponent,
-  vmStartScenario,
-  vmRestartScenario,
-  saveSnapshot,
-  clearSaveSnapshot,
-  getSnapshot,
-  deleteSnapshot,
-  restoresnapshot,
-  getSingleVMDetail,
-  clearCustomComponent,
-  qemuconfig,
-  stopVm,
-  rejectStoppedVm,
+import { saveComponent, saveCustomComponent, vmStartScenario, vmRestartScenario, saveSnapshot, clearSaveSnapshot, getSnapshot, deleteSnapshot, restoresnapshot, getSingleVMDetail, clearCustomComponent, clearSaveComponent, qemuconfig, stopVm, rejectStoppedVm,
 } from "../../../../../../shared/redux/slices/scenarios/scenarios";
 import Seo from "../../../../../../shared/layout-components/seo/seo";
 import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.png";
@@ -135,7 +110,6 @@ export default function ProxmoxConsole() {
       });
 
       if (!result.isConfirmed) {
-        // ❌ User clicked NO
         return;
       }
 
@@ -149,15 +123,6 @@ export default function ProxmoxConsole() {
           }),
         );
         updateStatus("Starting virtual machine...");
-
-        // await dispatch(
-        //   vmStartScenario({
-        //     vmid: realVmid,
-        //     vmType,
-        //   }),
-        // );
-
-        // Optional small delay to allow VM to boot
         setTimeout(() => {
           setOverlayLoading(false);
           connect(); // 🚀 Continue normal VNC flow
@@ -480,8 +445,6 @@ export default function ProxmoxConsole() {
       setShowWarning(false);
     }
   };
-  console.log("showWarning", showWarning);
-
   useEffect(() => {
     if (realVmid && vmType) {
       dispatch(getSnapshot({ vmid: Number(realVmid), vmType }));
@@ -593,10 +556,7 @@ export default function ProxmoxConsole() {
       vmid: Number(realVmid),
       vmType: getVMdetail?.data?.componenttype,
     };
-    console.log("payloadpayloadpayloadpayload", payload);
-
     const result = await dispatch(qemuconfig(payload));
-    console.log("resultresultresult", result);
   };
 
   const handleCloseDrawer = () => {
@@ -641,14 +601,8 @@ export default function ProxmoxConsole() {
       setUploadedFile(files && files.length > 0 && filesStr ? filesStr : "");
     } else {
       formik.setFieldValue(name, files[0]?.file ? files[0]?.file : "");
-      // setUploadedFile(
-      //   files && files.length > 0 && files[0]?.file ? files[0]?.file : "",
-      // );
     }
   };
-
-  console.log("getVMdetail", getVMdetail);
-
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -661,29 +615,6 @@ export default function ProxmoxConsole() {
       componentimage: "",
     },
     validationSchema: Yup.object({
-      // componentName: Yup.string()
-      //   .required("Component name is required")
-      //   .test(
-      //     "no-leading-trailing-spaces",
-      //     "Component name must not have spaces at the beginning or end",
-      //     (value) => value === value?.trim(),
-      //   ),
-      // componentName: Yup.string()
-      //   .required("Component name is required")
-      //   .matches(
-      //     /^[A-Za-z0-9-]{1,63}$/,
-      //     "Only letters, numbers and dash (-) allowed. No spaces, underscore or full stop.",
-      //   )
-      //   .test(
-      //     "no-leading-dash",
-      //     "Component name cannot start with '-'",
-      //     (value) => !value || !/^-/.test(value),
-      //   )
-      //   .test(
-      //     "no-trailing-dash",
-      //     "Component name cannot end with '-'",
-      //     (value) => !value || !/-$/.test(value),
-      //   ),
       componentName: Yup.string()
   .required("Component name is required")
   .matches(
@@ -725,8 +656,6 @@ export default function ProxmoxConsole() {
         const approvalFlag = qemuConfigRef?.current?.approvalFlag;
         const stopMessage = qemuConfigRef?.current?.stopMessage;
         const mustStopVM = qemuConfigRef?.current?.mustStopVM;
-
-        console.log("approvalFlag", approvalFlag);
         if (mustStopVM === true) {
           const stopConfirm = await Swal.fire({
             title: "Stop Virtual Machine?",
@@ -750,7 +679,6 @@ export default function ProxmoxConsole() {
               vmType: getVMdetail?.data?.componenttype,
             }),
           );
-          console.log("stopRes", stopRes);
           if (stopRes?.statusCode === 200) {
             closeVNC();
             Swal.fire(
@@ -771,7 +699,6 @@ export default function ProxmoxConsole() {
 
         /************** AUTO APPROVAL *****************/
         if (approvalFlag === true) {
-          // 1️⃣ SAVE CUSTOM COMPONENT FIRST
           const payload1 = {
             componentname: values.componentName,
             componentcategoryid: values.componentcategoryid,
@@ -784,7 +711,6 @@ export default function ProxmoxConsole() {
           };
 
           const saveRes = await dispatch(saveCustomComponent(payload1));
-          console.log("saveRsssssssssssssssses", saveRes?.data?.customcomponentid);
           if (!saveRes?.success) {
             setIsSaving(false);
             setOverlayLoading(false);
@@ -797,7 +723,7 @@ export default function ProxmoxConsole() {
             return;
           }
 
-          // 2️⃣ THEN CREATE ACTUAL COMPONENT
+          //THEN CREATE ACTUAL COMPONENT
           const payload = {
             componentname: values.componentName,
             componentcategoryid: values.componentcategoryid,
@@ -810,7 +736,6 @@ export default function ProxmoxConsole() {
             componentimage: values.componentimage || "",
             customcomponentid: saveRes?.data?.customcomponentid,
           };
-          console.log("payload", payload);
           const res = await dispatch(saveComponent(payload));
 
           if (!res?.success) {
@@ -893,10 +818,135 @@ export default function ProxmoxConsole() {
       }
     },
   });
+  /* ============================================================
+     LANDING HUD — matrix rain canvas, boot log, live telemetry.
+     Boot log + telemetry are DERIVED FROM REAL VM DATA
+     (getVMdetail / vmDetails). Does not touch VM/session logic above.
+  ============================================================ */
+  const matrixCanvasRef = useRef(null);
+  const vmMeta = getVMdetail?.data;
 
-  console.log("formikformikformikformik",formik);
-  
-  
+  const bootScript = useMemo(() => {
+    const lines = [
+      "> establishing secure tunnel to hypervisor node...",
+      "> verifying operator credentials...  [OK]",
+    ];
+    if (vmMeta) {
+      lines.push(
+        `> target endpoint: ${vmMeta.componentname || vmMeta.vmid_name || `VM#${realVmid}`}`,
+      );
+      lines.push(
+        `> vmid #${vmMeta.vmid || realVmid}  ·  ${(vmMeta.componenttype || "qemu").toUpperCase()}  ·  status: ${vmMeta.vm_status || "unknown"}`,
+      );
+      lines.push(
+        `> allocating ${vmMeta.cores ?? "?"} vCPU / ${vmMeta.memory ?? "?"} MB RAM / ${vmMeta.storage ?? "?"} GB disk`,
+      );
+    } else {
+      lines.push("> querying scenario inventory...");
+    }
+    lines.push("> negotiating VNC handshake protocol...");
+    lines.push("> siberSIM console bridge ready.");
+    lines.push("> awaiting operator input_");
+    return lines;
+  }, [vmMeta, realVmid]);
+
+  const [bootLog, setBootLog] = useState([]);
+  const [telemetry, setTelemetry] = useState({ cpu: 6, mem: 10, net: 4, disk: 8 });
+  const baseTelemetryRef = useRef({ cpu: 6, mem: 10, net: 4, disk: 8 });
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+  useEffect(() => {
+    if (connected || skipConnectUI) return;
+    let cancelled = false;
+    setBootLog([]);
+    let i = 0;
+    const typeNext = () => {
+      if (cancelled || i >= bootScript.length) return;
+      setBootLog((prev) => [...prev, bootScript[i]]);
+      i += 1;
+      setTimeout(typeNext, 520 + Math.random() * 260);
+    };
+    const kickoff = setTimeout(typeNext, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(kickoff);
+    };
+  }, [connected, skipConnectUI, bootScript]);
+
+  // Recompute the telemetry baseline from the real VM spec whenever it loads/changes.
+  useEffect(() => {
+    const cores = Number(vmDetails?.cpu) || 0;
+    const mem = Number(vmDetails?.memory) || 0;
+    const netCount = Array.isArray(vmDetails?.ports) ? vmDetails.ports.length : 0;
+    const disk = Number(vmDetails?.storage) || 0;
+
+    const base = {
+      cpu: cores > 0 ? clamp((cores / 16) * 100, 6, 100) : 6,
+      mem: mem > 0 ? clamp((mem / 16384) * 100, 8, 100) : 8,
+      net: netCount > 0 ? clamp(netCount * 22, 10, 100) : 4,
+      disk: disk > 0 ? clamp((disk / 500) * 100, 8, 100) : 8,
+    };
+    baseTelemetryRef.current = base;
+    setTelemetry(base);
+  }, [vmDetails]);
+
+  // Gentle live jitter around the real baseline so the HUD still feels "alive".
+  useEffect(() => {
+    if (connected || skipConnectUI) return;
+    const id = setInterval(() => {
+      const base = baseTelemetryRef.current;
+      setTelemetry({
+        cpu: clamp(base.cpu + (Math.random() * 8 - 4), 2, 100),
+        mem: clamp(base.mem + (Math.random() * 6 - 3), 2, 100),
+        net: clamp(base.net + (Math.random() * 16 - 8), 1, 100),
+        disk: clamp(base.disk + (Math.random() * 3 - 1.5), 2, 100),
+      });
+    }, 1500);
+    return () => clearInterval(id);
+  }, [connected, skipConnectUI]);
+
+  useEffect(() => {
+    if (connected || skipConnectUI) return;
+    const canvas = matrixCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    const glyphs = "01アイウエオカキクケコサシスセソ0123456789ABCDEF{}<>/#$";
+    let cols = 0;
+    let drops = [];
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      cols = Math.floor(canvas.width / 16);
+      drops = new Array(cols).fill(0).map(() => Math.random() * -40);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const draw = () => {
+      ctx.fillStyle = "rgba(3,6,10,0.14)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = "14px monospace";
+      for (let x = 0; x < cols; x++) {
+        const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+        const isHead = Math.random() > 0.94;
+        ctx.fillStyle = isHead ? "rgba(160,255,220,0.9)" : "rgba(0,180,216,0.35)";
+        ctx.fillText(glyph, x * 16, drops[x] * 16);
+        if (drops[x] * 16 > canvas.height && Math.random() > 0.975) {
+          drops[x] = 0;
+        }
+        drops[x]++;
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+    };
+  }, [connected, skipConnectUI]);
+
   return (
     <>
       <Seo title={`${cleanName}`} />
@@ -1431,128 +1481,120 @@ export default function ProxmoxConsole() {
         </div>
         {/* Main content when not connected */}
         {!connected && !skipConnectUI && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%,-50%)",
-              textAlign: "center",
-            }}
-          >
-            <img
-              alt="SIMMaster Panel Logo Preview"
-              src={`${defaultFavicon.src}`}
-              style={{
-                objectFit: "cover",
-                width: "15%",
-                height: "15%",
-              }}
-            />
-            <h2 style={{ marginBottom: "20px" }}>
-              <span style={{ color: "#0077B6" }}>siber</span>
-              <span style={{ color: "#D21F3C" }}>SIM</span> Console
-            </h2>
-            <button
-              // onClick={connect}
-              onClick={handleConnectClick}
-              disabled={loading}
-              style={{
-                padding: "12px 28px",
-                fontSize: "16px",
-                background: "#2a62f2",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                boxShadow: "0px 4px 12px rgba(0,0,0,0.3)",
-              }}
-            >
-              {loading ? "Connecting..." : "Connect"}
-            </button>
-            <p style={{ marginTop: "20px", color: "#aaa" }}>{status}</p>
-            {loading && (
-              <div
-                style={{
-                  marginTop: "20px",
-                  border: "6px solid #ccc",
-                  borderTop: "6px solid #2a62f2",
-                  borderRadius: "50%",
-                  width: "40px",
-                  height: "40px",
-                  animation: "spin 1s linear infinite",
-                  display: "inline-block",
-                }}
+          <div className="ssc-root" style={{ position: "absolute", inset: 0 }}>
+            <div className="ssc-bg">
+              <canvas ref={matrixCanvasRef} className="ssc-matrix" />
+              <div className="ssc-vignette" />
+              <div className="ssc-grid" />
+              <div className="ssc-scanline" />
+              <div className="ssc-radar" />
+              <div className="ssc-circuit" />
+
+              {/* drifting VM cluster nodes — echoes a hypervisor topology view */}
+              <div className="ssc-node" style={{ top: "18%", left: "22%", animationDelay: "0s" }} />
+              <div className="ssc-node red" style={{ top: "28%", left: "30%", animationDelay: "1.2s" }} />
+              <div className="ssc-node" style={{ top: "22%", left: "38%", animationDelay: "0.6s" }} />
+              <div className="ssc-node" style={{ top: "72%", left: "68%", animationDelay: "2s" }} />
+              <div className="ssc-node red" style={{ top: "80%", left: "76%", animationDelay: "0.3s" }} />
+              <div className="ssc-node" style={{ top: "76%", left: "84%", animationDelay: "1.6s" }} />
+              <div className="ssc-line" style={{ top: "23%", left: "22%", width: "80px", transform: "rotate(18deg)" }} />
+              <div className="ssc-line" style={{ top: "27%", left: "30%", width: "70px", transform: "rotate(-8deg)" }} />
+              <div className="ssc-line" style={{ top: "76%", left: "68%", width: "80px", transform: "rotate(18deg)" }} />
+            </div>
+
+            {/* floating hardware telemetry HUD cards — reflects the real VM spec from getVMdetail */}
+            <div className="ssc-tele tele-cpu">
+              <span className="tele-label">vCPU</span>
+              <span className="tele-value">
+                {vmDetails?.cpu && vmDetails.cpu !== "N/A" ? `${vmDetails.cpu} CORES` : "— —"}
+              </span>
+              <div className="tele-bar"><div className="tele-fill" style={{ width: `${telemetry.cpu}%` }} /></div>
+            </div>
+            <div className="ssc-tele tele-mem">
+              <span className="tele-label">MEMORY</span>
+              <span className="tele-value">
+                {vmDetails?.memory && vmDetails.memory !== "N/A" ? `${vmDetails.memory} MB` : "— —"}
+              </span>
+              <div className="tele-bar"><div className="tele-fill amber" style={{ width: `${telemetry.mem}%` }} /></div>
+            </div>
+            <div className="ssc-tele tele-net">
+              <span className="tele-label">NETWORK</span>
+              <span className="tele-value">
+                {vmDetails?.ports?.length > 0
+                  ? `${vmDetails.ports.length} NIC${vmDetails.ports.length > 1 ? "S" : ""}`
+                  : "NO LINK"}
+              </span>
+              <div className="tele-bar"><div className="tele-fill green" style={{ width: `${telemetry.net}%` }} /></div>
+            </div>
+            <div className="ssc-tele tele-disk">
+              <span className="tele-label">DISK</span>
+              <span className="tele-value">
+                {vmDetails?.storage && vmDetails.storage !== "N/A" ? `${vmDetails.storage} GB` : "— —"}
+              </span>
+              <div className="tele-bar"><div className="tele-fill" style={{ width: `${telemetry.disk}%` }} /></div>
+            </div>
+
+
+            <div className="ssc-panel">
+              <div className="ssc-corner tl" />
+              <div className="ssc-corner tr" />
+              <div className="ssc-corner bl" />
+              <div className="ssc-corner br" />
+              <div className="ssc-panel-sweep" />
+
+              <img
+                alt="SIMMaster Panel Logo Preview"
+                src={`${defaultFavicon.src}`}
+                className="ssc-logo"
               />
-            )}
+
+              <div className="ssc-eyebrow">
+                <span className={`ssc-led${vmStatus === "Running" ? "" : " red"}`} />
+                CONSOLE // {vmStatus ? vmStatus.toUpperCase() : "SECURE LINK"}
+                <span className="ssc-led" />
+              </div>
+
+              <h2 className="ssc-title" data-text="siberSIM Console">
+                <span style={{ color: "#00d4ff" }}>siber</span>
+                <span style={{ color: "#ff1f4c" }}>SIM</span>{" "}
+                <span style={{ color: "#e6f1f8" }}>Console</span>
+              </h2>
+
+              <button
+                className="ssc-btn"
+                onClick={handleConnectClick}
+                disabled={loading}
+              >
+                <span className="ssc-btn-glyph">{loading ? "◐" : "▶"}</span>
+                {loading ? "Connecting…" : "Connect"}
+              </button>
+
+              <div className="ssc-terminal">
+                {bootLog.map((line, idx) => (
+                  <div
+                    className={`ssc-terminal-line${idx === bootLog.length - 1 ? " active" : ""}`}
+                    key={idx}
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+
+              <p className="ssc-status">
+                {status}
+                <span className="cursor" />
+              </p>
+
+              {loading && <div className="ssc-spinner" />}
+            </div>
           </div>
         )}
 
         {/* Full-screen overlay loader */}
         {overlayLoading && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0, 0, 0, 0.6)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 10000,
-              color: "#fff",
-              fontSize: "24px",
-              fontWeight: "bold",
-            }}
-          >
-            Please Wait...
-            <div
-              style={{
-                marginTop: "20px",
-                border: "6px solid rgba(255,255,255,0.3)",
-                borderTop: "6px solid #2a62f2",
-                borderRadius: "50%",
-                width: "50px",
-                height: "50px",
-                animation: "spin 1s linear infinite",
-              }}
-            />
-          </div>
-        )}
-        {overlayLoading && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0, 0, 0, 0.6)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 10000,
-              color: "#fff",
-              fontSize: "24px",
-              fontWeight: "bold",
-            }}
-          >
-            Please Wait...
-            <div
-              style={{
-                marginTop: "20px",
-                border: "6px solid rgba(255,255,255,0.3)",
-                borderTop: "6px solid #2a62f2",
-                borderRadius: "50%",
-                width: "50px",
-                height: "50px",
-                animation: "spin 1s linear infinite",
-              }}
-            />
+          <div className="ssc-overlay">
+            Please Wait
+            <div className="ssc-spinner" style={{ marginTop: "22px" }} />
           </div>
         )}
         <Modal
@@ -1779,19 +1821,12 @@ export default function ProxmoxConsole() {
           </Modal.Body>
         </Modal>
 
-        <style jsx>{`
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
-          button:focus {
-            outline: none;
-          }
-        `}</style>
+        {/*
+          Landing/connect-screen styling (the .ssc-* / .tele-* rules) now
+          lives in a global stylesheet — see proxmox-console.css.
+          Import it once in pages/_app.js, e.g.:
+            import "../styles/proxmox-console.css";
+        */}
       </div>
     </>
   );

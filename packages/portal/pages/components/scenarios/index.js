@@ -9,13 +9,10 @@ import {
   Badge,
   OverlayTrigger,
   Tooltip,
-  Modal,
-  Form,
 } from "react-bootstrap";
 import { AgGridReact } from "ag-grid-react";
 import Swal from "sweetalert2";
-import Router, { useRouter } from "next/router";
-import Select from "react-select";
+import { useRouter } from "next/router";
 import { getScenarioList, changeStatusScenarios, changeManipulationStatus, clearchangeManipulationStatus, clearScenariosChangeStatus, deleteScenarios, cleardeleteScenarios, clearHasError, handleManageView,triggerScenarioExport, createScenarioExport,
 } from "../../../shared/redux/slices/scenario/scenarioManage";
 import {
@@ -30,7 +27,6 @@ import ToggleButton from "../../../shared/data/masterButtons/toggleButton";
 import ManipulationToggleButton from "../../../shared/data/masterButtons/manipulationtoggle";
 import ScenarioForm from "../../../shared/data/scenarios/scenariosForm";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
-import { Fab } from "@mui/material";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
 import { useTranslation } from "react-i18next";
 import ScenarioModal from "../../../shared/data/scenarios/scenarioModal";
@@ -55,15 +51,15 @@ const [gridApi, setGridApi] = useState(null);
 const [quickFilter, setQuickFilter] = useState("");
 const [formModal, setformModal] = useState(false);
 const { push } = useRouter();
+const [listLoading, setListLoading] = useState(true);
+const [hasLoadedScenarioList, setHasLoadedScenarioList] = useState(false);
 const [showListImort, setShowListImport] = useState(true);
 const [openImportModal, setOpenImportModal] = useState(false);
 const [oneClick, setOneClick] = useState(false);
 const [previousView, setPreviousView] = useState("card");
 const [backview, setBackView] = useState("card");
-const [showExportModal, setShowExportModal] = useState(false);
 const [selectedScenarios, setSelectedScenarios] = useState([]);
 const [exportingIds, setExportingIds] = useState([]);
-// const [showImportModal, setShowImportModal] = useState(false);
 const [pageSize, setPageSize] = useState(20);
 
 
@@ -112,7 +108,7 @@ const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT
         state &&
         state.scenarioManage &&
         state.scenarioManage.getScenarioListData,
-         manipulation: state?.scenarioManage?.manipulation,
+      manipulation: state?.scenarioManage?.manipulation,
       hasGetScenarioExportSucc:
         state && state.scenarioManage && state.scenarioManage.ScenarioExport,
       deleteScenariosRes:
@@ -138,7 +134,8 @@ const gridHeight = HEADER_HEIGHT + ROW_HEIGHT * pageSize + PAGINATION_BAR_HEIGHT
         state.scenarioManage.singleScenarios.data,
     };
   });
-  const getScenarioSelectStyles = () => {
+  
+   const getScenarioSelectStyles = () => {
     return {
       control: (styles) => ({
         ...styles,
@@ -604,6 +601,7 @@ const onGridReady = useCallback((params) => {
   useEffect(() => {
     if (hasGetScenarioListSucc) {
       if (scenStatus === "") {
+      setHasLoadedScenarioList(true);
         setRowData(hasGetScenarioListSucc);
         setGridData(hasGetScenarioListSucc);
       } else if (scenStatus === "true") {
@@ -655,7 +653,14 @@ const onGridReady = useCallback((params) => {
   }, [viewNameResp]);
 
   useEffect(() => {
-    dispatch(getScenarioList());
+    const loadScenarios = async () => {
+      setListLoading(true);
+      setHasLoadedScenarioList(false);
+      await dispatch(getScenarioList());
+      setListLoading(false);
+    };
+
+    loadScenarios();
     if (viewNameResp != "list") {
       dispatch(handleManageView("card"));
     }
@@ -948,6 +953,7 @@ const onGridReady = useCallback((params) => {
   };
 
   useEffect(() => {
+      setHasLoadedScenarioList(true);
     if (hasGetScenarioListSucc) {
       let filtered = [...hasGetScenarioListSucc];
 
@@ -1134,7 +1140,20 @@ const onGridReady = useCallback((params) => {
         <Col md={12}>
           {view === "card" ? (
             <>
-              {gridData && gridData.length > 0 ? (
+              {listLoading ? (
+                <Row>
+                  <Col sm={12}>
+                    <Card className="custom-card">
+                      <Card.Body className="d-flex align-items-center justify-content-center" style={{ minHeight: "70vh" }}>
+                        <div className="text-center">
+                          <div className="spinner-border text-primary" role="status" aria-label="Loading" />
+                          <h5 className="mt-3 mb-0">Loading...</h5>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              ) : hasLoadedScenarioList && gridData && gridData.length > 0 ? (
                 <Row className="g-3 mb-3">
                   {gridData.map((item, index) => (
                     <Col key={index} md={12 / columnsPerRow}>
@@ -1148,7 +1167,7 @@ const onGridReady = useCallback((params) => {
                               : ""
                         }`}
                       >
-                        <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center">
+                        <Card.Body className="p-3 position-relative d-flex flex-column justify-content-between text-center" style={{ minHeight: "340px" }}>
                           {item.requestedby_role === "Admin" &&
                             item.vm_steps === "Running" &&
                             ["Start", "Resume", "Pause"].includes(
@@ -1436,7 +1455,7 @@ const onGridReady = useCallback((params) => {
                                     alt="user-img"
                                     className="wd-150 mt-5"
                                   />
-                                  <h5 className="mt-4">Loading...</h5>
+                                  <h5 className="mt-4">No data found.</h5>
                                 </div>
                               </Card.Body>
                             </Card>
@@ -1475,58 +1494,19 @@ const onGridReady = useCallback((params) => {
         show={showImportModal}
         onHide={() => setShowImportModal(false)}
         onImportStarted={(importid) => {
-           setActiveImportId(importid);
+          setActiveImportId(importid);
         }}
-        onImportFinished={() => {                                      // ← clear banner
-        setActiveImportId(null);
-        // localStorage.removeItem("activeImport");
-      }}
+        onImportFinished={() => {
+          setActiveImportId(null);
+          // localStorage.removeItem("activeImport");
+        }}
       />
-                    {/* {activeImportId && (
-  <div style={{
-    position:     "fixed",
-    bottom:       "24px",
-    right:        "24px",
-    zIndex:       9999,
-    background:   "#0f1e35",
-    color:        "#fff",
-    padding:      "14px 18px",
-    borderRadius: "14px",
-    display:      "flex",
-    alignItems:   "center",
-    gap:          "12px",
-    boxShadow:    "0 4px 24px rgba(0,0,0,0.4)",
-    border:       "1px solid #1a3a5c",
-    minWidth:     "260px",
-  }}>
-    <i className="fa fa-spinner fa-spin text-info fs-5" />
-    <div style={{ flex: 1 }}>
-      <div style={{ fontSize: "13px", fontWeight: 600 }}>
-        Import In Progress
-      </div>
-      <div style={{ fontSize: "11px", color: "#8fa3bb", marginTop: "2px" }}>
-        Safe to close — running in background
-      </div>
-    </div>
-    <button
-      onClick={() => setShowImportModal(true)}
-      style={{
-        background:   "#0d6efd",
-        border:       "none",
-        borderRadius: "8px",
-        color:        "#fff",
-        padding:      "5px 14px",
-        fontSize:     "12px",
-        fontWeight:   500,
-        cursor:       "pointer",
-      }}
-    >
-      View
-    </button>
-  </div>
-)} */}
     </>
   );
 };
 ManageScenarios.layout = "Contentlayout";
 export default ManageScenarios;
+
+
+
+

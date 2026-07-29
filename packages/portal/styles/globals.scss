@@ -7885,7 +7885,7 @@ body.dark-theme .ag-row-drag {
 }
 .learner-import-modal .learner-import-header {
   min-height: 112px;
-  padding: 24px 30px !important;
+  padding: 13px 30px !important;
   background:
     radial-gradient(circle at 82% -30%, rgba(255, 255, 255, 0.22), transparent 42%),
     linear-gradient(120deg, #315b80 0%, #4578a5 48%, #5d91bd 100%) !important;
@@ -8615,8 +8615,32 @@ body.dark-theme .ag-row-drag {
 
 .component-animation-options {
   display: flex;
+  max-height: 350px;
   flex-direction: column;
   gap: 8px;
+  padding-right: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #324b68 #09101d;
+  scrollbar-width: thin;
+}
+
+.component-animation-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.component-animation-options::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background: #09101d;
+}
+
+.component-animation-options::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #324b68;
+}
+
+.component-animation-options::-webkit-scrollbar-thumb:hover {
+  background: #22a7bd;
 }
 
 .component-animation-option {
@@ -8712,7 +8736,7 @@ body.dark-theme .ag-row-drag {
   border-radius: 12px;
   background: rgba(34, 211, 238, 0.08);
   color: #67e8f9;
-  font-size: 7px;
+  font-size: 9px;
 }
 
 .component-animation-stage {
@@ -8797,8 +8821,11 @@ body.dark-theme .ag-row-drag {
 .component-animation-demo--circle { animation: portal-demo-circle 5s linear infinite; }
 .component-animation-demo--spiral { animation: portal-demo-spiral 6s linear infinite; }
 .component-animation-demo--leftToRight { animation: portal-demo-left-right 6s ease-in-out infinite; }
+.component-animation-demo--rightToLeft { animation: portal-demo-right-left 6s ease-in-out infinite; }
 .component-animation-demo--diagonalTopLeft { animation: portal-demo-diagonal-tl 6s ease-in-out infinite; }
 .component-animation-demo--diagonalTopRight { animation: portal-demo-diagonal-tr 6s ease-in-out infinite; }
+.component-animation-demo--diagonalBottomLeft { animation: portal-demo-diagonal-bl 6s ease-in-out infinite; }
+.component-animation-demo--diagonalBottomRight { animation: portal-demo-diagonal-br 6s ease-in-out infinite; }
 
 .component-animation-pause-field {
   display: flex;
@@ -8867,6 +8894,14 @@ body.dark-theme .ag-row-drag {
   100% { transform: translateX(230px); opacity: 0; }
 }
 
+@keyframes portal-demo-right-left {
+  0% { transform: translateX(230px); opacity: 0; }
+  10% { opacity: 1; }
+  42%, 62% { transform: translateX(0); opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(-230px); opacity: 0; }
+}
+
 @keyframes portal-demo-diagonal-tl {
   0% { transform: translate(-220px, -150px); opacity: 0; }
   10% { opacity: 1; }
@@ -8881,6 +8916,22 @@ body.dark-theme .ag-row-drag {
   42%, 62% { transform: translate(0, 0); opacity: 1; }
   92% { opacity: 1; }
   100% { transform: translate(-220px, 150px); opacity: 0; }
+}
+
+@keyframes portal-demo-diagonal-bl {
+  0% { transform: translate(-220px, 150px); opacity: 0; }
+  10% { opacity: 1; }
+  42%, 62% { transform: translate(0, 0); opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translate(220px, -150px); opacity: 0; }
+}
+
+@keyframes portal-demo-diagonal-br {
+  0% { transform: translate(220px, 150px); opacity: 0; }
+  10% { opacity: 1; }
+  42%, 62% { transform: translate(0, 0); opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translate(-220px, -150px); opacity: 0; }
 }
 
 @media (max-width: 767px) {

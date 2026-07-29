@@ -68,7 +68,6 @@ export function getwidgetList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.widget_getall}`);
-      console.log("response",response.data);
       dispatch(slice.actions.hasGetwidgetListSucc(response.data));
     } catch (error) { 
       dispatch(slice.actions.hasError(error));

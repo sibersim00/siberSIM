@@ -40,9 +40,7 @@ const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
   }, [label, data?.label, id, setEdges]);
 
   const currentEdge = allEdges.find(e => e.id === id);
-  console.log("currentEdge", currentEdge);
   const shouldAnimate = currentEdge?.isAttacked === "Yes";
-  console.log('shouldAnimate', shouldAnimate, allEdges.find(e => e.id === id));
   return (
     <>
       <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />

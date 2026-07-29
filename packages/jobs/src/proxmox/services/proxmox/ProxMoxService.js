@@ -66,9 +66,72 @@ async function selectNode() {
   }
 }
 
-// ───────────────────────────────────────────────
-// RoundRobin: alternate strictly based on the last assigned node
-// ───────────────────────────────────────────────
+
+async function getWorkerNodeStatuses(nodes) {
+  if (!accessInfo?.cookie) {
+    throw new Error("Access info not initialized. Call generateAccessTicket first.");
+  }
+
+  const statuses = [];
+
+  for (const node of nodes) {
+    const start = Date.now();
+    const request_datetime = new Date();
+    const url = `${constants.endpoint}/nodes/${node}/status`;
+    const config = {
+      method: "get",
+      url,
+      headers: {
+        Cookie: accessInfo.cookie,
+        "Content-Type": "application/json",
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    };
+
+    try {
+      const response = await axios.request(config);
+      console.log("responseresponseresponse",response);
+      
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        response.status.toString(),
+        response.data,
+        null,
+        constants.VM_PROCESSES.GET_NODE_NETWORK_INFO,
+      );
+
+      const stat = response.data?.data || {};
+      if (stat.online === 0) {
+        continue;
+      }
+
+      statuses.push({
+        node,
+        stat,
+      });
+    } catch (error) {
+      const errorCode = error?.response?.status?.toString() || "ERR";
+      const errorMessage = error?.response?.data || error.toString();
+
+      await logApiRequestData(
+        start,
+        request_datetime,
+        config,
+        errorCode,
+        errorMessage,
+        error,
+        constants.VM_PROCESSES.GET_NODE_NETWORK_INFO,
+      );
+
+      console.log(`  [WARN] Could not query ${node}: ${error.message}`);
+    }
+  }
+
+  return statuses.sort((a, b) => a.node.localeCompare(b.node));
+}
+
 async function selectNodeRoundRobin(nodes) {
   const [lastRow] = await db.sequelize.query(
     `SELECT node_name FROM vm_request
@@ -87,126 +150,131 @@ async function selectNodeRoundRobin(nodes) {
   const nextIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % nodes.length;
   const selected = nodes[nextIndex];
 
-  console.log(`[selectNodeRoundRobin] Last: ${lastRow.node_name} → Next: ${selected}`);
+  console.log(`[selectNodeRoundRobin] Last: ${lastRow.node_name} -> Next: ${selected}`);
   return selected;
 }
 
-// ───────────────────────────────────────────────
-// LeastLoaded: pick the node with fewest active VM requests (your original logic)
-// ───────────────────────────────────────────────
+const WEIGHT_CPU = parseFloat(keys.WEIGHT_CPU);
+const WEIGHT_RAM = parseFloat(keys.WEIGHT_RAM);
+const LIMIT_MAX_CPU = parseFloat(keys.LIMIT_MAX_CPU);
+const LIMIT_MAX_RAM = parseFloat(keys.LIMIT_MAX_RAM);
+const COST_CPU_PER_GROUP = parseFloat(keys.COST_CPU_PER_GROUP);
+const COST_RAM_PER_GROUP = parseFloat(keys.COST_RAM_PER_GROUP);
+
+
 async function selectNodeLeastLoaded(nodes) {
-  const rows = await db.sequelize.query(
-    `SELECT node_name, COUNT(*) AS cnt
-     FROM vm_request
-     WHERE node_name IN (:nodes)
-       AND status NOT IN ('Completed','Terminated','Failed')
-     GROUP BY node_name`,
-    {
-      replacements: { nodes },
-      type: db.sequelize.QueryTypes.SELECT,
-    }
-  );
-
-  const countMap = {};
-  nodes.forEach((n) => (countMap[n] = 0));
-  rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
-
-  let selected = nodes[0];
-  let minCount = countMap[nodes[0]];
-  for (let i = 1; i < nodes.length; i++) {
-    if (countMap[nodes[i]] < minCount) {
-      minCount = countMap[nodes[i]];
-      selected = nodes[i];
-    }
+  const workerStatuses = await getWorkerNodeStatuses(nodes);
+  if (!workerStatuses.length) {
+    throw new Error("No online worker nodes found.");
   }
 
-  console.log(`[selectNodeLeastLoaded] Counts:`, countMap, `→ selected: ${selected}`);
-  return selected;
+  console.log(`[selectNodeLeastLoaded] Least-loaded across nodes: ${workerStatuses.map(({ node }) => node).join(", ")}`);
+
+  let bestNode = null;
+  let bestScore = Infinity;
+
+  for (const { node, stat } of workerStatuses) {
+    const cpu = stat.cpu || 0;
+    const mem = stat.memory?.total ? stat.memory.used / stat.memory.total : 0;
+    const score = cpu * WEIGHT_CPU + mem * WEIGHT_RAM;
+    console.log(`  ${node}: cpu=${(cpu * 100).toFixed(1)}% ram=${(mem * 100).toFixed(1)}% score=${score.toFixed(3)}`);
+    if (score < bestScore) {
+      bestScore = score;
+      bestNode = node;
+    }
+  }
+  if (!bestNode) {
+    throw new Error("Could not determine least-loaded node.");
+  }
+  console.log(`  -> selected node: ${bestNode}`);
+  return bestNode;
 }
 
-// ───────────────────────────────────────────────
-// Weighted: pick node based on assigned weight (capacity ratio)
-// NOTE: requires a weights map — for now sourced from other_nodes string format
-// e.g. "sibersim1:3,sibersim2:1" meaning sibersim1 gets picked 3x more often
-// Adjust the parsing below to match how you plan to store weights.
-// ───────────────────────────────────────────────
 async function selectNodeWeighted(nodes) {
-  const cfg = await getProxmoxConfig();
+  const workerStatuses = await getWorkerNodeStatuses(nodes);
+  if (!workerStatuses.length) {
+    throw new Error("No online worker nodes found.");
+  }
 
-  // Expect other_nodes optionally formatted as "node:weight,node:weight"
-  // Falls back to equal weight (1) if no weight specified
-  const weightMap = {};
-  nodes.forEach((n) => (weightMap[n] = 1)); // default weight
+  console.log("[selectNodeWeighted] Querying node capacity");
 
-  (cfg.other_nodes || "").split(",").forEach((entry) => {
-    const [name, weight] = entry.split(":").map((s) => s?.trim());
-    if (name && weight && !isNaN(weight)) {
-      weightMap[name] = parseInt(weight, 10);
-    }
+  let selected = null;
+  let bestQuota = -1;
+
+  const capacities = workerStatuses.map(({ node, stat }) => {
+    const cores = stat.cpuinfo?.cpus || 1;
+    const ramGb = stat.memory?.total ? stat.memory.total / (1024 ** 3) : 0;
+    const score = cores * WEIGHT_CPU + ramGb * WEIGHT_RAM;
+    return { node, cores, ramGb, score };
   });
 
-  const totalWeight = nodes.reduce((sum, n) => sum + (weightMap[n] || 1), 0);
-  let rand = Math.random() * totalWeight;
-
-  let selected = nodes[0];
-  for (const n of nodes) {
-    rand -= weightMap[n] || 1;
-    if (rand <= 0) {
-      selected = n;
-      break;
+  const totalCap = capacities.reduce((sum, item) => sum + item.score, 0) || 1;
+  for (const item of capacities) {
+    const quota = item.score / totalCap;
+    console.log(`  ${item.node}: ${item.cores} cores, ${item.ramGb.toFixed(0)}GB RAM -> score ${item.score.toFixed(1)} quota ${quota.toFixed(3)}`);
+    if (quota > bestQuota) {
+      bestQuota = quota;
+      selected = item.node;
     }
   }
 
-  console.log(`[selectNodeWeighted] Weights:`, weightMap, `→ selected: ${selected}`);
+  console.log(`  -> selected node: ${selected}`);
   return selected;
 }
 
-// ───────────────────────────────────────────────
-// Threshold: stick with current_node until it hits a load threshold,
-// then overflow to other nodes
-// ───────────────────────────────────────────────
-async function selectNodeThreshold(nodes, primaryNode, threshold = 10) {
-  const rows = await db.sequelize.query(
-    `SELECT node_name, COUNT(*) AS cnt
-     FROM vm_request
-     WHERE node_name IN (:nodes)
-       AND status NOT IN ('Completed','Terminated','Failed')
-     GROUP BY node_name`,
-    {
-      replacements: { nodes },
-      type: db.sequelize.QueryTypes.SELECT,
+async function selectNodeThreshold(nodes, primaryNode, cpuLimit = LIMIT_MAX_CPU, ramLimit = LIMIT_MAX_RAM) {
+  const workerStatuses = await getWorkerNodeStatuses(nodes);
+  console.log("workerStatusesworkerStatusebbbbbsworkerStatuses",workerStatuses);
+  
+  if (!workerStatuses.length) {
+    throw new Error("No online worker nodes found.");
+  }
+
+  console.log("[selectNodeThreshold] Using live node stats");
+
+  const CPU_PER_GROUP = COST_CPU_PER_GROUP;
+  const RAM_PER_GROUP = COST_RAM_PER_GROUP;
+  const projected = workerStatuses.map(({ node, stat }) => ({
+    node,
+    cpu: stat.cpu || 0,
+    ram: stat.memory?.total ? stat.memory.used / stat.memory.total : 0,
+  }));
+
+  for (const item of projected) {
+    console.log(`  ${item.node}: cpu=${(item.cpu * 100).toFixed(1)}% ram=${(item.ram * 100).toFixed(1)}%`);
+  }
+
+  let preferredNodes = [...projected];
+  if (primaryNode) {
+    const primary = preferredNodes.find((item) => item.node === primaryNode);
+    if (primary) {
+      preferredNodes = [primary, ...preferredNodes.filter((item) => item.node !== primaryNode)];
     }
+  }
+
+  const sorted = [...preferredNodes].sort((a, b) => a.cpu - b.cpu);
+  let selected = sorted.find((item) =>
+    item.cpu + CPU_PER_GROUP <= cpuLimit && item.ram + RAM_PER_GROUP <= ramLimit
   );
+  console.log("selectedselectedselected",selected);
+  
 
-  const countMap = {};
-  nodes.forEach((n) => (countMap[n] = 0));
-  rows.forEach((r) => (countMap[r.node_name] = parseInt(r.cnt, 10)));
-
-  const primaryLoad = countMap[primaryNode] || 0;
-
-  if (primaryLoad < threshold) {
-    console.log(`[selectNodeThreshold] Primary "${primaryNode}" load ${primaryLoad} < ${threshold}, staying on primary`);
-    return primaryNode;
+  if (!selected) {
+    selected = preferredNodes.reduce((a, b) =>
+      a.cpu + a.ram <= b.cpu + b.ram ? a : b
+    );
+    console.log(`  [WARN] All nodes near limit -> using ${selected.node} anyway`);
   }
 
-  // Overflow: pick least loaded among the rest
-  const others = nodes.filter((n) => n !== primaryNode);
-  let selected = others[0];
-  let minCount = countMap[others[0]] ?? 0;
-
-  for (let i = 1; i < others.length; i++) {
-    if ((countMap[others[i]] ?? 0) < minCount) {
-      minCount = countMap[others[i]];
-      selected = others[i];
-    }
-  }
-
-  console.log(`[selectNodeThreshold] Primary "${primaryNode}" overloaded (${primaryLoad}), overflowing to: ${selected}`);
-  return selected;
+  console.log(
+    `  -> selected node: ${selected.node} ` +
+    `(projected cpu=${((selected.cpu + CPU_PER_GROUP) * 100).toFixed(0)}% ram=${((selected.ram + RAM_PER_GROUP) * 100).toFixed(0)}%)`
+  );
+  return selected.node;
 }
+  
 
-
-  async function logApiRequest({
+async function logApiRequest({
     api_end_point,
     vm_process,
     ip_address,
@@ -2463,3 +2531,5 @@ async function restoreVM({ vmid, zstFile, vmType,proxmoxPath,storage }) {
 }
 
 module.exports = ProxMoxService;
+
+

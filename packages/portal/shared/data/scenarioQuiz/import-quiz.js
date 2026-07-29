@@ -190,9 +190,6 @@ const ImportScenarioQuizList = ({ openImportModal, handleImportModal, showListIm
 
             return transformedItem;
         });
-
-        console.log("verify payload", transformedPayload);
-
         dispatch(verifyScenarioImportQuiz(transformedPayload));
         dispatch(clearVerifyScenarioImportQuiz(transformedPayload));
     };
@@ -263,8 +260,6 @@ const ImportScenarioQuizList = ({ openImportModal, handleImportModal, showListIm
                 const payload = response?.payload;
 
                 if (payload?.statusCode === 200) {
-                    // Let the useEffect toast handle it
-                    // You can optionally log or update local state here
                 } 
             } catch (error) {
                 console.error("Unexpected API error:", error);
@@ -422,7 +417,6 @@ const ImportScenarioQuizList = ({ openImportModal, handleImportModal, showListIm
 
     const onGridReady = (params) => {
         setGridApi(params.api);
-        console.log("params.data.categoryname", params)
     };
 
     const gridOptions = {

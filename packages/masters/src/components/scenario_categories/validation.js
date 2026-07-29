@@ -9,6 +9,12 @@ const saveSchema = joi.object({
         "string.base": "Scenario category should be a string",
         "string.empty": "Scenario category cannot be empty",
     }),
+    categorytype: joi.string().trim().valid("Public", "Private").required().messages({
+        "string.base": "Category type should be a string",
+        "string.empty": "Category type cannot be empty",
+        "any.required": "Category type is required",
+        "any.only": "Category type must be either Public or Private",
+    }),
 });
 const updateSchema = joi.object({
     categoryname: joi.string().trim().required().messages({
@@ -19,7 +25,17 @@ const updateSchema = joi.object({
     parentscenariocategoryid: joi.number().strict().optional().messages({
         "number.base": "Parent scenario category ID should be a number",
         "any.required": "Parent scenario category is required",
-    })
+    }),
+    scenariocategoryid: joi.number().strict().optional().messages({
+        "number.base": "scenario category ID should be a number",
+        "any.required": "scenario category is required",
+    }),
+    categorytype: joi.string().trim().valid("Public", "Private").required().messages({
+        "string.base": "Category type should be a string",
+        "string.empty": "Category type cannot be empty",
+        "any.required": "Category type is required",
+        "any.only": "Category type must be either Public or Private",
+    }),
 });
 const deleteSchema = joi.object({
     scenariocategoryid: joi.number().integer().required().messages({

@@ -10,5 +10,11 @@ module.exports = {
    BACKUP_STORAGE:process.env.BACKUP_STORAGE ,
    VMID_RANGE_START:process.env.VMID_RANGE_START ,
    VMID_RANGE_END:process.env.VMID_RANGE_END ,
-   CLONE_STORAGE:process.env.CLONE_STORAGE 
+   CLONE_STORAGE:process.env.CLONE_STORAGE ,
+   WEIGHT_CPU:process.env.WEIGHT_CPU ,
+   WEIGHT_RAM:process.env.WEIGHT_RAM ,
+   LIMIT_MAX_CPU:process.env.LIMIT_MAX_CPU ,
+   LIMIT_MAX_RAM:process.env.LIMIT_MAX_RAM ,
+   COST_CPU_PER_GROUP:process.env.COST_CPU_PER_GROUP ,
+   COST_RAM_PER_GROUP:process.env.COST_RAM_PER_GROUP
 };

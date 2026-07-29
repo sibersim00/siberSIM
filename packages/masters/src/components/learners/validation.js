@@ -1,5 +1,50 @@
 const joi = require('joi');
 
+const importRowSchema = joi.object({
+  rowNumber: joi.number().integer().min(2).optional().messages({
+    'number.base': 'Excel row number must be numeric.',
+    'number.min': 'Excel row number is invalid.',
+  }),
+  firstname: joi.string().trim().min(2).max(100).pattern(/^[A-Za-z]+$/).required().messages({
+    'any.required': 'First name is required.',
+    'string.empty': 'First name is required.',
+    'string.min': 'First name must be at least 2 characters long.',
+    'string.max': 'First name cannot exceed 100 characters.',
+    'string.pattern.base': 'First name can contain letters only.',
+  }),
+  lastname: joi.string().trim().max(100).pattern(/^[A-Za-z]+$/).allow('', null).messages({
+    'string.max': 'Last name cannot exceed 100 characters.',
+    'string.pattern.base': 'Last name can contain letters only.',
+  }),
+  email: joi.string().trim().lowercase().email().max(100).required().messages({
+    'any.required': 'Email address is required.',
+    'string.empty': 'Email address is required.',
+    'string.email': 'Email address must be valid.',
+    'string.max': 'Email address cannot exceed 100 characters.',
+  }),
+  mobile: joi.alternatives().try(
+    joi.string().trim().pattern(/^\+?[0-9]{7,15}$/).messages({
+      'string.pattern.base': 'Mobile number does not match the required pattern. Use 7 to 15 digits and an optional + prefix.',
+    }),
+    joi.number().integer().min(1000000)
+  ).allow('', null).messages({
+    'alternatives.match': 'Mobile number does not match the required pattern. Use 7 to 15 digits and an optional + prefix.',
+    'alternatives.types': 'Mobile number does not match the required pattern. Use 7 to 15 digits and an optional + prefix.',
+  }),
+  username: joi.string().trim().min(5).max(20).pattern(/^[A-Za-z0-9._-]+$/).required().messages({
+    'any.required': 'Username is required.',
+    'string.empty': 'Username is required.',
+    'string.min': 'Username must be at least 5 characters long.',
+    'string.max': 'Username cannot exceed 20 characters.',
+    'string.pattern.base': 'Username can contain letters, numbers, dots, underscores, and hyphens only.',
+  }),
+  status: joi.string().valid('Active', 'Inactive').default('Active').messages({
+    'any.only': 'Status must be Active or Inactive.',
+  }),
+}).unknown(false);
+
+const importRowsSchema = joi.array().items(importRowSchema).min(1).max(1000).required();
+
 const addSchema = joi.object({
     username: joi.string().min(5).max(20).required().empty().messages({
       "any.required": `Username is required.`,
@@ -156,5 +201,7 @@ module.exports = {
   statusUpdateSchema,
   instructormappedSchema,
   saveinstructormappedSchema,
+  importRowSchema,
+  importRowsSchema,
   messages
 }

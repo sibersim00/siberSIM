@@ -55,8 +55,13 @@ const saveComponentCategory =
         `INSERT INTO component_categories (categoryname, description,categoryimage, createdby, createdon) 
          VALUES (?, ?, ?, ?, NOW())`,
         {
-          replacements: [body.name, body.description,body.categoryimage, userid],
-        }
+          replacements: [
+            body.name,
+            body.description || null,
+            body.categoryimage || null,
+            userid,
+          ],
+        },
       );
       return { success: true };
     } catch (error) {
@@ -104,8 +109,8 @@ const updateComponentCategory =
                          WHERE componentcategoryid = ?`;
     const updateParams = [
       body.name,
-      body.description,
-      body.categoryimage,
+      body.description || null,
+      body.categoryimage || null,
       userid,
       body.componentcategoryid,
     ];
@@ -138,32 +143,34 @@ const changestatus =
     return res;
   };
 
+
 const deleteCategory =
   ({ db, validation }) =>
   async (body) => {
-    let errors = [];
-    let checkCategoryData = await db.sequelize.query(
-      `SELECT DISTINCT(	componentsubcategoryid) as	componentsubcategoryid FROM component_subcategories WHERE deletedon IS  NULL and   componentcategoryid=:_id `,
-      {
-        replacements: { _id: body.componentcategoryid },
-        type: db.sequelize.QueryTypes.SELECT,
-      }
-    );
-    if (checkCategoryData.length > 0) {
-      errors.push(validation.messages.category_already_mapped);
+    try {
+      let errors = [];
+      let checkCategoryData = await db.sequelize.query(
+        `SELECT DISTINCT(componentcategoryid) as componentcategoryid 
+         FROM component_categories 
+         WHERE deletedon IS NULL AND componentcategoryid = :_id`,
+        {
+          replacements: { _id: body.componentcategoryid },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      const [res] = await db.sequelize.query(
+        "UPDATE component_categories SET deletedon = NOW() WHERE componentcategoryid = :_id",
+        {
+          replacements: { _id: body.componentcategoryid },
+        }
+      );
+
+      return { status: true, message: validation.messages.delete_success };
+    } catch (error) {
+      console.error("Error in deleteCategory:", error); // log full error, not error.message
+      return { status: false, errors: [error.message || "Unknown error occurred"] };
     }
-    if (errors.length > 0) {
-      return { status: false, errors: errors };
-    }
-    let [res] = await db.sequelize.query(
-      "UPDATE component_categories set deletedon=now() where componentcategoryid=:_id",
-      {
-        replacements: {
-          _id: body.componentcategoryid,
-        },
-      }
-    );
-    return { status: true, message: validation.messages.delete_success };
   };
 
 const verifyCategory =
