@@ -254,44 +254,6 @@ async function componentSetupJob(
   }
 }
 
-// async function cloneComponentVM(db, ipAddress, component, vmrequestid,selectedNode) {
-//   const {
-//     vmconfigurationid,
-//     clone_vmid,
-//     name,
-//     componenttype,
-//     source_vmid,
-//     scenarioid,
-//     requestedby_id,
-//   } = component;
-//   const vmType = componenttype.toLowerCase();
-//   const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-//   const result = await proxmoxService.cloneVM(
-//     vmType,
-//     clone_vmid,
-//     name,
-//     source_vmid,
-//     selectedNode,
-//   );
-//   if (!result || result.status !== 200) {
-//     return {
-//       success: false,
-//       message: `${clone_vmid}-${name} - ${ERROR_MESSAGES.CLONE_FAILED}`,
-//     };
-//   }
-//     console.log(`Clone succeeded for ${clone_vmid}-${name} on ${selectedNode}`);
-
-//   await db.sequelize.query(
-//     `UPDATE vm_config SET status = 'Cloning', modifiedon = NOW() WHERE vmconfigurationid = ?`,
-//     {
-//       replacements: [vmconfigurationid],
-//       type: db.sequelize.QueryTypes.UPDATE,
-//     },
-//   );
-
-//   return { success: true };
-// }
-
 async function cloneComponentVM(db, ipAddress, component, vmrequestid, selectedNode) {
   const { vmconfigurationid, clone_vmid, name, componenttype, source_vmid } = component;
 

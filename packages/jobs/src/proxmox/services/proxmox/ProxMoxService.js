@@ -1879,10 +1879,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     }
   }
 
-
-  // not done yet
-
-  async function deleteVmNetwork(vmid, vmType, netKey) {
+  async function deleteVmNetwork(vmid, vmType, netKey,selectedNode) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1892,8 +1889,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config?delete=${netKey}`;
 
     const config = {
       method: "put",
