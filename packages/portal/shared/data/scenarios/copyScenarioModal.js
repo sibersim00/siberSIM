@@ -43,6 +43,7 @@ const CopyScenarioModal = ({
   scenarioDropDownData,
   setNodes,
   setEdges,
+  setEdgeRouting,
   setDraggedComponent,
   setImageNodeData,
 }) => {
@@ -104,6 +105,8 @@ const handleSubmit = () => {
     }
 
     const { nodes, edges } = sanitizeFlowchartData(diagramData);
+    const routedEdges = edges.map((edge) => ({ ...edge, type: "custom" }));
+    setEdgeRouting?.(diagramData.edgeRouting === "smooth" ? "smooth" : "bezier");
 
     let componentData = selectedScenario?.digramcomponent;
     if (componentData) {
@@ -145,12 +148,12 @@ const handleSubmit = () => {
         };
       });
       setNodes(updatedNodes);
-      setEdges(edges);
+      setEdges(routedEdges);
       setImageNodeData(normalizedComponents);
       setDraggedComponent(normalizedComponents);
     } else {
       setNodes(nodes);
-      setEdges(edges);
+      setEdges(routedEdges);
     }
 
     handleClose();

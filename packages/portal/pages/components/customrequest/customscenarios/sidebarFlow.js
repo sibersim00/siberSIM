@@ -16,6 +16,7 @@ const sidebarFlow = ({
   scenarioId,
   setNodes,
   setEdges,
+  setEdgeRouting,
   setDraggedComponent,
 }) => {
   const dispatch = useDispatch();
@@ -210,7 +211,13 @@ const handleCategoryChange = (selectedOption) => {
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
+        const routing = parsedData.edgeRouting === "smooth" ? "smooth" : "bezier";
+        setEdges(parsedData.edges.map((edge) => ({
+          ...edge,
+          type: "custom",
+          data: { ...edge.data, edgeRouting: routing },
+        })));
+        setEdgeRouting?.(parsedData.edgeRouting === "smooth" ? "smooth" : "bezier");
       }
     }
     if (getScenarioFlowchart && getScenarioFlowchart.components) {

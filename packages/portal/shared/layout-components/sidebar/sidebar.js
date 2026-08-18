@@ -26,8 +26,28 @@ const SideBar = () => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const menus = JSON.parse(localStorage.getItem("menus"));
-      setMenuitems(menus);
-      setMenuitems1(menus);
+      const user = JSON.parse(localStorage.getItem("user"));
+      const isInstructor = user?.usertype === "Instructor";
+
+      const removeLabsMenu = (items = []) =>
+        items
+          .filter((item) => item?.title?.trim().toLowerCase() !== "labs")
+          .map((item) => ({
+            ...item,
+            ...(Array.isArray(item.Items)
+              ? { Items: removeLabsMenu(item.Items) }
+              : {}),
+            ...(Array.isArray(item.children)
+              ? { children: removeLabsMenu(item.children) }
+              : {}),
+          }));
+
+      const visibleMenus = isInstructor && Array.isArray(menus)
+        ? removeLabsMenu(menus)
+        : menus;
+
+      setMenuitems(visibleMenus);
+      setMenuitems1(visibleMenus);
       if (menus === null) {
         window.location.href = "/";
       }

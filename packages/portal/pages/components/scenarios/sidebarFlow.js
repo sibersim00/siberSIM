@@ -22,6 +22,7 @@ const sidebarFlow = ({
   scenarioId,
   setNodes,
   setEdges,
+  setEdgeRouting,
   setDraggedComponent,
 }) => {
   const dispatch = useDispatch();
@@ -224,7 +225,8 @@ const sidebarFlow = ({
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
+        setEdges(parsedData.edges.map((edge) => ({ ...edge, type: "custom" })));
+        setEdgeRouting?.(parsedData.edgeRouting === "smooth" ? "smooth" : "bezier");
       }
     }
     if (getScenarioFlowchart && getScenarioFlowchart.components) {
@@ -460,6 +462,7 @@ useEffect(() => {
         setSelectedScenario={setSelectedScenario}
         setNodes={setNodes}
         setEdges={setEdges}
+        setEdgeRouting={setEdgeRouting}
         setDraggedComponent={setDraggedComponent}
         setImageNodeData={setImageNodeData}
 

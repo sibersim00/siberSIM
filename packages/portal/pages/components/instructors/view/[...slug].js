@@ -1,246 +1,305 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
-import { useTranslation } from "react-i18next";
+import { Container, Nav, Tab } from "react-bootstrap";
 import { ToastContainer } from "react-toastify";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Nav,
-  Tab,
-  Badge,
-  Pagination,
-  Accordion,
-} from "react-bootstrap";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import { getInstructor } from "../../../../shared/redux/slices/instructor/instructor";
+import styles from "./instructor-view.module.scss";
+
+const EMPTY = "—";
+const PAGE_SIZE = 6;
+
+const formatDate = (value) => {
+  if (!value) return EMPTY;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return EMPTY;
+  return date.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const initialsFor = (name = "") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase() || "SM";
+
+const isActiveStatus = (status) =>
+  status === true ||
+  String(status).toLowerCase() === "true" ||
+  String(status).toLowerCase() === "active";
+
+const StatusPill = ({ status }) => {
+  const active = isActiveStatus(status);
+  return (
+    <span className={`${styles.statusPill} ${active ? styles.active : styles.inactive}`}>
+      <i />{active ? "Active" : status || "Inactive"}
+    </span>
+  );
+};
+
+const EmptyState = ({ icon, title, children }) => (
+  <div className={styles.emptyState}>
+    <span><i className={`fe fe-${icon}`} /></span>
+    <h4>{title}</h4>
+    <p>{children}</p>
+  </div>
+);
+
+const SectionHeading = ({ eyebrow, title, children, action }) => (
+  <div className={styles.sectionHeading}>
+    <div><span>{eyebrow}</span><h3>{title}</h3><p>{children}</p></div>
+    {action}
+  </div>
+);
+
+const MetricCard = ({ icon, label, value, helper, tone, delay }) => (
+  <article className={`${styles.metricCard} ${styles[tone]}`} style={{ "--delay": `${delay}ms` }}>
+    <div className={styles.metricIcon}><i className={`fe fe-${icon}`} /></div>
+    <div><span>{label}</span><strong>{value}</strong><small>{helper}</small></div>
+    <i className={`fe fe-arrow-up-right ${styles.metricArrow}`} />
+  </article>
+);
+
+const DetailItem = ({ icon, label, value, wide, status }) => (
+  <div className={`${styles.detailItem} ${wide ? styles.wide : ""}`}>
+    <span className={styles.detailIcon}><i className={`fe fe-${icon}`} /></span>
+    <div><small>{label}</small>{status ? <StatusPill status={value} /> : <strong>{value || EMPTY}</strong>}</div>
+  </div>
+);
 
 const InstructorView = () => {
   const dispatch = useDispatch();
-  const { query } = useRouter();
-  const [rowId, setRowId] = useState("");
-  const [rowValues, setRowValues] = useState({});
+  const router = useRouter();
+  const [data, setData] = useState({});
+  const [activeTab, setActiveTab] = useState("details");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const { hasgetInstructorInfoSucc } = useSelector((state) => ({
-    hasgetInstructorInfoSucc: state?.InstructorData?.getInstructorData?.data,
-  }));
+  const [studentSearch, setStudentSearch] = useState("");
+  const response = useSelector((state) => state?.InstructorData?.getInstructorData?.data);
 
   useEffect(() => {
-    if (hasgetInstructorInfoSucc) {
-      setRowValues(hasgetInstructorInfoSucc);
-    }
-  }, [hasgetInstructorInfoSucc]);
+    if (response) setData(response);
+  }, [response]);
 
   useEffect(() => {
-    if (query.slug) {
-      setRowId(query.slug[0]);
-      dispatch(getInstructor(query.slug[0]));
-    }
-  }, [query.slug, dispatch]);
+    if (router.query.slug?.[0]) dispatch(getInstructor(router.query.slug[0]));
+  }, [dispatch, router.query.slug]);
 
-  const students = rowValues.instructor_student_map || [];
-  const scenarios = rowValues.scenarios || [];
+  const students = data.instructor_student_map || [];
+  const scenarios = data.scenarios || [];
+  const activeStudents = students.filter((student) => isActiveStatus(student.status)).length;
+  const activeScenarios = scenarios.filter(
+    (scenario) => isActiveStatus(scenario.status) || isActiveStatus(scenario.scenariostatus)
+  ).length;
+  const displayName = data.Instructor_name?.trim() || "SIMManager profile";
+  const filteredStudents = useMemo(() => {
+    const search = studentSearch.trim().toLowerCase();
+    if (!search) return students;
+    return students.filter((student) =>
+      [student.learner_name, student.email, student.mobile, student.learner_id]
+        .some((value) => String(value || "").toLowerCase().includes(search))
+    );
+  }, [studentSearch, students]);
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+  const visibleStudents = filteredStudents.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [studentSearch]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const details = [
+    ["user", "SIMManager name", displayName],
+    ["at-sign", "Login ID", data.loginid],
+    ["mail", "Email address", data.email],
+    ["phone", "Mobile number", data.mobile],
+    ["briefcase", "Organization", data.organization],
+    ["activity", "Account status", data.status, false, true],
+    ["map-pin", "Address", data.address, true],
+    ["calendar", "Created on", formatDate(data.createdon)],
+    ["refresh-cw", "Last updated", formatDate(data.modifiedon)],
+  ];
+
+  const tabs = [
+    ["details", "user", "Overview", null],
+    ["students", "users", "Learners", students.length],
+    ["scenarios", "layers", "Scenarios", scenarios.length],
+  ];
 
   return (
     <>
-      <Seo title="SIMManager" />
+      <Seo title={`${displayName} | SIMManager`} />
       <ToastContainer />
-      <Container className="py-4">
-        <h4 className="fw-bold mb-4">
-          <i className="fe fe-user me-2"></i>SIMManager Details
-        </h4>
+      <main className={styles.page}>
+        <Container fluid="xl" className={styles.container}>
+          <section className={styles.hero}>
+            <div className={styles.heroPattern} />
+            <button type="button" className={styles.backButton} onClick={() => router.push("/instructors")}>
+              <i className="fe fe-arrow-left" /><span>Back to SIMManagers</span>
+            </button>
+            <div className={styles.heroContent}>
+              <div className={styles.avatar}>
+                {data.profile ? (
+                  <img src={`${process.env.API_URL_FILEMANAGER}${data.profile}`} alt={`${displayName} profile`} />
+                ) : (
+                  <span>{initialsFor(displayName)}</span>
+                )}
+                <i />
+              </div>
+              <div className={styles.identity}>
+                <span className={styles.eyebrow}>SIMManager profile</span>
+                <h1>{displayName}</h1>
+                <div className={styles.contactRow}>
+                  <span><i className="fe fe-mail" />{data.email || EMPTY}</span>
+                  <span><i className="fe fe-phone" />{data.mobile || EMPTY}</span>
+                  {data.organization && <span><i className="fe fe-briefcase" />{data.organization}</span>}
+                </div>
+              </div>
+              <div className={styles.heroStatus}>
+                <StatusPill status={data.status} />
+                <small>Account status</small>
+              </div>
+            </div>
+            <span className={styles.watermark}>SIM</span>
+          </section>
 
-        {/* SIMManager Header */}
-        <div className="d-flex align-items-center mb-4 bg-light p-3 rounded-3 shadow-sm">
-          <div className="me-3">
-            <i className="bi bi-person-circle fs-1 text-primary"></i>
-          </div>
-          <div>
-            <h5 className="mb-1">{rowValues.Instructor_name || ""}</h5>
-            <small className="text-muted d-block">
-              <i className="bi bi-envelope me-1"></i> {rowValues.email || ""}
-            </small>
-          </div>
-        </div>
+          <section className={styles.metrics} aria-label="SIMManager summary">
+            <MetricCard icon="users" label="Mapped learners" value={data.mapped_student_count ?? students.length} helper="Total assigned learners" tone="green" delay={80} />
+            <MetricCard icon="user-check" label="Active learners" value={activeStudents} helper={`${Math.max(students.length - activeStudents, 0)} currently inactive`} tone="cyan" delay={140} />
+            <MetricCard icon="layers" label="Created scenarios" value={data.totalscenariocount ?? scenarios.length} helper="Total authored scenarios" tone="violet" delay={200} />
+            <MetricCard icon="check-circle" label="Active scenarios" value={activeScenarios} helper={`${Math.max(scenarios.length - activeScenarios, 0)} not active`} tone="amber" delay={260} />
+          </section>
 
-        {/* Summary Cards */}
-        <Row className="mb-4">
-          <Col md={4}>
-            <Card className="shadow-sm border-0 rounded-4">
-              <Card.Body className="text-center">
-                <i className="bi bi-people fs-2 text-primary mb-2"></i>
-                <h5 className="fw-bold">{rowValues.mapped_student_count || 0}</h5>
-                <div className="text-muted">Students Mapped</div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={4}>
-            <Card className="shadow-sm border-0 rounded-4">
-              <Card.Body className="text-center">
-                <i className="bi bi-file-earmark-text fs-2 text-info mb-2"></i>
-                <h5 className="fw-bold">{rowValues.totalscenariocount || 0}</h5>
-                <div className="text-muted">Scenarios Created</div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Tabs Section */}
-        <Card className="shadow-sm border-0 rounded-4 mb-4">
-          <Card.Body>
-            <Tab.Container defaultActiveKey="details">
-              <Nav variant="pills" className="mb-3">
-                <Nav.Item>
-                  <Nav.Link eventKey="details">SIMManager Details</Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="students">Students</Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="scenarios">Scenarios</Nav.Link>
-                </Nav.Item>
+          <section className={styles.workspace}>
+            <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
+              <Nav className={styles.tabNav}>
+                {tabs.map(([key, icon, label, count]) => (
+                  <Nav.Item key={key}>
+                    <Nav.Link eventKey={key} className={styles.tabLink}>
+                      <i className={`fe fe-${icon}`} /><span>{label}</span>
+                      {count !== null && <small>{count}</small>}
+                    </Nav.Link>
+                  </Nav.Item>
+                ))}
               </Nav>
 
-              <Tab.Content>
+              <Tab.Content className={styles.tabContent}>
                 <Tab.Pane eventKey="details">
-                  <Row>
-                    <Col md={4}>
-                      <Card className="border-0 shadow-sm rounded-4 p-3 h-100">
-                        <div className="d-flex align-items-center">
-                          <i className="bi bi-person fs-3 text-primary me-3"></i>
-                          <div>
-                            <div className="fw-bold">{rowValues.Instructor_name}</div>
-                            <small className="text-muted">SIMManager Name</small>
-                          </div>
-                        </div>
-                      </Card>
-                    </Col>
-                    <Col md={8}>
-                      <Row className="gy-3">
-                        <Col sm={6}>
-                          <Card className="border-0 shadow-sm rounded-4 p-3 h-100">
-                            <div className="d-flex align-items-center">
-                              <i className="bi bi-envelope fs-3 text-primary me-3"></i>
-                              <div>
-                                <div className="fw-bold">{rowValues.email}</div>
-                                <small className="text-muted">Email Address</small>
-                              </div>
-                            </div>
-                          </Card>
-                        </Col>
-                        <Col sm={6}>
-                          <Card className="border-0 shadow-sm rounded-4 p-3 h-100">
-                            <div className="d-flex align-items-center">
-                              <i className="bi bi-telephone fs-3 text-success me-3"></i>
-                              <div>
-                                <div className="fw-bold">{rowValues.mobile || "N/A"}</div>
-                                <small className="text-muted">Mobile Number</small>
-                              </div>
-                            </div>
-                          </Card>
-                        </Col>
-                      </Row>
-                    </Col>
-                  </Row>
-                </Tab.Pane>
-
-                <Tab.Pane eventKey="students">
-                  <h5 className="fw-bold mb-4">Mapped Students</h5>
-                  <Row className="gy-4">
-                    {students.map((student, idx) => {
-                      const isActive = student.status === "Active";
-                      return (
-                        <Col md={6} lg={4} key={idx}>
-                          <Card
-                            className={`shadow-sm rounded-4 h-100 border-3 ${
-                              isActive ? "border-success" : "border-danger"
-                            }`}
-                          >
-                            <Card.Body className="d-flex flex-column align-items-start">
-                              <div className="d-flex align-items-center mb-3">
-                                <div
-                                  className={`avatar bg-gradient-${
-                                    isActive ? "success" : "danger"
-                                  } text-white rounded-circle me-3`}
-                                  style={{
-                                    width: 48,
-                                    height: 48,
-                                    fontSize: "1.25rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                >
-                                  {student.learner_name?.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <h6 className="fw-semibold mb-0">{student.learner_name}</h6>
-                                  <small className="text-muted">{student.email}</small>
-                                </div>
-                              </div>
-                              <div className="w-100 mt-auto small">
-                                <div><strong>Mobile:</strong> {student.mobile || "N/A"}</div>
-                                <div><strong>Learner ID:</strong> {student.learner_id}</div>
-                                <div>
-                                  <strong>Status:</strong>{" "}
-                                  <Badge bg={isActive ? "success" : "danger"}>{student.status}</Badge>
-                                </div>
-                              </div>
-                            </Card.Body>
-                          </Card>
-                        </Col>
-                      );
-                    })}
-                  </Row>
-                  <div className="d-flex justify-content-end mt-4">
-                    <Pagination className="mb-0">
-                      {[...Array(totalPages)].map((_, index) => (
-                        <Pagination.Item
-                          key={index + 1}
-                          active={index + 1 === currentPage}
-                          onClick={() => setCurrentPage(index + 1)}
-                        >
-                          {index + 1}
-                        </Pagination.Item>
-                      ))}
-                    </Pagination>
+                  <SectionHeading eyebrow="Account information" title="SIMManager overview">
+                    Contact, organization and account information in one place.
+                  </SectionHeading>
+                  <div className={styles.detailGrid}>
+                    {details.map(([icon, label, value, wide, status]) => (
+                      <DetailItem key={label} icon={icon} label={label} value={value} wide={wide} status={status} />
+                    ))}
                   </div>
                 </Tab.Pane>
 
+                <Tab.Pane eventKey="students">
+                  <SectionHeading
+                    eyebrow="Assigned users"
+                    title="Mapped learners"
+                    action={
+                      <label className={styles.searchBox}>
+                        <i className="fe fe-search" />
+                        <input
+                          value={studentSearch}
+                          onChange={(event) => setStudentSearch(event.target.value)}
+                          placeholder="Search learners..."
+                        />
+                        {studentSearch && <button type="button" onClick={() => setStudentSearch("")} aria-label="Clear search"><i className="fe fe-x" /></button>}
+                      </label>
+                    }
+                  >
+                    Browse learners assigned to this SIMManager and review their status.
+                  </SectionHeading>
+                  {visibleStudents.length ? (
+                    <>
+                      <div className={styles.studentGrid}>
+                        {visibleStudents.map((student, index) => {
+                          const active = isActiveStatus(student.status);
+                          return (
+                            <article className={styles.studentCard} key={student.learner_id || index} style={{ "--delay": `${index * 55}ms` }}>
+                              <div className={styles.studentTop}>
+                                <div className={styles.studentAvatar}>{initialsFor(student.learner_name)}</div>
+                                <StatusPill status={student.status} />
+                              </div>
+                              <h4>{student.learner_name || "Unnamed learner"}</h4>
+                              <span className={styles.studentEmail}><i className="fe fe-mail" />{student.email || EMPTY}</span>
+                              <div className={styles.studentFacts}>
+                                <div><small>Mobile</small><strong>{student.mobile || EMPTY}</strong></div>
+                                <div><small>Learner ID</small><strong>#{student.learner_id || EMPTY}</strong></div>
+                              </div>
+                              <div className={`${styles.statusLine} ${active ? styles.activeLine : styles.inactiveLine}`} />
+                            </article>
+                          );
+                        })}
+                      </div>
+                      <div className={styles.paginationBar}>
+                        <span>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length}</span>
+                        <div>
+                          <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}><i className="fe fe-chevron-left" /></button>
+                          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                            <button type="button" key={page} className={page === currentPage ? styles.currentPage : ""} onClick={() => setCurrentPage(page)}>{page}</button>
+                          ))}
+                          <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)}><i className="fe fe-chevron-right" /></button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <EmptyState icon={studentSearch ? "search" : "users"} title={studentSearch ? "No learners found" : "No mapped learners"}>
+                      {studentSearch ? "Try a different name, email, mobile number or learner ID." : "Learners assigned to this SIMManager will appear here."}
+                    </EmptyState>
+                  )}
+                </Tab.Pane>
+
                 <Tab.Pane eventKey="scenarios">
-                  <h6 className="fw-bold mb-3">Scenarios Created</h6>
-                  <Accordion defaultActiveKey="0">
-                    {scenarios.map((scenario, index) => (
-                      <Accordion.Item eventKey={index.toString()} key={index}>
-                        <Accordion.Header>{scenario.scenariotitle}</Accordion.Header>
-                        <Accordion.Body>
-                          <p>
-                            <strong>Created On:</strong>{" "}
-                            {new Date(scenario.createdon).toLocaleString()}
-                          </p>
-                          <p>
-                            <strong>Status:</strong>{" "}
-                            <Badge bg={scenario.status?.toLowerCase() === "active" ? "success" : "secondary"}>{scenario.status}</Badge>
-                          </p>
-                        </Accordion.Body>
-                      </Accordion.Item>
-                    ))}
-                  </Accordion>
+                  <SectionHeading eyebrow="Authored content" title="Created scenarios">
+                    Scenarios created by this SIMManager, with their publication status and date.
+                  </SectionHeading>
+                  {scenarios.length ? (
+                    <div className={styles.scenarioGrid}>
+                      {scenarios.map((scenario, index) => (
+                        <article className={styles.scenarioCard} key={scenario.scenarioid || index} style={{ "--delay": `${Math.min(index * 60, 360)}ms` }}>
+                          <div className={styles.scenarioTop}>
+                            <span className={styles.scenarioIcon}><i className="fe fe-layers" /></span>
+                            <StatusPill status={scenario.status || scenario.scenariostatus} />
+                          </div>
+                          <span className={styles.scenarioNumber}>SCENARIO {String(index + 1).padStart(2, "0")}</span>
+                          <h4>{scenario.scenariotitle || "Untitled scenario"}</h4>
+                          <div className={styles.scenarioFooter}>
+                            <span><i className="fe fe-calendar" />Created {formatDate(scenario.createdon)}</span>
+                            <span><i className="fe fe-hash" />{scenario.scenarioid || EMPTY}</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState icon="layers" title="No scenarios created">
+                      Scenarios authored by this SIMManager will appear here.
+                    </EmptyState>
+                  )}
                 </Tab.Pane>
               </Tab.Content>
             </Tab.Container>
-          </Card.Body>
-        </Card>
-      </Container>
+          </section>
+        </Container>
+      </main>
     </>
   );
 };
 
 InstructorView.layout = "Contentlayout";
 export default InstructorView;
-
-

@@ -17,6 +17,8 @@ import {
   Handle,
   Position,
   useReactFlow,
+  ConnectionLineType,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -91,24 +93,6 @@ const DEFAULT_COMPONENT_ANIMATION = {
   pauseSeconds: 2,
 };
 
-const FLOW_NODE_PALETTES = [
-  { accent: "#ff3d5a", glow: "rgba(255, 61, 90, 0.34)" },
-  { accent: "#ff4fb3", glow: "rgba(255, 79, 179, 0.34)" },
-  { accent: "#9b6cff", glow: "rgba(155, 108, 255, 0.34)" },
-  { accent: "#22d3ee", glow: "rgba(34, 211, 238, 0.34)" },
-  { accent: "#18d9bd", glow: "rgba(24, 217, 189, 0.34)" },
-  { accent: "#f8c51c", glow: "rgba(248, 197, 28, 0.34)" },
-  { accent: "#7bdc16", glow: "rgba(123, 220, 22, 0.34)" },
-  { accent: "#ff8a00", glow: "rgba(255, 138, 0, 0.34)" },
-];
-
-const getFlowNodePalette = (value = "") => {
-  const hash = String(value)
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0);
-  return FLOW_NODE_PALETTES[hash % FLOW_NODE_PALETTES.length];
-};
-
 const getFlowComponentDetails = (data = {}) => {
   const label = String(data.label || "Unnamed component").trim();
   const separatorIndex = label.indexOf("-");
@@ -119,6 +103,117 @@ const getFlowComponentDetails = (data = {}) => {
       data.vmid ||
       (separatorIndex > -1 ? label.slice(0, separatorIndex).trim() : ""),
   };
+};
+
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const PORT_PLACEMENT_OPTIONS = ["Auto", ...PORT_SIDES];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+
+const getNetworkPorts = (networkport) => {
+  const entries = Array.isArray(networkport)
+    ? networkport.flatMap((port) => Object.entries(port || {}))
+    : networkport && typeof networkport === "object"
+      ? Object.entries(networkport)
+      : [];
+
+  return entries
+    .map(([key, value]) => {
+      const tagMatch = String(value).match(/tag=(\d+)/);
+      return { key, label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key };
+    })
+    .sort((first, second) => first.key.localeCompare(second.key));
+};
+
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+      : DEFAULT_PORT_SIDE_ORDER[Math.min(3, Math.floor(index / portsPerSide))],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
+
+const getPortKeyFromHandle = (handleId = "") =>
+  String(handleId).replace(/-(source|target)$/, "");
+
+const getClosestPortSide = (
+  deltaX,
+  deltaY,
+  halfWidth = 78,
+  halfHeight = 86,
+) => {
+  const distances = {
+    Top: Math.hypot(deltaX, deltaY + halfHeight),
+    Right: Math.hypot(deltaX - halfWidth, deltaY),
+    Bottom: Math.hypot(deltaX, deltaY - halfHeight),
+    Left: Math.hypot(deltaX + halfWidth, deltaY),
+  };
+  return PORT_SIDES.reduce((closest, side) =>
+    distances[side] < distances[closest] ? side : closest,
+  );
+};
+
+const PortPlacementModal = ({ show, node, draft, onChange, onClose, onApply }) => {
+  const ports = getNetworkPorts(node?.data?.networkport);
+
+  return (
+    <Modal show={show} onHide={onClose} centered size="sm" dialogClassName="port-placement-modal">
+      <Modal.Header closeButton>
+        <div>
+          <Modal.Title>Port location</Modal.Title>
+          <div className="port-placement-modal-subtitle">
+            Auto follows the nearest side as connected components move.
+          </div>
+        </div>
+      </Modal.Header>
+      <Modal.Body>
+        {ports.length ? (
+          <div className="port-placement-list">
+            {ports.map((port) => (
+              <div className="port-placement-row" key={port.key}>
+                <strong title={port.label}>{port.label}</strong>
+                <div className="port-placement-sides" role="radiogroup" aria-label={`${port.label} location`}>
+                  {PORT_PLACEMENT_OPTIONS.map((side) => (
+                    <button
+                      key={side}
+                      type="button"
+                      className={draft?.[port.key] === side ? "is-selected" : ""}
+                      onClick={() => onChange({ ...draft, [port.key]: side })}
+                    >
+                      {side}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="port-placement-empty">This component has no network ports.</div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button onClick={onApply} disabled={!ports.length}>Apply locations</Button>
+      </Modal.Footer>
+    </Modal>
+  );
 };
 
 const ComponentAnimationModal = ({
@@ -283,6 +378,8 @@ const DnDFlow = ({
 
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const [edgeRouting, setEdgeRouting] = useState("bezier");
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
@@ -304,6 +401,8 @@ const DnDFlow = ({
   const [animationDraft, setAnimationDraft] = useState(
     DEFAULT_COMPONENT_ANIMATION,
   );
+  const [portNodeId, setPortNodeId] = useState(null);
+  const [portDraft, setPortDraft] = useState({});
 
   const openAnimationModal = useCallback((nodeId, nodeData) => {
     setAnimationNodeId(nodeId);
@@ -313,55 +412,48 @@ const DnDFlow = ({
     });
   }, []);
 
-  const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    let portKeys = [];
-    if (Array.isArray(data.networkport)) {
-      portKeys = data.networkport
-        .flatMap((obj) =>
-          Object.entries(obj).map(([key, value]) => {
-            const tagMatch = String(value).match(/tag=(\d+)/);
-            return {
-              key,
-              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
-            };
-          }),
-        )
-        .sort((a, b) => a.key.localeCompare(b.key));
-    } else if (
-      typeof data.networkport === "object" &&
-      data.networkport !== null
-    ) {
-      portKeys = Object.entries(data.networkport)
-        .map(([key, value]) => {
-          const tagMatch = String(value).match(/tag=(\d+)/);
-          return {
-            key,
-            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
-          };
-        })
-        .sort((a, b) => a.key.localeCompare(b.key));
-    }
+  const openPortModal = useCallback((nodeId, nodeData) => {
+    const ports = getNetworkPorts(nodeData?.networkport);
+    const positions = Object.fromEntries(
+      ports.map((port) => [
+        port.key,
+        PORT_SIDES.includes(nodeData?.portPositions?.[port.key])
+          ? nodeData.portPositions[port.key]
+          : "Auto",
+      ]),
+    );
+    setPortNodeId(nodeId);
+    setPortDraft(positions);
+  }, []);
 
-    const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.max(1, Math.ceil(portKeys.length / 4));
-    const spacingRatio = 100 / (portsPerSide + 1);
-    const palette = getFlowNodePalette(data.componentId || id || data.label);
+  const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
+    const ports = getPortLayouts(
+      getNetworkPorts(data.networkport),
+      data.portPositions,
+      data.autoPortPositions,
+    );
     const { title, vmId } = getFlowComponentDetails(data);
     const animationOption = COMPONENT_ANIMATION_OPTIONS.find(
       (option) => option.value === data.componentAnimation?.type,
     );
 
     return (
-      <div
-        className="portal-flow-node"
-        style={{
-          "--portal-flow-accent": palette.accent,
-          "--portal-flow-glow": palette.glow,
-        }}
-      >
+      <div className="portal-flow-node">
         <div className="portal-flow-node-glow" aria-hidden="true" />
         <div className="portal-flow-node-card">
           <div className="portal-flow-node-actions nodrag">
+            <button
+              type="button"
+              className="portal-flow-node-action portal-flow-node-action--ports"
+              title="Change port locations"
+              aria-label="Change port locations"
+              onClick={(event) => {
+                event.stopPropagation();
+                openPortModal(id, data);
+              }}
+            >
+              P
+            </button>
             <button
               type="button"
               className="portal-flow-node-action portal-flow-node-action--motion"
@@ -415,14 +507,8 @@ const DnDFlow = ({
             )}
           </div>
 
-          {portKeys.map((port, index) => {
-            const sideIndex = Math.floor(index / portsPerSide);
-            const side = sides[sideIndex];
-            const positionIndex = index % portsPerSide;
-            const offsetPercent =
-              side === "Right" || side === "Top"
-                ? (positionIndex + 1) * spacingRatio
-                : (portsPerSide - positionIndex) * spacingRatio;
+          {ports.map((port) => {
+            const { side, offsetPercent } = port;
             const offsetStyle = {
               "--portal-port-offset": `${offsetPercent}%`,
             };
@@ -496,7 +582,8 @@ const DnDFlow = ({
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
+        setEdges(parsedData.edges.map((edge) => ({ ...edge, type: "custom" })));
+        setEdgeRouting(parsedData.edgeRouting === "smooth" ? "smooth" : "bezier");
       }
     }
     if (selectedScenario && selectedScenario.digramcomponent) {
@@ -520,6 +607,89 @@ const DnDFlow = ({
       setNodes(fixedNodes);
     }
   }, [selectedScenario]);
+
+  useEffect(() => {
+    if (!nodes.length) return;
+
+    const nodesById = new Map(nodes.map((node) => [node.id, node]));
+    const vectorsByNode = new Map(nodes.map((node) => [node.id, {}]));
+    const getNodeCenter = (node) => {
+      const position = node.positionAbsolute || node.position || { x: 0, y: 0 };
+      return {
+        x: position.x + (node.measured?.width || node.width || 156) / 2,
+        y: position.y + (node.measured?.height || node.height || 172) / 2,
+      };
+    };
+    const addVector = (nodeId, portKey, deltaX, deltaY) => {
+      if (!nodeId || !portKey || !vectorsByNode.has(nodeId)) return;
+      const nodeVectors = vectorsByNode.get(nodeId);
+      nodeVectors[portKey] = nodeVectors[portKey] || [];
+      nodeVectors[portKey].push({ deltaX, deltaY });
+    };
+
+    edges.forEach((edge) => {
+      const sourceNode = nodesById.get(edge.source);
+      const targetNode = nodesById.get(edge.target);
+      if (!sourceNode || !targetNode) return;
+      const sourceCenter = getNodeCenter(sourceNode);
+      const targetCenter = getNodeCenter(targetNode);
+      const deltaX = targetCenter.x - sourceCenter.x;
+      const deltaY = targetCenter.y - sourceCenter.y;
+      addVector(edge.source, getPortKeyFromHandle(edge.sourceHandle), deltaX, deltaY);
+      addVector(edge.target, getPortKeyFromHandle(edge.targetHandle), -deltaX, -deltaY);
+    });
+
+    const nextPositionsByNode = new Map();
+    vectorsByNode.forEach((portVectors, nodeId) => {
+      const positions = {};
+      Object.entries(portVectors).forEach(([portKey, vectors]) => {
+        const totals = vectors.reduce(
+          (result, vector) => ({
+            deltaX: result.deltaX + vector.deltaX,
+            deltaY: result.deltaY + vector.deltaY,
+          }),
+          { deltaX: 0, deltaY: 0 },
+        );
+        const node = nodesById.get(nodeId);
+        const halfWidth = (node?.measured?.width || node?.width || 156) / 2;
+        const halfHeight = (node?.measured?.height || node?.height || 172) / 2;
+        positions[portKey] = getClosestPortSide(
+          totals.deltaX / vectors.length,
+          totals.deltaY / vectors.length,
+          halfWidth,
+          halfHeight,
+        );
+      });
+      nextPositionsByNode.set(nodeId, positions);
+    });
+
+    const changedNodeIds = nodes
+      .filter(
+        (node) =>
+          JSON.stringify(node.data?.autoPortPositions || {}) !==
+          JSON.stringify(nextPositionsByNode.get(node.id) || {}),
+      )
+      .map((node) => node.id);
+    if (!changedNodeIds.length) return;
+
+    const changedNodeIdSet = new Set(changedNodeIds);
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        changedNodeIdSet.has(node.id)
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                autoPortPositions: nextPositionsByNode.get(node.id) || {},
+              },
+            }
+          : node,
+      ),
+    );
+    requestAnimationFrame(() => {
+      changedNodeIds.forEach((nodeId) => updateNodeInternals(nodeId));
+    });
+  }, [nodes, edges, setNodes, updateNodeInternals]);
 
   const onConnect = useCallback((params) => {
       setEdges((eds) =>
@@ -648,7 +818,7 @@ const DnDFlow = ({
     };
   }
   const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
+    const flowchartData = { nodes, edges, edgeRouting };
     let componentsData = [];
     const configData = generateComponentConfig(
       flowchartData.nodes,
@@ -741,12 +911,26 @@ const DnDFlow = ({
     );
     closeAnimationModal();
   };
+  const portNode = nodes.find((node) => node.id === portNodeId);
+  const closePortModal = () => setPortNodeId(null);
+  const applyPortPositions = () => {
+    if (!portNodeId) return;
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === portNodeId
+          ? { ...node, data: { ...node.data, portPositions: portDraft } }
+          : node,
+      ),
+    );
+    requestAnimationFrame(() => updateNodeInternals(portNodeId));
+    closePortModal();
+  };
 
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => <ImageNode {...props} deleteNode={deleteNode} />,
     }),
-    [deleteNode, openAnimationModal],
+    [deleteNode, openAnimationModal, openPortModal],
   );
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
@@ -763,8 +947,7 @@ const DnDFlow = ({
     };
   }, [nodes]);
   const defaultEdgeOptions = {
-    type: "straight",
-    style: { stroke: "#000", strokeWidth: 2 },
+    type: "custom",
   };
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
@@ -776,6 +959,7 @@ const DnDFlow = ({
         allNodes={nodes}
         allEdges={edges}
         setEdges={setEdges}
+        edgeRouting={edgeRouting}
       />
     );
   };
@@ -796,11 +980,12 @@ const DnDFlow = ({
             scenarioId={scenarioId}
             setNodes={setNodes}
             setEdges={setEdges}
+            setEdgeRouting={setEdgeRouting}
             setDraggedComponent={setDraggedComponent}
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper portal-flow-canvas"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -808,6 +993,18 @@ const DnDFlow = ({
             borderRadius: "8px",
           }}
         >
+          <label className="edge-routing-control">
+            <span>Link style</span>
+            <Form.Select
+              size="sm"
+              value={edgeRouting}
+              onChange={(event) => setEdgeRouting(event.target.value)}
+              aria-label="Diagram link style"
+            >
+              <option value="bezier">Bezier (default)</option>
+              <option value="smooth">Smooth Step</option>
+            </Form.Select>
+          </label>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -819,8 +1016,15 @@ const DnDFlow = ({
             // style={{ backgroundColor: '#F7F9FB' }}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
-            connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
+            connectionLineType={
+              edgeRouting === "smooth"
+                ? ConnectionLineType.SmoothStep
+                : ConnectionLineType.Bezier
+            }
+            connectionLineStyle={{
+              stroke: "var(--diagram-edge-default)",
+              strokeWidth: 1.6,
+            }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
           >
@@ -837,6 +1041,14 @@ const DnDFlow = ({
         onClose={closeAnimationModal}
         onApply={applyComponentAnimation}
         onClear={clearComponentAnimation}
+      />
+      <PortPlacementModal
+        show={Boolean(portNode)}
+        node={portNode}
+        draft={portDraft}
+        onChange={setPortDraft}
+        onClose={closePortModal}
+        onApply={applyPortPositions}
       />
       <div className="justify-content-end d-flex">
         <div className="pull-left">

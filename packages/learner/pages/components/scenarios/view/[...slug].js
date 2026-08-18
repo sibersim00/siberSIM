@@ -57,6 +57,44 @@ const PdfLoader = dynamic(
   { ssr: false, loading: () => <p>Loading PDF viewer...</p> },
 );
 
+const scenarioConfigurationSteps = [
+  {
+    icon: "fa-cogs",
+    accent: "red",
+    label: "Preparing configuration",
+    text: "Validating the scenario settings and resources.",
+    step: "Initializing",
+  },
+  {
+    icon: "fa-clone",
+    accent: "orange",
+    label: "Cloning virtual machines",
+    text: "Creating the virtual machines required for this session.",
+    step: "Cloning",
+  },
+  {
+    icon: "fa-sliders-h",
+    accent: "yellow",
+    label: "Configuring network",
+    text: "Applying resource and network bridge settings.",
+    step: "Bridge Configuration",
+  },
+  {
+    icon: "fab fa-linux",
+    accent: "blue",
+    label: "Starting virtual machines",
+    text: "Powering on the configured virtual machines.",
+    step: "Starting",
+  },
+  {
+    icon: "fa-shield-alt",
+    accent: "green",
+    label: "Launching scenario",
+    text: "Finalizing the environment and making it available.",
+    step: "Running",
+  },
+];
+
 const ScenariosView = () => {
   const dispatch = useDispatch();
   const { query, push } = useRouter();
@@ -81,6 +119,7 @@ const ScenariosView = () => {
   const [countdown, setCountdown] = useState(10);
   const [countdownActive, setCountdownActive] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [configurationElapsed, setConfigurationElapsed] = useState(0);
   const [isScenarioError400, setIsScenarioError400] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -670,12 +709,13 @@ const hasInvitees =
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
+    setConfigurationElapsed(0);
     setShowCloneModal(true);
     dispatch(getSessionStatusList(scenariolearnersessionuuid));
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
         dispatch(getSessionStatusList(scenariolearnersessionuuid));
-      }, 5000);
+      }, 25000);
     }, 100);
   };
 
@@ -687,6 +727,14 @@ const hasInvitees =
       }
     }
   }, [showCloneModal, hasGetSessionStatusListData?.vm_steps]);
+
+  useEffect(() => {
+    if (!showCloneModal || vmStep === "Running" || vmStep === "Pause") return;
+    const elapsedTimer = setInterval(() => {
+      setConfigurationElapsed((previous) => previous + 1);
+    }, 1000);
+    return () => clearInterval(elapsedTimer);
+  }, [showCloneModal, vmStep]);
 
   useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
@@ -730,26 +778,23 @@ const hasInvitees =
     return () => clearInterval(timer);
   }, [countdownActive, countdown]);
 
-  const getStepClass = (step) => {
-    if (vmStep === "Running") return "text-success";
+  const isConfigurationComplete = vmStep === "Running" || vmStep === "Pause";
+  const currentVmStepIndex = isConfigurationComplete
+    ? vmStepsOrder.length - 1
+    : vmStepsOrder.indexOf(vmStep);
+  const configurationProgress = isConfigurationComplete
+    ? 100
+    : currentVmStepIndex >= 0
+      ? Math.round(((currentVmStepIndex + 1) / vmStepsOrder.length) * 100)
+      : 0;
 
-    const currentIndex = vmStepsOrder.indexOf(vmStep);
+  const getConfigurationStepState = (step) => {
     const stepIndex = vmStepsOrder.indexOf(step);
-    if (stepIndex < currentIndex) return "text-success";
-    if (stepIndex === currentIndex) return "text-warning font-weight-bold";
-
-    return "text-danger";
-  };
-
-  const iconBackground = (step) => {
-    if (vmStep === "Running") return "product-icon-bg-success-transparent";
-
-    const currentIndex = vmStepsOrder.indexOf(vmStep);
-    const stepIndex = vmStepsOrder.indexOf(step);
-    if (stepIndex < currentIndex) return "product-icon-bg-success-transparent";
-    if (stepIndex === currentIndex)
-      return "product-icon-bg-warning-transparent font-weight-bold";
-    return "product-icon-bg-danger-transparent";
+    if (isConfigurationComplete || stepIndex < currentVmStepIndex) {
+      return "complete";
+    }
+    if (stepIndex === currentVmStepIndex) return "active";
+    return "pending";
   };
   const handleOkClick = () => {
     setShowCloneModal(false);
@@ -1746,99 +1791,88 @@ const hasInvitees =
             show={showCloneModal}
             onHide={() => {}}
             backdrop="static"
+            backdropClassName="scenario-clone-backdrop"
             keyboard={false}
             size="md"
             centered
+            className="scenario-clone-modal-shell"
+            dialogClassName="scenario-clone-modal"
           >
-            <Modal.Header>
-              <Modal.Title>Scenario configuration steps</Modal.Title>
+            <Modal.Header className="scenario-clone-header border-0">
+              <div className="scenario-clone-heading">
+                <div>
+                  <span className="scenario-clone-eyebrow">Live configuration</span>
+                  <Modal.Title>Building your scenario</Modal.Title>
+                  <p className="mb-0">
+                    Allocating resources for your secure lab
+                  </p>
+                </div>
+              </div>
             </Modal.Header>
-            <Modal.Body>
-              <div className="row">
-                <div className="col-12">
-                  <Card className="custom-card">
-                    <div className="product-timeline card-body pt-3 mt-1">
-                      <ul className="timeline-1 mb-0">
-                        {[
-                          {
-                            icon: "fa-cogs",
-                            label: "Initializing Configure",
-                            text: "Preparing settings...",
-                            step: "Initializing",
-                          },
-                          {
-                            icon: "fa-clone",
-                            label: "Starting Cloning VMs",
-                            text: "Duplicating virtual machines...",
-                            step: "Cloning",
-                          },
-                          {
-                            icon: "fa-sliders-h",
-                            label: "VM Configuration",
-                            text: "Configuring resources and network...",
-                            step: "Bridge Configuration",
-                          },
-                          {
-                            icon: "fab fa-linux",
-                            label: "Starting VMs",
-                            text: "Starting VMs...",
-                            step: "Starting",
-                          },
-                          {
-                            icon: "fa-shield-alt",
-                            label: "Launching the scenario",
-                            text: "Launching the scenario...",
-                            step: "Running",
-                          },
-                        ].map((item, idx) => {
-                          return (
-                            <li
-                              key={idx}
-                              className="mt-0 d-flex justify-content-between align-items-start"
-                            >
-                              <div className="d-flex">
-                                <i
-                                  className={`fa ${item.icon} ${iconBackground(
-                                    item.step,
-                                  )} product-icon ${getStepClass(item.step)}`}
-                                ></i>
-                                <div className="ml-2">
-                                  <span
-                                    className={`font-weight-semibold mb-4 tx-14 ${getStepClass(
-                                      item.step,
-                                    )}`}
-                                  >
-                                    {item.label}
-                                  </span>
-                                  <p className="mb-0 text-muted tx-12">
-                                    {item.text}
-                                  </p>
-                                </div>
-                              </div>
-                              {getStepClass(item.step).includes(
-                                "text-warning",
-                              ) && (
-                                <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </Card>
+            <Modal.Body className="scenario-clone-body">
+              <div className="scenario-clone-progress-summary">
+                <strong>Overall progress</strong>
+                <strong>{formatTime(configurationElapsed)} elapsed</strong>
+              </div>
+              <div
+                className="scenario-clone-progress"
+                role="progressbar"
+                aria-label="Scenario configuration progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={configurationProgress}
+              >
+                <div style={{ width: `${configurationProgress}%` }} />
+              </div>
+
+              <div className="scenario-clone-workspace">
+                <div
+                  className="scenario-clone-ring"
+                  style={{
+                    "--configuration-progress": `${configurationProgress * 3.6}deg`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <div>
+                    <strong>{configurationProgress}%</strong>
+                    <span>{isConfigurationComplete ? "Ready" : "Initiated"}</span>
+                  </div>
+                </div>
+
+                <div className="scenario-clone-steps">
+                  {scenarioConfigurationSteps.map((item, idx) => {
+                    const stepState = getConfigurationStepState(item.step);
+                    return (
+                      <div
+                        key={item.step}
+                        className={`scenario-clone-step is-${stepState} accent-${item.accent}`}
+                        style={{ "--step-delay": `${idx * 70}ms` }}
+                      >
+                        <div className="scenario-clone-step-marker">
+                          {stepState === "complete" && <i className="fas fa-check" />}
+                          {stepState === "active" && <span />}
+                        </div>
+                        <div className="scenario-clone-step-copy">
+                          <h6>{item.label}</h6>
+                          {stepState === "active" && <p>{item.text}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </Modal.Body>
 
-            <Modal.Footer>
-              {vmStep === "Running" && (
-                <div style={{ display: "flex", alignItems: "center" }}>
+            {isConfigurationComplete && (
+              <Modal.Footer className="scenario-clone-footer border-0">
+                <div className="scenario-clone-ready-action">
+                  <span>Continuing automatically in {countdown}s</span>
                   <Button variant="success" onClick={handleOkClick}>
-                    OK ({countdown})
+                    Enter scenario <i className="fas fa-arrow-right ms-2" />
                   </Button>
                 </div>
-              )}
-            </Modal.Footer>
+              </Modal.Footer>
+            )}
           </Modal>
 
           <Modal

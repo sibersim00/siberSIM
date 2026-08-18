@@ -1,5 +1,10 @@
-import React, { useState,useEffect  } from 'react';
-import { BaseEdge, getSmoothStepPath, useReactFlow } from '@xyflow/react';
+import React, { useEffect, useState } from "react";
+import {
+  BaseEdge,
+  getBezierPath,
+  getSmoothStepPath,
+  useReactFlow,
+} from "@xyflow/react";
 
 const EditableEdge = ({
   id,
@@ -11,12 +16,16 @@ const EditableEdge = ({
   targetPosition,
   data,
   markerEnd,
-  allEdges, 
+  allEdges = [],
+  edgeRouting,
+  selected,
+  readOnly = false,
 }) => {
   const { setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
-
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const routing = edgeRouting || data?.edgeRouting || "bezier";
+  const pathFactory = routing === "smooth" ? getSmoothStepPath : getBezierPath;
+  const [edgePath, labelX, labelY] = pathFactory({
     sourceX,
     sourceY,
     sourcePosition,
@@ -25,65 +34,54 @@ const EditableEdge = ({
     targetPosition,
     borderRadius: 20,
   });
+
   const getInitialLabel = () => {
     if (data?.label) return data.label;
-    const currentEdge = allEdges.find((e) => e.id === id);
-    if (!currentEdge) return 'Network Id'; // fallback to default if somehow not found
-
+    const currentEdge = allEdges.find((edge) => edge.id === id);
+    if (!currentEdge) return "Network Id";
     const existing = allEdges.find(
-      (e) =>
-        e.id !== id &&
-        e.target === currentEdge?.target &&
-        e.targetHandle === currentEdge?.targetHandle &&
-        e.data?.label
+      (edge) =>
+        edge.id !== id &&
+        edge.target === currentEdge.target &&
+        edge.targetHandle === currentEdge.targetHandle &&
+        edge.data?.label,
     );
-
-    return existing?.data.label || 'Network Id';
+    return existing?.data.label || "Network Id";
   };
 
   const [label, setLabel] = useState(getInitialLabel);
   const saveLabel = () => {
     setIsEditing(false);
-    setEdges((eds) =>
-      eds.map((e) =>
-        e.id === id ? { ...e, data: { ...e.data, label } } : e
-      )
+    setEdges((edges) =>
+      edges.map((edge) =>
+        edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge,
+      ),
     );
   };
-useEffect(() => {
-  if (!data?.label && label) {
-    setEdges((eds) =>
-      eds.map((e) =>
-        e.id === id ? { ...e, data: { ...e.data, label } } : e
-      )
-    );
-  }
-}, [label, data?.label, id, setEdges]);
 
-  const shouldAnimate = false;
-const shouldAnimate1=
-  data?.animationStart === data?.source &&
-  data?.animationEnd === data?.target;
+  useEffect(() => {
+    if (!data?.label && label) {
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge,
+        ),
+      );
+    }
+  }, [label, data?.label, id, setEdges]);
+
   return (
     <>
-      <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />
-      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} />
-      
-      {shouldAnimate && (
-        <circle r="8" fill="red">
-          <animateMotion
-            dur="2s"
-            repeatCount="indefinite"
-            rotate="auto"
-            keyPoints="0;1"
-            keyTimes="0;1"
-            calcMode="linear"
-          >
-            <mpath href={`#edge-path-${id}`} />
-          </animateMotion>
-        </circle>
-      )}
-
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          stroke: selected
+            ? "var(--diagram-edge-selected)"
+            : "var(--diagram-edge-default)",
+          strokeWidth: selected ? 2.2 : 1.6,
+        }}
+      />
       <foreignObject
         width={80}
         height={40}
@@ -91,43 +89,29 @@ const shouldAnimate1=
         y={labelY - 20}
         requiredExtensions="http://www.w3.org/1999/xhtml"
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-          }}
-        >
-          {isEditing ? (
+        <div className="portal-edge-label-wrap">
+          {isEditing && !readOnly ? (
             <input
               value={label}
               type="text"
-              onChange={(e) => setLabel(e.target.value)}
+              onChange={(event) => setLabel(event.target.value)}
               onBlur={saveLabel}
-              onKeyDown={(e) => e.key === 'Enter' && saveLabel()}
+              onKeyDown={(event) => event.key === "Enter" && saveLabel()}
               autoFocus
-              style={{
-                fontSize: 12,
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                padding: '2px 4px',
-                width: '100%',
-                color:'#000',
-              }}
+              className="portal-edge-label-input"
             />
-          ) : (
-            <div
-              onClick={() => setIsEditing(true)}
-              style={{
-                fontSize: 12,
-                cursor: 'pointer',  
-                userSelect: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {label || 'Network Id'}
+          ) : readOnly ? (
+            <div className="portal-edge-label">
+              {label || "Network Id"}
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="portal-edge-label"
+            >
+              {label || "Network Id"}
+            </button>
           )}
         </div>
       </foreignObject>

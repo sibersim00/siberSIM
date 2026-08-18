@@ -5,10 +5,10 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { Button, Card, Row, Col, Modal,OverlayTrigger,Tooltip  } from "react-bootstrap";
+import { Button, Card, Row, Col, Modal,OverlayTrigger,Tooltip, Form } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
-import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Background,Handle,Position,useReactFlow,useUpdateNodeInternals,
+import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Background,Handle,Position,useReactFlow,useUpdateNodeInternals,ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -767,9 +767,11 @@ const DnDFlow = ({
     const sides = ["Right", "Bottom", "Left", "Top"];
     const portsPerSide = Math.ceil(totalPorts / 4);
     const spacingRatio = 100 / (portsPerSide + 1);
-    const baseSize = 90;
-    const portSpacing = 15;
-    const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const nodeSize = 156;
+    const rawLabel = String(data.label || "Unnamed component").trim();
+    const labelSeparator = rawLabel.indexOf("-");
+    const componentTitle = labelSeparator > -1 ? rawLabel.slice(labelSeparator + 1).trim() : rawLabel;
+    const componentVmId = data.vmid || (labelSeparator > -1 ? rawLabel.slice(0, labelSeparator).trim() : "");
     const [showPopover, setShowPopover] = useState(false);
     const existingPorts = Array.isArray(data.networkport)
       ? data.networkport.flatMap((obj) => Object.keys(obj))
@@ -789,6 +791,7 @@ const DnDFlow = ({
     }, [nextNet]);
     return (
        <div
+              className="portal-flow-node"
               style={{
                 position: "relative",
                 display: "flex",
@@ -797,7 +800,8 @@ const DnDFlow = ({
               }}
             >
               <div
-                style={{width: nodeSize,height: nodeSize,position: "relative",borderRadius: "8px",border: "2px solid #ccc",display: "flex",alignItems: "center",justifyContent: "center",boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                className="portal-flow-node-card"
+                style={{width: nodeSize,minHeight: 170,position: "relative",borderRadius: 15,border: "1px solid var(--diagram-node-border)",background: "var(--diagram-node-surface)",display: "flex",alignItems: "center",justifyContent: "flex-start",flexDirection: "column",padding: "28px 12px 14px",boxShadow: "0 8px 22px var(--diagram-node-shadow)",
                 }}
               >
                 <OverlayTrigger
@@ -867,12 +871,16 @@ const DnDFlow = ({
                   </button>
                 </OverlayTrigger>
                 <div
-                  style={{width: nodeSize * 0.6,height: nodeSize * 0.6,backgroundImage: `url("${resolveImageUrl(data.image)}")`,backgroundSize: "contain",backgroundPosition: "center",backgroundRepeat: "no-repeat",
+                  className="portal-flow-node-icon-frame"
+                  style={{width: 64,height: 64,backgroundImage: `url("${resolveImageUrl(data.image)}")`,backgroundSize: "contain",backgroundPosition: "center",backgroundRepeat: "no-repeat",
                   }}
                 />
                 {portKeys.map((port, index) => {
                   const sideIndex = Math.floor(index / portsPerSide);
-                  const side = sides[sideIndex];
+                  const configuredSide = data.portPositions?.[port.key] === "Auto"
+                    ? data.autoPortPositions?.[port.key]
+                    : data.portPositions?.[port.key];
+                  const side = sides.includes(configuredSide) ? configuredSide : sides[sideIndex];
                   const positionIndex = index % portsPerSide;
                   let offsetPercent;
                   if (side === "Right" || side === "Top") {
@@ -880,9 +888,9 @@ const DnDFlow = ({
                   } else {
                     offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
                   }
-                  const baseHandleStyle = {position: "absolute",width: 10,height: 10,borderRadius: "50%",background: "#005eff",border: "1px solid white",zIndex: 2,
+                  const baseHandleStyle = {position: "absolute",width: 8,height: 8,borderRadius: "50%",background: "#005eff",border: "1px solid white",zIndex: 2,
                   };
-                  const labelStyle = {position: "absolute",fontSize: 6,padding: "1px 3px",whiteSpace: "nowrap",zIndex: 5,
+                  const labelStyle = {position: "absolute",fontSize: 6,padding: "1px 3px",whiteSpace: "nowrap",zIndex: 5,border: "1px solid var(--diagram-node-border-selected)",borderRadius: 5,background: "var(--diagram-port-surface)",color: "var(--diagram-node-text)",
                   };
                   let handleStyle = {};
                   let labelPosition = {};
@@ -910,9 +918,9 @@ const DnDFlow = ({
                       };
                       labelPosition = {
                         ...labelStyle,
-                        right: -60,
+                        right: -6,
                         top: `${offsetPercent}%`,
-                        transform: "translateY(-10%)",
+                        transform: "translate(100%, -50%)",
                       };
                       break;
                     case "Bottom":
@@ -938,9 +946,9 @@ const DnDFlow = ({
                       };
                       labelPosition = {
                         ...labelStyle,
-                        left: -60,
+                        left: -6,
                         top: `${offsetPercent}%`,
-                        transform: "translateY(-10%)",
+                        transform: "translate(-100%, -50%)",
                       };
                       break;
                     default:
@@ -974,14 +982,18 @@ const DnDFlow = ({
                 })}
               </div>
               <div
+                className="portal-flow-node-copy"
                 style={{
-                  marginTop: 18,
+                  position: "absolute",
+                  bottom: 17,
+                  left: 12,
                   fontSize: 10,
                   textAlign: "center",
-                  width: "100%",
+                  width: "calc(100% - 24px)",
                 }}
               >
-                {data.label || "Unnamed"}
+                <strong title={componentTitle}>{componentTitle}</strong>
+                <small>{componentVmId ? `VM ID: ${componentVmId}` : "Virtual component"}</small>
               </div>
             </div>
     );
@@ -1056,6 +1068,8 @@ const DnDFlow = ({
     }
   }, [scenario?.scenariodiagram]);
   const scenarioNodes = parsedDiagram?.nodes || [];
+  const parentEdgeRouting =
+    parsedDiagram?.edgeRouting === "smooth" ? "smooth" : "bezier";
   
   useEffect(() => {
     if (query.slug) {
@@ -1076,6 +1090,7 @@ const DnDFlow = ({
         : scenario.scenariodiagram;
 
     const newNodes = parsedData.nodes || [];
+    const routing = parsedData.edgeRouting === "smooth" ? "smooth" : "bezier";
 
     setNodes(newNodes);
     setEdges([]);
@@ -1086,7 +1101,11 @@ const DnDFlow = ({
         updateNodeInternals(node.id);
       });
       // then set edges
-      setEdges(parsedData.edges || []);
+      setEdges((parsedData.edges || []).map((edge) => ({
+        ...edge,
+        type: "custom",
+        data: { ...edge.data, edgeRouting: routing },
+      })));
     });
   } catch (err) {
     console.error("Invalid scenariodiagram JSON", err);
@@ -1507,7 +1526,7 @@ const iconMap = {
           target: connection.target,
           targetHandle: connection.targetHandle,
           type: "custom",
-          data: { label },
+          data: { label, edgeRouting: parentEdgeRouting },
         };
         // setEdges((eds) => addEdge(newEdge, eds));
         setTimeout(() => {
@@ -1817,7 +1836,7 @@ const deleteNode = async (nodeId) => {
     };
   }
   const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
+    const flowchartData = { nodes, edges, edgeRouting: parentEdgeRouting };
     let componentsData = [];
 
     const configData = generateComponentConfig(
@@ -2102,8 +2121,7 @@ useEffect(() => {
     };
   }, [nodes]);
   const defaultEdgeOptions = {
-    type: "straight",
-    style: { stroke: "#000", strokeWidth: 2 },
+    type: "custom",
   };
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
@@ -2115,6 +2133,7 @@ useEffect(() => {
         allNodes={nodes}
         allEdges={edges}
         setEdges={setEdges}
+        edgeRouting={parentEdgeRouting}
       />
     );
   };
@@ -2435,7 +2454,7 @@ const handleEdgeClick = async (event, edge) => {
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper portal-flow-canvas"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -2454,6 +2473,7 @@ const handleEdgeClick = async (event, edge) => {
             </div>
           )}
           <ReactFlow
+            className="portal-flow-canvas"
             nodes={nodes}
             edges={edges}
             key={nodes.length} 
@@ -2465,8 +2485,8 @@ const handleEdgeClick = async (event, edge) => {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
-            connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
+            connectionLineType={parentEdgeRouting === "smooth" ? ConnectionLineType.SmoothStep : ConnectionLineType.Bezier}
+            connectionLineStyle={{ stroke: "var(--diagram-edge-default)", strokeWidth: 1.6 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
             onConnectEnd={onConnectEnd}
@@ -2474,7 +2494,7 @@ const handleEdgeClick = async (event, edge) => {
 
 
           >
-            <Background />
+            <Background color="var(--diagram-grid, #64748b)" />
           </ReactFlow>
           {activePopover && (
             <div

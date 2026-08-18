@@ -5,12 +5,12 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { Button } from "react-bootstrap";
+import { Button, Form, Modal } from "react-bootstrap";
 import { toast } from "react-toastify";
 import {
   ReactFlow,
   ReactFlowProvider,
-  addEdge,
+  addEdge,  
   useNodesState,
   useEdgesState,
   Background,
@@ -18,11 +18,13 @@ import {
   Handle,
   Position,
   useReactFlow,
+  ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
 import SideBar from "./sidebarFlow";
 import EditableEdge from "../../../../shared/data/customScenario/EditableEdge"
+import ScenarioDiagramNode from "../../../../shared/data/scenarios/ScenarioDiagramNode";
 
 import {
   saveScenarioFlow,
@@ -35,6 +37,114 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+
+const COMPONENT_ANIMATION_OPTIONS = [
+  { value: "circle", name: "Circular orbit", description: "Moves continuously around its saved position in a smooth circle.", icon: "↻" },
+  { value: "spiral", name: "Spiral movement", description: "Moves outward in a recognisable diamond pattern, then returns and repeats.", icon: "◉" },
+  { value: "leftToRight", name: "Left to right", description: "Enters from the left, pauses in the middle, and exits right.", icon: "→" },
+  { value: "rightToLeft", name: "Right to left", description: "Enters from the right, pauses in the middle, and exits left.", icon: "←" },
+  { value: "diagonalTopLeft", name: "Top-left to bottom-right", description: "Crosses diagonally, pausing at the canvas centre.", icon: "↘" },
+  { value: "diagonalTopRight", name: "Top-right to bottom-left", description: "Crosses along the opposite diagonal with a centre pause.", icon: "↙" },
+  { value: "diagonalBottomLeft", name: "Bottom-left to top-right", description: "Enters from the bottom-left, pauses at centre, and exits top-right.", icon: "↗" },
+  { value: "diagonalBottomRight", name: "Bottom-right to top-left", description: "Enters from the bottom-right, pauses at centre, and exits top-left.", icon: "↖" },
+];
+
+const DEFAULT_COMPONENT_ANIMATION = { type: "circle", pauseSeconds: 2 };
+
+const getFlowComponentDetails = (data = {}) => {
+  const label = String(data.label || "Unnamed component").trim();
+  const separatorIndex = label.indexOf("-");
+  return {
+    title: separatorIndex > -1 ? label.slice(separatorIndex + 1).trim() : label,
+    vmId: data.vmid || (separatorIndex > -1 ? label.slice(0, separatorIndex).trim() : ""),
+  };
+};
+
+const ComponentAnimationModal = ({ show, node, draft, imageUrl, onChange, onClose, onApply, onClear }) => {
+  const [previewKey, setPreviewKey] = useState(0);
+  const selectedOption = COMPONENT_ANIMATION_OPTIONS.find((option) => option.value === draft.type);
+  const usesPause = [
+    "leftToRight", "rightToLeft", "diagonalTopLeft", "diagonalTopRight",
+    "diagonalBottomLeft", "diagonalBottomRight",
+  ].includes(draft.type);
+  const { title, vmId } = getFlowComponentDetails(node?.data);
+
+  return (
+    <Modal show={show} onHide={onClose} centered size="lg" dialogClassName="component-animation-modal">
+      <Modal.Header closeButton>
+        <div>
+          <Modal.Title>Component animation</Modal.Title>
+          <div className="component-animation-modal-subtitle">{title || "Select a movement"}</div>
+        </div>
+      </Modal.Header>
+      <Modal.Body>
+        <div className="component-animation-layout">
+          <div className="component-animation-options" role="radiogroup">
+            {COMPONENT_ANIMATION_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={draft.type === option.value}
+                className={`component-animation-option ${draft.type === option.value ? "is-selected" : ""}`}
+                onClick={() => {
+                  onChange({ ...draft, type: option.value });
+                  setPreviewKey((value) => value + 1);
+                }}
+              >
+                <span className="component-animation-option-icon">{option.icon}</span>
+                <span><strong>{option.name}</strong><small>{option.description}</small></span>
+                <span className="component-animation-radio" />
+              </button>
+            ))}
+          </div>
+          <div className="component-animation-preview-panel">
+            <div className="component-animation-preview-heading">
+              <span>Live preview</span>
+              <span className="component-animation-preview-status">{selectedOption?.name}</span>
+            </div>
+            <div className="component-animation-stage">
+              <div key={`${draft.type}-${previewKey}`} className={`component-animation-demo component-animation-demo--${draft.type}`}>
+                <div className="component-animation-demo-image" style={{ backgroundImage: `url("${imageUrl || ""}")` }} />
+                <strong>{title}</strong>
+                {vmId && <small>VM ID: {vmId}</small>}
+              </div>
+              <span className="component-animation-stage-centre">Centre pause</span>
+            </div>
+            {usesPause && (
+              <Form.Group className="component-animation-pause-field">
+                <Form.Label>Pause at centre</Form.Label>
+                <div className="component-animation-pause-control">
+                  <Form.Control
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={draft.pauseSeconds}
+                    onChange={(event) => onChange({
+                      ...draft,
+                      pauseSeconds: Math.min(10, Math.max(1, Number(event.target.value) || 1)),
+                    })}
+                  />
+                  <span>seconds</span>
+                </div>
+              </Form.Group>
+            )}
+            <Button type="button" variant="outline-info" className="component-animation-watch-button" onClick={() => setPreviewKey((value) => value + 1)}>
+              Watch demo again
+            </Button>
+          </div>
+        </div>
+      </Modal.Body>
+      <Modal.Footer>
+        {node?.data?.componentAnimation?.type && <Button variant="outline-danger" onClick={onClear}>Remove animation</Button>}
+        <div className="ms-auto d-flex gap-2">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={onApply}>Apply animation</Button>
+        </div>
+      </Modal.Footer>
+    </Modal>
+  );
+};
 
 const DnDFlow = ({
   numLans,
@@ -57,6 +167,7 @@ const DnDFlow = ({
   });
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edgeRouting, setEdgeRouting] = useState("bezier");
   const { screenToFlowPosition } = useReactFlow();
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]);
@@ -74,6 +185,16 @@ const DnDFlow = ({
     }
     return `${window.location.origin}${url}`;
   };
+
+  const [animationNodeId, setAnimationNodeId] = useState(null);
+  const [animationDraft, setAnimationDraft] = useState(DEFAULT_COMPONENT_ANIMATION);
+  const openAnimationModal = useCallback((nodeId, nodeData) => {
+    setAnimationNodeId(nodeId);
+    setAnimationDraft({
+      ...DEFAULT_COMPONENT_ANIMATION,
+      ...(nodeData?.componentAnimation || {}),
+    });
+  }, []);
 
   const portPositionMap = {
     net0: Position.Right,
@@ -352,7 +473,15 @@ const DnDFlow = ({
       const parsedData = JSON.parse(data.replace("flowchartData ", ""));
       if (parsedData?.nodes && parsedData?.edges) {
         setNodes(parsedData.nodes);
-        setEdges(parsedData.edges);
+        setEdgeRouting(parsedData.edgeRouting === "smooth" ? "smooth" : "bezier");
+        setEdges(parsedData.edges.map((edge) => ({
+          ...edge,
+          type: "custom",
+          data: {
+            ...edge.data,
+            edgeRouting: parsedData.edgeRouting === "smooth" ? "smooth" : "bezier",
+          },
+        })));
       }
     }
 
@@ -379,12 +508,13 @@ const DnDFlow = ({
               sourceHandle: params.sourceHandle,
               target: params.target,
               targetHandle: params.targetHandle,
+              edgeRouting,
             }, // this is what will be editable
           },
           eds
         )
       );
-  }, []);
+  }, [edgeRouting]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -490,7 +620,7 @@ const deleteNode = (nodeId) => {
     };
   }
   const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
+    const flowchartData = { nodes, edges, edgeRouting };
     let componentsData = [];
     const configData = generateComponentConfig(
       flowchartData.nodes,
@@ -554,11 +684,55 @@ const deleteNode = (nodeId) => {
     }
   }, [saveScenarioFlowChart]);
 
+  const animationNode = nodes.find((node) => node.id === animationNodeId);
+  const closeAnimationModal = () => setAnimationNodeId(null);
+  const applyComponentAnimation = () => {
+    if (!animationNodeId) return;
+    setNodes((currentNodes) => currentNodes.map((node) =>
+      node.id === animationNodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              componentAnimation: {
+                type: animationDraft.type,
+                pauseSeconds: Number(animationDraft.pauseSeconds) || 2,
+              },
+            },
+          }
+        : node,
+    ));
+    closeAnimationModal();
+  };
+  const clearComponentAnimation = () => {
+    if (!animationNodeId) return;
+    setNodes((currentNodes) => currentNodes.map((node) => {
+      if (node.id !== animationNodeId) return node;
+      const dataWithoutAnimation = { ...node.data };
+      delete dataWithoutAnimation.componentAnimation;
+      return { ...node, data: dataWithoutAnimation };
+    }));
+    closeAnimationModal();
+  };
+
   const nodeTypes = useMemo(
     () => ({
-      imageNode: (props) => <ImageNode {...props} deleteNode={deleteNode} />,
+      imageNode: (props) => {
+        const animationOption = COMPONENT_ANIMATION_OPTIONS.find(
+          (option) => option.value === props.data?.componentAnimation?.type,
+        );
+        return (
+          <ScenarioDiagramNode
+            {...props}
+            deleteNode={deleteNode}
+            onConfigureAnimation={openAnimationModal}
+            animationLabel={animationOption?.name}
+            animationIcon={animationOption?.icon}
+          />
+        );
+      },
     }),
-    [deleteNode]
+    [deleteNode, openAnimationModal]
   );
 
   const handleKeyDown = (event) => {
@@ -579,8 +753,7 @@ const deleteNode = (nodeId) => {
   }, [nodes]);
 
   const defaultEdgeOptions = {
-    type: "straight",
-    style: { stroke: "#000", strokeWidth: 2 },
+    type: "custom",
   };
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
@@ -613,11 +786,12 @@ const deleteNode = (nodeId) => {
             scenarioId={scenarioId}
             setNodes={setNodes}
             setEdges={setEdges}
+            setEdgeRouting={setEdgeRouting}
             setDraggedComponent={setDraggedComponent}
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper portal-flow-canvas"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -625,7 +799,27 @@ const deleteNode = (nodeId) => {
             borderRadius: "8px",
           }}
         >
+          <label className="edge-routing-control">
+            <span>Link style</span>
+            <Form.Select
+              size="sm"
+              value={edgeRouting}
+              onChange={(event) => {
+                const routing = event.target.value;
+                setEdgeRouting(routing);
+                setEdges((currentEdges) => currentEdges.map((edge) => ({
+                  ...edge,
+                  type: "custom",
+                  data: { ...edge.data, edgeRouting: routing },
+                })));
+              }}
+            >
+              <option value="bezier">Bezier (default)</option>
+              <option value="smooth">Smooth Step</option>
+            </Form.Select>
+          </label>
           <ReactFlow
+            className="portal-flow-canvas"
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -635,13 +829,13 @@ const deleteNode = (nodeId) => {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" 
-            connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
+            connectionLineType={edgeRouting === "smooth" ? ConnectionLineType.SmoothStep : ConnectionLineType.Bezier}
+            connectionLineStyle={{ stroke: "var(--diagram-edge-default)", strokeWidth: 1.6 }}
             zoomOnDoubleClick={false} 
             edgeTypes={edgeTypes}
           >
             {/* <Controls /> */}
-            <Background />
+            <Background color="var(--diagram-grid, #64748b)" />
           </ReactFlow>
         </div>
       </div>
@@ -656,6 +850,16 @@ const deleteNode = (nodeId) => {
           {t("Save & Next ")}
         </Button>
       </div>
+      <ComponentAnimationModal
+        show={Boolean(animationNodeId)}
+        node={animationNode}
+        draft={animationDraft}
+        imageUrl={resolveImageUrl(animationNode?.data?.image)}
+        onChange={setAnimationDraft}
+        onClose={closeAnimationModal}
+        onApply={applyComponentAnimation}
+        onClear={clearComponentAnimation}
+      />
     </>
   );
 };

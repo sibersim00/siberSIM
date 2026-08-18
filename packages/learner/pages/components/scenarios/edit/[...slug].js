@@ -754,9 +754,11 @@ const DnDFlow = ({
     const sides = ["Right", "Bottom", "Left", "Top"];
     const portsPerSide = Math.ceil(totalPorts / 4);
     const spacingRatio = 100 / (portsPerSide + 1);
-    const baseSize = 90;
-    const portSpacing = 15;
-    const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const nodeSize = 156;
+    const rawLabel = String(data.label || "Unnamed component").trim();
+    const labelSeparator = rawLabel.indexOf("-");
+    const componentTitle = labelSeparator > -1 ? rawLabel.slice(labelSeparator + 1).trim() : rawLabel;
+    const componentVmId = data.vmid || (labelSeparator > -1 ? rawLabel.slice(0, labelSeparator).trim() : "");
     const [showPopover, setShowPopover] = useState(false);
     const existingPorts = Array.isArray(data.networkport)
       ? data.networkport.flatMap((obj) => Object.keys(obj))
@@ -782,6 +784,7 @@ const DnDFlow = ({
     }, [nextNet]);
     return (
       <div
+        className="scenario-node"
         style={{
           position: "relative",
           display: "flex",
@@ -790,16 +793,20 @@ const DnDFlow = ({
         }}
       >
         <div
+          className="scenario-node-card"
           style={{
             width: nodeSize,
-            height: nodeSize,
+            minHeight: 170,
             position: "relative",
-            borderRadius: "8px",
-            border: "2px solid #ccc",
+            borderRadius: 15,
+            border: "1px solid var(--diagram-node-border)",
+            background: "var(--diagram-node-surface)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            justifyContent: "flex-start",
+            flexDirection: "column",
+            padding: "28px 12px 14px",
+            boxShadow: "0 8px 22px var(--diagram-node-shadow)",
           }}
         >
           <OverlayTrigger
@@ -869,9 +876,10 @@ const DnDFlow = ({
   </button>
 </OverlayTrigger>
           <div
+            className="scenario-node-icon-frame"
             style={{
-              width: nodeSize * 0.6,
-              height: nodeSize * 0.6,
+              width: 64,
+              height: 64,
               backgroundImage: `url("${resolveImageUrl(data.image)}")`,
               backgroundSize: "contain",
               backgroundPosition: "center",
@@ -880,7 +888,10 @@ const DnDFlow = ({
           />
           {portKeys.map((port, index) => {
             const sideIndex = Math.floor(index / portsPerSide);
-            const side = sides[sideIndex];
+            const configuredSide = data.portPositions?.[port.key] === "Auto"
+              ? data.autoPortPositions?.[port.key]
+              : data.portPositions?.[port.key];
+            const side = sides.includes(configuredSide) ? configuredSide : sides[sideIndex];
             const positionIndex = index % portsPerSide;
             let offsetPercent;
             if (side === "Right" || side === "Top") {
@@ -890,8 +901,8 @@ const DnDFlow = ({
             }
             const baseHandleStyle = {
               position: "absolute",
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               borderRadius: "50%",
               background: "#005eff",
               border: "1px solid white",
@@ -901,6 +912,10 @@ const DnDFlow = ({
               position: "absolute",
               fontSize: 6,
               padding: "1px 3px",
+              border: "1px solid var(--diagram-node-border-selected)",
+              borderRadius: 5,
+              background: "var(--diagram-port-surface)",
+              color: "var(--diagram-node-text)",
               whiteSpace: "nowrap",
               zIndex: 5,
             };
@@ -930,9 +945,9 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  right: -60,
+                  right: -6,
                   top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
+                  transform: "translate(100%, -50%)",
                 };
                 break;
               case "Bottom":
@@ -958,9 +973,9 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  left: -60,
+                  left: -6,
                   top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
+                  transform: "translate(-100%, -50%)",
                 };
                 break;
               default:
@@ -994,14 +1009,18 @@ const DnDFlow = ({
           })}
         </div>
         <div
+          className="scenario-node-copy"
           style={{
-            marginTop: 18,
+            position: "absolute",
+            bottom: 17,
+            left: 12,
             fontSize: 10,
             textAlign: "center",
-            width: "100%",
+            width: "calc(100% - 24px)",
           }}
         >
-          {data.label || "Unnamed"}
+          <strong title={componentTitle}>{componentTitle}</strong>
+          <small>{componentVmId ? `VM ID: ${componentVmId}` : "Virtual component"}</small>
         </div>
       </div>
     );
@@ -1074,6 +1093,8 @@ const DnDFlow = ({
     }
   }, [scenario?.scenariodiagram]);
   const scenarioNodes = parsedDiagram?.nodes || [];
+  const parentEdgeRouting =
+    parsedDiagram?.edgeRouting === "smooth" ? "smooth" : "bezier";
   const refreshScenario = async () => {
   setLoadingScenario(true);
   try {
@@ -1889,7 +1910,7 @@ const onConnectEnd = () => {
     };
   }
   const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
+    const flowchartData = { nodes, edges, edgeRouting: parentEdgeRouting };
     let componentsData = [];
 
     const configData = generateComponentConfig(
@@ -2183,6 +2204,7 @@ const onConnectEnd = () => {
         allNodes={nodes}
         allEdges={edges}
         setEdges={setEdges}
+        edgeRouting={parentEdgeRouting}
       />
     );
   };
@@ -2487,7 +2509,7 @@ const handleEdgeClick = async (event, edge) => {
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper scenario-diagram-shell"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -2518,14 +2540,14 @@ const handleEdgeClick = async (event, edge) => {
             nodeTypes={nodeTypes}
             deleteKeyCode={null}  
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
+            connectionLineType="floating"
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
             onConnectEnd={onConnectEnd}
             onEdgeClick={handleEdgeClick} 
           >
-            <Background />
+            <Background color="var(--diagram-grid)" gap={20} size={1.15} />
           </ReactFlow>
           {activePopover && (
             <div

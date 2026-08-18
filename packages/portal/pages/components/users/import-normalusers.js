@@ -207,7 +207,7 @@ const ImportNormalUsers = ({ show, onHide }) => {
             <label htmlFor='learner-import-file' className='learner-import-picker'>
               <i className='fe fe-folder me-2' />Choose spreadsheet
             </label>
-            <div className='learner-import-formats'><span>XLSX</span><span>XLS</span><span>CSV</span><small>Up to 1,000 rows</small></div>
+            <div className='learner-import-formats'><span>XLSX</span><span>XLS</span><span>CSV</span></div>
             {file && <div className='learner-import-selected'><i className='fe fe-file-text' /> {file.name} <Badge bg='light' text='dark'>{rows.length} rows</Badge></div>}
             {fileError && <div className='text-danger mt-2'>{fileError}</div>}
           </div>

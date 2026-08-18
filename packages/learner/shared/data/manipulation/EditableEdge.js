@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { BaseEdge, getSmoothStepPath, useReactFlow } from '@xyflow/react';
+import { BaseEdge, getBezierPath, getSmoothStepPath, useReactFlow } from '@xyflow/react';
 const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data, markerEnd, allEdges,
+  edgeRouting,
 }) => {
   const { setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const pathFactory =
+    (edgeRouting || data?.edgeRouting) === 'smooth'
+      ? getSmoothStepPath
+      : getBezierPath;
+  const [edgePath, labelX, labelY] = pathFactory({
     sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 20,
   });
   const getInitialLabel = () => {
@@ -40,26 +45,57 @@ const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
   }, [label, data?.label, id, setEdges]);
 
   const currentEdge = allEdges.find(e => e.id === id);
-  console.log("currentEdge", currentEdge);
-  const shouldAnimate = currentEdge?.isAttacked === "Yes";
-  console.log('shouldAnimate', shouldAnimate, allEdges.find(e => e.id === id));
+  const attackedValue =
+    currentEdge?.isAttacked ?? currentEdge?.data?.isAttacked ?? data?.isAttacked;
+  const shouldAnimate =
+    attackedValue === true ||
+    attackedValue === 1 ||
+    String(attackedValue).toLowerCase() === "yes" ||
+    String(attackedValue).toLowerCase() === "true";
   return (
     <>
       <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} />
       {shouldAnimate && (
-        <circle r="8" fill="red">
-          <animateMotion
-            dur="2s"
-            repeatCount="indefinite"
-            rotate="auto"
-            keyPoints="0;1"
-            keyTimes="0;1"
-            calcMode="linear"
+        <g className="scenario-network-packet">
+          <circle
+            r="10"
+            fill="rgba(226, 232, 240, 0.2)"
+            stroke="rgba(226, 232, 240, 0.72)"
+            strokeWidth="1.5"
+            style={{ filter: "drop-shadow(0 0 6px rgba(248, 250, 252, 0.8))" }}
           >
-            <mpath href={`#edge-path-${id}`} />
-          </animateMotion>
-        </circle>
+            <animate attributeName="r" values="8;12;8" dur="1.1s" repeatCount="indefinite" />
+            <animateMotion
+              dur="2.2s"
+              repeatCount="indefinite"
+              rotate="auto"
+              keyPoints="0;1"
+              keyTimes="0;1"
+              calcMode="linear"
+            >
+              <mpath href={`#edge-path-${id}`} />
+            </animateMotion>
+          </circle>
+          <circle
+            r="4"
+            fill="#f8fafc"
+            stroke="#cbd5e1"
+            strokeWidth="1"
+            style={{ filter: "drop-shadow(0 0 4px rgba(248, 250, 252, 0.9))" }}
+          >
+            <animateMotion
+              dur="2.2s"
+              repeatCount="indefinite"
+              rotate="auto"
+              keyPoints="0;1"
+              keyTimes="0;1"
+              calcMode="linear"
+            >
+              <mpath href={`#edge-path-${id}`} />
+            </animateMotion>
+          </circle>
+        </g>
       )}
       <foreignObject
         width={80}

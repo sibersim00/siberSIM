@@ -162,6 +162,7 @@ const Dashboard = () => {
     rowData?.scenarioCounts?.reduce((acc, curr) => acc + Number(curr?.published_scenarios || 0), 0) ?? 0;
   const runningSessionTotal = Number(rowData?.sessionStats?.running_sessions || 0);
   const vmTotals = rowData?.vmStatsTotals || [];
+  const isInstructor = userType === "Instructor";
 
   const cards = [
     {
@@ -172,7 +173,7 @@ const Dashboard = () => {
       tone: "primary",
       onClick: () => handleCardClick("learner"),
     },
-    ...(userType !== "Instructor"
+    ...(!isInstructor
       ? [
           {
             title: "Total SIMManager",
@@ -192,30 +193,38 @@ const Dashboard = () => {
           },
         ]
       : []),
-    {
-      title: "Total Event Count",
-      value: rowData?.eventStats?.total_events || 0,
-      helper: `${rowData?.eventStats?.completed_events || 0} completed`,
-      icon: "fa fa-calendar",
-      tone: "warning",
-      onClick: () => handleCardClick("event"),
-    },
-    {
-      title: "Total Component",
-      value: rowData?.componentStats?.total_components || 0,
-      helper: `${rowData?.componentStats?.active_components || 0} active components`,
-      icon: "fa fa-cubes",
-      tone: "success",
-      onClick: () => handleCardClick("component"),
-    },
-    {
-      title: "Total Network",
-      value: rowData?.networkStats?.total_networks || 0,
-      helper: `${rowData?.networkStats?.available_networks || 0} available networks`,
-      icon: "fa fa-podcast",
-      tone: "info",
-      onClick: () => handleCardClick("network"),
-    },
+    ...(!isInstructor
+      ? [
+          {
+            title: "Total Event Count",
+            value: rowData?.eventStats?.total_events || 0,
+            helper: `${rowData?.eventStats?.completed_events || 0} completed`,
+            icon: "fa fa-calendar",
+            tone: "warning",
+            onClick: () => handleCardClick("event"),
+          },
+        ]
+      : []),
+    ...(!isInstructor
+      ? [
+          {
+            title: "Total Component",
+            value: rowData?.componentStats?.total_components || 0,
+            helper: `${rowData?.componentStats?.active_components || 0} active components`,
+            icon: "fa fa-cubes",
+            tone: "success",
+            onClick: () => handleCardClick("component"),
+          },
+          {
+            title: "Total Network",
+            value: rowData?.networkStats?.total_networks || 0,
+            helper: `${rowData?.networkStats?.available_networks || 0} available networks`,
+            icon: "fa fa-podcast",
+            tone: "info",
+            onClick: () => handleCardClick("network"),
+          },
+        ]
+      : []),
     {
       title: "Total Scenarios",
       value: scenarioCountTotal,
@@ -232,24 +241,28 @@ const Dashboard = () => {
       tone: "warning",
       onClick: () => handleCardClick("usersession"),
     },
-    {
-      title: "Scenario Exports",
-      value: rowData?.scenarioExportStats?.total_exports || 0,
-      helper: `${rowData?.scenarioExportStats?.completed_exports || 0} completed`,
-      icon: "fa fa-file-archive-o",
-      tone: "success",
-      onClick: () => handleCardClick("scenario"),
-      accent: `${rowData?.scenarioExportStats?.running_exports || 0} in progress`,
-    },
-    {
-      title: "Lab Sessions",
-      value: rowData?.labSessionStats?.total_labs || 0,
-      helper: `${rowData?.labSessionStats?.active_labs || 0} active`,
-      icon: "fa fa-flask",
-      tone: "danger",
-      onClick: () => handleCardClick("labs"),
-      accent: `${rowData?.labSessionStats?.inactive_labs || 0} inactive`,
-    },
+    ...(!isInstructor
+      ? [
+          {
+            title: "Scenario Exports",
+            value: rowData?.scenarioExportStats?.total_exports || 0,
+            helper: `${rowData?.scenarioExportStats?.completed_exports || 0} completed`,
+            icon: "fa fa-file-archive-o",
+            tone: "success",
+            onClick: () => handleCardClick("scenario"),
+            accent: `${rowData?.scenarioExportStats?.running_exports || 0} in progress`,
+          },
+          {
+            title: "Lab Sessions",
+            value: rowData?.labSessionStats?.total_labs || 0,
+            helper: `${rowData?.labSessionStats?.active_labs || 0} active`,
+            icon: "fa fa-flask",
+            tone: "danger",
+            onClick: () => handleCardClick("labs"),
+            accent: `${rowData?.labSessionStats?.inactive_labs || 0} inactive`,
+          },
+        ]
+      : []),
   ];
 
   const featured = cards.slice(0, 3);
@@ -268,80 +281,104 @@ const Dashboard = () => {
       )}
 
       <Container fluid className="dashboard-shell">
-        <div className="dashboard-hero">
+        <div className={`dashboard-hero ${isInstructor ? "dashboard-hero--instructor" : ""}`}>
           <div className="dashboard-hero-copy">
-            <Badge className="dashboard-hero-badge">Operations overview</Badge>
-            <h1>Dashboard</h1>
+            <Badge className="dashboard-hero-badge">
+              {isInstructor ? "SIMManager workspace" : "Operations overview"}
+            </Badge>
+            <h1>{isInstructor ? "Learning operations" : "Dashboard"}</h1>
             <p>
-              A cleaner command center for learners, scenarios, exports, labs, and the infrastructure behind them.
+              {isInstructor
+                ? "Track your SIMUsers, scenarios, events, and active learning sessions from one place."
+                : "A cleaner command center for learners, scenarios, exports, labs, and the infrastructure behind them."}
             </p>
           </div>
-          <div className="dashboard-hero-metrics">
-            <div><span>Scenarios</span><strong>{scenarioCountTotal}</strong></div>
-            <div><span>Components</span><strong>{rowData?.componentStats?.total_components || 0}</strong></div>
-            <div><span>Labs</span><strong>{rowData?.labSessionStats?.total_labs || 0}</strong></div>
+          <div className={`dashboard-hero-metrics ${isInstructor ? "dashboard-instructor-metrics" : ""}`}>
+            {isInstructor ? (
+              <>
+                <div><span>SIMUsers</span><strong>{rowData?.learnerCounts?.totalaccounts || 0}</strong></div>
+                <div><span>Scenarios</span><strong>{scenarioCountTotal}</strong></div>
+                <div><span>Live sessions</span><strong>{runningSessionTotal}</strong></div>
+              </>
+            ) : (
+              <>
+                <div><span>Scenarios</span><strong>{scenarioCountTotal}</strong></div>
+                <div><span>Components</span><strong>{rowData?.componentStats?.total_components || 0}</strong></div>
+                <div><span>Labs</span><strong>{rowData?.labSessionStats?.total_labs || 0}</strong></div>
+              </>
+            )}
           </div>
         </div>
 
         <Row className="g-4 gy-2 dashboard-grid">
+          {isInstructor ? (
+            cards.map((card, index) => (
+              <Col key={card.title} md={4} sm={12} className="d-flex">
+                <StatCard {...card} stagger={180 + index * 70} />
+              </Col>
+            ))
+          ) : (
+            <>
+              {featured.map((card, index) => (
+                <Col key={card.title} md={4} sm={12} className="d-flex">
+                  <StatCard {...card} stagger={180 + index * 70} />
+                </Col>
+              ))}
 
-           {featured.map((card, index) => (
-            <Col key={card.title} md={4} sm={12} className="d-flex">
-              <StatCard {...card} stagger={180 + index * 70} />
-            </Col>
-          ))}
+              {secondary.map((card, index) => (
+                <Col key={card.title} md={4} sm={12} className="d-flex">
+                  <StatCard {...card} stagger={180 + index * 70} />
+                </Col>
+              ))}
 
+              {tertiary.map((card, index) => (
+                <Col key={card.title} md={6} sm={12} className="d-flex">
+                  <StatCard {...card} stagger={360 + index * 70} />
+                </Col>
+              ))}
+            </>
+          )}
 
-          {secondary.map((card, index) => (
-            <Col key={card.title} md={4} sm={12} className="d-flex">
-              <StatCard {...card} stagger={180 + index * 70} />
-            </Col>
-          ))}
-
-          {tertiary.map((card, index) => (
-            <Col key={card.title} md={6} sm={12} className="d-flex">
-              <StatCard {...card} stagger={360 + index * 70} />
-            </Col>
-          ))}
-
-          <Col md={12}>
-            <Card className="dashboard-panel dashboard-vm-panel dashboard-animate-card">
-              <Card.Body>
-                <div className="dashboard-panel-heading">
-                  <div>
-                    <p className="dashboard-panel-kicker">System capacity</p>
-                    <h3>Virtual resources</h3>
+          {!isInstructor && (
+            <Col md={12}>
+              <Card className="dashboard-panel dashboard-vm-panel dashboard-animate-card">
+                <Card.Body>
+                  <div className="dashboard-panel-heading">
+                    <div>
+                      <p className="dashboard-panel-kicker">System capacity</p>
+                      <h3>Virtual resources</h3>
+                    </div>
+                    <Badge bg="light" text="dark" className="dashboard-chip">
+                      Live totals
+                    </Badge>
                   </div>
-                  <Badge bg="light" text="dark" className="dashboard-chip">
-                    Live totals
-                  </Badge>
-                </div>
-                <Row className="g-3">
-                  <Col xl={4} lg={4} sm={12}>
-                    <div className="dashboard-metric-block">
-                      <span>Total Virtual CPU</span>
-                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_cores || 0), 0)}</strong>
-                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
-                    </div>
-                  </Col>
-                  <Col xl={4} lg={4} sm={12}>
-                    <div className="dashboard-metric-block">
-                      <span>Total Virtual Memory</span>
-                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_memory || 0), 0)}</strong>
-                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
-                    </div>
-                  </Col>
-                  <Col xl={4} lg={4} sm={12}>
-                    <div className="dashboard-metric-block">
-                      <span>Total Storage Size</span>
-                      <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_storage || 0), 0)}</strong>
-                      <small>{vmTotals?.[0]?.status || "N/A"}</small>
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
+                  <Row className="g-3">
+                    <Col xl={4} lg={4} sm={12}>
+                      <div className="dashboard-metric-block">
+                        <span>Total Virtual CPU</span>
+                        <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_cores || 0), 0)}</strong>
+                        <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                      </div>
+                    </Col>
+                    <Col xl={4} lg={4} sm={12}>
+                      <div className="dashboard-metric-block">
+                        <span>Total Virtual Memory</span>
+                        <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_memory || 0), 0)}</strong>
+                        <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                      </div>
+                    </Col>
+                    <Col xl={4} lg={4} sm={12}>
+                      <div className="dashboard-metric-block">
+                        <span>Total Storage Size</span>
+                        <strong>{vmTotals.reduce((acc, curr) => acc + Number(curr.total_storage || 0), 0)}</strong>
+                        <small>{vmTotals?.[0]?.status || "N/A"}</small>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </Col>
+          )}
 
           <Col md={12}>
             <div className="dashboard-section-header mt-3">

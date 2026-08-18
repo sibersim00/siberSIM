@@ -13,25 +13,6 @@ import EditableEdge from "../../../../shared/data/scenarios/EditableEdge";
 import { useDispatch, useSelector } from "react-redux";
 import { changeEditStatus } from "../../../../shared/redux/slices/scenarios/scenarios";
 
-const NODE_PALETTES = [
-  { accent: "#ff3d5a", glow: "rgba(255, 61, 90, 0.34)" },
-  { accent: "#ff4fb3", glow: "rgba(255, 79, 179, 0.34)" },
-  { accent: "#9b6cff", glow: "rgba(155, 108, 255, 0.34)" },
-  { accent: "#22d3ee", glow: "rgba(34, 211, 238, 0.34)" },
-  { accent: "#18d9bd", glow: "rgba(24, 217, 189, 0.34)" },
-  { accent: "#f8c51c", glow: "rgba(248, 197, 28, 0.34)" },
-  { accent: "#7bdc16", glow: "rgba(123, 220, 22, 0.34)" },
-  { accent: "#ff8a00", glow: "rgba(255, 138, 0, 0.34)" },
-];
-
-const getNodePalette = (value = "") => {
-  const hash = String(value)
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0);
-  return NODE_PALETTES[hash % NODE_PALETTES.length];
-};
-
-
 const getIconMotion = (value = "") => {
   const hash = String(value)
     .split("")
@@ -51,8 +32,8 @@ const separateOverlappingNodes = (nodes) => {
     ...node,
     position: { ...node.position },
   }));
-  const minimumXDistance = 276;
-  const minimumYDistance = 124;
+  const minimumXDistance = 196;
+  const minimumYDistance = 206;
 
   for (let pass = 0; pass < 12; pass += 1) {
     let moved = false;
@@ -219,37 +200,68 @@ const getComponentDetails = (data) => {
 
   return { title: title || label, vmId: data?.vmid || labelVmId };
 };
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+const getNetworkPorts = (networkport) => {
+  const entries = Array.isArray(networkport)
+    ? networkport.flatMap((port) => Object.entries(port || {}))
+    : networkport && typeof networkport === "object"
+      ? Object.entries(networkport)
+      : [];
+
+  return entries
+    .map(([key, value]) => {
+      const tagMatch = String(value).match(/tag=(\d+)/);
+      return { key, label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key };
+    })
+    .sort((first, second) => first.key.localeCompare(second.key));
+};
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+      : DEFAULT_PORT_SIDE_ORDER[Math.min(3, Math.floor(index / portsPerSide))],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
 const resolveImageUrl = (url) => {
   if (!url) return "";
   const isAbsolute = url.startsWith("http://") || url.startsWith("https://");
   return isAbsolute ? url : `${window.location.origin}${url}`;
 };
-const ImageNode = ({ id, data, isConnectable, isTimerVisible, scenarioStatus }) => {  
-  let portKeys = [];
-  if (Array.isArray(data.networkport)) {
-    portKeys = data.networkport
-      .flatMap((obj) =>
-        Object.entries(obj).map(([key, value]) => {
-          const tagMatch = String(value).match(/tag=(\d+)/);
-          return { key, label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key };
-        }),
-      )
-      .sort((a, b) => a.key.localeCompare(b.key));
-  } else if (typeof data.networkport === "object" && data.networkport !== null) {
-    portKeys = Object.entries(data.networkport)
-      .map(([key, value]) => {
-        const tagMatch = String(value).match(/tag=(\d+)/);
-        return { key, label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key };
-      })
-      .sort((a, b) => a.key.localeCompare(b.key));
-  }
-
-  const sides = ["Right", "Bottom", "Left", "Top"];
-  const portsPerSide = Math.ceil(portKeys.length / 4);
-  const spacingRatio = 100 / (portsPerSide + 1);
-  const palette = getNodePalette(data?.componentId || id || data?.label);
+const ImageNode = ({
+  id,
+  data,
+  isConnectable,
+  isTimerVisible,
+  scenarioStatus,
+  ambientMotionEnabled,
+}) => {
+  const ports = getPortLayouts(
+    getNetworkPorts(data.networkport),
+    data.portPositions,
+    data.autoPortPositions,
+  );
   const iconMotion = getIconMotion(data?.componentId || id || data?.label);
-  const imageMotion = data?.visualMotion || "rotate";
+  const imageMotion = ambientMotionEnabled
+    ? data?.visualMotion || "rotate"
+    : null;
   const { title, vmId } = getComponentDetails(data);
   const isOnline = data?.isOnline === "Yes";
 
@@ -269,201 +281,76 @@ const ImageNode = ({ id, data, isConnectable, isTimerVisible, scenarioStatus }) 
   };
 
   return (
-    <div
-      style={{ position: "relative", width: 236, minHeight: 92 }}
-      onClick={() => handleClick(data)}
-    >
+    <div className="scenario-node" onClick={() => handleClick(data)}>
+      <div className="scenario-node-glow" aria-hidden="true" />
       <div
-        className="scenario-node-glow"
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 5,
-          borderRadius: 13,
-          boxShadow: `0 0 28px ${palette.glow}`,
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          width: "100%",
-          minHeight: 92,
-          position: "relative",
-          boxSizing: "border-box",
-          borderRadius: 12,
-          border: `1.5px solid ${palette.accent}`,
-          background:
-            "linear-gradient(135deg, rgba(20, 24, 42, 0.98), rgba(8, 11, 23, 0.98))",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "14px 16px",
-          color: "#f8fafc",
-          boxShadow: `inset 0 0 22px ${palette.glow}, 0 10px 28px rgba(0, 0, 0, 0.42)`,
-          cursor: scenarioStatus !== "Pause" && isTimerVisible ? "pointer" : "default",
-          overflow: "visible",
-        }}
+        className="scenario-node-card"
+        style={{ cursor: scenarioStatus !== "Pause" && isTimerVisible ? "pointer" : "default" }}
       >
         <div
-          className={`scenario-node-icon-frame scenario-node-icon-${imageMotion}`}
+          className={`scenario-node-icon-frame ${
+            imageMotion ? `scenario-node-icon-${imageMotion}` : ""
+          }`}
           style={{
-            position: "relative",
-            width: 55,
-            height: 55,
-            flex: "0 0 58px",
-            borderRadius: 10,
-            border: `1px solid ${palette.accent}`,
-            backgroundColor: `${palette.accent}12`,
-            boxShadow: `inset 0 0 18px ${palette.glow}, 0 0 12px ${palette.glow}`,
-            transformOrigin: "center",
-            willChange: "transform",
-            animationDuration: `${
-              imageMotion === "rotate"
-                ? iconMotion.duration
-                : iconMotion.patrolDuration
-            }s`,
+            animationDuration: imageMotion
+              ? `${
+                  imageMotion === "rotate"
+                    ? iconMotion.duration
+                    : iconMotion.patrolDuration
+                }s`
+              : undefined,
             animationDirection:
               imageMotion === "rotate" ? iconMotion.direction : "normal",
-            animationDelay: `${iconMotion.delay}s`,
+            animationDelay: imageMotion ? `${iconMotion.delay}s` : undefined,
           }}
         >
           <div
             className="scenario-node-icon-image"
             style={{
-              position: "absolute",
-              inset: 6,
               backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-              backgroundSize: "78%",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-              backgroundColor: "transparent",
             }}
           />
         </div>
-        <div style={{ minWidth: 0, flex: 1, paddingRight: 3 }}>
-          <div
-            title={title}
-            style={{
-              fontSize: 14,
-              lineHeight: 1.2,
-              fontWeight: 800,
-              letterSpacing: "0.01em",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {title}
-          </div>
-          <div
-            style={{
-              marginTop: 6,
-              color: "#9aa8bd",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
-            {vmId ? `VM ID: ${vmId}` : "Virtual component"}
-          </div>
+        <div className="scenario-node-copy">
+          <strong title={title}>{title}</strong>
+          <small>{vmId ? `VM ID: ${vmId}` : "Virtual component"}</small>
         </div>
 
-        <div
-          style={{
-            position: "absolute",
-            top: -10,
-            right: 10,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            padding: "4px 8px",
-            borderRadius: 6,
-            border: `1px solid ${isOnline ? "#2de38c" : "#ff6675"}`,
-            background: isOnline ? "#0c3028" : "#3a1821",
-            color: isOnline ? "#5cf2ad" : "#ff8b96",
-            boxShadow: `0 0 14px ${isOnline ? "rgba(45, 227, 140, .34)" : "rgba(255, 102, 117, .34)"}`,
-            fontSize: 9,
-            lineHeight: 1,
-            fontWeight: 800,
-            letterSpacing: "0.08em",
-            zIndex: 8,
-          }}
-        >
+        <div className={`scenario-node-status ${isOnline ? "is-online" : "is-offline"}`}>
           <span
             className={isOnline ? "scenario-status-pulse" : undefined}
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: isOnline ? "#2de38c" : "#ff6675",
-            }}
           />
           {isOnline ? "ONLINE" : "OFFLINE"}
         </div>
 
-        {portKeys.map((port, index) => {
-          const side = sides[Math.floor(index / portsPerSide)];
-          const positionIndex = index % portsPerSide;
-          const offsetPercent =
-            side === "Right" || side === "Top"
-              ? (positionIndex + 1) * spacingRatio
-              : (portsPerSide - positionIndex) * spacingRatio;
-          const baseHandleStyle = {
-            position: "absolute",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: palette.accent,
-            border: "1.5px solid #07101d",
-            boxShadow: `0 0 0 1px ${palette.accent}, 0 0 10px ${palette.accent}`,
-            zIndex: 7,
-          };
-          const labelStyle = {
-            position: "absolute",
-            boxSizing: "border-box",
-            minWidth: 24,
-            maxWidth: 88,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            color: "#e7edf8",
-            background: "#09101e",
-            border: `1px solid ${palette.accent}`,
-            borderRadius: 5,
-            boxShadow: `0 0 8px ${palette.glow}`,
-            fontSize: 7,
-            fontWeight: 800,
-            lineHeight: 1,
-            letterSpacing: "0.035em",
-            textAlign: "center",
-            textTransform: "uppercase",
-            padding: "3px 5px",
-            whiteSpace: "nowrap",
-            pointerEvents: "none",
-            zIndex: 8,
-          };
-          let handleStyle;
-          let labelPosition;
-
-          if (side === "Top") {
-            handleStyle = { ...baseHandleStyle, top: -4, left: `${offsetPercent}%`, transform: "translateX(-50%)" };
-            labelPosition = { ...labelStyle, top: -22, left: `${offsetPercent}%`, transform: "translateX(-50%)" };
-          } else if (side === "Right") {
-            handleStyle = { ...baseHandleStyle, right: -4, top: `${offsetPercent}%`, transform: "translateY(-50%)" };
-            labelPosition = { ...labelStyle, right: -6, top: `${offsetPercent}%`, transform: "translate(100%, -50%)" };
-          } else if (side === "Bottom") {
-            handleStyle = { ...baseHandleStyle, bottom: -4, left: `${offsetPercent}%`, transform: "translateX(-50%)" };
-            labelPosition = { ...labelStyle, bottom: -22, left: `${offsetPercent}%`, transform: "translateX(-50%)" };
-          } else {
-            handleStyle = { ...baseHandleStyle, left: -4, top: `${offsetPercent}%`, transform: "translateY(-50%)" };
-            labelPosition = { ...labelStyle, left: -6, top: `${offsetPercent}%`, transform: "translate(-100%, -50%)" };
-          }
-
+        {ports.map((port) => {
+          const { side, offsetPercent } = port;
+          const offsetStyle = { "--scenario-port-offset": `${offsetPercent}%` };
           return (
             <React.Fragment key={port.key}>
-              <Handle type="source" position={Position[side]} id={`${port.key}-source`} style={handleStyle} isConnectable={isConnectable} />
-              <Handle type="target" position={Position[side]} id={`${port.key}-target`} style={handleStyle} isConnectable={isConnectable} />
-              <div style={labelPosition} title={port.label}>{port.label}</div>
+              <Handle
+                type="source"
+                position={Position[side]}
+                id={`${port.key}-source`}
+                className={`scenario-node-port scenario-node-port--${side.toLowerCase()}`}
+                style={offsetStyle}
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="target"
+                position={Position[side]}
+                id={`${port.key}-target`}
+                className={`scenario-node-port scenario-node-port--${side.toLowerCase()}`}
+                style={offsetStyle}
+                isConnectable={isConnectable}
+              />
+              <div
+                className={`scenario-node-port-label scenario-node-port-label--${side.toLowerCase()}`}
+                style={offsetStyle}
+                title={port.label}
+              >
+                {port.label}
+              </div>
             </React.Fragment>
           );
         })}
@@ -486,6 +373,7 @@ const ScenarioDiagram = ({
   }));
   const dispatch = useDispatch();
   const [elements, setElements] = useState({ nodes: [], edges: [] });
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(true);
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
   const basePositionsRef = useRef(new Map());
@@ -501,6 +389,7 @@ const ScenarioDiagram = ({
     try {
       const cleanData = scenariodiagram.replace("flowchartData ", "");
       const parsedData = JSON.parse(cleanData);
+      const edgeRouting = parsedData.edgeRouting === "smooth" ? "smooth" : "bezier";
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
       const visualMotionPattern = ["rotate", "patrol", "rotate", "patrol", "rotate"];
       const cardPatrolPattern = [true, false, false, true, false];
@@ -529,9 +418,11 @@ const ScenarioDiagram = ({
       );
       const updatedEdges = (parsedData.edges || []).map((edge) => ({
         ...edge,
+        type: "custom",
         data: {
           ...edge.data,
           isAttacked: edge.isAttacked ?? edge.data?.isAttacked ?? "No",
+          edgeRouting,
         },
       }));
       componentAnimationStartedAtRef.current = performance.now();
@@ -563,6 +454,22 @@ const ScenarioDiagram = ({
       nodes: applyNodeChanges(changes, current.nodes),
     }));
   }, []);
+
+  useEffect(() => {
+    if (ambientMotionEnabled) return;
+    setElements((current) => ({
+      ...current,
+      nodes: current.nodes.map((node) => {
+        if (
+          COMPONENT_ANIMATION_TYPES.has(node.data?.componentAnimation?.type)
+        ) {
+          return node;
+        }
+        const basePosition = basePositionsRef.current.get(node.id);
+        return basePosition ? { ...node, position: { ...basePosition } } : node;
+      }),
+    }));
+  }, [ambientMotionEnabled]);
 
   useEffect(() => {
     if (elements.nodes.length === 0 || scenarioStatus === "Pause") return undefined;
@@ -602,7 +509,12 @@ const ScenarioDiagram = ({
             const hasConfiguredAnimation = COMPONENT_ANIMATION_TYPES.has(
               configuredAnimation?.type,
             );
-            if (!hasConfiguredAnimation && !node.data?.cardPatrol) return node;
+            if (
+              !hasConfiguredAnimation &&
+              (!ambientMotionEnabled || !node.data?.cardPatrol)
+            ) {
+              return node;
+            }
 
             const basePosition =
               basePositionsRef.current.get(node.id) || node.position;
@@ -616,7 +528,7 @@ const ScenarioDiagram = ({
             ].includes(configuredAnimation?.type);
             const animationAnchor =
               crossesCanvas && canvasCentre
-                ? { x: canvasCentre.x - 118, y: canvasCentre.y - 46 }
+                ? { x: canvasCentre.x - 78, y: canvasCentre.y - 85 }
                 : basePosition;
             let offset;
             if (hasConfiguredAnimation) {
@@ -653,7 +565,7 @@ const ScenarioDiagram = ({
 
     animationFrameId = requestAnimationFrame(animateCards);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [elements.nodes.length, scenarioStatus]);
+  }, [elements.nodes.length, scenarioStatus, ambientMotionEnabled]);
 
   const nodeTypes = useMemo(
     () => ({
@@ -662,10 +574,11 @@ const ScenarioDiagram = ({
           {...props}
           isTimerVisible={isTimerVisible}
           scenarioStatus={scenarioStatus}
+          ambientMotionEnabled={ambientMotionEnabled}
         />
       ),
     }),
-    [isTimerVisible, scenarioStatus],
+    [isTimerVisible, scenarioStatus, ambientMotionEnabled],
   );
   const edgeTypes = useMemo(() => ({ custom: EditableEdge }), []);
   const canShowEditButton =
@@ -679,19 +592,20 @@ const ScenarioDiagram = ({
     <div
       ref={reactFlowWrapper}
       className="scenario-diagram-shell"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "80vh",
-        borderRadius: 10,
-        overflow: "hidden",
-        background: "#050811",
-        border: "1px solid #182236",
-        boxShadow: "inset 0 0 80px rgba(17, 31, 57, 0.42)",
-      }}
     >
+      <button
+        type="button"
+        className={`scenario-ambient-motion-toggle ${
+          ambientMotionEnabled ? "is-enabled" : ""
+        }`}
+        aria-pressed={ambientMotionEnabled}
+        onClick={() => setAmbientMotionEnabled((enabled) => !enabled)}
+        title="Toggle idle component and image motion"
+      >
+        <span aria-hidden="true" />
+        Ambient motion: {ambientMotionEnabled ? "On" : "Off"}
+      </button>
 
-      
       {canShowEditButton && (
         <button
           className="scenario-diagram-edit-button"
@@ -756,9 +670,8 @@ const ScenarioDiagram = ({
           edgeTypes={edgeTypes}
           zoomOnDoubleClick={false}
           onInit={(instance) => (flowRef.current = instance)}
-          colorMode="dark"
         >
-          <Background color="#26334b" gap={20} size={1.15} />
+          <Background color="var(--diagram-grid)" gap={20} size={1.15} />
         </ReactFlow>
       )}
       <style jsx global>{`

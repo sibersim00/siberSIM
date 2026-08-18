@@ -1,15 +1,10 @@
 import React from "react";
-import { BaseEdge, getSmoothStepPath, useReactFlow } from "@xyflow/react";
-
-const EDGE_COLORS = [
-  "#22d3ee",
-  "#9b6cff",
-  "#18d9bd",
-  "#ff4fb3",
-  "#f8c51c",
-  "#7bdc16",
-  "#ff596e",
-];
+import {
+  BaseEdge,
+  getBezierPath,
+  getSmoothStepPath,
+  useReactFlow,
+} from "@xyflow/react";
 
 const EDGE_VARIANTS = [
   {
@@ -49,11 +44,6 @@ const getStringHash = (value = "") =>
     .split("")
     .reduce((total, character) => total + character.charCodeAt(0), 0);
 
-const getEdgeColor = (id, data) => {
-  if (data?.color) return data.color;
-  return EDGE_COLORS[getStringHash(id) % EDGE_COLORS.length];
-};
-
 const getEdgeVariant = (id, data) => {
   const configuredVariant = EDGE_VARIANTS.find(
     (variant) => variant.name === data?.lineStyle,
@@ -72,10 +62,12 @@ const EditableEdge = ({
   data,
   markerEnd,
   allEdges = [],
+  selected,
 }) => {
   const { getEdges } = useReactFlow();
   const flowEdges = allEdges.length > 0 ? allEdges : getEdges();
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const pathFactory = data?.edgeRouting === "smooth" ? getSmoothStepPath : getBezierPath;
+  const [edgePath, labelX, labelY] = pathFactory({
     sourceX,
     sourceY,
     sourcePosition,
@@ -112,7 +104,9 @@ const EditableEdge = ({
     currentEdge?.showPacket !== false &&
     data?.showPacket !== false;
   const packetDuration = "2.2s";
-  const edgeColor = getEdgeColor(id, data);
+  const edgeColor = selected
+    ? "var(--diagram-edge-selected)"
+    : "var(--diagram-edge-default)";
   const edgeVariant = getEdgeVariant(id, data);
 
   return (
@@ -162,7 +156,7 @@ const EditableEdge = ({
         <g className="scenario-network-packet">
           <circle
             r="10"
-            fill={`${edgeColor}2e`}
+            fill="rgba(100, 116, 139, 0.18)"
             stroke={edgeColor}
             style={{ filter: `drop-shadow(0 0 7px ${edgeColor})` }}
           >

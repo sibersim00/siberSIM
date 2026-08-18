@@ -13,6 +13,7 @@ import {
 } from "../../../../../shared/redux/slices/common/masters";
 import { useDispatch, useSelector } from "react-redux";
 import EditableEdge from '../../../../../shared/data/scenarios/EditableEdge';
+import ScenarioDiagramNode from '../../../../../shared/data/scenarios/ScenarioDiagramNode';
 
 const resolveImageUrl = (url) => {
   if (!url) return '';
@@ -189,7 +190,7 @@ const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
   );
 };
 const nodeTypes = {
-  imageNode: ImageNode,
+  imageNode: (props) => <ScenarioDiagramNode {...props} interactive={false} />,
 };
 
 const ScenarioDiagram = ({ scenariodiagram }) => {
@@ -209,6 +210,7 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
       try {
         const cleanData = scenariodiagram.replace('flowchartData ', '');
         const parsedData = JSON.parse(cleanData);
+        const edgeRouting = parsedData.edgeRouting === 'smooth' ? 'smooth' : 'bezier';
 
         // Your backend base URL where images are served from
         const backendBaseUrl = process.env.API_URL_FILEMANAGER;
@@ -224,7 +226,11 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
 
         setelements({
           nodes: updatedNodes,
-          edges: parsedData.edges,
+          edges: (parsedData.edges || []).map(edge => ({
+            ...edge,
+            type: 'custom',
+            data: { ...edge.data, edgeRouting },
+          })),
         });
       } catch (err) {
         console.error('Failed to parse scenariodiagram:', err);
@@ -252,6 +258,7 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
         {...edgeProps}
         allEdges={edges}
         setEdges={setEdges}
+        readOnly
       />
     );
   };
@@ -276,8 +283,12 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
               >
                 {elements.nodes.length > 0 && elements.edges.length > 0 && (
                   <ReactFlow
+                    className="portal-flow-canvas portal-flow-canvas--view-only"
                     nodes={elements.nodes}
                     edges={elements.edges}
+                    nodesDraggable={false}
+                    nodesConnectable={false}
+                    elementsSelectable={false}
                     nodeTypes={nodeTypes}
                     onInit={(reactFlowInstance) => {
                       setTimeout(() => {
@@ -288,7 +299,7 @@ const ScenarioDiagram = ({ scenariodiagram }) => {
                     defaultViewport={{ x: 0, y: 0, zoom: 0.6 }} edgeTypes={edgeTypes}
                   >
                     <FlowViewportController nodes={elements.nodes} />
-                    <Background />
+                    <Background color="var(--diagram-grid, #64748b)" />
                   </ReactFlow>
                 )}
               </div>

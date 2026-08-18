@@ -6,6 +6,7 @@ import { store } from "../../redux/store";
 import dynamic from "next/dynamic";
 import Rightside from "../right-sidebar/right-sidebar";
 import TabToTop from "../tab-to-top/tab-to-top";
+import { useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import Header from "../header/header";
 const Switcher = dynamic(() => import("../switcher/switcher"), { ssr: false });
@@ -14,6 +15,7 @@ import Script from "next/script";
 
 const Contentlayout = ({ children }) => {
   let navigate = useRouter();
+  const dispatch = useDispatch();
   const currentPath = navigate.pathname;
   const [isUserValid, setIsUserValid] = useState(false);
   const Add = () => {
