@@ -357,6 +357,14 @@ const ComponentForm = (props) => {
     },
 
     validationSchema: Yup.object().shape({
+      ComponentIdentificationVMName: Yup.string()
+        .required("Required")
+        .max(24, "Name should not exceed 24 characters")
+        .test(
+          "no-leading-trailing-spaces",
+          "No leading or trailing spaces allowed",
+          (value) => value === value?.trim(),
+        ),
       componentidentification: Yup.string()
         // .required("Required")
         .matches(/^[A-Za-z0-9 ]+$/, "No special characters allowed")

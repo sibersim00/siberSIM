@@ -1,14 +1,18 @@
 const joi = require('joi');
+const emojiRegex = /[\p{Extended_Pictographic}]/u;
+const categoryNameSchema = joi.string().trim().required().pattern(emojiRegex, { invert: true }).messages({
+    "string.base": "Scenario category should be a string",
+    "string.empty": "Scenario category cannot be empty",
+    "any.required": "Scenario category is required",
+    "string.pattern.invert.base": "Scenario category name cannot contain emojis.",
+});
 const idSchema = joi.string().required().messages({
     "string.base": "Invalid Request: Scenario category ID must be a string",
     "string.empty": "Invalid Request: Scenario category ID must not be empty",
     "any.required": "Invalid Request: Scenario category ID is required",
 });
 const saveSchema = joi.object({
-    categoryname: joi.string().trim().required().messages({
-        "string.base": "Scenario category should be a string",
-        "string.empty": "Scenario category cannot be empty",
-    }),
+    categoryname: categoryNameSchema,
     categorytype: joi.string().trim().valid("Public", "Private").required().messages({
         "string.base": "Category type should be a string",
         "string.empty": "Category type cannot be empty",
@@ -17,11 +21,7 @@ const saveSchema = joi.object({
     }),
 });
 const updateSchema = joi.object({
-    categoryname: joi.string().trim().required().messages({
-        "string.base": "Scenario category should be a string",
-        "string.empty": "Scenario category cannot be empty",
-        "any.required": "Scenario category is required",
-    }),
+    categoryname: categoryNameSchema,
     parentscenariocategoryid: joi.number().strict().optional().messages({
         "number.base": "Parent scenario category ID should be a number",
         "any.required": "Parent scenario category is required",

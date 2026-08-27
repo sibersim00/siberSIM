@@ -260,7 +260,6 @@ export function verifylearnerData(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
-      // console.log(api?.learners_Account_verify)
       const response = await axios.post(api?.learners_Account_verify, payload);
       dispatch(slice.actions.hasverifylearnerData(response.data));
     } catch (error) {

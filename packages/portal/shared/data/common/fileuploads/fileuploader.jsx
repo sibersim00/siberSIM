@@ -103,17 +103,34 @@ const FileUploader = ({ ismulti, folderpath, name, acceptedFileTypes, handleUplo
                 Authorization: `Bearer ${accessToken}`, // Include the Bearer token in the headers
               },
               onUploadProgress: (progressEvent) => {
-                const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                progress(percentage);
+                progress(
+                  Boolean(progressEvent.total),
+                  progressEvent.loaded,
+                  progressEvent.total
+                );
               },
             })
             .then((response) => {
-                // Handle the response from the server after successful upload
-                load(response.data.files[0]);
-                uploadsfiles.push({'file':response.data.files[0],'name':name});
-                callbackHandleUpload(name,uploadsfiles,'uploaded'); // returns uploads files
-            })
-            .catch((err) => {
+              const uploadedPath = response?.data?.files?.[0];
+              if (!uploadedPath) {
+                error(response?.data?.message || 'The server did not return the uploaded file path.');
+                return;
+              }
+
+              const uploadedFile = { file: uploadedPath, name };
+              const nextUploads = ismulti
+                ? [...uploadsfiles.filter((item) => item.file !== uploadedPath), uploadedFile]
+                : [uploadedFile];
+              setUploadsFiles(nextUploads);
+
+              try {
+                callbackHandleUpload(name, nextUploads, 'uploaded');
+              } catch (callbackError) {
+                console.error('Unable to update the uploaded file in the form', callbackError);
+              } finally {
+                load(uploadedPath);
+              }
+            }, (err) => {
               // Handle errors during upload
               console.error('Upload failed', err);
               error('Error uploading the file');

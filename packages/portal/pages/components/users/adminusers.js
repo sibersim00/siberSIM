@@ -775,7 +775,7 @@ const onGridReady = useCallback((params) => {
 
                     return (
                       <Col key={index} md={12 / columnsPerRow} className="p-0">
-                        <Card className="card custom-card our-team" style={{ minHeight: "300px", height: "300px" }}>
+                        <Card className="card custom-card our-team" style={{ minHeight: "300px", height: "310px" }}>
                           <Card.Body className="d-flex flex-column">
                             <div className="picture avatar-lg online text-center">
                               <div

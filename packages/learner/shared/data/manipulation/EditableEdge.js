@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BaseEdge, getBezierPath, getSmoothStepPath, useReactFlow } from '@xyflow/react';
 const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data, markerEnd, allEdges,
-  edgeRouting,
+  edgeRouting, selected,
 }) => {
   const { setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
@@ -52,10 +52,47 @@ const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
     attackedValue === 1 ||
     String(attackedValue).toLowerCase() === "yes" ||
     String(attackedValue).toLowerCase() === "true";
+  const edgeColor = selected
+    ? "var(--diagram-edge-selected)"
+    : "var(--diagram-edge-default)";
   return (
     <>
       <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />
-      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} />
+      <BaseEdge
+        id={`${id}-glow`}
+        path={edgePath}
+        style={{
+          stroke: edgeColor,
+          strokeWidth: 4.5,
+          opacity: 0.08,
+          filter: `drop-shadow(0 0 6px ${edgeColor})`,
+        }}
+      />
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          stroke: edgeColor,
+          strokeWidth: 2.4,
+          strokeLinecap: "round",
+          filter: `drop-shadow(0 0 3px ${edgeColor})`,
+          animation: "scenario-edge-shimmer 2.4s ease-in-out infinite",
+        }}
+      />
+      <path
+        className="scenario-network-edge-flow"
+        d={edgePath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.78)"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        strokeDasharray="2 13"
+        style={{
+          animation: "scenario-edge-overlay 1.35s linear infinite",
+          pointerEvents: "none",
+        }}
+      />
       {shouldAnimate && (
         <g className="scenario-network-packet">
           <circle
@@ -133,7 +170,18 @@ const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
             <div
               onClick={() => setIsEditing(true)}
               style={{
-                fontSize: 12,
+                maxWidth: 70,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                padding: "3px 7px",
+                border: `1px solid ${edgeColor}66`,
+                borderRadius: 7,
+                background: "rgba(7, 13, 25, 0.9)",
+                boxShadow: `0 0 10px ${edgeColor}22`,
+                color: "#aebbd0",
+                fontSize: 8,
+                fontWeight: 700,
+                letterSpacing: "0.02em",
                 cursor: 'pointer',
                 userSelect: 'none',
                 whiteSpace: 'nowrap',
@@ -144,6 +192,19 @@ const EditableEdge = ({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
           )}
         </div>
       </foreignObject>
+      <style jsx global>{`
+        @keyframes scenario-edge-overlay {
+          to { stroke-dashoffset: -42; }
+        }
+        @keyframes scenario-edge-shimmer {
+          0%, 100% { opacity: 0.72; }
+          50% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scenario-network-edge-flow,
+          .react-flow__edge-path { animation: none !important; }
+        }
+      `}</style>
     </>
   );
 };

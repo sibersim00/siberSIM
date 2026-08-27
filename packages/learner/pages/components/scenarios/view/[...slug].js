@@ -9,7 +9,6 @@ import {
   Tab,
   Modal,
   Alert,
-  Badge,
   Form,
   Table,
 } from "react-bootstrap";
@@ -36,8 +35,7 @@ import {
   pausescenario,
   resumescenario,
   canresumescenario,
-  Learnerlistbyinstructor,
-  clearLearnerlistbyinstructor,  
+  Learnerlistbyinstructor, 
   getLearnersByVmRequest,
   cleargetLearnersByVmRequest,    
   DeleteInviteLearnerController,
@@ -108,7 +106,6 @@ const ScenariosView = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const backTo = query?.backView;
   const [showChat, setShowChat] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [isNotified, setIsNotified] = useState(false);
@@ -125,13 +122,12 @@ const ScenariosView = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfNotFound, setPdfNotFound] = useState(false);
   const [dynamicTab, setDynamicTab] = useState("Basic Information");
-  const [isAnyScenarioRunning, setIsAnyScenarioRunning] = useState(false);
   const [learnerDropdown, setLearnerDropdown] = useState([]);
   const [selectedLearners, setSelectedLearners] = useState([]);
+  const [learnerSelectionError, setLearnerSelectionError] = useState("");
   const [showLearnerModal, setShowLearnerModal] = useState(false);
   const [showAssignedModal, setShowAssignedModal] = useState(false);
   const [showAssignedBtn, setShowAssignedBtn] = useState(false);
-  const [showInviteesBtn, setShowInviteesBtn] = useState(false);
   const { t } = useTranslation();
 
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
@@ -143,35 +139,6 @@ const ScenariosView = () => {
     "Starting",
     "Running",
   ];
-
-  const statusBadgeMap = {
-    Start: "primary-transparent",
-    Pause: "warning-transparent",
-    Resume: "info-transparent",
-    Terminated: "danger-transparent",
-    Completed: "success-transparent",
-    Failed: "dark-transparent",
-    Initiated: "secondary-transparent",
-  };
-
-  const typeBadgeMap = {
-    Learner: "primary-transparent",
-    Instructor: "success-transparent",
-    Admin: "danger-transparent",
-    System: "secondary-transparent",
-  };
-
-  const badgeTextColorMap = {
-    "primary-transparent": "text-primary",
-    "secondary-transparent": "text-secondary",
-    "success-transparent": "text-success",
-    "danger-transparent": "text-danger",
-    "warning-transparent": "text-warning",
-    "info-transparent": "text-info",
-    "dark-transparent": "text-dark",
-    "light-transparent": "text-dark",
-  };
-
   const {
     getSingleScenariosSucc,
     saveScenariosData,
@@ -180,8 +147,6 @@ const ScenariosView = () => {
     hasUpdateCompletedTerminatedSucc,
     tabListSucc,
     hasdeletescenarioSucc,
-    haspausescenarioSucc,
-    hasresumescenarioSucc,
     hasGetlearnerlistbyinstructorData,
     hasGetLearnersByVmRequestDataData,
     hasdeleteInviteLearnerControllerData,
@@ -197,9 +162,6 @@ const ScenariosView = () => {
       state?.scenarios?.updateCompletedTerminatedData?.data,
     hasdeletescenarioSucc: state?.scenarios?.hasdeletescenarioSuccData?.data,
     tabListSucc: state?.scenarios?.getTabListData?.data,
-    haspausescenarioSucc: state?.scenarios?.pausescenarioData,
-    hasresumescenarioSucc: state?.scenarios?.resumescenarioData,
-
     hasGetlearnerlistbyinstructorData:
       state?.scenarios?.learnerlistbyinstructor?.data,
     hasGetLearnersByVmRequestDataData:
@@ -885,6 +847,11 @@ const hasInvitees =
   };
 
   const handleAssignSubmit = async () => {
+    if (!selectedLearners?.length) {
+      setLearnerSelectionError("Please select at least one learner.");
+      return;
+    }
+
     const payload = {
       vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
       invited_by_learner_id: getUserDataFromLocal?.learner_id,
@@ -922,7 +889,13 @@ const hasInvitees =
         vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
       }),
     );
+    setLearnerSelectionError("");
     setShowAssignedModal(true);
+  };
+
+  const handleCloseAssignedModal = () => {
+    setLearnerSelectionError("");
+    setShowAssignedModal(false);
   };
 
   return (
@@ -1927,7 +1900,7 @@ const hasInvitees =
           {/* dropdown modal */}
           <Modal
             show={showAssignedModal}
-            onHide={() => setShowAssignedModal(false)}
+            onHide={handleCloseAssignedModal}
             centered
           >
             <Modal.Header closeButton>
@@ -1943,6 +1916,11 @@ const hasInvitees =
 
                 <Select
                   isMulti
+                  inputId="learner-invitees"
+                  aria-invalid={Boolean(learnerSelectionError)}
+                  aria-describedby={
+                    learnerSelectionError ? "learner-invitees-error" : undefined
+                  }
                   styles={customStyles()}
                   theme={(theme) => ({
                     ...theme,
@@ -1965,9 +1943,13 @@ const hasInvitees =
                   getOptionValue={(x) => x.learner_id}
                   placeholder="Select Invitees"
                   onChange={(selectedOptions) => {
-                    setSelectedLearners(selectedOptions);
+                    const learners = selectedOptions || [];
+                    setSelectedLearners(learners);
+                    if (learners.length > 0) {
+                      setLearnerSelectionError("");
+                    }
 
-                    const selectedIds = (selectedOptions || []).map(
+                    const selectedIds = learners.map(
                       (item) => item.learner_id,
                     );
 
@@ -1978,13 +1960,22 @@ const hasInvitees =
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {learnerSelectionError && (
+                  <div
+                    id="learner-invitees-error"
+                    className="text-danger mt-1"
+                    role="alert"
+                  >
+                    {learnerSelectionError}
+                  </div>
+                )}
               </Form.Group>
             </Modal.Body>
 
             <Modal.Footer>
               <Button
                 variant="outline-secondary"
-                onClick={() => setShowAssignedModal(false)}
+                onClick={handleCloseAssignedModal}
               >
                 Cancel
               </Button>

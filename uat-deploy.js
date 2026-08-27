@@ -9,9 +9,10 @@ const services = [
   { name: 'masters', build: false },
   { name: 'learnerapi', build: false },
   { name: 'jobs', build: false },
+  { name: 'webhook', build: false },
 ];
 
-const baseDir = 'C:/siberSIM/packages';
+const baseDir = 'C:/Projects/UAT/battle-rangers/packages';
 
 function run(command, cwd) {
   console.log(`\n🔷 Running: ${command} in ${cwd}`);

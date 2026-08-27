@@ -5,6 +5,11 @@ import Eventlayout from '../shared/layout-components/layout/event-layout'
 import { Provider } from "react-redux";
 import { useStore } from "../shared/redux/store";
 import PropTypes from 'prop-types';
+import { useEffect } from 'react';
+import {
+  applyStoredScenarioShadowConfig,
+  SCENARIO_SHADOW_EVENT,
+} from '../shared/utils/scenarioShadowConfig';
 
 const layouts = {
   Contentlayout: Contentlayout,
@@ -14,6 +19,16 @@ const layouts = {
 function MyApp({ Component, pageProps }) {
   const store = useStore(pageProps?.initialReduxState);
   const Layout = layouts[Component.layout] || ((pageProps) => <Component>{pageProps}</Component>);
+  useEffect(() => {
+    const applyStored = () => applyStoredScenarioShadowConfig();
+    applyStored();
+    window.addEventListener("storage", applyStored);
+    window.addEventListener(SCENARIO_SHADOW_EVENT, applyStored);
+    return () => {
+      window.removeEventListener("storage", applyStored);
+      window.removeEventListener(SCENARIO_SHADOW_EVENT, applyStored);
+    };
+  }, [Component]);
   return (
     <Provider store={store}>
       <Layout>

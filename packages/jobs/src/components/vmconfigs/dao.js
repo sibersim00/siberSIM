@@ -177,9 +177,6 @@ const networkConfig = JSON.parse(scenario.network_config).filter(
       //  Prepare components
       let allFound = true;
       const preparedComponents = [];
-      console.log("componentConfigcomponentConfig",componentConfig);
-      
-
       componentLoop: for (const item of componentConfig) {
         const {
           vmid,
@@ -190,9 +187,6 @@ const networkConfig = JSON.parse(scenario.network_config).filter(
           duration,
           network_ids,
         } = item;
-        console.log("itemitemitemitemitem",item);
-        
-
         let network_bridge_name = "{}";
         const [componentInfo] = await db.sequelize.query(
           `SELECT componenttype, network_bridge_name, vmid_name,componentname FROM components WHERE componentid = ?`,
@@ -212,22 +206,10 @@ const networkConfig = JSON.parse(scenario.network_config).filter(
         const prefixMap = JSON.parse(network_bridge_name);
         const bridgeMap = networkArray;
         const network_bridge_json = {};
-        // for (const [netKey, netId] of Object.entries(network_ids)) {
-        //   const prefix = prefixMap[netKey];
-        //   const bridgeName = bridgeMap[netId]?.networkname;
-        //   if (prefix && bridgeName) {
-        //     network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
-        //   }
-        // }
-
-        console.log("network_idsnetwork_idsnetwork_idsnetwork_ids",network_ids);
-        
         for (const [netKey, netId] of Object.entries(network_ids)) {
           const prefix = prefixMap[netKey];
           if (!prefix) continue;
           let bridgeName;
-          console.log("netIdnetIdnetIdnetIdnetIdnetId",netId);
-          
           if (netId === "Network Id") {
             // Reuse the bridge from the connected node/port in the diagram. Prefer the target side first for this learner flow.
             const proxmoxService = ProxMoxService(db, {}, ipAddress);
@@ -241,8 +223,6 @@ const networkConfig = JSON.parse(scenario.network_config).filter(
                   }
 
             const sourceVmInfo = await proxmoxService.getVmNetworkInfo(vmid, componentInfo.componenttype?.toLowerCase());
-            console.log("sourceVmInfosourceVmInfosourceVmInfo",sourceVmInfo);
-            
             // Response shape: { data: { net0: "virtio=...,bridge=vmbr10", net1: "..." } }
             const netLine = sourceVmInfo?.data?.[netKey];
             const match = netLine?.match(/bridge=([^,]+)/);
@@ -269,7 +249,7 @@ const networkConfig = JSON.parse(scenario.network_config).filter(
           order,
           master_vmid: vmid,
           vmid: null,
-          componentname: componentInfo.componentname,
+          componentname: componentInfo.vmid_name,
           duration,
           network_bridge_json: JSON.stringify(network_bridge_json),
           status: statusVal,

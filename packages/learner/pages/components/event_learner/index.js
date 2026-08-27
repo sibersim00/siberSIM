@@ -4,15 +4,12 @@ import { Button, Col, Form, Row, Container, Card, Spinner } from "react-bootstra
 import { toast, ToastContainer } from "react-toastify";
 import { useRouter } from "next/router";
 import favicon from "../../../public/assets/img/brand/favicon.png";
-import Link from "next/link";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import logolight from "../../../public/assets/img/brand/logo-light.png";
 import logo from "../../../public/assets/img/brand/logo.png";
 import logo_dark from "../../../public/assets/img/brand/logo-dark.png";
-import tutor_login from "../../../public/assets/img/brand/tutor_login.png";
 import defaultLogo from "../../../public/assets/img/brand/logo-dark.png";
-import defaultLightLogo from "../../../public/assets/img/brand/logo.png";
 import defaultFavicon from "../../../public/assets/img/brand/favicon.png";
 import { useTranslation } from "react-i18next";
 import "../../../shared/utils/i18n";
@@ -177,9 +174,6 @@ const Home = () => {
       setUserInfo({});
       setLoginSuccess(false);
     }
-
-    const myString = data.username;
-    const regex = /[a-zA-Z]/;
 
     if (data.username == "") {
       toast.error(
@@ -364,22 +358,9 @@ const Home = () => {
     }
   }, []);
   const baseUrl = process.env.API_URL_FILEMANAGER;
-  const logoUrl = companySettings?.web_panel_logo
-    ? `${baseUrl}${companySettings.web_panel_logo}`
-    : defaultLogo.src
-    ;
   const adminLogoUrl = getCompanyListData?.admin_panel_logo
     ? `${baseUrl}${getCompanyListData.admin_panel_logo}`
     : defaultLogo.src;
-
-
-  const faviconUrl = companySettings?.favicon
-    ? `${baseUrl}${companySettings.favicon}`
-    : defaultFavicon.src
-    ;
-
-
-
   useEffect(() => {
     if (companySettings?.favicon) {
       const baseUrl = process.env.API_URL_FILEMANAGER;
@@ -409,7 +390,6 @@ const Home = () => {
                   className="d-none d-lg-block text-center background-black "
                 >
                   <div className="mt-5 pt-4 p-2">
-                    {/* <img src={tutor_login.src} className="mb-4" alt="user" /> */}
                     <div className="clearfix"></div>
                     <img
                       src={adminLogoUrl}

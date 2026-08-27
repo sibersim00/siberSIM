@@ -9,6 +9,7 @@ import Seo from "../../../shared/layout-components/seo/seo";
 import AdminUsers from "./adminusers";
 import Instructors from "../instructors";
 import NormalUsers from "./normalusers";
+import WebhookUsers from "./webhookuser";
 const Master = () => {
   const [tabOrNav, setTabOrNav] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState({});
@@ -163,6 +164,7 @@ const Master = () => {
               {selectedSubMenu.source === "/adminusers" && <AdminUsers />}
               {selectedSubMenu.source === "/instructors" && <Instructors />}
               {selectedSubMenu.source === "/normalusers" && <NormalUsers/>}
+              {selectedSubMenu.source === "/webhookuser" && <WebhookUsers />}
             </div>
           )}
         </Col>

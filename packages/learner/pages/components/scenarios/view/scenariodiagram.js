@@ -12,6 +12,10 @@ import { useRouter } from "next/router";
 import EditableEdge from "../../../../shared/data/scenarios/EditableEdge";
 import { useDispatch, useSelector } from "react-redux";
 import { changeEditStatus } from "../../../../shared/redux/slices/scenarios/scenarios";
+import {
+  getAmbientMotionPreference,
+  updateAmbientMotionPreference,
+} from "../../../../shared/redux/slices/commons/commons";
 
 const getIconMotion = (value = "") => {
   const hash = String(value)
@@ -373,7 +377,9 @@ const ScenarioDiagram = ({
   }));
   const dispatch = useDispatch();
   const [elements, setElements] = useState({ nodes: [], edges: [] });
-  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(true);
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(false);
+  const [ambientMotionLoading, setAmbientMotionLoading] = useState(true);
+  const [ambientMotionSaving, setAmbientMotionSaving] = useState(false);
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
   const basePositionsRef = useRef(new Map());
@@ -382,6 +388,54 @@ const ScenarioDiagram = ({
   const componentAnimationStartedAtRef = useRef(0);
   const router = useRouter();
   // const { push } = useRouter();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    dispatch(getAmbientMotionPreference())
+      .then((enabled) => {
+        if (isMounted) setAmbientMotionEnabled(enabled);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAmbientMotionEnabled(true);
+          toast.error("Unable to load the Ambient motion preference.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) setAmbientMotionLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch]);
+
+  const toggleAmbientMotion = useCallback(async () => {
+    if (ambientMotionLoading || ambientMotionSaving) return;
+
+    const previousValue = ambientMotionEnabled;
+    const nextValue = !previousValue;
+    setAmbientMotionEnabled(nextValue);
+    setAmbientMotionSaving(true);
+
+    try {
+      const savedValue = await dispatch(
+        updateAmbientMotionPreference(nextValue),
+      );
+      setAmbientMotionEnabled(savedValue);
+    } catch (error) {
+      setAmbientMotionEnabled(previousValue);
+      toast.error("Unable to update the Ambient motion preference.");
+    } finally {
+      setAmbientMotionSaving(false);
+    }
+  }, [
+    ambientMotionEnabled,
+    ambientMotionLoading,
+    ambientMotionSaving,
+    dispatch,
+  ]);
 
   useEffect(() => {
     if (!scenariodiagram) return;
@@ -599,11 +653,13 @@ const ScenarioDiagram = ({
           ambientMotionEnabled ? "is-enabled" : ""
         }`}
         aria-pressed={ambientMotionEnabled}
-        onClick={() => setAmbientMotionEnabled((enabled) => !enabled)}
+        aria-busy={ambientMotionLoading || ambientMotionSaving}
+        disabled={ambientMotionLoading || ambientMotionSaving}
+        onClick={toggleAmbientMotion}
         title="Toggle idle component and image motion"
       >
         <span aria-hidden="true" />
-        Ambient motion: {ambientMotionEnabled ? "On" : "Off"}
+        Ambient motion: {ambientMotionLoading ? "Loading" : ambientMotionEnabled ? "On" : "Off"}
       </button>
 
       {canShowEditButton && (

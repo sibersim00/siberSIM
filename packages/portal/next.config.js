@@ -151,6 +151,7 @@ const nextConfig = withTM({
       { source: "/users-management", destination: "/components/users" },
       { source: "/adminusers", destination: "/components/users/adminusers" },
       { source: "/instructors", destination: "/components/users/instructors" },
+      { source: "/webhookuser", destination: "/components/users/webhookuser" },
       { source: "/normalusers", destination: "/components/users/normalusers" },
       {
         source: "/batches_view/:slug*",

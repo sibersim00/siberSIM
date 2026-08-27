@@ -110,8 +110,6 @@ export function getEventList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api.events_get}`);
-      console.log("responseresponseresponse",response);
-      
       dispatch(slice.actions.hasGetEventSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

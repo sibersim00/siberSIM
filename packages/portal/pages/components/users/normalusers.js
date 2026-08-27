@@ -965,37 +965,8 @@ useEffect(() => {
                           md={12 / columnsPerRow}
                           className="p-0"
                         >
-                          <Card className="card custom-card our-team" style={{ minHeight: "340px", height: "340px" }}>
+                          <Card className="card custom-card our-team" style={{ minHeight: "300px", height: "310px" }}>
                             <Card.Body className="d-flex flex-column">
-                              {/* <div className="picture avatar-lg online text-center">
-                                <div
-                                  className="rounded-circle pointer"
-                                  style={{
-                                    width: "100px",
-                                    height: "100px",
-                                    overflow: "hidden",
-                                    display: "inline-block",
-                                  }}
-                                >
-                                  <img
-                                    alt="avatar"
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = dummy_profile.src;
-                                    }}
-                                    src={
-                                      item?.profile
-                                        ? `${process.env.API_URL_FILEMANAGER}${item?.profile}`
-                                        : dummy_profile.src
-                                    }
-                                    style={{
-                                      width: "100%",
-                                      height: "100%",
-                                      objectFit: "cover", // keeps aspect ratio and fills circle
-                                    }}
-                                  />
-                                </div>
-                              </div> */}
                               <div className="picture avatar-lg online text-center">
                                 <div
                                   className="rounded-circle pointer"
@@ -1044,7 +1015,7 @@ useEffect(() => {
                                   {item.username}
                                 </p>
                               </div>
-                              <div className="contact-info mb-0 text-center">
+                              <div className="contact-info mb-0 mt-1 text-center">
                                 <div className="btn btn-sm ripple bg-primary-transparent text-primary rounded-circle mx-1">
                                   <OverlayTrigger
                                     placement="bottom"

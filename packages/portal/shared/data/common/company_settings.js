@@ -1,13 +1,32 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Row, Col, Card, Button, Form, OverlayTrigger, Tooltip, Spinner, Alert} from "react-bootstrap";
+import {
+  Row,
+  Col,
+  Card,
+  Button,
+  Form,
+  OverlayTrigger,
+  Tooltip,
+  Spinner,
+  Alert,
+} from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Seo from "../../layout-components/seo/seo";
-import Select from 'react-select'
+import Select from "react-select";
 import { getComponentDetails } from "../../redux/slices/localstorage/LocalStorage";
 import * as yup from "yup";
 import { useFormik } from "formik";
-import { getWebSettings, addWebSetting, clearAddWebSetting, updateWebSetting, clearUpdateWebSetting, clearHasError, uploadLogo, clearUploadLogo} from "../../redux/slices/web-settings/company-setting";
+import {
+  getWebSettings,
+  addWebSetting,
+  clearAddWebSetting,
+  updateWebSetting,
+  clearUpdateWebSetting,
+  clearHasError,
+  uploadLogo,
+  clearUploadLogo,
+} from "../../redux/slices/web-settings/company-setting";
 import {
   exportMastersAction,
   clearimportMastersAction,
@@ -15,13 +34,13 @@ import {
 import { error } from "./vaidationMessage/formValidationMsg";
 import defaultFavicon from "../../../public/assets/img/brand/favicon.png";
 import defaultAdminLogin from "../../../public/assets/img/brand/logo-light.png";
-import axios from "axios";
 import dynamic from "next/dynamic";
 import ImportSqlSourceFile from "../companySettingModal/companySettingModal";
 import {
   logOutData,
   clearlogOutData,
 } from "../../redux/slices/authentication/Auth";
+import { applyScenarioShadowConfig } from "../../utils/scenarioShadowConfig";
 
 const FileUploader = dynamic(
   () => {
@@ -34,7 +53,6 @@ import { useRouter } from "next/router";
 
 const CompanySettingsCommon = ({ isSL }) => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const [oneClick, setOneClick] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(false);
   const [isDefaultFavicon, setIsDefaultFavicon] = useState(false);
@@ -83,13 +101,19 @@ const CompanySettingsCommon = ({ isSL }) => {
     };
   });
 
-const clusterMethodOptions = [
-  { value: "RoundRobin", label: "Round Robin" },
-  { value: "LeastLoaded", label: "Least Loaded" },
-  { value: "Weighted", label: "Weighted" },
-  { value: "Threshold", label: "Threshold" },
+  const clusterMethodOptions = [
+    { value: "RoundRobin", label: "Round Robin" },
+    { value: "LeastLoaded", label: "Least Loaded" },
+    { value: "Weighted", label: "Weighted" },
+    { value: "Threshold", label: "Threshold" },
+  ];
+const shadowOptions = [
+  { id: 0, name: "0 - Very dim" },
+  { id: 1, name: "1 - Soft (default)" },
+  { id: 2, name: "2 - Dimmer" },
+  { id: 3, name: "3 - Dark" },
+  { id: 4, name: "4 - Very dark" },
 ];
-
   useEffect(() => {
     dispatch(getWebSettings());
     dispatch(getComponentDetails("/company-setting"));
@@ -100,6 +124,26 @@ const clusterMethodOptions = [
 
   useEffect(() => {
     if (cmpSettingData) {
+      applyScenarioShadowConfig(cmpSettingData);
+      if (typeof window !== "undefined") {
+        try {
+          const stored = JSON.parse(
+            localStorage.getItem("company_settings") || "{}",
+          );
+          localStorage.setItem(
+            "company_settings",
+            JSON.stringify({
+              ...stored,
+              shadow_config: cmpSettingData.shadow_config,
+            }),
+          );
+        } catch (storageError) {
+          console.error(
+            "Unable to update local company settings",
+            storageError,
+          );
+        }
+      }
       setIsDefaultFavicon(
         cmpSettingData?.is_default_favicon == "false" ? false : true,
       );
@@ -114,11 +158,9 @@ const clusterMethodOptions = [
       );
       setiscomponent_approval(
         cmpSettingData?.component_approval == "true" ? true : false,
-        // -----
       );
       setisscenario_approval(
         cmpSettingData?.scenario_approval == "true" ? true : false,
-        // -----
       );
     }
   }, [cmpSettingData]);
@@ -245,11 +287,8 @@ const clusterMethodOptions = [
           theme: "colored",
         },
       );
-
-      // close modal AFTER toast
       handleImportModal();
     } else if (importStatus.error) {
-      //  Error
       toast.error(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0">
           {importStatus.error}
@@ -274,10 +313,54 @@ const clusterMethodOptions = [
     }
   }, [uploadLogoResp]);
 
+  // const customStyles = {
+  //   control: (styles, { isFocused, isDisabled }) => ({
+  //     ...styles,
+  //     borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#1f1f1f",
+  //     boxShadow: isDisabled
+  //       ? null
+  //       : isFocused
+  //         ? "0 0 0 0.001rem #00d683"
+  //         : null,
+  //     "&:hover": {
+  //       borderColor: isDisabled
+  //         ? "#e8e8f7"
+  //         : isFocused
+  //           ? "#00d683"
+  //           : styles.borderColor,
+  //     },
+  //   }),
+  // };
+  
+  const getSelectStyles = (fieldName) => {
+    const error =
+      !formValidation.values[fieldName] &&
+      formValidation.errors[fieldName] &&
+      formValidation.touched[fieldName];
+
+    return {
+      ...customStyles,
+      control: (styles, state) => ({
+        ...styles,
+        borderColor: error ? "#EB5757" : styles.borderColor, // red border on error
+        boxShadow: error ? "0 0 0 0.001rem #EB5757" : styles.boxShadow,
+        backgroundColor: "var(--dark-bg-color)", // dark background
+      }),
+      singleValue: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // selected value text
+      }),
+      input: (provided) => ({
+        ...provided,
+        color: "var(--light-text-color)", // text while typing
+      }),
+    };
+  };
+
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
       ...styles,
-      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#1f1f1f",
+      borderColor: isDisabled ? "#e8e8f7" : isFocused ? "#00d683" : "#e8e8f7",
       boxShadow: isDisabled
         ? null
         : isFocused
@@ -292,91 +375,9 @@ const clusterMethodOptions = [
       },
     }),
   };
-    const getSelectStyles = (fieldName) => {
-    const error =
-      !formValidation.values[fieldName] &&
-      formValidation.errors[fieldName] &&
-      formValidation.touched[fieldName];
-    return error
-      ? {
-        ...customStyles,
-        control: (styles) => ({
-          ...styles,
-          borderColor: "#EB5757",
-          boxShadow: "0 0 0 0.001rem #EB5757",
-        }),
-      }
-      : customStyles;
-  };
 
   const formValidation = useFormik({
     enableReinitialize: true,
-    // initialValues: {
-    //   id: cmpSettingData?.id ? cmpSettingData?.id : 0,
-    //   name: cmpSettingData?.name ? cmpSettingData?.name : "",
-    //   phone_number: cmpSettingData?.phone_number
-    //     ? cmpSettingData?.phone_number
-    //     : "",
-    //   website: cmpSettingData?.website ? cmpSettingData?.website : "",
-    //   otp_verification: cmpSettingData?.otp_verification
-    //     ? cmpSettingData?.otp_verification
-    //     : "",
-
-    //   component_approval: cmpSettingData?.component_approval
-    //     ? cmpSettingData?.component_approval
-    //     : "",
-    //   scenario_approval: cmpSettingData?.scenario_approval
-    //     ? cmpSettingData?.scenario_approval
-    //     : "",
-    //   // -----
-    //   max_questions: cmpSettingData?.max_questions
-    //     ? cmpSettingData?.max_questions
-    //     : "",
-
-    //   email: cmpSettingData?.email ? cmpSettingData?.email : "",
-    //   system_name: cmpSettingData?.system_name
-    //     ? cmpSettingData?.system_name
-    //     : "",
-    //   system_footer: cmpSettingData?.system_footer
-    //     ? cmpSettingData?.system_footer
-    //     : "",
-    //   proxmox_alert_time: cmpSettingData?.proxmox_alert_time
-    //     ? cmpSettingData?.proxmox_alert_time
-    //     : "",
-    //   proxmox_email_sent: cmpSettingData?.proxmox_email_sent
-    //     ? cmpSettingData?.proxmox_email_sent
-    //     : "",
-    //   termination_delay: cmpSettingData?.termination_delay
-    //     ? cmpSettingData?.termination_delay
-    //     : "",
-    //   configuration_delay: cmpSettingData?.configuration_delay
-    //     ? cmpSettingData?.configuration_delay
-    //     : "",
-    //   cloning_delay: cmpSettingData?.cloning_delay
-    //     ? cmpSettingData?.cloning_delay
-    //     : "",
-    //   hibernate_delay: cmpSettingData?.hibernate_delay
-    //     ? cmpSettingData?.hibernate_delay
-    //     : "",
-    //   pause_limit: cmpSettingData?.pause_limit
-    //     ? cmpSettingData?.pause_limit
-    //     : "",
-    //   max_ports: cmpSettingData?.max_ports
-    //     ? cmpSettingData?.max_ports
-    //     : "",
-    //   address: cmpSettingData?.address ? cmpSettingData?.address : "",
-    //   favicon: cmpSettingData?.favicon ? cmpSettingData?.favicon : "",
-    //   admin_panel_logo: cmpSettingData?.admin_panel_logo
-    //     ? cmpSettingData?.admin_panel_logo
-    //     : "",
-    //   web_panel_logo: cmpSettingData?.web_panel_logo
-    //     ? cmpSettingData?.web_panel_logo
-    //     : "",
-    //   expiry_date: "",
-    //   license_key: "",
-    //   domail_url: "",
-    // },
-
     initialValues: {
       id: cmpSettingData?.id ? cmpSettingData?.id : 0,
       name: cmpSettingData?.name ? cmpSettingData?.name : "",
@@ -425,6 +426,9 @@ const clusterMethodOptions = [
       max_questions: cmpSettingData?.max_questions
         ? cmpSettingData?.max_questions
         : "",
+      shadow_config: Number.isInteger(Number(cmpSettingData?.shadow_config))
+        ? Number(cmpSettingData.shadow_config)
+        : 1,
 
       proxmox_current_node: cmpSettingData?.proxmox_current_node
         ? cmpSettingData?.proxmox_current_node
@@ -500,6 +504,13 @@ const clusterMethodOptions = [
         .max(16, "Maximum port limit should not exceed 16")
         .min(1, "Minimum port limit should be 1")
         .required(error?.required),
+      shadow_config: yup
+        .number()
+        .typeError("Scenario shadow level must be a number")
+        .integer("Scenario shadow level must be an integer")
+        .min(0, "Minimum scenario shadow level is 0")
+        .max(4, "Maximum scenario shadow level is 4")
+        .required(error?.required),
     }),
 
     onSubmit: (data, action) => {
@@ -532,6 +543,7 @@ const clusterMethodOptions = [
           : "",
 
         max_questions: data?.max_questions ? data?.max_questions : "",
+        shadow_config: Number(data?.shadow_config),
 
         proxmox_current_node: data?.proxmox_current_node
           ? data?.proxmox_current_node
@@ -841,6 +853,69 @@ const clusterMethodOptions = [
                         </Form.Control.Feedback>
                       </Form.Group>
 
+                      <Form.Group
+                        as={Col}
+                        md="4"
+                        controlId="validationFormikShadowConfig"
+                        className="mb-3 h-62 input-container select"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Scenario Diagram Shadow
+                            <span className="text-danger"> *</span>
+                          </Form.Label>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Controls the outer component-card shadow in every portal and learner scenario diagram. 0 is very dim; 4 is the darkest.
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
+
+                        <Select
+                          theme={(theme) => ({
+                            ...theme,
+                            colors: {
+                              ...theme.colors,
+                              primary25: "var(--primary-bg-color)",
+                              primary: "var(--primary-bg-color)",
+                            },
+                          })}
+                          name="shadow_config"
+                          styles={getSelectStyles("shadow_config")}
+                          value={shadowOptions.find(
+                            (opt) => opt.id === formValidation.values.shadow_config,
+                          )}
+                          options={shadowOptions}
+                          getOptionLabel={(x) => x.name}
+                          getOptionValue={(x) => x.id}
+                          placeholder="Select Shadow"
+                          onChange={(e) => {
+                            const level = e ? e.id : null;
+                            formValidation.setFieldValue("shadow_config", level);
+                            applyScenarioShadowConfig({ shadow_config: level });
+                          }}
+                          onBlur={formValidation.handleBlur}
+                          isInvalid={
+                            formValidation.touched.shadow_config &&
+                            formValidation.errors.shadow_config
+                          }
+                        />
+
+                        {formValidation.errors.shadow_config &&
+                          formValidation.touched.shadow_config && (
+                            <div className="invalid-tooltiped">
+                              {formValidation.errors.shadow_config}
+                            </div>
+                          )}
+                      </Form.Group>
                       <Form.Group
                         as={Col}
                         md="4"
@@ -2020,64 +2095,71 @@ const clusterMethodOptions = [
                         </Form.Control.Feedback>
                       </Form.Group> */}
                       <Form.Group
-  as={Col}
-  md="4"
-  controlid="validationFormik102"
-  className="mb-3"
->
-  <div className="d-flex justify-content-between align-items-center">
-    <Form.Label>
-      Cluster Method <span className="text-danger">*</span>
-    </Form.Label>
+                        as={Col}
+                        md="4"
+                        controlid="validationFormik102"
+                        className="mb-3"
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Form.Label>
+                            Cluster Method{" "}
+                            <span className="text-danger">*</span>
+                          </Form.Label>
 
-    <OverlayTrigger
-      placement="bottom"
-      overlay={
-        <Tooltip>
-          Select the load balancing method for the cluster
-        </Tooltip>
-      }
-    >
-      <i
-        className="fa fa-info-circle text-dark"
-        style={{ cursor: "pointer" }}
-      ></i>
-    </OverlayTrigger>
-  </div>
+                          <OverlayTrigger
+                            placement="bottom"
+                            overlay={
+                              <Tooltip>
+                                Select the load balancing method for the cluster
+                              </Tooltip>
+                            }
+                          >
+                            <i
+                              className="fa fa-info-circle text-dark"
+                              style={{ cursor: "pointer" }}
+                            ></i>
+                          </OverlayTrigger>
+                        </div>
 
-  <Select
-    theme={(theme) => ({
-      ...theme,
-      colors: {
-        ...theme.colors,
-        primary25: "var(--primary-bg-color)",
-        primary: "var(--primary-bg-color)",
-      },
-    })}
-    name="cluster_task_type"
-    styles={getSelectStyles("cluster_task_type")}
-    value={
-      clusterMethodOptions.find(
-        (x) => x.value === formValidation.values.cluster_task_type
-      ) || null
-    }
-    options={clusterMethodOptions}
-    getOptionLabel={(x) => x.label}
-    getOptionValue={(x) => x.value}
-    placeholder="Select Cluster Method"
-    isDisabled
-    onChange={(e) => {
-      console.log("Selected:", e);
-      formValidation.setFieldValue("cluster_task_type", e.value);
-    }}
-    menuPosition="fixed"
-  />
-  {formValidation.errors.cluster_task_type && formValidation.touched.cluster_task_type && (
-    <div className="invalid-tooltiped">
-      {formValidation.errors.cluster_task_type}
-    </div>
-  )}
-</Form.Group>
+                        <Select
+                          theme={(theme) => ({
+                            ...theme,
+                            colors: {
+                              ...theme.colors,
+                              primary25: "var(--primary-bg-color)",
+                              primary: "var(--primary-bg-color)",
+                            },
+                          })}
+                          name="cluster_task_type"
+                          styles={getSelectStyles("cluster_task_type")}
+                          value={
+                            clusterMethodOptions.find(
+                              (x) =>
+                                x.value ===
+                                formValidation.values.cluster_task_type,
+                            ) || null
+                          }
+                          options={clusterMethodOptions}
+                          getOptionLabel={(x) => x.label}
+                          getOptionValue={(x) => x.value}
+                          placeholder="Select Cluster Method"
+                          isDisabled
+                          onChange={(e) => {
+                            console.log("Selected:", e);
+                            formValidation.setFieldValue(
+                              "cluster_task_type",
+                              e.value,
+                            );
+                          }}
+                          menuPosition="fixed"
+                        />
+                        {formValidation.errors.cluster_task_type &&
+                          formValidation.touched.cluster_task_type && (
+                            <div className="invalid-tooltiped">
+                              {formValidation.errors.cluster_task_type}
+                            </div>
+                          )}
+                      </Form.Group>
 
                       {isSL && (
                         <>
@@ -2499,64 +2581,72 @@ const clusterMethodOptions = [
                               )}
                           </Form.Group>
 
-                                              <Form.Group
-  as={Col}
-  md="4"
-  controlid="validationFormik102"
-  className="mb-3"
->
-  <div className="d-flex justify-content-between align-items-center">
-    <Form.Label>
-      Cluster Method <span className="text-danger">*</span>
-    </Form.Label>
+                          <Form.Group
+                            as={Col}
+                            md="4"
+                            controlid="validationFormik102"
+                            className="mb-3"
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <Form.Label>
+                                Cluster Method{" "}
+                                <span className="text-danger">*</span>
+                              </Form.Label>
 
-    <OverlayTrigger
-      placement="bottom"
-      overlay={
-        <Tooltip>
-          Select the load balancing method for the cluster
-        </Tooltip>
-      }
-    >
-      <i
-        className="fa fa-info-circle text-dark"
-        style={{ cursor: "pointer" }}
-      ></i>
-    </OverlayTrigger>
-  </div>
+                              <OverlayTrigger
+                                placement="bottom"
+                                overlay={
+                                  <Tooltip>
+                                    Select the load balancing method for the
+                                    cluster
+                                  </Tooltip>
+                                }
+                              >
+                                <i
+                                  className="fa fa-info-circle text-dark"
+                                  style={{ cursor: "pointer" }}
+                                ></i>
+                              </OverlayTrigger>
+                            </div>
 
-  <Select
-    theme={(theme) => ({
-      ...theme,
-      colors: {
-        ...theme.colors,
-        primary25: "var(--primary-bg-color)",
-        primary: "var(--primary-bg-color)",
-      },
-    })}
-    name="cluster_task_type"
-    styles={getSelectStyles("cluster_task_type")}
-    value={
-      clusterMethodOptions.find(
-        (x) => x.value === formValidation.values.cluster_task_type
-      ) || null
-    }
-    options={clusterMethodOptions}
-    getOptionLabel={(x) => x.label}
-    getOptionValue={(x) => x.value}
-    placeholder="Select Cluster Method"
-    onChange={(e) => {
-      console.log("Selected:", e);
-      formValidation.setFieldValue("cluster_task_type", e.value);
-    }}
-    menuPosition="fixed"
-  />
-  {formValidation.errors.cluster_task_type && formValidation.touched.cluster_task_type && (
-    <div className="invalid-tooltiped">
-      {formValidation.errors.cluster_task_type}
-    </div>
-  )}
-</Form.Group>
+                            <Select
+                              theme={(theme) => ({
+                                ...theme,
+                                colors: {
+                                  ...theme.colors,
+                                  primary25: "var(--primary-bg-color)",
+                                  primary: "var(--primary-bg-color)",
+                                },
+                              })}
+                              name="cluster_task_type"
+                              styles={getSelectStyles("cluster_task_type")}
+                              value={
+                                clusterMethodOptions.find(
+                                  (x) =>
+                                    x.value ===
+                                    formValidation.values.cluster_task_type,
+                                ) || null
+                              }
+                              options={clusterMethodOptions}
+                              getOptionLabel={(x) => x.label}
+                              getOptionValue={(x) => x.value}
+                              placeholder="Select Cluster Method"
+                              onChange={(e) => {
+                                console.log("Selected:", e);
+                                formValidation.setFieldValue(
+                                  "cluster_task_type",
+                                  e.value,
+                                );
+                              }}
+                              menuPosition="fixed"
+                            />
+                            {formValidation.errors.cluster_task_type &&
+                              formValidation.touched.cluster_task_type && (
+                                <div className="invalid-tooltiped">
+                                  {formValidation.errors.cluster_task_type}
+                                </div>
+                              )}
+                          </Form.Group>
                         </>
                       )}
                     </Row>

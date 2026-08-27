@@ -56,9 +56,6 @@ const updateCompleteTerminateVMRequest =
   async (req, res, next) => {
     try {
       const { vmrequestid, status, type } = req.body;
-      console.log("vmrequestidvmrequestid",vmrequestid);
-      
-
       if (!vmrequestid  || !status || !type) {
         return res.status(400).send({
           statusCode: 400,
@@ -259,8 +256,6 @@ const deleteSnapshot =
   async (req, res, next) => {
     try {
       const { vmid, vmType, snapname } = req.body;
-      console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", req.body);
-
       const ipAddress =
         req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 

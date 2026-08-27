@@ -25,6 +25,7 @@ async function runServices() {
     { command: 'npm --prefix packages/learnerapi run start', name: 'learnerapi', prefixColor: 'yellow' },
     { command: 'npm --prefix packages/jobs run start', name: 'jobs', prefixColor: 'magenta' },
     { command: 'npm --prefix packages/vnc run start', name: 'vnc', prefixColor: 'cyan' },
+    { command: 'npm --prefix packages/webhook run dev', name: 'webhook', prefixColor: 'gray' },
     { command: 'npm --prefix packages/portal run dev', name: 'portal', prefixColor: 'red', dependsOn: 'auth' },
     { command: 'npm --prefix packages/learner run dev', name: 'learner', prefixColor: 'blue', dependsOn: 'auth' },
   ];

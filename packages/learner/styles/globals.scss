@@ -5328,68 +5328,6 @@ button:focus {
   );
 }
 
-.ssc-radar {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 720px;
-  height: 720px;
-  margin: -360px 0 0 -360px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 212, 255, 0.08);
-  background: conic-gradient(
-    from 0deg,
-    rgba(0, 212, 255, 0.16) 0deg,
-    transparent 55deg,
-    transparent 360deg
-  );
-  animation: ssc-radar-spin 6s linear infinite;
-  pointer-events: none;
-}
-.ssc-radar::before,
-.ssc-radar::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 212, 255, 0.07);
-}
-.ssc-radar::before {
-  inset: 90px;
-}
-.ssc-radar::after {
-  inset: 200px;
-}
-@keyframes ssc-radar-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.ssc-scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 140px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(0, 212, 255, 0.07),
-    transparent
-  );
-  animation: ssc-scan 7s ease-in-out infinite;
-}
-@keyframes ssc-scan {
-  0% {
-    top: -140px;
-  }
-  50% {
-    top: 100%;
-  }
-  100% {
-    top: -140px;
-  }
-}
-
 .ssc-node {
   position: absolute;
   width: 10px;
@@ -5426,10 +5364,19 @@ button:focus {
   transform-origin: left center;
 }
 
-/* ============== FLOATING HARDWARE TELEMETRY HUD ============== */
+/* ============== IN-PANEL HARDWARE TELEMETRY ============== */
+.ssc-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 0;
+  text-align: left;
+}
+
 .ssc-tele {
-  position: absolute;
-  width: 168px;
+  position: relative;
+  min-width: 0;
+  width: auto;
   padding: 10px 14px;
   background: rgba(9, 15, 28, 0.65);
   border: 1px solid rgba(0, 212, 255, 0.22);
@@ -5439,36 +5386,6 @@ button:focus {
   flex-direction: column;
   gap: 4px;
   box-shadow: 0 0 18px rgba(0, 212, 255, 0.08);
-  animation: ssc-tele-float 5s ease-in-out infinite;
-}
-.tele-cpu {
-  top: 8%;
-  left: 4%;
-  animation-delay: 0s;
-}
-.tele-mem {
-  top: 8%;
-  right: 4%;
-  animation-delay: 0.6s;
-}
-.tele-net {
-  bottom: 8%;
-  left: 4%;
-  animation-delay: 1.2s;
-}
-.tele-disk {
-  bottom: 8%;
-  right: 4%;
-  animation-delay: 1.8s;
-}
-@keyframes ssc-tele-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
 }
 .tele-label {
   font-size: 10px;
@@ -5503,12 +5420,6 @@ button:focus {
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
 }
-@media (max-width: 900px) {
-  .ssc-tele {
-    display: none;
-  }
-}
-
 /* ============== MAIN PANEL ============== */
 .ssc-panel {
   position: absolute;
@@ -6222,6 +6133,63 @@ button:focus {
   box-shadow: inset 0 0 80px rgba(17, 31, 57, 0.42);
 }
 
+html[data-scenario-shadow="0"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(0, 0, 0, 0.06);
+  --diagram-node-shadow-hover: rgba(99, 102, 241, 0.08);
+  --diagram-node-shadow-selected: rgba(6, 182, 212, 0.1);
+}
+html[data-scenario-shadow="1"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(0, 0, 0, 0.14);
+  --diagram-node-shadow-hover: rgba(99, 102, 241, 0.16);
+  --diagram-node-shadow-selected: rgba(6, 182, 212, 0.2);
+}
+html[data-scenario-shadow="2"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(0, 0, 0, 0.22);
+  --diagram-node-shadow-hover: rgba(99, 102, 241, 0.26);
+  --diagram-node-shadow-selected: rgba(6, 182, 212, 0.3);
+}
+html[data-scenario-shadow="3"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(0, 0, 0, 0.32);
+  --diagram-node-shadow-hover: rgba(99, 102, 241, 0.36);
+  --diagram-node-shadow-selected: rgba(6, 182, 212, 0.4);
+}
+html[data-scenario-shadow="4"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(0, 0, 0, 0.44);
+  --diagram-node-shadow-hover: rgba(99, 102, 241, 0.48);
+  --diagram-node-shadow-selected: rgba(6, 182, 212, 0.54);
+}
+
+html[data-scenario-shadow="0"] .dark-theme .scenario-diagram-shell,
+html.dark-theme[data-scenario-shadow="0"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(255, 255, 255, 0.06);
+  --diagram-node-shadow-hover: rgba(129, 140, 248, 0.1);
+  --diagram-node-shadow-selected: rgba(34, 211, 238, 0.12);
+}
+html[data-scenario-shadow="1"] .dark-theme .scenario-diagram-shell,
+html.dark-theme[data-scenario-shadow="1"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(255, 255, 255, 0.14);
+  --diagram-node-shadow-hover: rgba(129, 140, 248, 0.18);
+  --diagram-node-shadow-selected: rgba(34, 211, 238, 0.22);
+}
+html[data-scenario-shadow="2"] .dark-theme .scenario-diagram-shell,
+html.dark-theme[data-scenario-shadow="2"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(255, 255, 255, 0.22);
+  --diagram-node-shadow-hover: rgba(129, 140, 248, 0.28);
+  --diagram-node-shadow-selected: rgba(34, 211, 238, 0.32);
+}
+html[data-scenario-shadow="3"] .dark-theme .scenario-diagram-shell,
+html.dark-theme[data-scenario-shadow="3"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(255, 255, 255, 0.34);
+  --diagram-node-shadow-hover: rgba(129, 140, 248, 0.38);
+  --diagram-node-shadow-selected: rgba(34, 211, 238, 0.42);
+}
+html[data-scenario-shadow="4"] .dark-theme .scenario-diagram-shell,
+html.dark-theme[data-scenario-shadow="4"] .scenario-diagram-shell {
+  --diagram-node-shadow: rgba(255, 255, 255, 0.5);
+  --diagram-node-shadow-hover: rgba(129, 140, 248, 0.5);
+  --diagram-node-shadow-selected: rgba(34, 211, 238, 0.56);
+}
+
 .scenario-node {
   position: relative;
   width: 156px;
@@ -6272,7 +6240,7 @@ button:focus {
   flex: 0 0 64px;
   transform-origin: center;
   will-change: transform;
-  border: 1px solid var(--diagram-node-border);
+  border: 0;
   border-radius: 12px;
   background: transparent;
   box-shadow: none;
@@ -6361,12 +6329,47 @@ button:focus {
   background-size: contain;
 }
 
+@keyframes scenario-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scenario-icon-patrol {
+  0%,
+  100% {
+    transform: translate(0, -6px);
+  }
+  25% {
+    transform: translate(6px, 0);
+  }
+  50% {
+    transform: translate(0, 6px);
+  }
+  75% {
+    transform: translate(-6px, 0);
+  }
+}
+
+.scenario-node-icon-rotate {
+  animation-name: scenario-icon-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.scenario-node-icon-patrol {
+  animation-name: scenario-icon-patrol;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
 .scenario-node-copy {
   display: flex;
   min-width: 0;
   width: 100%;
   flex-direction: column;
   align-items: center;
+  font-family:"Helvetica",  "sans-serif" !important;
   text-align: center;
 }
 
@@ -6374,8 +6377,10 @@ button:focus {
   width: 100%;
   overflow: hidden;
   color: var(--diagram-node-text);
-  font-size: 11px;
-  font-weight: 800;
+  font-family: "Arial", "Helvetica", "sans-serif" !important;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -6384,9 +6389,10 @@ button:focus {
 .scenario-node-copy small {
   margin-top: 5px;
   color: var(--diagram-node-muted);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

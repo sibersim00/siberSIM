@@ -39,7 +39,7 @@ const FormComponentCategory = (props) => {
   };
 
   const schema = yup.object().shape({
-    parentcategoryname: yup.string().trim().required(error?.required).matches(regex?.alphaHyphenSpacesRegex, error?.onlyAlphaHyphenSpace).min(3, "Component Category must be at least 3 characters").max(30, "Component Category should not exceed 30 characters"),
+    parentcategoryname: yup.string().trim().required(error?.required).test("no-emoji", "Emojis are not allowed", noEmojiTest).matches(regex?.alphaHyphenSpacesRegex, error?.onlyAlphaHyphenSpace).min(3, "Component Category must be at least 3 characters").max(30, "Component Category should not exceed 30 characters"),
     description: yup
       .string()
       .test("no-emoji", "Emojis are not allowed", noEmojiTest),
@@ -65,30 +65,28 @@ const FormComponentCategory = (props) => {
   const viewDemoShow = (modal) => { if (modal === false) { handleFormModal(false); } };
 
 
-  const handleSubmit = (data) => {
-
-
+  const handleSubmit = async (data) => {
     const Id = rowValues?.componentcategoryid;
-
-    if (rowValues?.componentcategoryid == 0) {
-      const payload = {
-        name: data.parentcategoryname,
-        description: data.description ? data.description.trim() : '',
-        categoryimage: data.categoryimage !== undefined ? data.categoryimage : rowValues?.categoryimage,
-
-      };
-      dispatch(saveCategories(payload));
-      handleOneClick(true)
-    } else {
-      const payload = {
-        componentcategoryid: Id,
-        name: data.parentcategoryname,
-        description: data.description ? data.description.trim() : '',
-        categoryimage: data.categoryimage,
-
-      };
-      dispatch(updateCategories(payload, Id));
-      handleOneClick(true)
+    handleOneClick(true);
+    try {
+      if (rowValues?.componentcategoryid == 0) {
+        const payload = {
+          name: data.parentcategoryname,
+          description: data.description ? data.description.trim() : '',
+          categoryimage: data.categoryimage !== undefined ? data.categoryimage : rowValues?.categoryimage,
+        };
+        await dispatch(saveCategories(payload));
+      } else {
+        const payload = {
+          componentcategoryid: Id,
+          name: data.parentcategoryname,
+          description: data.description ? data.description.trim() : '',
+          categoryimage: data.categoryimage,
+        };
+        await dispatch(updateCategories(payload, Id));
+      }
+    } finally {
+      handleOneClick(false);
     }
   };
   const handleUpload = (setFieldValue) => (name = "", files = [], flag = "") => {

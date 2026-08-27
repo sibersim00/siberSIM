@@ -17,6 +17,48 @@ const theme =
     }
   };
 
+const getAmbientMotion =
+  ({ dao, db }) =>
+  async (req, res, next) => {
+    try {
+      const learner_id = req.learneruser.learner_id;
+      const ambient_motion = await dao.getAmbientMotion({ db })(learner_id);
+      return res.status(200).send({
+        statusCode: 200,
+        message: "Ambient motion preference fetched.",
+        data: { ambient_motion },
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+const updateAmbientMotion =
+  ({ dao, db }) =>
+  async (req, res, next) => {
+    try {
+      if (typeof req.body?.ambient_motion !== "boolean") {
+        return res.status(400).send({
+          statusCode: 400,
+          message: "ambient_motion must be true or false.",
+        });
+      }
+
+      const learner_id = req.learneruser.learner_id;
+      const ambient_motion = await dao.updateAmbientMotion({ db })(
+        learner_id,
+        req.body.ambient_motion
+      );
+      return res.status(200).send({
+        statusCode: 200,
+        message: "Ambient motion preference updated.",
+        data: { ambient_motion },
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   const componentcategorylist = ({ dao, db }) => async (req, res, next) => {
     try {
       const result = await dao.componentcategorylist({ db })();
@@ -81,6 +123,8 @@ const scenariosubcategorylist = ({ dao, db, validation }) => async (req, res, ne
 }
 module.exports = {
   theme,
+  getAmbientMotion,
+  updateAmbientMotion,
   componentcategorylist,
   componentsubcategorylist,
   scenariocomponentcategorylist,

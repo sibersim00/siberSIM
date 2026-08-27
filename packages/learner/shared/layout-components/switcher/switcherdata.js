@@ -702,7 +702,6 @@ export const LtrtoRtl = () => {
   };
   //horizontalmenusticky
   export const horizontalmenusticky = () => {
-    // console.log("Working", window.scrollY > 30);
     if (window.scrollY > 30 == true) {
       if(document.body.classList.contains("scrollable-layout")!= true){
         let Scolls = document.querySelectorAll(".sticky");

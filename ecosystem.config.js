@@ -62,6 +62,15 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 4005
       }
+    },
+    {
+      name: 'webhook',
+      cwd: './packages/webhook/src',
+      script: 'index.js',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 4008
+      }
     }
   ]
 };

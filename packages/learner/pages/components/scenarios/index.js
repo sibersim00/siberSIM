@@ -50,50 +50,7 @@ const Scenarios = () => {
       setFilteredData(scenariosListData);
     }
   }, [scenariosListData]);
-
-  // const Breadcrumb = ({
-  //   selectedCategory,
-  //   selectedSubcategory,
-  //   onCategoryClick,
-  //   onSubcategoryClick,
-  // }) => {
-  //   return (
-  //     <div className="d-flex align-items-center">
-  //       <span
-  //         className="breadcrumb-item text-primary"
-  //         style={{ cursor: "pointer" }}
-  //         onClick={() => {
-  //           onCategoryClick(null);
-  //           onSubcategoryClick(null);
-  //         }}
-  //       >
-  //         Home
-  //       </span>
-
-  //       {selectedCategory && (
-  //         <>
-  //           <span className="mx-2">/</span>
-  //           <span
-  //             className="breadcrumb-item text-primary"
-  //             style={{ cursor: "pointer" }}
-  //             onClick={() => onSubcategoryClick(null)}
-  //           >
-  //             {selectedCategory.scenariocategory_name}
-  //           </span>
-  //         </>
-  //       )}
-
-  //       {selectedSubcategory && (
-  //         <>
-  //           <span className="mx-2">/</span>
-  //           <span className="text-primary">
-  //             {selectedSubcategory.scenariosubcategory_name}
-  //           </span>
-  //         </>
-  //       )}
-  //     </div>
-  //   );
-  // };
+  
   const StepBreadcrumb = ({
     selectedCategory,
     selectedSubcategory,
@@ -350,20 +307,11 @@ const Scenarios = () => {
       cellRenderer: "actionButtonRenderer",
     },
   ];
-
-  // const gridOptions = {
-  //   pagination: true,
-  //   paginationPageSize: 10,
-  // };
   const gridOptions = {
     headerHeight: HEADER_HEIGHT,
     rowHeight: ROW_HEIGHT,
     suppressScrollOnNewData: true,
   };
-
-  // const onGridReady = (params) => {
-  //   setGridApi(params.api);
-  // };
   const onGridReady = useCallback((params) => {
     gridRef.current = params.api;
 
@@ -698,55 +646,6 @@ const Scenarios = () => {
 
                     {view === "card" && (
                       <Row className="row-sm">
-                        {/* {!selectedCategory &&
-                          (filteredCategories.length > 0
-                            ? filteredCategories
-                            : uniqueCategories
-                          ).map((item) => (
-                            <Col
-                              md={columnsPerRow}
-                              className="p-2"
-                              key={item.scenariocategoryid}
-                            >
-                              <Card
-                                className="card custom-card h-100 our-team pointer"
-                                onClick={() => handleCategoryClick(item)}
-                              >
-                                <Card.Body className="p-3">
-                                  <div className="text-center mb-2">
-                                    <div
-                                      className=" mx-auto d-flex justify-content-center align-items-center "
-                                      style={{
-                                        width: "100px",
-                                        height: "100px",
-                                      }}
-                                    >
-                                      <img
-                                        alt="avatar"
-                                        onError={(e) => {
-                                          e.target.onerror = null;
-                                          e.target.src = dummy_network.src;
-                                        }}
-                                        style={{
-                                          width: "100px",
-                                          height: "100px",
-                                        }}
-                                        src={
-                                          item?.category_image
-                                            ? `${process.env.API_URL_FILEMANAGER}${item?.category_image}`
-                                            : dummy_network.src
-                                        }
-                                      />
-                                    </div>
-
-                                    <h5 className="pro-user-username text-dark mt-2 mb-0">
-                                      {item?.scenariocategory_name || ""}
-                                    </h5>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </Col>
-                          ))} */}
                         {!selectedCategory &&
                           (filteredCategories.length > 0
                             ? filteredCategories
@@ -781,25 +680,8 @@ const Scenarios = () => {
                                     cursor: "pointer",
                                     transition: "transform .15s",
                                   }}
-                                  // onMouseEnter={(e) => {
-                                  //   e.currentTarget.style.borderColor =
-                                  //     "#adb5bd";
-                                  //   e.currentTarget.style.transform =
-                                  //     "translateY(-2px)";
-                                  // }}
-                                  // onMouseLeave={(e) => {
-                                  //   e.currentTarget.style.borderColor =
-                                  //     "#dee2e6";
-                                  //   e.currentTarget.style.transform =
-                                  //     "translateY(0)";
-                                  // }}
                                   onClick={() => handleCategoryClick(item)}
                                 >
-                                  {/* Colored top accent bar */}
-                                  {/* <div
-                                    style={{ height: 3, background: accent }}
-                                  /> */}
-
                                   <Card.Body
                                     className="p-3"
                                     style={{
@@ -918,130 +800,83 @@ const Scenarios = () => {
                               </Col>
                             );
                           })}
-
-                        {/* {selectedCategory &&
-                          !selectedSubcategory &&
-                          (filteredSubcategories.length > 0
-                            ? filteredSubcategories
-                            : uniqueSubcategories
-                          ).map((item, idx) => (
-                            <Col md={columnsPerRow} className="pb-4" key={idx}>
-                              <Card
-                                className="card custom-card h-100 our-team pointer"
-                                onClick={() => handleSubcategoryClick(item)}
-                              >
-                                <Card.Body className="p-3">
-                                  <div className="text-center mb-2">
-                                    <div
-                                      className="rounded-circle mx-auto d-flex justify-content-center align-items-center "
-                                      style={{
-                                        width: "100px",
-                                        height: "100px",
-                                      }}
-                                    >
-                                      <img
-                                        alt="avatar"
-                                        onError={(e) => {
-                                          e.target.onerror = null;
-                                          e.target.src = dummy_network.src;
-                                        }}
-                                        style={{
-                                          width: "100px",
-                                          height: "100px",
-                                        }}
-                                        src={
-                                          item?.subcategory_image
-                                            ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
-                                            : dummy_network.src
-                                        }
-                                      />
-                                    </div>
-
-                                    <h5 className="pro-user-username text-dark mt-2 mb-0 ">
-                                      {item?.scenariosubcategory_name || ""}
-                                    </h5>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </Col>
-                          ))} */}
                           {selectedCategory &&
-  !selectedSubcategory &&
-  (filteredSubcategories.length > 0 ? filteredSubcategories : uniqueSubcategories).map((item, idx) => {
-    const COLOR_PAIRS = [
-      ["#185FA5", "#E6F1FB", "#0C447C"],
-      ["#3B6D11", "#EAF3DE", "#27500A"],
-      ["#854F0B", "#FAEEDA", "#633806"],
-      ["#A32D2D", "#FCEBEB", "#791F1F"],
-      ["#534AB7", "#EEEDFE", "#3C3489"],
-      ["#0F6E56", "#E1F5EE", "#085041"],
-      ["#993556", "#FBEAF0", "#72243E"],
-      ["#5F5E5A", "#F1EFE8", "#444441"],
-    ];
-    const [accent, iconBg, iconText] = COLOR_PAIRS[idx % COLOR_PAIRS.length];
+                              !selectedSubcategory &&
+                              (filteredSubcategories.length > 0 ? filteredSubcategories : uniqueSubcategories).map((item, idx) => {
+                                const COLOR_PAIRS = [
+                                  ["#185FA5", "#E6F1FB", "#0C447C"],
+                                  ["#3B6D11", "#EAF3DE", "#27500A"],
+                                  ["#854F0B", "#FAEEDA", "#633806"],
+                                  ["#A32D2D", "#FCEBEB", "#791F1F"],
+                                  ["#534AB7", "#EEEDFE", "#3C3489"],
+                                  ["#0F6E56", "#E1F5EE", "#085041"],
+                                  ["#993556", "#FBEAF0", "#72243E"],
+                                  ["#5F5E5A", "#F1EFE8", "#444441"],
+                                ];
+                                const [accent, iconBg, iconText] = COLOR_PAIRS[idx % COLOR_PAIRS.length];
 
-    return (
-      <Col md={columnsPerRow} className="p-2" key={idx}>
-        <Card
-          className="h-100 pointer"
-          style={{
-            borderLeft: `3px solid ${accent}`,
-            borderRadius: 16,
-            overflow: "hidden",
-            cursor: "pointer",
-            transition: "transform .15s",
-          }}
-          onClick={() => handleSubcategoryClick(item)}
-        >
-          <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div className="text-center mb-2">
-              <div
-                style={{
-                  width: 90, height: 90, borderRadius: "50%",
-                  background: iconBg,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto",
-                }}
-              >
-                <img
-                  alt="subcategory"
-                  onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
-                  style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
-                  src={item?.subcategory_image
-                    ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
-                    : dummy_network.src}
-                />
-              </div>
-            </div>
-            <div className="text-center">
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35 }}>
-                {item?.scenariosubcategory_name || ""}
-              </div>
-            </div>
-          </Card.Body>
+                                return (
+                                  <Col md={columnsPerRow} className="p-2" key={idx}>
+                                    <Card
+                                      className="h-100 pointer"
+                                      style={{
+                                        borderLeft: `3px solid ${accent}`,
+                                        borderRadius: 16,
+                                        overflow: "hidden",
+                                        cursor: "pointer",
+                                        transition: "transform .15s",
+                                      }}
+                                      onClick={() => handleSubcategoryClick(item)}
+                                    >
+                                      <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                        <div className="text-center mb-2">
+                                          <div
+                                            style={{
+                                              width: 90, height: 90, borderRadius: "50%",
+                                              background: iconBg,
+                                              display: "flex", alignItems: "center", justifyContent: "center",
+                                              margin: "0 auto",
+                                            }}
+                                          >
+                                            <img
+                                              alt="subcategory"
+                                              onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
+                                              style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
+                                              src={item?.subcategory_image
+                                                ? `${process.env.API_URL_FILEMANAGER}${item?.subcategory_image}`
+                                                : dummy_network.src}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="text-center">
+                                          <div style={{ fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35 }}>
+                                            {item?.scenariosubcategory_name || ""}
+                                          </div>
+                                        </div>
+                                      </Card.Body>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
-              fontSize: 11, fontWeight: 500, padding: "3px 10px",
-              borderRadius: 20, background: iconBg, color: iconText,
-            }}>
-              <i className="fe fe-layers" />
-              {scenariosListData?.filter(s => s.scenariosubcategory_name === item.scenariosubcategory_name).length ?? 0} scenarios
-            </span>
-            <div style={{
-              width: 26, height: 26, borderRadius: "50%",
-              border: "0.5px solid #dee2e6",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#6c757d", fontSize: 14,
-            }}>
-              <i className="fe fe-arrow-right" />
-            </div>
-          </div>
-        </Card>
-      </Col>
-    );
-  })}
+                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
+                                        <span style={{
+                                          display: "inline-flex", alignItems: "center", gap: 5,
+                                          fontSize: 11, fontWeight: 500, padding: "3px 10px",
+                                          borderRadius: 20, background: iconBg, color: iconText,
+                                        }}>
+                                          <i className="fe fe-layers" />
+                                          {scenariosListData?.filter(s => s.scenariosubcategory_name === item.scenariosubcategory_name).length ?? 0} scenarios
+                                        </span>
+                                        <div style={{
+                                          width: 26, height: 26, borderRadius: "50%",
+                                          border: "0.5px solid #dee2e6",
+                                          display: "flex", alignItems: "center", justifyContent: "center",
+                                          color: "#6c757d", fontSize: 14,
+                                        }}>
+                                          <i className="fe fe-arrow-right" />
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  </Col>
+                                );
+                              })}
 
                         {selectedCategory &&
                           selectedSubcategory &&
@@ -1101,181 +936,79 @@ const Scenarios = () => {
                                       className="p-2 pb-3"
                                       key={index}
                                     >
-                                      {/* <Card
-                                        className="h-100 shadow-sm rounded-4 pointer"
-                                        style={{
-                                          // backgroundColor: "#f8f9fc",
-                                          transition:
-                                            "transform 0.2s ease, box-shadow 0.2s ease",
-                                          border:
-                                            item.isnotitermination === "Yes"
-                                              ? "2px solid rgba(240, 151, 151, 0.7)"
-                                              : "none",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.currentTarget.style.transform =
-                                            "translateY(-4px)";
-                                          e.currentTarget.style.boxShadow =
-                                            "0 10px 20px rgba(0,0,0,0.08)";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.transform =
-                                            "translateY(0)";
-                                          e.currentTarget.style.boxShadow =
-                                            "0 4px 12px rgba(0,0,0,0.04)";
-                                        }}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleReturnView(item);
-                                        }}
-                                      >
-                                        <Card.Body className="p-3">
-                                          <div className="text-center mb-2">
-                                            <div
-                                              className="rounded-circle mx-auto d-flex justify-content-center align-items-center "
-                                              style={{
-                                                width: "100px",
-                                                height: "100px",
-                                              }}
-                                            >
-                                              <img
-                                                alt="avatar"
-                                                onError={(e) => {
-                                                  e.target.onerror = null;
-                                                  e.target.src =
-                                                    dummy_network.src;
-                                                }}
-                                                style={{
-                                                  width: "100px",
-                                                  height: "100px",
-                                                }}
-                                                src={
-                                                  item?.scenarioimage
-                                                    ? `${process.env.API_URL_FILEMANAGER}${item?.scenarioimage}`
-                                                    : dummy_network.src
-                                                }
-                                              />
-                                            </div>
-                                            <h5 className="pro-user-username text-dark mt-2 mb-0 pointer">
-                                              <OverlayTrigger
-                                                placement="bottom"
-                                                overlay={
-                                                  <Tooltip>
-                                                    {item.scenariotitle}
-                                                  </Tooltip>
-                                                }
-                                              >
-                                                <a>
-                                                  {item.scenariotitle}
-                                                </a>
-                                              </OverlayTrigger>
-                                            </h5>
-                                          </div>
-                                          <div className="contact-info mb-0 text-center">
-                                            <div className="d-flex justify-content-center align-items-center gap-2 flex-wrap">
-                                              <div className="btn btn-sm ripple bg-secondary-transparent text-secondary rounded-pill d-flex align-items-center gap-1 px-2">
-                                                <i className="fe fe-clock"></i>
-                                                <span className="tx-13">
-                                                  {item.duration ?? 0} Mins
-                                                </span>
-                                              </div>
-
-                                              <div
-                                                className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setShowTabs(false);
-                                                  handleReturnView(item);
-                                                }}
-                                              >
-                                                <OverlayTrigger
-                                                  placement="bottom"
-                                                  overlay={
-                                                    <Tooltip>
-                                                      View
-                                                    </Tooltip>
-                                                  }
-                                                >
-                                                  <i className="fe fe-eye"></i>
-                                                </OverlayTrigger>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </Card.Body>
-                                      </Card> */}
                                      <Card
-  className="h-100 pointer"
-  style={{
-    border: item.isnotitermination === "Yes" ? "0.1px solid #f0997b" : "0.1px solid #424242",
-    borderLeft: `3px solid ${
-      level === "Hard" ? "#A32D2D" : level === "Medium" ? "#854F0B" : "#3B6D11"
-    }`,
-    borderRadius: 16,
-    overflow: "hidden",
-    cursor: "pointer",
-    transition: "transform .15s",
-  }}
-  onClick={e => { e.stopPropagation(); handleReturnView(item); }}
->
-  <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                      className="h-100 pointer"
+                                      style={{
+                                        border: item.isnotitermination === "Yes" ? "0.1px solid #f0997b" : "0.1px solid #424242",
+                                        borderLeft: `3px solid ${
+                                          level === "Hard" ? "#A32D2D" : level === "Medium" ? "#854F0B" : "#3B6D11"
+                                        }`,
+                                        borderRadius: 16,
+                                        overflow: "hidden",
+                                        cursor: "pointer",
+                                        transition: "transform .15s",
+                                      }}
+                                      onClick={e => { e.stopPropagation(); handleReturnView(item); }}
+                                    >
+                                      <Card.Body className="p-3" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
-    {/* Image */}
-    <div className="text-center mb-1">
-      <div style={{
-        width: 90, height: 90, borderRadius: "50%",
-        background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        margin: "0 auto",
-      }}>
-        <img
-          alt="scenario"
-          onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
-          style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
-          src={item?.scenarioimage
-            ? `${process.env.API_URL_FILEMANAGER}${item?.scenarioimage}`
-            : dummy_network.src}
-        />
-      </div>
-    </div>
+                                        {/* Image */}
+                                        <div className="text-center mb-1">
+                                          <div style={{
+                                            width: 90, height: 90, borderRadius: "50%",
+                                            background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            margin: "0 auto",
+                                          }}>
+                                            <img
+                                              alt="scenario"
+                                              onError={e => { e.target.onerror = null; e.target.src = dummy_network.src; }}
+                                              style={{ width: 70, height: 70, objectFit: "contain", borderRadius: "50%" }}
+                                              src={item?.scenarioimage
+                                                ? `${process.env.API_URL_FILEMANAGER}${item?.scenarioimage}`
+                                                : dummy_network.src}
+                                            />
+                                          </div>
+                                        </div>
 
-    {/* Title */}
-    <div className="text-center">
-      <OverlayTrigger placement="bottom" overlay={<Tooltip>{item.scenariotitle}</Tooltip>}>
-        <div style={{
-          fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35,
-          display: "-webkit-box", WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {item.scenariotitle}
-        </div>
-      </OverlayTrigger>
-    </div>
+                                        {/* Title */}
+                                        <div className="text-center">
+                                          <OverlayTrigger placement="bottom" overlay={<Tooltip>{item.scenariotitle}</Tooltip>}>
+                                            <div style={{
+                                              fontSize: 14, fontWeight: 600, color: "#8d969e", lineHeight: 1.35,
+                                              display: "-webkit-box", WebkitLineClamp: 2,
+                                              WebkitBoxOrient: "vertical", overflow: "hidden",
+                                            }}>
+                                              {item.scenariotitle}
+                                            </div>
+                                          </OverlayTrigger>
+                                        </div>
 
-  </Card.Body>
+                                      </Card.Body>
 
-  {/* Footer */}
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
-      background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
-      color: level === "Hard" ? "#791F1F" : level === "Medium" ? "#633806" : "#27500A",
-    }}>
-      <i className="fe fe-clock" /> {item.duration ?? 0} Mins
-    </span>
-    <div
-      style={{
-        width: 26, height: 26, borderRadius: "50%",
-        border: "0.5px solid #dee2e6",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "#6c757d", fontSize: 14,
-      }}
-      onClick={e => { e.stopPropagation(); setShowTabs(false); handleReturnView(item); }}
-    >
-      <i className="fe fe-eye" />
-    </div>
-  </div>
-</Card>
+                                      {/* Footer */}
+                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px" }}>
+                                        <span style={{
+                                          display: "inline-flex", alignItems: "center", gap: 5,
+                                          fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 20,
+                                          background: level === "Hard" ? "#FCEBEB" : level === "Medium" ? "#FAEEDA" : "#EAF3DE",
+                                          color: level === "Hard" ? "#791F1F" : level === "Medium" ? "#633806" : "#27500A",
+                                        }}>
+                                          <i className="fe fe-clock" /> {item.duration ?? 0} Mins
+                                        </span>
+                                        <div
+                                          style={{
+                                            width: 26, height: 26, borderRadius: "50%",
+                                            border: "0.5px solid #dee2e6",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            color: "#6c757d", fontSize: 14,
+                                          }}
+                                          onClick={e => { e.stopPropagation(); setShowTabs(false); handleReturnView(item); }}
+                                        >
+                                          <i className="fe fe-eye" />
+                                        </div>
+                                      </div>
+                                    </Card>
                                     </Col>
                                   ))}
                                 </Row>

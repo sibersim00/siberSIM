@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import {
@@ -13,12 +13,9 @@ import { getScenariosPauseList } from "../../../shared/redux/slices/scenarios/sc
 import Seo from "../../../shared/layout-components/seo/seo";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
-import { useTranslation } from "react-i18next";
 import { useRouter } from "next/router";
 
 const PauseScenarios = () => {
-  const { t } = useTranslation();
-  const router = useRouter();
   const dispatch = useDispatch();
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);

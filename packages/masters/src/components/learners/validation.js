@@ -46,14 +46,6 @@ const importRowSchema = joi.object({
 const importRowsSchema = joi.array().items(importRowSchema).min(1).max(1000).required();
 
 const addSchema = joi.object({
-    username: joi.string().min(5).max(20).required().empty().messages({
-      "any.required": `Username is required.`,
-      "string.empty": `Username cannot be empty.`,
-      "string.min": `Username must be at least 5 characters long.`,
-      "string.max": `Username cannot exceed 20 characters.`,
-      "string.base": `Username must be a string.`
-    }),
-
     firstname: joi.string().pattern(/^[A-Za-z]+$/).required().empty().messages({
       "string.pattern.base": `First name must contain only letters.`,
       "any.required": `First name is required.`,
@@ -72,11 +64,12 @@ const addSchema = joi.object({
       "any.required": `Mobile number is required.`,
       "string.empty": `Mobile number cannot be empty.`,
     }),
-    username: joi.string().min(5).max(20).required().empty().messages({
+    username: joi.string().trim().min(5).max(20).pattern(/^[A-Za-z0-9._-]+$/).required().empty().messages({
       "any.required": `Username is required.`,
       "string.empty": `Username cannot be empty.`,
       "string.min": `Username must be at least 5 characters long.`,
       "string.max": `Username cannot exceed 20 characters.`,
+      "string.pattern.base": `Username cannot contain emojis or special characters.`,
     }),
     password: joi.string().required().empty()
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/)

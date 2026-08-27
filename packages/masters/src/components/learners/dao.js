@@ -8,7 +8,7 @@ const generateUUID = () => uuidv4();
 const getAll =
   ({ db }) =>
   async (session_userid, usertype) => {
-    if (usertype == "Admin") {
+    if (usertype == "Admin" || usertype == "WebhookUser") {
       let [res] = await db.sequelize
         .query(`SELECT  t.learner_id, t.learner_uuid, t.firstname, t.lastname, t.isverified, CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile, t.email, t.profile, t.username, DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status FROM learners t WHERE t.deletedon IS NULL ORDER BY t.firstname ASC`);
       return res;
@@ -34,19 +34,6 @@ const getAll =
       return res;
     }
   };
-
-// const getAll =
-//   ({ db }) =>
-//   async (id = null) => {
-//     try {
-//       let [res] = await db.sequelize
-//         .query(`SELECT  t.learner_id, t.learner_uuid, t.firstname, t.lastname, t.isverified, CASE WHEN t.mobile = 0 THEN '' ELSE t.mobile END AS mobile, t.email, t.profile, t.username, DATE_FORMAT(t.createdon, '%Y-%m-%d %H:%i:%s') AS createdon, DATE_FORMAT(t.modifiedon, '%Y-%m-%d %H:%i:%s') AS modifiedon, CASE WHEN t.status = 'Active' THEN 'true' ELSE 'false' END AS status FROM learners t WHERE t.deletedon IS NULL ORDER BY t.firstname ASC`);
-//       return res;
-//     } catch (error) {
-//       console.error("Error Fetching Scenario Categories List:", error);
-//       throw error;
-//     }
-//   };
 
 const statusChange =
   ({ db, validation }) =>
@@ -697,7 +684,6 @@ const insertImportedLearner = async (db, row, session_userid, transaction) => {
 };
 
 const getById = ({ db }) => async (learner_uuid) => {
-  console.log("uuuuuuuuuuuuuuuuuuuuuuu", learner_uuid)
   const [
     [learnerData],
     quizzes,

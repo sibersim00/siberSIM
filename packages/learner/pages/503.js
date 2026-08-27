@@ -6,7 +6,6 @@ import { useRouter } from "next/router";
 const Custom503 = () => {
     const { query } = useRouter();
      const startDate = query?.startDate;
-     console.log("startDate===>",startDate);
     return (
     <div>
       <Seo title="Website Under Construction" />

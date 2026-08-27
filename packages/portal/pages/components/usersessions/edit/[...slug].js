@@ -2443,7 +2443,9 @@ const handleEdgeClick = async (event, edge) => {
         className="dndflow  mb-2"
         style={{ display: "flex", height: "80vh", gap: "20px" }}
       >
-        <div style={{ width: "28%", height: "100%" }}>
+        <div
+          style={{ width: "28%", height: "100%", minHeight: 0, overflow: "hidden" }}
+        >
           <SideBar
             imageNodeData={imageNodeData}
             setDraggedNode={setDraggedNode} // Passing setDraggedNode to Sidebar

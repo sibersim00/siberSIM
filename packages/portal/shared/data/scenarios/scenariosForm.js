@@ -240,11 +240,6 @@ const ScenarioForm = (props) => {
         scenariosubcategoryid: cat?.scenariocategoryid,
       }));
       setSubCatDropDownData(temp);
-      const selectedsubcategory = temp.find(
-        (obj) =>
-          obj?.scenariosubcategoryid === rowValues?.scenariosubcategoryid,
-      );
-      // formValidation.setFieldValue("scenariosubcategoryid", selectedsubcategory);
     }
   }, [hasubCatByIdRes]);
   const categoryPrefilledRef = React.useRef(false);

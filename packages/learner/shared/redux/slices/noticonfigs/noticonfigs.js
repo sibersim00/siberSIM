@@ -64,7 +64,6 @@ export function getNotiTemplateList() {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.get(`${api?.notification_get_template_list}`);
-      console.log("responseresponse",response)
       dispatch(slice.actions.hasGetNotiTemplateSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

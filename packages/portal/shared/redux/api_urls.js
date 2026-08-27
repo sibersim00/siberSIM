@@ -261,6 +261,13 @@ const api = {
   instructor_verify: "/instructors/send-verification",
   instructor_reset: "/instructors/reset-password",
 
+  //----Webhook Users Manage------
+  webhook_users_get: "/webhook-users/get",
+  webhook_users_save: "/webhook-users/save",
+  webhook_users_update: "/webhook-users/update",
+  webhook_users_change_status: "/webhook-users/change-status",
+  webhook_users_delete: "/webhook-users/delete",
+
   // ---normalusers/ students-manage-----------------
   normalusers_get: "/learners/get",
   normalusers_change_status: "/learners/change-status",

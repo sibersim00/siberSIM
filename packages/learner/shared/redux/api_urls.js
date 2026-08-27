@@ -21,6 +21,7 @@ const api = {
   scenario_get: "/custom_scenarios/list",
   // dark theme  -
   user_theme: "/commons/theme",
+  ambient_motion: "/commons/ambient-motion",
 
   // dashboard
   dashboard_get: "/dashboard/get",

@@ -1,11 +1,16 @@
 const serialLicense = require("../../middleware/serialLicense");
 const checkValidate = require("../../middleware/serialLicense")
 
+const normalizeShadowConfig = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? Math.min(4, Math.max(0, parsed)) : 1;
+};
+
 const getWebSettings =
   ({ db }) =>
   async () => {
     let [webSettings] = await db.sequelize.query(
-      `select id, name, phone_number, website, max_questions, otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo,
+      `select id, name, phone_number, website, max_questions, shadow_config, otp_verification, email, system_name, system_footer, favicon, admin_panel_logo, web_panel_logo,
       proxmox_current_node,proxmox_other_node,cluster_task_type, proxmox_host, proxmox_username, proxmox_password,
       file_server_username, file_server_password,
       base_clone_vmid, template_clone_vmid, start_network_id,
@@ -34,7 +39,7 @@ const addWebSettings =
     try {
       await db.sequelize.query(
         `INSERT INTO web_settings 
-        (uuid, createdon, name, phone_number, website, max_questions, otp_verification, email, system_name, system_footer,
+        (uuid, createdon, name, phone_number, website, max_questions, shadow_config, otp_verification, email, system_name, system_footer,
         is_default_favicon, component_approval, scenario_approval,
         is_default_ad_logo, is_default_web_logo,
         favicon, admin_panel_logo, web_panel_logo,
@@ -46,13 +51,14 @@ const addWebSettings =
         pause_limit, max_ports, address, createdby, company_id)
 
         VALUES (UUID(), CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         {
           replacements: [
             body.name,
             body.phone_number,
             body.website,
             body.max_questions,
+            normalizeShadowConfig(body.shadow_config),
             body.otp_verification === false ? false : true,
             body.email,
             body.system_name,
@@ -105,7 +111,7 @@ const updateWebSettings =
     try {
       const updateQuery = `
       UPDATE web_settings SET 
-        name = ?, phone_number = ?, website = ?, max_questions = ?, otp_verification = ?,
+        name = ?, phone_number = ?, website = ?, max_questions = ?, shadow_config = ?, otp_verification = ?,
         email = ?, system_name = ?, system_footer = ?,
         is_default_favicon = ?, is_default_ad_logo = ?, is_default_web_logo = ?,
         favicon = ?, admin_panel_logo = ?, web_panel_logo = ?,
@@ -127,6 +133,7 @@ const updateWebSettings =
           body.phone_number ?? "",
           body.website ?? "",
           body.max_questions,
+          normalizeShadowConfig(body.shadow_config),
           body.otp_verification,
           body.email ?? "",
           body.system_name ?? "",

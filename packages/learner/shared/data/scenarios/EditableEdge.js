@@ -6,50 +6,15 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 
-const EDGE_VARIANTS = [
-  {
-    name: "solid",
-    dasharray: undefined,
-    overlayDasharray: "2 13",
-    animation: "scenario-edge-shimmer 2.4s ease-in-out infinite",
-  },
-  {
-    name: "dotted",
-    dasharray: "1 8",
-    overlayDasharray: "1 12",
-    animation: "scenario-edge-dash 1.25s linear infinite",
-  },
-  {
-    name: "dashed",
-    dasharray: "12 8",
-    overlayDasharray: "3 17",
-    animation: "scenario-edge-dash 1.8s linear infinite",
-  },
-  {
-    name: "blink",
-    dasharray: undefined,
-    overlayDasharray: undefined,
-    animation: "scenario-edge-blink 1.35s ease-in-out infinite",
-  },
-  {
-    name: "mixed",
-    dasharray: "2 6 16 7",
-    overlayDasharray: "1 7 7 17",
-    animation: "scenario-edge-dash 2.1s linear infinite",
-  },
-];
-
-const getStringHash = (value = "") =>
-  String(value)
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0);
-
-const getEdgeVariant = (id, data) => {
-  const configuredVariant = EDGE_VARIANTS.find(
-    (variant) => variant.name === data?.lineStyle,
-  );
-  return configuredVariant || EDGE_VARIANTS[getStringHash(id) % EDGE_VARIANTS.length];
+const SCENARIO_EDGE_STYLE = {
+  dasharray: undefined,
+  overlayDasharray: "2 13",
+  animation: "scenario-edge-shimmer 2.4s ease-in-out infinite",
 };
+
+// Scenario links intentionally use one visual language. Edge routing may still
+// be Bezier or Smooth, but individual links no longer receive random styles.
+const getEdgeVariant = () => SCENARIO_EDGE_STYLE;
 
 const EditableEdge = ({
   id,
@@ -107,7 +72,7 @@ const EditableEdge = ({
   const edgeColor = selected
     ? "var(--diagram-edge-selected)"
     : "var(--diagram-edge-default)";
-  const edgeVariant = getEdgeVariant(id, data);
+  const edgeVariant = getEdgeVariant();
 
   return (
     <>

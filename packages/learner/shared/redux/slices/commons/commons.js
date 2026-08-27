@@ -18,6 +18,7 @@ const initialState = {
   getScenarioSubCategoriesListData: [],
   getMasterCatListData: [],
   theme: "",
+  ambientMotion: null,
 };
 
 const slice = createSlice({
@@ -52,6 +53,10 @@ const slice = createSlice({
     hasGetThemeSucc(state, action) {
       (state.isLoading = false), (state.theme = action.payload);
     },
+    hasAmbientMotionSuccess(state, action) {
+      state.isLoading = false;
+      state.ambientMotion = action.payload;
+    },
   },
 });
 
@@ -77,11 +82,37 @@ export function getOrSetTheme(theme) {
         : `${api.user_theme}`;
 
       const response = await axios.get(url);
-      console.log("respopnsessssssssssss", response);
-
       dispatch(slice.actions.hasGetThemeSucc(response.data.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
+    }
+  };
+}
+
+export function getAmbientMotionPreference() {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(api.ambient_motion);
+      const ambientMotion = Boolean(response.data.data.ambient_motion);
+      dispatch(slice.actions.hasAmbientMotionSuccess(ambientMotion));
+      return ambientMotion;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
+    }
+  };
+}
+
+export function updateAmbientMotionPreference(ambient_motion) {
+  return async (dispatch) => {
+    try {
+      const response = await axios.put(api.ambient_motion, { ambient_motion });
+      const ambientMotion = Boolean(response.data.data.ambient_motion);
+      dispatch(slice.actions.hasAmbientMotionSuccess(ambientMotion));
+      return ambientMotion;
+    } catch (error) {
+      dispatch(slice.actions.hasError(error));
+      throw error;
     }
   };
 }
@@ -123,8 +154,6 @@ export function saveScenarioFlow(payload) {
         `${api.scenario_flowchart_save}`,
         payload
       );
-      console.log("responseresponse",response);
-      
       dispatch(slice.actions.hasGetSaveFlowchart(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

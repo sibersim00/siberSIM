@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Row, Col, Card, Button, Nav, Tab, Alert } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
@@ -12,7 +12,6 @@ import {
 import { getInviteScenarioByID } from "../../../../shared/redux/slices/invitescenario/invitescenario";
 import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
-import { useTranslation } from "react-i18next";
 import ScenarioDiagram from "../../scenarios/view/scenariodiagram";
 import ScenarioQuiz from "../../scenarios/view/quiz";
 import dynamic from "next/dynamic";
@@ -27,7 +26,6 @@ const InviteLearnerView = () => {
   const { query, push } = useRouter();
   const router = useRouter();
   const { view } = router.query;
-  const { backView, categoryId, subcategoryName } = router.query;
   const [rowId, setRowId] = useState("");
   const [rowValues, setRowValues] = useState({});
   const [activeTab, setActiveTab] = useState("Basic Information");
@@ -38,7 +36,6 @@ const InviteLearnerView = () => {
   const [pdfNotFound, setPdfNotFound] = useState(false);
   const [dynamicTab, setDynamicTab] = useState("Basic Information");
   const [currentView, setCurrentView] = useState("");
-  const { t } = useTranslation();
   const { slug } = router.query;
   const { getSingleScenariosSucc, hasGetLogsListData, tabListSucc, errorData } =
     useSelector((state) => ({

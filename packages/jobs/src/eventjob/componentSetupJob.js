@@ -146,18 +146,8 @@ await db.sequelize.query(
         selectedNode
       );
       if (!cloneResult?.success) {
-        console.log(
-          "cloneComponentVM=======================>",
-          cloneResult.message
-        );
         throw new Error(cloneResult.message);
       }
-      // if (component.componenttype?.toLowerCase() === "lxc") {
-      //   console.log(
-      //     `Waiting ${
-      //       cloningDelayMs / 1000
-      //     } seconds before cloning next LXC component...`
-      //   );
         await sleep(cloningDelayMs);
       // }
     }
@@ -520,7 +510,20 @@ async function startComponentVM(
     let diagram = JSON.parse(scenarioData.scenariodiagram);
     // Fetch component details to map vmid and component names
     const componentDetails = await db.sequelize.query(
-      `SELECT vmid, componentname,nodeid,componenttype  FROM vm_config  WHERE vmrequestid = ? AND scenarioid = ?`,
+      `      SELECT 
+        vc.vmid,
+        c.componentname AS vmid_name,             
+        vc.nodeid,
+        vc.componenttype,
+        vc.network_bridge_json
+      FROM vm_config vc
+      INNER JOIN vm_request vr
+        ON vr.vmrequestid = vc.vmrequestid
+      INNER JOIN components c
+        ON c.vmid = vc.master_vmid       
+      WHERE
+        vc.vmrequestid = ?
+        AND vc.scenarioid = ? `,
       {
         replacements: [vmrequestid, scenarioid],
         type: db.sequelize.QueryTypes.SELECT,
@@ -531,7 +534,7 @@ async function startComponentVM(
       vmMap[comp.nodeid] = {
         vmid: comp.vmid,
         componenttype: comp.componenttype?.toLowerCase(), // 'qemu' or 'lxc'
-        componentname: comp.componentname,
+        componentname: comp.vmid_name,
       };
     });
 

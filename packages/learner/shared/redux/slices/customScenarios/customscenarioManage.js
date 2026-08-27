@@ -87,7 +87,6 @@ const slice = createSlice({
       (state.isLoading = false), (state.assignScenario = action.payload);
     },
     hasHandleMAnageSuc(state, action) {
-      console.log("action.payloadaction.payload", action.payload);
       (state.isLoading = false), (state.viewNameResp = action.payload);
     },
     hasGetScenarioDigListSucc(state, action) {
@@ -241,8 +240,6 @@ export function getSinglecustomScenarios(id) {
       const response = await axios.get(
         `${api.scenario_single_custom_get}/${id}`
       );
-      console.log("responseresponseresponseresponse", response);
-
       dispatch(slice.actions.hasGetSingleScenariosSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -428,8 +425,6 @@ export function exportSelectedScenariosAction(payload) {
       });
 
       dispatch(slice.actions.hasExportSucc(response.data));
-      console.log("responseresponseresponseeeeeeeeeeeeeeeeeee", response);
-      // return the binary data
       return response.data;
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -467,8 +462,6 @@ export function saveScenarioFlow(payload) {
         `${api.scenario_flowchart_save}`,
         payload
       );
-      console.log("responseresponse", response);
-
       dispatch(slice.actions.hasGetSaveFlowchart(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

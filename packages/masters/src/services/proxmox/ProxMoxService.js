@@ -18,9 +18,6 @@ async function getProxmoxConfig() {
      LIMIT 1`,
     { type: db.sequelize.QueryTypes.SELECT }
   );
-  console.log("resultsresultsresults",results);
-  
-
   if (!results) throw new Error("Proxmox config not found in web_settings.");
 
   return {
@@ -257,8 +254,6 @@ async function getProxmoxConfig() {
     }
   }
   async function LXC_List() {
-    console.log("accessInfoaccessInfo",accessInfo);
-    
     if (!accessInfo?.cookie) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -534,8 +529,6 @@ async function getProxmoxConfig() {
   }
 
   async function stopVM(vmid, vmType) {
-    console.log("vmid, vmType", vmid, vmType);
-
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1368,7 +1361,6 @@ async function getProxmoxConfig() {
         null,
         constants.VM_PROCESSES.SNAPSHOT_LXC,
       );
-      console.log("responseresponse");
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1408,9 +1400,6 @@ async function getProxmoxConfig() {
       full: data.full,
       snapname: data.snapname,
     }).toString();
-
-    console.log("bodyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", body);
-
     const config = {
       method: "post",
       url,
@@ -1422,8 +1411,6 @@ async function getProxmoxConfig() {
       data: body,
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-    console.log("configconfigconfigconfigconfig", config);
-
     try {
       const response = await axios.request(config);
 
@@ -1436,7 +1423,6 @@ async function getProxmoxConfig() {
         null,
         constants.VM_PROCESSES.CLONE_LXC,
       );
-      console.log("responseresponseresponse", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1469,9 +1455,6 @@ async function getProxmoxConfig() {
     const request_datetime = new Date();
 
     const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/template`;
-    // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
-
-    console.log("urlurlurl", url);
     const config = {
       method: "post",
       url,
@@ -1482,7 +1465,6 @@ async function getProxmoxConfig() {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-    console.log("configconfigconfigconfig", config);
 
     try {
       const response = await axios.request(config);
@@ -1496,7 +1478,6 @@ async function getProxmoxConfig() {
         null,
         constants.VM_PROCESSES.TEMPLATE_LXC,
       );
-      console.log("responserespon222222222222222", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1515,29 +1496,6 @@ async function getProxmoxConfig() {
       console.error("Error in templateLXC:", errorMessage);
       return null;
     }
-    // catch (error) {
-    //   console.error("AXIOS ERROR RAW:", {
-    //     message: error.message,
-    //     code: error.code,
-    //     errno: error.errno,
-    //     syscall: error.syscall,
-    //     address: error.address,
-    //     port: error.port,
-    //     config: error.config,
-    //     stack: error.stack
-    //   });
-
-    //   if (error.response) {
-    //     console.error("RESPONSE STATUS:", error.response.status);
-    //     console.error("RESPONSE DATA:", error.response.data);
-    //   } else if (error.request) {
-    //     console.error("REQUEST SENT BUT NO RESPONSE");
-    //   } else {
-    //     console.error("REQUEST NOT SENT");
-    //   }
-
-    //   return null;
-    // }
   }
 
   async function cloneQEMU(vmid, newid, name = null) {
@@ -1641,7 +1599,6 @@ async function getProxmoxConfig() {
         null,
         constants.VM_PROCESSES.TEMPLATE_QEMU,
       );
-      console.log("response1111111111111", response);
       return response;
     } catch (error) {
       const errorCode = error?.response?.status?.toString() || "ERR";
@@ -1674,7 +1631,6 @@ async function getProxmoxConfig() {
     const request_datetime = new Date();
 
     const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/config`;
-    console.log("URL:", url);
 
     const config = {
       method: "get",
@@ -1686,14 +1642,8 @@ async function getProxmoxConfig() {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-
-    console.log("Request Config:", config);
-
     try {
       const response = await axios.request(config);
-
-      console.log("QEMU CONFIG SUCCESS:", response.data);
-
       await logApiRequestData(
         start,
         request_datetime,
@@ -1747,8 +1697,6 @@ async function getProxmoxConfig() {
     const request_datetime = new Date();
 
     const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/config`;
-    console.log("URL:", url);
-
     const config = {
       method: "get",
       url,
@@ -1759,14 +1707,8 @@ async function getProxmoxConfig() {
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     };
-
-    console.log("Request Config:", config);
-
     try {
       const response = await axios.request(config);
-
-      console.log("QEMU CONFIG SUCCESS:", response.data);
-
       await logApiRequestData(
         start,
         request_datetime,
@@ -1879,7 +1821,6 @@ async function getProxmoxConfig() {
     const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
     const data = new URLSearchParams();
-    console.log("NET KEY:", netKey, "NET VALUE:", netValue);
     data.append(netKey, netValue);
 
     const config = {
@@ -1939,13 +1880,7 @@ async function getProxmoxConfig() {
   const request_datetime = new Date();
 
   const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
-
   const data = new URLSearchParams();
-  console.log("DISCONNECT NET KEY:", netKey, "VALUE:", netValue);
-
-  // Example:
-  // netKey = "net0"
-  // netValue = "virtio=BC:24:11:DE:01:D8,bridge=vmbr1316,tag=4094"
   data.append(netKey, netValue);
 
   const config = {
@@ -2012,8 +1947,6 @@ async function connectVmNetwork(vmid, vmType, netKey, mac, bridge) {
   const netValue = `virtio=${mac},bridge=${bridge}`;
 
   const data = new URLSearchParams();
-  console.log("CONNECT NET KEY:", netKey, "VALUE:", netValue);
-
   data.append(netKey, netValue);
 
   const config = {
@@ -2134,14 +2067,11 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   const request_datetime = new Date();
 
   const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
-  console.log("urlurlurlurl",url)
   let netValue;
-   console.log("netValuenetValue",netValue)
   /* ===================== KEY FIX ===================== */
   if (vmType === "qemu") {
     // Disable cable
     netValue = `virtio=${mac},bridge=${bridge},link_down=1`;
-   console.log("netValuenetValue",netValue)
 
   }
 
@@ -2150,15 +2080,10 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
     const ethIndex = netKey.replace("net", "");
     // netValue = `name=eth0,type=veth`;
     netValue = `name=eth${ethIndex},bridge=${bridge},link_down=1`;
-
-   console.log("gggggggggggggggggggggggggggggggg",netValue)
-
   }
   /* =================================================== */
 
   const data = new URLSearchParams();
-  console.log("datadatadatadata",data)
-  console.log("UNPLUG NET KEY:", netKey, "VALUE:", netValue);
   data.append(netKey, netValue);
 
   const config = {
@@ -2174,7 +2099,6 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
       rejectUnauthorized: false,
     }),
   };
-console.log("configconfig",config)
   try {
     const response = await axios.request(config);
 
@@ -2187,7 +2111,6 @@ console.log("configconfig",config)
       null,
       constants.VM_PROCESSES.UNPLUG_VM_NETWORK
     );
-console.log("responseresponse",response)
     return response;
   } catch (error) {
     const errorCode = error?.response?.status?.toString() || "ERR";
@@ -2237,7 +2160,6 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   /* ============================================================ */
 
   const data = new URLSearchParams();
-  console.log("PLUG NET KEY:", netKey, "VALUE:", netValue);
 
   data.append(netKey, netValue);
 

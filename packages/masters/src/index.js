@@ -9,8 +9,8 @@ const db = require('./db').db;
 const router = require('./router');
 const keys = require('./keys.js');
 const crypto = require("./middleware/crypto.js");
-const {  validator,  authJwt } = require("./middleware");
-const iocContainer = {express,db,keys,crypto,validator,authJwt};
+const { validator, authJwt, authWebhook } = require("./middleware");
+const iocContainer = {express,db,keys,crypto,validator,authJwt,authWebhook};
 
 var app = express();
 const corsOptions = {  

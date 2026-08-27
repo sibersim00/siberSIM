@@ -739,7 +739,6 @@ const ManageScenarios = () => {
                     </div>
                   </div>
                 </Col>
-                {console.log(scenStatus, "000000000", rowData)}
                 <Col md={12}>
                   {view == "list" ? (
                     <div

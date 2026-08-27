@@ -1486,8 +1486,6 @@ export default function ProxmoxConsole() {
               <canvas ref={matrixCanvasRef} className="ssc-matrix" />
               <div className="ssc-vignette" />
               <div className="ssc-grid" />
-              <div className="ssc-scanline" />
-              <div className="ssc-radar" />
               <div className="ssc-circuit" />
 
               {/* drifting VM cluster nodes — echoes a hypervisor topology view */}
@@ -1501,39 +1499,6 @@ export default function ProxmoxConsole() {
               <div className="ssc-line" style={{ top: "27%", left: "30%", width: "70px", transform: "rotate(-8deg)" }} />
               <div className="ssc-line" style={{ top: "76%", left: "68%", width: "80px", transform: "rotate(18deg)" }} />
             </div>
-
-            {/* floating hardware telemetry HUD cards — reflects the real VM spec from getVMdetail */}
-            <div className="ssc-tele tele-cpu">
-              <span className="tele-label">vCPU</span>
-              <span className="tele-value">
-                {vmDetails?.cpu && vmDetails.cpu !== "N/A" ? `${vmDetails.cpu} CORES` : "— —"}
-              </span>
-              <div className="tele-bar"><div className="tele-fill" style={{ width: `${telemetry.cpu}%` }} /></div>
-            </div>
-            <div className="ssc-tele tele-mem">
-              <span className="tele-label">MEMORY</span>
-              <span className="tele-value">
-                {vmDetails?.memory && vmDetails.memory !== "N/A" ? `${vmDetails.memory} MB` : "— —"}
-              </span>
-              <div className="tele-bar"><div className="tele-fill amber" style={{ width: `${telemetry.mem}%` }} /></div>
-            </div>
-            <div className="ssc-tele tele-net">
-              <span className="tele-label">NETWORK</span>
-              <span className="tele-value">
-                {vmDetails?.ports?.length > 0
-                  ? `${vmDetails.ports.length} NIC${vmDetails.ports.length > 1 ? "S" : ""}`
-                  : "NO LINK"}
-              </span>
-              <div className="tele-bar"><div className="tele-fill green" style={{ width: `${telemetry.net}%` }} /></div>
-            </div>
-            <div className="ssc-tele tele-disk">
-              <span className="tele-label">DISK</span>
-              <span className="tele-value">
-                {vmDetails?.storage && vmDetails.storage !== "N/A" ? `${vmDetails.storage} GB` : "— —"}
-              </span>
-              <div className="tele-bar"><div className="tele-fill" style={{ width: `${telemetry.disk}%` }} /></div>
-            </div>
-
 
             <div className="ssc-panel">
               <div className="ssc-corner tl" />
@@ -1568,6 +1533,53 @@ export default function ProxmoxConsole() {
                 <span className="ssc-btn-glyph">{loading ? "◐" : "▶"}</span>
                 {loading ? "Connecting…" : "Connect"}
               </button>
+
+              <div className="ssc-telemetry-grid">
+                <div className="ssc-tele">
+                  <span className="tele-label">vCPU</span>
+                  <span className="tele-value">
+                    {vmDetails?.cpu && vmDetails.cpu !== "N/A"
+                      ? `${vmDetails.cpu} CORES`
+                      : "— —"}
+                  </span>
+                  <div className="tele-bar">
+                    <div className="tele-fill" style={{ width: `${telemetry.cpu}%` }} />
+                  </div>
+                </div>
+                <div className="ssc-tele">
+                  <span className="tele-label">MEMORY</span>
+                  <span className="tele-value">
+                    {vmDetails?.memory && vmDetails.memory !== "N/A"
+                      ? `${vmDetails.memory} MB`
+                      : "— —"}
+                  </span>
+                  <div className="tele-bar">
+                    <div className="tele-fill amber" style={{ width: `${telemetry.mem}%` }} />
+                  </div>
+                </div>
+                <div className="ssc-tele">
+                  <span className="tele-label">NETWORK</span>
+                  <span className="tele-value">
+                    {vmDetails?.ports?.length > 0
+                      ? `${vmDetails.ports.length} NIC${vmDetails.ports.length > 1 ? "S" : ""}`
+                      : "NO LINK"}
+                  </span>
+                  <div className="tele-bar">
+                    <div className="tele-fill green" style={{ width: `${telemetry.net}%` }} />
+                  </div>
+                </div>
+                <div className="ssc-tele">
+                  <span className="tele-label">DISK</span>
+                  <span className="tele-value">
+                    {vmDetails?.storage && vmDetails.storage !== "N/A"
+                      ? `${vmDetails.storage} GB`
+                      : "— —"}
+                  </span>
+                  <div className="tele-bar">
+                    <div className="tele-fill" style={{ width: `${telemetry.disk}%` }} />
+                  </div>
+                </div>
+              </div>
 
               <div className="ssc-terminal">
                 {bootLog.map((line, idx) => (
@@ -1691,11 +1703,11 @@ export default function ProxmoxConsole() {
                             ))}
                           </Form.Select>
                             {formik.touched.componentcategoryid &&
-    formik.errors.componentcategoryid && (
-      <Form.Control.Feedback type="invalid">
-        {formik.errors.componentcategoryid}
-      </Form.Control.Feedback>
-    )}
+                            formik.errors.componentcategoryid && (
+                              <Form.Control.Feedback type="invalid">
+                                {formik.errors.componentcategoryid}
+                              </Form.Control.Feedback>
+                            )}
                         </Form.Group>
                       </Col>
 

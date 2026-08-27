@@ -8,9 +8,6 @@ import {
   useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  getScenarioFlow,
-} from "../../../../../shared/redux/slices/common/masters";
 import { useDispatch, useSelector } from "react-redux";
 import EditableEdge from '../../../../../shared/data/scenarios/EditableEdge';
 import ScenarioDiagramNode from '../../../../../shared/data/scenarios/ScenarioDiagramNode';
@@ -20,8 +17,6 @@ const resolveImageUrl = (url) => {
 
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
   const isStatic = url.startsWith('/_next') || url.startsWith('/static') || url.startsWith('/images');
-  console.log(isStatic, 'isAbsolute', isAbsolute, url, `${window.location.origin}${url}`)
-
   if (isAbsolute) {
     return url;
   } else {

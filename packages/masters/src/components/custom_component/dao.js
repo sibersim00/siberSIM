@@ -154,7 +154,6 @@ const deleteById =
 const save =
   ({ db, validation }) =>
   async (body, session_userid, ipAddress) => {
-    console.log("vmTypfjdghfjhgfghe:", body);
     try {
       if (body.customcomponentid) {
         // Update custom component table
@@ -177,10 +176,7 @@ const save =
 
         // Fetch VM details
         const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
-
-        console.log("vmDetailResponse", vmDetailResponse);
         const proxmoxData = vmDetailResponse?.data?.data || {};
-        console.log("proxmoxData", proxmoxData);
         const extractStorage = () => {
           const qemuStorageKeys = [
             "sata0",
