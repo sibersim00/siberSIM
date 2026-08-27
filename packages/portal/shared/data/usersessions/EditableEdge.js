@@ -11,7 +11,8 @@ const EditableEdge = ({
   targetPosition,
   data,
   markerEnd,
-  allEdges, 
+  allEdges,
+  editable = false,
 }) => {
   const { setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
@@ -108,7 +109,7 @@ const shouldAnimate =
             height: '100%',
           }}
         >
-          {/* {isEditing ? (
+          {editable && isEditing ? (
             <input
               value={label}
               type="text"
@@ -122,21 +123,22 @@ const shouldAnimate =
                 borderRadius: 4,
                 padding: '2px 4px',
                 width: '100%',
+                color: '#000',
               }}
             />
-          ) : ( */}
+          ) : (
             <div
-              onClick={() => setIsEditing(true)}
+              onClick={() => editable && setIsEditing(true)}
               style={{
                 fontSize: 12,
-                cursor: 'pointer',
+                cursor: editable ? 'pointer' : 'default',
                 userSelect: 'none',
                 whiteSpace: 'nowrap',
               }}
             >
               {label || 'Network Id'}
             </div>
-          {/* )} */}
+          )}
         </div>
       </foreignObject>
     </>

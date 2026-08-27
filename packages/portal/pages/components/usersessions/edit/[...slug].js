@@ -13,7 +13,7 @@ import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Backgrou
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
 import SideBar from "./sidebarFlow";
-import EditableEdge from "../../../../shared/data/manipulation/EditableEdge";
+import EditableEdge from "../../../../shared/data/usersessions/EditableEdge";
 import {
   saveScenarioFlow,
   clearsaveScenarioFlow,
@@ -27,6 +27,35 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+        : DEFAULT_PORT_SIDE_ORDER[Math.min(3, Math.floor(index / portsPerSide))],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
 
 
 const NetworkPopover = ({
@@ -763,11 +792,11 @@ const DnDFlow = ({
       portKeys = [];
     }
 
-    const totalPorts = portKeys.length;
-    const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.ceil(totalPorts / 4);
-    const spacingRatio = 100 / (portsPerSide + 1);
-    const nodeSize = 156;
+    const portLayouts = getPortLayouts(
+      portKeys,
+      data.portPositions,
+      data.autoPortPositions,
+    );
     const rawLabel = String(data.label || "Unnamed component").trim();
     const labelSeparator = rawLabel.indexOf("-");
     const componentTitle = labelSeparator > -1 ? rawLabel.slice(labelSeparator + 1).trim() : rawLabel;
@@ -790,20 +819,9 @@ const DnDFlow = ({
       }
     }, [nextNet]);
     return (
-       <div
-              className="portal-flow-node"
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <div
-                className="portal-flow-node-card"
-                style={{width: nodeSize,minHeight: 170,position: "relative",borderRadius: 15,border: "1px solid var(--diagram-node-border)",background: "var(--diagram-node-surface)",display: "flex",alignItems: "center",justifyContent: "flex-start",flexDirection: "column",padding: "28px 12px 14px",boxShadow: "0 8px 22px var(--diagram-node-shadow)",
-                }}
-              >
+      <div className="portal-flow-node">
+        <div className="portal-flow-node-glow" aria-hidden="true" />
+        <div className="portal-flow-node-card">
                 <OverlayTrigger
         placement="top"
         overlay={<Tooltip id={`tooltip-${id}`}>Add/Delete Node</Tooltip>}
@@ -870,90 +888,39 @@ const DnDFlow = ({
                     ×
                   </button>
                 </OverlayTrigger>
-                <div
-                  className="portal-flow-node-icon-frame"
-                  style={{width: 64,height: 64,backgroundImage: `url("${resolveImageUrl(data.image)}")`,backgroundSize: "contain",backgroundPosition: "center",backgroundRepeat: "no-repeat",
-                  }}
-                />
-                {portKeys.map((port, index) => {
-                  const sideIndex = Math.floor(index / portsPerSide);
-                  const configuredSide = data.portPositions?.[port.key] === "Auto"
-                    ? data.autoPortPositions?.[port.key]
-                    : data.portPositions?.[port.key];
-                  const side = sides.includes(configuredSide) ? configuredSide : sides[sideIndex];
-                  const positionIndex = index % portsPerSide;
-                  let offsetPercent;
-                  if (side === "Right" || side === "Top") {
-                    offsetPercent = (positionIndex + 1) * spacingRatio;
-                  } else {
-                    offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-                  }
-                  const baseHandleStyle = {position: "absolute",width: 8,height: 8,borderRadius: "50%",background: "#005eff",border: "1px solid white",zIndex: 2,
+                <div className="portal-flow-node-icon-frame">
+                  <div
+                    className="portal-flow-node-icon"
+                    style={{
+                      backgroundImage: `url("${resolveImageUrl(data.image)}")`,
+                    }}
+                  />
+                </div>
+                <div className="portal-flow-node-copy">
+                  <strong title={componentTitle}>{componentTitle}</strong>
+                  <small>
+                    {componentVmId
+                      ? `VM ID: ${componentVmId}`
+                      : "Virtual component"}
+                  </small>
+                </div>
+                {data?.isOnline != null && (
+                  <div
+                    className={`portal-flow-node-status ${
+                      data.isOnline === "Yes" ? "is-online" : "is-offline"
+                    }`}
+                  >
+                    <span />
+                    {data.isOnline === "Yes" ? "ONLINE" : "OFFLINE"}
+                  </div>
+                )}
+                {portLayouts.map((port) => {
+                  const { side, offsetPercent } = port;
+                  const sideClass = side.toLowerCase();
+                  const portStyle = {
+                    "--portal-port-offset": `${offsetPercent}%`,
+                    "--portal-port-color": getPortColor(port.key),
                   };
-                  const labelStyle = {position: "absolute",fontSize: 6,padding: "1px 3px",whiteSpace: "nowrap",zIndex: 5,border: "1px solid var(--diagram-node-border-selected)",borderRadius: 5,background: "var(--diagram-port-surface)",color: "var(--diagram-node-text)",
-                  };
-                  let handleStyle = {};
-                  let labelPosition = {};
-                  switch (side) {
-                    case "Top":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        top: -5,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        top: -20,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      break;
-                    case "Right":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        right: -5,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        right: -6,
-                        top: `${offsetPercent}%`,
-                        transform: "translate(100%, -50%)",
-                      };
-                      break;
-                    case "Bottom":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        bottom: -5,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        bottom: -20,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      break;
-                    case "Left":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        left: -5,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        left: -6,
-                        top: `${offsetPercent}%`,
-                        transform: "translate(-100%, -50%)",
-                      };
-                      break;
-                    default:
-                      break;
-                  }
                   return (
                     <React.Fragment key={port.key}>
                       <Handle
@@ -961,41 +928,31 @@ const DnDFlow = ({
                         position={Position[side]}
                         id={`${port.key}-source`}
                         onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-                        // style={handleStyle}
-                        style={{ ...handleStyle, background: getPortColor(port.key) }}
-                        // isConnectable={isConnectable}
+                        className={`portal-flow-port portal-flow-port--${sideClass}`}
+                        style={portStyle}
+                        isConnectable={isConnectable}
                       />
-      
                       <Handle
                         type="target"
                         position={Position[side]}
                         id={`${port.key}-target`}
                         onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-                        // style={handleStyle}
-                        style={{ ...handleStyle, background: getPortColor(port.key) }}
-                        // isConnectable={isConnectable}
+                        className={`portal-flow-port portal-flow-port--${sideClass}`}
+                        style={portStyle}
+                        isConnectable={isConnectable}
                       />
-      
-                      <div style={labelPosition}>{port.label}</div>
+                      <div
+                        className={`portal-flow-port-label portal-flow-port-label--${sideClass}`}
+                        style={portStyle}
+                        title={port.label}
+                      >
+                        {port.label}
+                      </div>
                     </React.Fragment>
                   );
                 })}
-              </div>
-              <div
-                className="portal-flow-node-copy"
-                style={{
-                  position: "absolute",
-                  bottom: 17,
-                  left: 12,
-                  fontSize: 10,
-                  textAlign: "center",
-                  width: "calc(100% - 24px)",
-                }}
-              >
-                <strong title={componentTitle}>{componentTitle}</strong>
-                <small>{componentVmId ? `VM ID: ${componentVmId}` : "Virtual component"}</small>
-              </div>
-            </div>
+        </div>
+      </div>
     );
   };
   const idRef = useRef(0);
@@ -2133,7 +2090,7 @@ useEffect(() => {
         allNodes={nodes}
         allEdges={edges}
         setEdges={setEdges}
-        edgeRouting={parentEdgeRouting}
+        editable
       />
     );
   };

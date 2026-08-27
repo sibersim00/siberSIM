@@ -8731,7 +8731,7 @@ html.dark-theme[data-scenario-shadow="4"] .portal-flow-canvas {
   height: 8px !important;
   border: 1.5px solid var(--diagram-node-surface) !important;
   border-radius: 50% !important;
-  background: var(--diagram-node-border-selected) !important;
+  background: var(--portal-port-color, var(--diagram-node-border-selected)) !important;
   box-shadow: 0 0 0 1px var(--diagram-node-border-selected), 0 0 8px var(--diagram-node-shadow-selected);
 }
 
