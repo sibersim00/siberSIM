@@ -226,7 +226,7 @@ const userrolemapremove = ({ db }) => async (id) => {
 
 const userlist = ({ db }) => async (id = null) => {
     try {
-        let [res] = await db.sequelize.query(`SELECT userid,concat(firstname,' ',lastname) as name,status from ad_users where status = 'Active' order by userid asc`);
+        let [res] = await db.sequelize.query(`SELECT userid,concat(firstname,' ',lastname) as name,status,loginid from ad_users where status = 'Active' and deletedon is NULL order by userid asc`);
         return res;
     } catch (error) {
         console.error('Error fetching user:', error);

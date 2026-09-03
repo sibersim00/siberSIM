@@ -113,6 +113,7 @@ const ScenariosView = () => {
   const [scenarioStatus, setScenarioStatus] = useState("Pending");
   const [vmStep, setVmStep] = useState("");
   const pollingRef = useRef(null);
+  const configurationCompleteRef = useRef(false);
   const [countdown, setCountdown] = useState(10);
   const [countdownActive, setCountdownActive] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
@@ -127,6 +128,7 @@ const ScenariosView = () => {
   const [learnerSelectionError, setLearnerSelectionError] = useState("");
   const [showLearnerModal, setShowLearnerModal] = useState(false);
   const [showAssignedModal, setShowAssignedModal] = useState(false);
+  const [returnToInviteeList, setReturnToInviteeList] = useState(false);
   const [showAssignedBtn, setShowAssignedBtn] = useState(false);
   const { t } = useTranslation();
 
@@ -224,7 +226,20 @@ const hasInvitees =
     }
     activeScenarioIdRef.current = scenario.scenariouuid;
     setRowValues(scenario);
-    setScenarioStatus(scenario.status);
+    // The scenario-detail endpoint can briefly return its previous
+    // "Initializing" value after VM configuration has already completed.
+    // Keep the confirmed running UI until the endpoint catches up.
+    if (
+      !(
+        configurationCompleteRef.current &&
+        scenario.status === "Initializing"
+      )
+    ) {
+      setScenarioStatus(scenario.status);
+      if (scenario.status !== "Initializing") {
+        configurationCompleteRef.current = false;
+      }
+    }
     if (scenario.calculated_timer) {
       const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
       const totalSeconds = h * 3600 + m * 60 + s;
@@ -671,8 +686,17 @@ const hasInvitees =
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
+    // A previous scenario may leave the completion countdown and VM step in
+    // state. Reset them before opening a new configuration workflow so stale
+    // UI state cannot close the new modal while cloning is still in progress.
+    setVmStep("Initializing");
+    configurationCompleteRef.current = false;
+    setCountdown(10);
+    setCountdownActive(false);
     setConfigurationElapsed(0);
+    setShowFailureModal(false);
     setShowCloneModal(true);
+    dispatch(clearGetSessionStatusList());
     dispatch(getSessionStatusList(scenariolearnersessionuuid));
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
@@ -705,6 +729,8 @@ const hasInvitees =
     }
     setVmStep(step);
     if (step === "Running" || step === "Pause") {
+      configurationCompleteRef.current = true;
+      setScenarioStatus(step === "Pause" ? "Pause" : "Start");
       setCountdown(10);
       setCountdownActive(true);
       clearInterval(pollingRef.current);
@@ -714,6 +740,7 @@ const hasInvitees =
     }
 
     if (step === "Failed") {
+      configurationCompleteRef.current = false;
       setVmStep(" ");
       setShowCloneModal(false);
       setShowFailureModal(true);
@@ -728,17 +755,21 @@ const hasInvitees =
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
       }, 1000);
-    } else if (countdown === 0) {
+    } else if (
+      countdownActive &&
+      countdown === 0 &&
+      (vmStep === "Running" || vmStep === "Pause")
+    ) {
       setCountdownActive(false);
       setShowCloneModal(false);
-      setScenarioStatus("Initializing");
+      setScenarioStatus(vmStep === "Pause" ? "Pause" : "Start");
       setTimerActive(true);
       setTimerPaused(false);
       dispatch(getSingleScenarios(query.slug[0]));
     }
 
     return () => clearInterval(timer);
-  }, [countdownActive, countdown]);
+  }, [countdownActive, countdown, vmStep]);
 
   const isConfigurationComplete = vmStep === "Running" || vmStep === "Pause";
   const currentVmStepIndex = isConfigurationComplete
@@ -762,7 +793,7 @@ const hasInvitees =
     setShowCloneModal(false);
     setTimerActive(true);
     setTimerPaused(false);
-    setScenarioStatus("Initializing");
+    setScenarioStatus(vmStep === "Pause" ? "Pause" : "Start");
     dispatch(getSingleScenarios(query.slug[0]));
     setShowAssignedBtn(true);
   };
@@ -826,7 +857,7 @@ const hasInvitees =
   };
 
   useEffect(() => {
-    if (hasGetlearnerlistbyinstructorData?.length > 0) {
+    if (Array.isArray(hasGetlearnerlistbyinstructorData)) {
       const dropdownData = hasGetlearnerlistbyinstructorData.map((item) => ({
         learner_id: item.learner_id,
         learner_name: item.learner_name,
@@ -859,6 +890,7 @@ const hasInvitees =
     };
 
     try {
+      const shouldReturnToInviteeList = returnToInviteeList;
       await dispatch(saveInviteLearners(payload));
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
@@ -870,13 +902,19 @@ const hasInvitees =
           theme: "colored",
         },
       );
-      dispatch(
+      await dispatch(
         getLearnersByVmRequest({
           vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
         }),
       );
+      setSelectedLearners([]);
+      setLearnerSelectionError("");
       setShowAssignedModal(false);
       setShowAssignedBtn(false);
+      setReturnToInviteeList(false);
+      if (shouldReturnToInviteeList) {
+        setShowLearnerModal(true);
+      }
       // setShowInviteesBtn(true);
     } catch (err) {
       console.error(err);
@@ -884,6 +922,9 @@ const hasInvitees =
   };
 
   const handleOpenAssignedModal = () => {
+    setReturnToInviteeList(false);
+    setSelectedLearners([]);
+    setLearnerDropdown([]);
     dispatch(
       Learnerlistbyinstructor({
         vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
@@ -894,8 +935,16 @@ const hasInvitees =
   };
 
   const handleCloseAssignedModal = () => {
+    setSelectedLearners([]);
     setLearnerSelectionError("");
+    setReturnToInviteeList(false);
     setShowAssignedModal(false);
+  };
+
+  const handleAddMoreInvitees = () => {
+    setShowLearnerModal(false);
+    handleOpenAssignedModal();
+    setReturnToInviteeList(true);
   };
 
   return (
@@ -1942,6 +1991,7 @@ const hasInvitees =
                   getOptionLabel={(x) => x.learner_name}
                   getOptionValue={(x) => x.learner_id}
                   placeholder="Select Invitees"
+                  noOptionsMessage={() => "No additional learners available"}
                   onChange={(selectedOptions) => {
                     const learners = selectedOptions || [];
                     setSelectedLearners(learners);
@@ -2064,6 +2114,18 @@ const hasInvitees =
                 </tbody>
               </Table>
             </Modal.Body>
+            <Modal.Footer className="border-top">
+              <Button
+                variant="outline-secondary"
+                onClick={() => setShowLearnerModal(false)}
+              >
+                Close
+              </Button>
+              <Button variant="primary" onClick={handleAddMoreInvitees}>
+                <i className="fe fe-user-plus me-2"></i>
+                Add More Invitees
+              </Button>
+            </Modal.Footer>
           </Modal>
         </Col>
       </Row>

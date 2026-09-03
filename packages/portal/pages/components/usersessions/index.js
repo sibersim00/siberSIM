@@ -321,7 +321,9 @@ const footerStyle = {
   }, []);
 
   const handleReturnView = (props) => {
-    push(`/usersession_view/${props?.scenariolearneruuid}`);
+    if (props?.vmrequestuuid) {
+      push(`/usersession_view/${props.vmrequestuuid}`);
+    }
   };
 
   const handleSentTerminationNotification = (data) => {

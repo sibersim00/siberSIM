@@ -5888,6 +5888,18 @@ body.dark-theme .ag-row-drag {
 .dark-theme .custom-select__multi-value__label {
   color: #fff;
 }
+
+/* User role mapping selects: keep searched and selected text readable in dark mode. */
+.dark-theme .user-role-select__input-container,
+.dark-theme .user-role-select__input-container input,
+.dark-theme .user-role-select__single-value,
+.dark-theme .user-role-select__menu,
+.dark-theme .user-role-select__option,
+.dark-theme .user-role-select__menu-notice {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.7); }
@@ -9208,4 +9220,79 @@ html.dark-theme[data-scenario-shadow="4"] .portal-flow-canvas {
 .portal-flow-node-action--ports:hover {
   border-color: #6366f1;
   color: #6366f1;
+}
+
+.customer-license-modal {
+  .modal-dialog {
+    max-width: 820px;
+  }
+
+  .modal-content {
+    overflow: hidden;
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding: 1.2rem 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .form-label {
+    margin-bottom: 0.45rem;
+    font-weight: 600;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 42px;
+    border-radius: 6px;
+  }
+
+  .form-text {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+  }
+
+  .license-toggle-card {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.06);
+
+    .form-check {
+      margin-bottom: 0;
+    }
+  }
+
+  .modal-footer {
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .customer-license-modal {
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .modal-header,
+    .modal-footer {
+      padding-right: 1rem;
+      padding-left: 1rem;
+    }
+  }
 }

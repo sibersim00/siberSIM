@@ -17,6 +17,7 @@ const Master = () => {
   const [indexId, setIndexId] = useState(0);
   const [selectedSubMenu, setSelectedSubMenu] = useState({});
   const [filteredSubMenus, setfilteredSubMenus] = useState([]);
+  const [webhookEnabled, setWebhookEnabled] = useState(false);
   const dispatch = useDispatch();
   const {getSubMenus} = useSelector((state) => {
     return {
@@ -28,6 +29,16 @@ const Master = () => {
   });
   useEffect(()=>{
     if (typeof window !== "undefined") {
+      const companySettings = JSON.parse(
+        localStorage.getItem("company_settings"),
+      );
+      const webhookLicenseValue = companySettings?.licenseStatus?.webhook;
+      setWebhookEnabled(
+        webhookLicenseValue === true ||
+          webhookLicenseValue === 1 ||
+          String(webhookLicenseValue).toLowerCase() === "true" ||
+          String(webhookLicenseValue) === "1",
+      );
       dispatch(getLocalStorageData("selectedmenu"));
     }
   },[]);
@@ -38,12 +49,17 @@ const Master = () => {
       setTabOrNav(checktabnav);
       setSelectedMenu(getSubMenus);
       if(getSubMenus?.children && getSubMenus?.children.length > 0){
-        setSubmenus(getSubMenus.children)
-        setfilteredSubMenus(getSubMenus.children)
-        setSelectedSubMenu(getSubMenus.children[0])
+        const visibleSubMenus = webhookEnabled
+          ? getSubMenus.children
+          : getSubMenus.children.filter(
+              (menu) => menu?.source !== "/webhookuser",
+            );
+        setSubmenus(visibleSubMenus)
+        setfilteredSubMenus(visibleSubMenus)
+        setSelectedSubMenu(visibleSubMenus[0] || {})
       }
     }
-  },[getSubMenus]);
+  },[getSubMenus, webhookEnabled]);
   const onFilterChanged = (e) => {
     const inputValue = e.target.value;
     if (inputValue) {
@@ -164,7 +180,7 @@ const Master = () => {
               {selectedSubMenu.source === "/adminusers" && <AdminUsers />}
               {selectedSubMenu.source === "/instructors" && <Instructors />}
               {selectedSubMenu.source === "/normalusers" && <NormalUsers/>}
-              {selectedSubMenu.source === "/webhookuser" && <WebhookUsers />}
+              {webhookEnabled && selectedSubMenu.source === "/webhookuser" && <WebhookUsers />}
             </div>
           )}
         </Col>

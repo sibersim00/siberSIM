@@ -14,6 +14,7 @@ const authRouter = require("../components/auth");
 const commonRouter = require("../components/commons");
 const customcomponentRouter = require("../components/custom_component");
 const invitescenarioRouter = require("../components/invitescenarios");
+const thirdPartyIntegrationsRouter = require("../components/third_party_integrations");
 
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
@@ -34,6 +35,11 @@ module.exports = function (iocContainer) {
   router.use("/commons", [authJwt.authenticateToken([""])], commonRouter(iocContainer));
   router.use("/custom_component", [authJwt.authenticateToken(["/customcomponent"])], customcomponentRouter(iocContainer));
   router.use("/invitescenarios", [authJwt.authenticateToken(["/invitescenarios"])], invitescenarioRouter(iocContainer));
+  router.use(
+    "/third-party-integrations",
+    [authJwt.authenticateToken(["/third-party-integrations"])],
+    thirdPartyIntegrationsRouter(iocContainer)
+  );
 
   return router;
 };

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const serialLicense = require("./serialLicense");
 
 const authenticateWebhook = ({ db, keys }) => async (req, res, next) => {
   if (!keys.WEBHOOK_JWT_SECRET || !keys.WEBHOOK_INTERNAL_KEY) {
@@ -36,7 +37,33 @@ const authenticateWebhook = ({ db, keys }) => async (req, res, next) => {
       return res.status(401).send({ statusCode: 401, message: "Webhook token is expired or revoked." });
     }
 
-    req.user = { ...rows, username: rows.loginid, webhook_request_id: req.get("x-request-id") || null };
+    const [settings] = await db.sequelize.query(
+      `SELECT domain_url, license_key
+       FROM web_settings
+       WHERE status = 1 AND license_key IS NOT NULL AND license_key <> ''
+       ORDER BY id DESC
+       LIMIT 1`,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
+    const licenseStatus = settings
+      ? serialLicense.validateJWTLicense(settings.domain_url, settings.license_key)
+      : null;
+    if (!licenseStatus) {
+      return res.status(503).send({
+        statusCode: 503,
+        message: "The installed license could not be validated.",
+      });
+    }
+
+    req.user = {
+      ...rows,
+      username: rows.loginid,
+      webhook_request_id: req.get("x-request-id") || null,
+      learner_limit:
+        licenseStatus.learner_limit === null || licenseStatus.learner_limit === undefined
+          ? null
+          : Number(licenseStatus.learner_limit),
+    };
     req.webhook = true;
     next();
   } catch (error) {

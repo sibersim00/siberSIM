@@ -68,7 +68,7 @@ const ScenarioForm = (props) => {
   const router = useRouter();
   const [heading, setHeading] = useState("Add");
   const [rowValues, setRowValues] = useState({});
-  const { setView, rowId, oneClick, handleOneClick } = props;
+  const { setView, rowId, oneClick, handleOneClick, manipulation } = props;
   const [isChecked, setIsChecked] = useState(true);
   const [editorLoaded, setEditorLoaded] = useState(false);
   const [initialHtml, setInitialHtml] = useState("");
@@ -1122,50 +1122,52 @@ useEffect(() => {
                                                   </Form.Group>
                                                 </Col>
 
-                                                <Form.Group
-                                                  as={Col}
-                                                  md="4"
-                                                  controlId="validationFormikManipulation"
-                                                  className="my-4"
-                                                >
-                                                  <div className="d-flex justify-content-between align-items-center">
-                                                    <Form.Label className="mb-0">
-                                                      Manipulation Flag
-                                                    </Form.Label>
+                                                {manipulation === "1" && (
+                                                  <Form.Group
+                                                    as={Col}
+                                                    md="4"
+                                                    controlId="validationFormikManipulation"
+                                                    className="my-4"
+                                                  >
+                                                    <div className="d-flex justify-content-between align-items-center">
+                                                      <Form.Label className="mb-0">
+                                                        Manipulation Flag
+                                                      </Form.Label>
 
-                                                    <OverlayTrigger
-                                                      placement="bottom"
-                                                      overlay={
-                                                        <Tooltip>
-                                                          Toggle Manipulation
-                                                          Permission
-                                                        </Tooltip>
-                                                      }
-                                                    >
-                                                      <label className="custom-switch mb-0">
-                                                        <input
-                                                          type="checkbox"
-                                                          className="custom-switch-input"
-                                                          checked={
-                                                            formValidation
-                                                              .values
-                                                              .manipulation_flag ===
-                                                            "true"
-                                                          }
-                                                          onChange={(e) => {
-                                                            formValidation.setFieldValue(
-                                                              "manipulation_flag",
-                                                              e.target.checked
-                                                                ? "true"
-                                                                : "false",
-                                                            );
-                                                          }}
-                                                        />
-                                                        <span className="custom-switch-indicator custom-switch-indicator-md"></span>
-                                                      </label>
-                                                    </OverlayTrigger>
-                                                  </div>
-                                                </Form.Group>
+                                                      <OverlayTrigger
+                                                        placement="bottom"
+                                                        overlay={
+                                                          <Tooltip>
+                                                            Toggle Manipulation
+                                                            Permission
+                                                          </Tooltip>
+                                                        }
+                                                      >
+                                                        <label className="custom-switch mb-0">
+                                                          <input
+                                                            type="checkbox"
+                                                            className="custom-switch-input"
+                                                            checked={
+                                                              formValidation
+                                                                .values
+                                                                .manipulation_flag ===
+                                                              "true"
+                                                            }
+                                                            onChange={(e) => {
+                                                              formValidation.setFieldValue(
+                                                                "manipulation_flag",
+                                                                e.target.checked
+                                                                  ? "true"
+                                                                  : "false",
+                                                              );
+                                                            }}
+                                                          />
+                                                          <span className="custom-switch-indicator custom-switch-indicator-md"></span>
+                                                        </label>
+                                                      </OverlayTrigger>
+                                                    </div>
+                                                  </Form.Group>
+                                                )}
 
                                                 <Form.Group
                                                   as={Col}

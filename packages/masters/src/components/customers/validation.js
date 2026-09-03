@@ -90,6 +90,24 @@ const licenseAddSchema =  joi.object({
     "number.empty": `SIMuser cannot be empty`,
     "any.required": `SIMuser is required.`,
   }),
+  learner_limit: joi.number().integer().min(0).required().messages({
+    "number.base": "Learner Limit should be an integer",
+    "number.integer": "Learner Limit should be an integer",
+    "number.min": "Learner Limit cannot be negative",
+    "any.required": "Learner Limit is required.",
+  }),
+  cluster_method: joi
+    .string()
+    .valid("RoundRobin", "LeastLoaded", "Weighted", "Threshold")
+    .required(),
+  webhook_flag: joi
+    .alternatives()
+    .try(joi.boolean(), joi.string().valid("True", "False"))
+    .required(),
+  manipulation_flag: joi
+    .alternatives()
+    .try(joi.boolean(), joi.string().valid("True", "False"))
+    .required(),
   start_date: joi.date().required().messages({
     "date.base": "Start date must be a valid date",
     "any.required": "Start date is required",

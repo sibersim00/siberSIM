@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Row, Col, Card, Button, Nav, Tab, Badge } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
+import dynamic from "next/dynamic";
 
 import { useRouter } from "next/router";
 
@@ -22,6 +23,11 @@ import Seo from "../../../../shared/layout-components/seo/seo";
 import "../../../../shared/utils/i18n";
 import ScenarioDiagram from "./scenariodiagram";
 import ChatBox from "../chatbox"; // Import the ChatBox component
+
+const PdfLoader = dynamic(
+  () => import("../../../../shared/data/common/PdfLoader"),
+  { ssr: false, loading: () => <p>Loading PDF viewer...</p> }
+);
 
 const UserSessionView = () => {
   const dispatch = useDispatch();
@@ -190,12 +196,6 @@ const UserSessionView = () => {
 
   const pdfUrl = rowValues?.instruction_file
     ? `${baseUrl}${rowValues.instruction_file}`
-    : null;
-
-  const viewerUrl = pdfUrl
-    ? `https://docs.google.com/gview?url=${encodeURIComponent(
-      pdfUrl
-    )}&embedded=true`
     : null;
 
   const handleSentTerminationNotification = (data) => {
@@ -738,22 +738,14 @@ const UserSessionView = () => {
                               </Tab.Pane>
 
                               <Tab.Pane eventKey="instruction">
-                                {rowValues?.instruction_file ? (
-                                  <iframe
-                                    src={viewerUrl}
-                                    width="100%"
-                                    height="600px"
-                                    style={{
-                                      border: "1px solid #ccc",
-                                      borderRadius: "8px",
-                                    }}
-                                    title="Instruction PDF"
-                                  ></iframe>
-                                ) : (
-                                  <p className="text-muted">
-                                    No instruction PDF provided.
-                                  </p>
-                                )}
+                                {activeTab === "instruction" &&
+                                  (pdfUrl ? (
+                                    <PdfLoader fileUrl={pdfUrl} />
+                                  ) : (
+                                    <p className="text-muted">
+                                      No instruction PDF provided.
+                                    </p>
+                                  ))}
                               </Tab.Pane>
                               <Tab.Pane eventKey="diagram">
                                 <div>

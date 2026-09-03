@@ -203,6 +203,20 @@ const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
   });
 };
 
+const StableEditableEdge = (edgeProps) => {
+  const { getEdges, setEdges } = useReactFlow();
+  return (
+    <EditableEdge
+      {...edgeProps}
+      allEdges={getEdges()}
+      setEdges={setEdges}
+      edgeRouting={edgeProps.data?.edgeRouting}
+    />
+  );
+};
+
+const LEARNER_EDGE_TYPES = { custom: StableEditableEdge };
+
 const NetworkPopover = ({
   nodeId,
   existingPorts,
@@ -757,6 +771,7 @@ const DnDFlow = ({
   const draggingNodesRef = useRef(new Set());
   const lastCardMotionFrameRef = useRef(0);
   const componentAnimationStartedAtRef = useRef(0);
+  const deleteNodeRef = useRef(null);
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
@@ -1620,7 +1635,11 @@ const onHandleMouseDown = (event, portKey, nodeId) => {
     },
     [edges, dragStart],
   );
-const ConnectionPopover = ({ data, onSelect, onClose }) => {
+const ConnectionPopover = useMemo(() => function ConnectionPopoverComponent({
+  data,
+  onSelect,
+  onClose,
+}) {
   const popoverRef = useRef(null);
 
   const [selectedType, setSelectedType] = useState(null);
@@ -1792,9 +1811,8 @@ const iconMap = {
   .map((opt) => (
     <div
       key={opt}
-      onClick={() => {
-        onSelect(opt);
-        onClose();
+      onClick={async () => {
+        await onSelect(opt);
       }}
       style={{
         padding: "10px 12px",
@@ -1821,7 +1839,7 @@ const iconMap = {
       {/* SUBMIT BUTTON */}
       {selectedType === "static" && (
         <div
-          onClick={() => {
+          onClick={async () => {
             if (!isValidVmbr(staticInput)) {
               // alert("Enter valid vmbr (700–1000)");
               // toast.error(
@@ -1837,8 +1855,7 @@ const iconMap = {
               return;
             }
 
-            onSelect("static", staticInput);
-            onClose();
+            await onSelect("static", staticInput);
           }}
           style={{
             marginTop: 10,
@@ -1857,7 +1874,7 @@ const iconMap = {
       )}
     </div>
   );
-};
+}, []);
 
   const handleConnectionType = async (type,staticValue = null) => {
     if (!pendingConnection) return;
@@ -2324,17 +2341,19 @@ const onConnectEnd = () => {
     }
   }, [disconnectNetwork]);
 
+  deleteNodeRef.current = deleteNode;
+
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => (
         <ImageNode
           {...props}
-          deleteNode={deleteNode}
+          deleteNode={(nodeId) => deleteNodeRef.current?.(nodeId)}
           openPopover={(nodeId, anchor) => setActivePopover({ nodeId, anchor })}
         />
       ),
     }),
-    [deleteNode, ambientMotionEnabled],
+    [ambientMotionEnabled, portRuntimeState],
   );
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
@@ -2355,22 +2374,6 @@ const onConnectEnd = () => {
     style: { stroke: "#000", strokeWidth: 2 },
   };
   const { t } = useTranslation();
-  const EditableEdgeWrapper = (edgeProps) => {
-    const { getEdges, setEdges } = useReactFlow();
-    const edges = getEdges(); // all current edges
-    return (
-      <EditableEdge
-        {...edgeProps}
-        allNodes={nodes}
-        allEdges={edges}
-        setEdges={setEdges}
-        edgeRouting={parentEdgeRouting}
-      />
-    );
-  };
-  const edgeTypes = {
-    custom: EditableEdgeWrapper,
-  };
   const activeNode = nodes.find((n) => n.id === activePopover?.nodeId);
 
   const existingPorts = useMemo(() => {
@@ -2467,10 +2470,10 @@ const onConnectEnd = () => {
     e.stopPropagation();
     setPendingNets((prev) => prev.filter((n) => n !== net));
   };
-  const closeConnectPopover = () => {
+  const closeConnectPopover = useCallback(() => {
     setConnectPopover(null);
     setPendingConnection(null);
-  };
+  }, []);
   useEffect(() => {
     if (!connectPopover) return;
 
@@ -2705,7 +2708,7 @@ const handleEdgeClick = async (event, edge) => {
             connectionLineType="floating"
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
-            edgeTypes={edgeTypes}
+            edgeTypes={LEARNER_EDGE_TYPES}
             onConnectEnd={onConnectEnd}
             onEdgeClick={handleEdgeClick} 
           >

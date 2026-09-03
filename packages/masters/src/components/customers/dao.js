@@ -255,6 +255,9 @@ const saveLicense =
         start_date: body.start_date,
         user_count: body.sim_user_count,
         manipulation: body.manipulation_flag,
+        cluster_method: body.cluster_method,
+        webhook: body.webhook_flag,
+        learner_limit: body.learner_limit,
         expiry_date: body.expiry_date,
         domain_name: body.domain_url,
       });

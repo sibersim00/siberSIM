@@ -176,7 +176,7 @@ const NormalUserForm = (props) => {
       }),
     }),
 
-    onSubmit: (data) => {
+    onSubmit: async (data) => {
       try {
         let payload;
 
@@ -201,10 +201,11 @@ const NormalUserForm = (props) => {
           };
         }
         handleOneClick(true);
-        dispatch(registerNormaluser(payload));
+        await dispatch(registerNormaluser(payload));
       } catch (error) {
         console.error("Error submitting the form:", error);
-        // Handle the error, maybe show a message to the user
+      } finally {
+        handleOneClick(false);
       }
     },
   });

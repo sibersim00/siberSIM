@@ -1,4 +1,4 @@
-
+const { checkLearnerCapacity, learnerLimitMessage } = require("../../utils/learnerLicenseLimit");
 const getAll = ({ dao, db, validation }) => async (req, res) => {
   try {
     let session_userid = req.user.userid;
@@ -21,6 +21,16 @@ const getAll = ({ dao, db, validation }) => async (req, res) => {
 const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
+    if (!body.learner_id) {
+      const capacity = await checkLearnerCapacity({ db, learnerLimit: req.user.learner_limit });
+      if (!capacity.allowed) {
+        return res.status(400).send({
+          statusCode: 400,
+          message: learnerLimitMessage(capacity),
+          errors: [],
+        });
+      }
+    }
     const session_userid = req.user.userid;
     const usertype = req.user.usertype;
     const result = await dao.save({ db, validation })(body, session_userid, usertype);
@@ -162,6 +172,18 @@ const verifyLearnerImport = ({ dao, db, validation }) => async (req, res, next) 
     if (!Array.isArray(req.body) || !req.body.length || req.body.length > 1000) {
       return res.status(400).send({ statusCode: 400, message: 'Import must contain between 1 and 1000 learner rows.' });
     }
+    const capacity = await checkLearnerCapacity({
+      db,
+      learnerLimit: req.user.learner_limit,
+      requestedCount: req.body.length,
+    });
+    if (!capacity.allowed) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: learnerLimitMessage(capacity, true),
+        data: { success: [], errors: [] },
+      });
+    }
     const result = await dao.verifyLearnerImport({ db, validation })(req.body);
     return res.status(200).send({ statusCode: 200, message: 'Learner import file verified.', data: result });
   } catch (err) { next(err); }
@@ -171,6 +193,22 @@ const learnerImport = ({ dao, db, validation }) =>  async (req, res, next) => {
   try {
     if (!Array.isArray(req.body) || !req.body.length || req.body.length > 1000) {
       return res.status(400).send({ statusCode: 400, message: 'Import must contain between 1 and 1000 learner rows.' });
+    }
+    // Always recheck during the real import. The learner count may have
+    // changed after the file was verified.
+    const capacity = await checkLearnerCapacity({
+      db,
+      learnerLimit: req.user.learner_limit,
+      requestedCount: req.body.length,
+    });
+    if (!capacity.allowed) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: learnerLimitMessage(capacity, true),
+        successCount: 0,
+        errorCount: req.body.length,
+        errors: [],
+      });
     }
     const result = await dao.learnerImport({ db, validation })({ body: req.body, session_userid: req.user.userid });
     return res.status(result.statusCode).send(result);

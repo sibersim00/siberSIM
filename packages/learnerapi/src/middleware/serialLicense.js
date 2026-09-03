@@ -1,191 +1,94 @@
 const CryptoJS = require("crypto-js");
-const keys = require('./../keys');
-const SECRET = keys.CRYPTO_SECURITY_KEY;
+const keys = require("./../keys");
 
-const generateLicense = ({ start_date, user_count, expiry_date, domain_name }) => {
-  const parsedExp = new Date(expiry_date);
-  if (isNaN(parsedExp.getTime())) { throw new Error("Invalid expiry date"); }
-  const formattedExp = parsedExp.toISOString().slice(0, 10).replace(/-/g, "");
-  const parsedStr = new Date(start_date);
-  if (isNaN(parsedStr.getTime())) { throw new Error("Invalid start date"); }
-  const formattedStr = parsedStr.toISOString().slice(0, 10).replace(/-/g, "");
-  const domainRaw = `${domain_name}|${formattedExp}`;
-  const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
-  const raw = `${formattedStr}|${user_count}|${formattedExp}|${encryptedDomain}|${SECRET}`;
-  const shortHash = CryptoJS.SHA256(raw).toString().substring(0, 6).toUpperCase();
-  const licenseKey = `S${formattedStr}-USL${user_count}-E${formattedExp}-${encryptedDomain}-${shortHash}`;
-  return licenseKey;
-}
+const SECRET = keys.CRYPTO_SECURITY_KEY;
+const CLUSTER_NAMES = { RR: "RoundRobin", LL: "LeastLoaded", WT: "Weighted", TH: "Threshold" };
+
+const parseLicense = (licenseKey) => {
+  const parts = typeof licenseKey === "string" ? licenseKey.split("-") : [];
+  if (parts.length !== 5 && parts.length !== 6) throw new Error("Invalid License");
+  const start = parts[0]?.match(/^S(\d{8})$/);
+  const user = parts[1]?.match(/^UL(\d+)M([01])$/);
+  const legacyUser = parts[1]?.match(/^USL(\d+)$/);
+  const hasCapabilities = parts.length === 6;
+  const capabilityPart = hasCapabilities ? parts[2] : null;
+  const capability = capabilityPart?.match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)$/);
+  const expiryIndex = hasCapabilities ? 3 : 2;
+  const expiry = parts[expiryIndex]?.match(/^E(\d{8})$/);
+  const hostnameHash = parts[expiryIndex + 1];
+  const sentHash = parts[expiryIndex + 2];
+  if (
+    !start || (!user && !legacyUser) || (hasCapabilities && !capability) || !expiry ||
+    !/^[A-F0-9]{6}$/.test(hostnameHash || "") || !/^[A-F0-9]{6}$/.test(sentHash || "")
+  ) throw new Error("Invalid License");
+
+  const userCount = user?.[1] || legacyUser[1];
+  const manipulation = user?.[2] ?? null;
+  const raw = hasCapabilities
+    ? `${start[1]}|${userCount}|${manipulation}|${capabilityPart}|${expiry[1]}|${hostnameHash}|${SECRET}`
+    : user
+      ? `${start[1]}|${userCount}|${manipulation}|${expiry[1]}|${hostnameHash}|${SECRET}`
+      : `${start[1]}|${userCount}|${expiry[1]}|${hostnameHash}|${SECRET}`;
+  return {
+    start: start[1], userCount, manipulation, expiry: expiry[1], hostnameHash, sentHash, raw,
+    clusterMethodCode: capability?.[1] || null,
+    clusterMethod: capability ? CLUSTER_NAMES[capability[1]] : null,
+    webhook: capability?.[2] || null,
+    learnerLimit: capability?.[3] || null,
+  };
+};
+
+const toDate = (value) => new Date(Date.UTC(value.slice(0, 4), Number(value.slice(4, 6)) - 1, value.slice(6, 8)));
+const inspectLicense = (hostname, licenseKey) => {
+  const value = parseLicense(licenseKey);
+  const calculatedHash = CryptoJS.SHA256(value.raw).toString().slice(0, 6).toUpperCase();
+  const calculatedHost = CryptoJS.SHA256(`${hostname}|${value.expiry}`).toString().slice(0, 6).toUpperCase();
+  const startDate = toDate(value.start);
+  const expiryDate = toDate(value.expiry);
+  return {
+    ...value, startDate, expiryDate,
+    isKeyValid: calculatedHash === value.sentHash && !Number.isNaN(startDate.getTime()) && !Number.isNaN(expiryDate.getTime()),
+    isHost: calculatedHost === value.hostnameHash,
+  };
+};
 
 function validateLicense(hostname, licenseKey) {
   try {
-    const parts = licenseKey.split("-");
-    if (parts.length !== 5) { throw new Error("Invalid License"); }
-
-    const startStr = parts[0].replace("S", ""); // e.g., 20250101
-    const user_count = parts[1].replace("USL", "");                 // e.g., U10M5I2
-    const expiryStr = parts[2].replace("E", ""); // e.g., 20251230
-    const hostnameStr = parts[3];          // e.g., A1B2C3
-    const sentHash = parts[4];                 // e.g., 9F3A2D
-
-    // Build RAW — must match generator EXACTLY
-    const raw = `${startStr}|${user_count}|${expiryStr}|${hostnameStr}|${SECRET}`;
-    const calculatedHash = CryptoJS.SHA256(raw).toString().substring(0, 6).toUpperCase();
-    if (calculatedHash !== sentHash) { throw new Error("Invalid License"); }
-    //Hostname Check
-    const domainRaw = `${hostname}|${expiryStr}`;
-    const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
-    if (encryptedDomain !== hostnameStr) { throw new Error("Invalid License"); }
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0, 0, 0, 0);
-    // Expiry Date check
-    let expDate = new Date(Date.UTC(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8)));
-    if (isNaN(expDate.getTime())) { throw new Error("Invalid License"); }
-    if (expDate < todayUTC) { throw new Error("Invalid License"); }
-    // Start Date check
-     let strDate = new Date(Date.UTC(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8)));
-    if (isNaN(strDate.getTime())) { throw new Error("Invalid License"); }
-
-    return true;
-  } catch (e) {
-    return false;
-  }
+    const value = inspectLicense(hostname, licenseKey);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    return value.isKeyValid && value.isHost && value.expiryDate >= today;
+  } catch (error) { return false; }
 }
 
-// function validateJWTLicense(hostname, licenseKey) {
-//   console.log("licenseKeylicenseKeylicenseKey",licenseKey,hostname);
-  
-//   try {
-//     const parts = licenseKey.split("-");
-//     if (parts.length !== 5) { throw new Error("Invalid License"); }
-
-//     const startStr = parts[0].replace("S", ""); // e.g., 20250101
-//     const user_count = parts[1].split("UL")[1].split("M")[0]; 
-//     const expiryStr = parts[2].replace("E", ""); // e.g., 20251230
-//     const hostnameStr = parts[3];          // e.g., A1B2C3
-//     const sentHash = parts[4];                 // e.g., 9F3A2D
-
-
-//     console.log("wwwwwwwwwwwwwwwwwwwwwwwww",user_count);
-    
-//     // Build RAW — must match generator EXACTLY
-//     const raw = `${startStr}|${user_count}|${expiryStr}|${hostnameStr}|${SECRET}`;
-//     const calculatedHash = CryptoJS.SHA256(raw).toString().substring(0, 6).toUpperCase();
-//     if (calculatedHash !== sentHash) { throw new Error("Invalid License"); }
-//     //Hostname Check
-//     const domainRaw = `${hostname}|${expiryStr}`;
-//     const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
-//     if (encryptedDomain !== hostnameStr) { throw new Error("Invalid License"); }
-
-//     const todayUTC = new Date();
-//     todayUTC.setUTCHours(0, 0, 0, 0);
-//     // Expiry Date check
-//     let expDate = new Date(Date.UTC(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8)));
-//     if (isNaN(expDate.getTime())) { throw new Error("Invalid License"); }
-//     if (expDate < todayUTC) { throw new Error("Invalid License"); }
-
-//     // Start Date check
-//     let strDate = new Date(Date.UTC(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8)));
-//     if (isNaN(strDate.getTime())) { throw new Error("Invalid License"); }
-//     if (strDate > todayUTC) { throw new Error("Invalid License"); }
-
-//     // return true;
-//     return {
-//       success: true,
-//       user_count: user_count,
-//     };
-//   } catch (e) {
-//     return {
-//       success: false,
-//       message: e.message || "Invalid License",
-//     };
-//     // return false;
-//   }
-// }
 function validateJWTLicense(hostname, licenseKey) {
   try {
-    const parts = licenseKey.split("-");
-    if (parts.length !== 5) {
-      throw new Error("Invalid License");
-    }
-    const startStr = parts[0].replace("S", ""); // e.g., 20250101
-    /* ===== CHANGED: USL → UL + M parsing ===== */
-    const user_count = parts[1].split("UL")[1].split("M")[0]; 
-    const manipulation = parts[1].split("M")[1];          
-    const expiryStr = parts[2].replace("E", ""); // e.g., 20251230
-    const hostnameStr = parts[3];                // e.g., A1B2C3
-    const sentHash = parts[4];                   // e.g., 9F3A2D
-    const raw = `${startStr}|${user_count}|${manipulation}|${expiryStr}|${hostnameStr}|${SECRET}`;         
-    const calculatedHash = CryptoJS.SHA256(raw).toString().substring(0, 6).toUpperCase();
-    if (calculatedHash !== sentHash) {
-      throw new Error("Invalid License");
-    }
-    const domainRaw = `${hostname}|${expiryStr}`;
-    const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
-    if (encryptedDomain !== hostnameStr) {throw new Error("Invalid License");}
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0, 0, 0, 0);
-    let expDate = new Date(Date.UTC(expiryStr.substring(0, 4),expiryStr.substring(4, 6) - 1,expiryStr.substring(6, 8)));
-    if (isNaN(expDate.getTime()) || expDate < todayUTC) {throw new Error("Invalid License");}
-    let strDate = new Date(Date.UTC(startStr.substring(0, 4),startStr.substring(4, 6) - 1,startStr.substring(6, 8)));
-    if (isNaN(strDate.getTime()) || strDate > todayUTC) {throw new Error("Invalid License");}
+    const value = inspectLicense(hostname, licenseKey);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    if (!value.isKeyValid || !value.isHost || value.startDate > today || value.expiryDate < today) return false;
     return {
-      success: true,
-      user_count: user_count,
-      manipulation: manipulation
+      success: true, user_count: value.userCount, manipulation: value.manipulation,
+      cluster_method: value.clusterMethod, cluster_method_code: value.clusterMethodCode,
+      webhook: value.webhook, learner_limit: value.learnerLimit,
     };
-  } catch (e) {
-    return false;
-  }
+  } catch (error) { return false; }
 }
 
 function checkValidate(hostname, licenseKey) {
   try {
-    let isKeyValid = true;
-    let isHost = true;
-    let isStart = true;
-    let isExp = false;
-
-    const parts = licenseKey.split("-");
-    if (parts.length !== 5) { isKeyValid = false; }
-    const startStr = parts[0].replace("S", ""); // e.g., 20250101
-    const user_count = parts[1].replace("USL", "");;                 // e.g., U10M5I2
-    const expiryStr = parts[2].replace("E", ""); // e.g., 20251230
-    const hostnameStr = parts[3];          // e.g., A1B2C3
-    const sentHash = parts[4];                 // e.g., 9F3A2D
-
-    // Build RAW — must match generator EXACTLY
-    const raw = `${startStr}|${user_count}|${expiryStr}|${hostnameStr}|${SECRET}`;
-    const calculatedHash = CryptoJS.SHA256(raw).toString().substring(0, 6).toUpperCase();
-    if (calculatedHash !== sentHash) { isKeyValid = false; }
-    //Hostname Check
-    const domainRaw = `${hostname}|${expiryStr}`;
-    const encryptedDomain = CryptoJS.SHA256(domainRaw).toString().substring(0, 6).toUpperCase();
-    if (encryptedDomain !== hostnameStr) { isHost = false; }
-
-    const todayUTC = new Date();
-    todayUTC.setUTCHours(0, 0, 0, 0);
-    // Start Date Check
-    let strDate = new Date(Date.UTC(startStr.substring(0, 4), startStr.substring(4, 6) - 1, startStr.substring(6, 8)));
-    if (isNaN(strDate.getTime())) { isKeyValid = false; }
-    if (strDate > todayUTC) { isStart = false; }
-    // Expiry Date check
-    let expDate = new Date(Date.UTC(expiryStr.substring(0, 4), expiryStr.substring(4, 6) - 1, expiryStr.substring(6, 8)));
-    if (isNaN(expDate.getTime())) { isKeyValid = false; }
-    if (expDate < todayUTC) { isExp = true; }
-    console.log("data====>", { start_date: strDate, user_count: user_count, expiry_date: expDate, domain_name: hostnameStr });
-    return { isKeyValid: isKeyValid, isHost: isHost, isStart: isStart, isExp: isExp, start_date: strDate, expiry_date: expDate };
-  } catch (e) {
-    console.log("error========>", e);
-    return false;
-  }
+    const value = inspectLicense(hostname, licenseKey);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    return {
+      isKeyValid: value.isKeyValid, isHost: value.isHost,
+      isStart: value.startDate <= today, isExp: value.expiryDate < today,
+      manipulation: value.manipulation,
+      cluster_method: value.clusterMethod, cluster_method_code: value.clusterMethodCode,
+      webhook: value.webhook, learner_limit: value.learnerLimit,
+      start_date: value.startDate, expiry_date: value.expiryDate,
+    };
+  } catch (error) { return false; }
 }
 
-
-const serialLicense = {
-  generateLicense,
-  validateLicense,
-  validateJWTLicense,
-  checkValidate
-};
-module.exports = serialLicense;
+module.exports = { validateLicense, validateJWTLicense, checkValidate };

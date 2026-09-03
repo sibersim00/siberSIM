@@ -1480,6 +1480,7 @@ const onGridReady = useCallback((params) => {
           handleOneClick={handleOneClick}
           oneClick={oneClick}
           backView={backview}
+          manipulation={manipulation}
         />
       ) : (
         <></>

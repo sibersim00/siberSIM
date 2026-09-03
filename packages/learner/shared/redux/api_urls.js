@@ -147,5 +147,12 @@ const api = {
   // --------------invite scenario---------------
   running_invite_learners: "/invitescenarios/running-invite-learners",
   invite_scenario:"/invitescenarios/invite-scenario",
+
+  // third party integrations
+  third_party_integrations_get: "/third-party-integrations/get",
+  third_party_integrations_save: "/third-party-integrations/save",
+  third_party_integrations_update: "/third-party-integrations/update",
+  third_party_integrations_delete: "/third-party-integrations/delete",
+  third_party_integrations_change_status: "/third-party-integrations/change-status",
 };
 export default api;

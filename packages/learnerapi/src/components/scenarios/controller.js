@@ -51,7 +51,6 @@ const startScenario =
       body.learner_id = req.learneruser.learner_id;
       body.instructor_id = req.learneruser.instructor_id;
       const user_count_limit = req.learneruser.user_count_limit;
-      
       const result = await dao.startScenario({ db, validation })(
         body,
         user_count_limit,

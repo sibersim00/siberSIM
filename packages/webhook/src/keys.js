@@ -8,6 +8,9 @@ module.exports = {
   WEBHOOK_JWT_SECRET: process.env.WEBHOOK_JWT_SECRET,
   WEBHOOK_JWT_EXPIRES_IN: process.env.WEBHOOK_JWT_EXPIRES_IN || "15m",
   WEBHOOK_INTERNAL_KEY: process.env.WEBHOOK_INTERNAL_KEY,
+  CRYPTO_SECURITY_KEY:
+    process.env.CRYPTO_SECURITY_KEY ||
+    "jds9327nmf48cm48cmvbvtqpz984510nmcvrwi206cn",
   MASTERS_API_URL: process.env.MASTERS_API_URL || `http://localhost:${process.env.MASTERS_PORT || 4003}/masterapi`,
-  WEBHOOK_ALLOWED_ORIGINS: process.env.WEBHOOK_ALLOWED_ORIGINS || "",
+  WEB_ORIGIN: process.env.WEB_ORIGIN || "",
 };

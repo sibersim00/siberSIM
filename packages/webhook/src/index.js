@@ -7,6 +7,7 @@ const { db } = require("./db");
 const keys = require("./keys");
 const validator = require("./middleware/validator");
 const authenticate = require("./middleware/authenticate");
+const requireWebhookLicense = require("./middleware/licenseCapability");
 const { audit } = require("./middleware/audit");
 const router = require("./router");
 
@@ -15,7 +16,7 @@ if (!keys.WEBHOOK_JWT_SECRET || !keys.WEBHOOK_INTERNAL_KEY)
     "WEBHOOK_JWT_SECRET and WEBHOOK_INTERNAL_KEY must be configured.",
   );
 const app = express();
-const allowedOrigins = keys.WEBHOOK_ALLOWED_ORIGINS.split(",")
+const allowedOrigins = keys.WEB_ORIGIN.split(",")
   .map((item) => item.trim())
   .filter(Boolean);
 app.disable("x-powered-by");
@@ -27,13 +28,21 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-const ioc = { express, db, keys, validator, authenticate, audit };
-app.use("/webhookapi", router(ioc));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+const ioc = {
+  express,
+  db,
+  keys,
+  validator,
+  authenticate,
+  requireWebhookLicense,
+  audit,
+};
 app.get("/webhookapi/health", (_req, res) =>
   res.send({ uptime: process.uptime(), message: "Ok", date: new Date() }),
 );
+app.use("/webhookapi", router(ioc));
 app.use((error, _req, res, _next) => {
   console.error("Webhook service error:", error.message);
   if (!res.headersSent)

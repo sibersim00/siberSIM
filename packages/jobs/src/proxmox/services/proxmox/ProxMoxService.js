@@ -5,6 +5,22 @@ const https = require("https");
 const validator = require("validator");
 let accessInfo = null;
 
+const LICENSE_CLUSTER_METHODS = {
+  RR: "RoundRobin",
+  LL: "LeastLoaded",
+  WT: "Weighted",
+  TH: "Threshold",
+};
+
+const getClusterMethodFromLicense = (licenseKey) => {
+  const capability = typeof licenseKey === "string"
+    ? licenseKey.match(/(?:^|-)CM(RR|LL|WT|TH)W[01]LL\d+(?:-|$)/)
+    : null;
+
+  // Legacy licenses do not contain a CM capability.
+  return LICENSE_CLUSTER_METHODS[capability?.[1]] || "RoundRobin";
+};
+
 function ProxMoxService(db, payload, ip_address) {
 
 async function getProxmoxConfig() {
@@ -15,7 +31,7 @@ async function getProxmoxConfig() {
       proxmox_password     AS password,
       proxmox_current_node AS current_node,
       proxmox_other_node   AS other_nodes,
-      cluster_task_type    AS cluster_method
+      license_key
      FROM web_settings
      WHERE status = 1
      LIMIT 1`,
@@ -29,7 +45,7 @@ async function getProxmoxConfig() {
     password:         results.password,
     current_node:     results.current_node,
     other_nodes:       results.other_nodes,
-    cluster_method:    results.cluster_method || "RoundRobin",
+    cluster_method:    getClusterMethodFromLicense(results.license_key),
   };
 }
 
@@ -405,7 +421,7 @@ async function logApiRequest({
   }
 
 
-async function VM_detail(vmid, vmType, selectedNode = null) {
+  async function VM_detail(vmid, vmType, selectedNode = null) {
     if (!accessInfo?.cookie) throw new Error("Access info not initialized.");
     const cfg = await getProxmoxConfig();
     const type = vmType.toLowerCase();
@@ -454,7 +470,6 @@ async function VM_detail(vmid, vmType, selectedNode = null) {
       throw error;
     }
   }
-
   // ----------------------------VM Confugration Functions----------------------------------------);
 
   // async function cloneVM(vmType, newid, name, sourceVMID,selectedNode = null) {
@@ -1886,7 +1901,6 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
       };
     }
   }
-
 
   async function deleteVmNetwork(vmid, vmType, netKey,selectedNode) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {

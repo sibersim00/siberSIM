@@ -93,6 +93,7 @@ const authenticateToken = (routeslug) => {
         }
         const userData = JSON.parse(tokenRow.token_json || "{}");
         userData.user_count_limit  =0;
+        userData.learner_limit = null;
         // License check
         if (!userData.issuper && userData.license_key) {
           const hostname = req.hostname;
@@ -112,6 +113,10 @@ const authenticateToken = (routeslug) => {
           }
           userData.user_count_limit  = Number(licenseStatus.user_count)
           userData.manipulation  = licenseStatus.manipulation
+          userData.learner_limit =
+            licenseStatus.learner_limit === null || licenseStatus.learner_limit === undefined
+              ? null
+              : Number(licenseStatus.learner_limit);
         }
 
 
@@ -394,6 +399,6 @@ module.exports = {
   refreshToken,
   clearToken,
   logout,
-  authenticateTokenold
+  authenticateTokenold,
 };
 

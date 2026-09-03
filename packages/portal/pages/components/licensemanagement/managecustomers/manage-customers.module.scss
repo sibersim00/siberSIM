@@ -1,0 +1,707 @@
+.licenseDialog {
+  width: min(calc(100vw - 32px), 1280px);
+  max-width: 1280px;
+  margin: 24px auto;
+}
+
+.licenseModalContent {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
+}
+
+.licenseModalBody {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.licenseHero {
+  position: relative;
+  padding: 24px 26px 0;
+  border-bottom: 1px solid #eef0f3;
+  color: #111827;
+  background: #fff;
+}
+
+.closeButton {
+  position: absolute;
+  z-index: 2;
+  top: 20px;
+  right: 22px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #6b7280;
+  background: #fff;
+  font-size: 18px;
+  transition: 150ms ease;
+}
+
+.closeButton:hover {
+  border-color: #d1d5db;
+  color: #111827;
+  background: #f9fafb;
+}
+
+.heroContent {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 52px;
+}
+
+.heroIcon {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 12px;
+  color: #5555c5;
+  background: #f0f0ff;
+  font-size: 21px;
+}
+
+.eyebrow {
+  margin-bottom: 2px;
+  color: #7c8394;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.heroContent h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.heroContent p {
+  margin: 3px 0 0;
+  color: #7c8394;
+  font-size: 12px;
+}
+
+.customerStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid #e8eaf0;
+  border-bottom: 0;
+  border-radius: 13px 13px 0 0;
+  background: #f8f9fb;
+}
+
+.customerIdentity,
+.customerDetails,
+.contactItem {
+  display: flex;
+  align-items: center;
+}
+
+.customerIdentity {
+  min-width: 210px;
+  gap: 11px;
+}
+
+.avatarBadge {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 10px;
+  color: #5151c6;
+  background: #e9e9ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.customerDetails {
+  min-width: 0;
+  justify-content: flex-end;
+  gap: clamp(18px, 3vw, 38px);
+}
+
+.contactItem {
+  min-width: 0;
+  gap: 9px;
+}
+
+.customerIdentity strong,
+.contactItem strong {
+  display: block;
+  overflow: hidden;
+  max-width: 250px;
+  color: #293042;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infoLabel {
+  display: block;
+  margin-bottom: 1px;
+  color: #9298a7;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.contactIcon {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.phoneIcon {
+  color: #087f5b;
+  background: #e8f7f1;
+}
+
+.emailIcon {
+  color: #946200;
+  background: #fff5d9;
+}
+
+.licenseCount {
+  display: flex;
+  min-width: 82px;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 11px;
+  border: 1px solid #e0e2e8;
+  border-radius: 10px;
+  color: #3d4455;
+  background: #fff;
+}
+
+.licenseCount span {
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.licenseCount small {
+  color: #818898;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.workspaceBody {
+  padding: 22px 26px 26px;
+  background: #fff;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.toolbar h4 {
+  margin: 0 0 2px;
+  color: #202637;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.toolbar p {
+  margin: 0;
+  color: #8a91a2;
+  font-size: 11px;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchBox {
+  display: flex;
+  width: min(28vw, 300px);
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #dfe2e8;
+  border-radius: 10px;
+  background: #fff;
+  transition: 150ms ease;
+}
+
+.searchBox:focus-within {
+  border-color: #7777da;
+  box-shadow: 0 0 0 3px rgba(91, 91, 214, 0.09);
+}
+
+.searchBox > i {
+  color: #9298a7;
+  font-size: 15px;
+}
+
+.searchBox input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: #303647;
+  background: transparent;
+  font-size: 11px;
+}
+
+.searchBox input::placeholder {
+  color: #9aa0ae;
+}
+
+.searchBox button {
+  display: grid;
+  padding: 2px;
+  place-items: center;
+  border: 0;
+  color: #8d94a3;
+  background: transparent;
+}
+
+.exportButton,
+.createButton {
+  display: inline-flex;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px !important;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.exportButton {
+  border: 1px solid #dfe2e8 !important;
+  color: #4f586b !important;
+  background: #fff !important;
+}
+
+.exportButton:hover:not(:disabled) {
+  border-color: #c9cdd6 !important;
+  color: #242a39 !important;
+  background: #f7f8fa !important;
+}
+
+.createButton {
+  border: 1px solid #5555c7 !important;
+  color: #fff !important;
+  background: #5b5bd6 !important;
+  box-shadow: none;
+}
+
+.createButton:hover {
+  border-color: #4848b5 !important;
+  background: #4f4fc4 !important;
+}
+
+.createButton span {
+  display: inline-grid;
+  place-items: center;
+}
+
+.licenseGrid {
+  width: 100%;
+  height: min(55vh, 560px);
+  min-height: 340px;
+  overflow: hidden;
+  border: 1px solid #e2e5ea;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.licenseGrid :global(.ag-root-wrapper) {
+  border: 0;
+  border-radius: 12px;
+}
+
+.licenseGrid :global(.ag-header) {
+  border-bottom: 1px solid #e4e7ec;
+  background: #f7f8fa;
+}
+
+.licenseGrid :global(.ag-header-cell-text) {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.licenseGrid :global(.ag-row) {
+  border-color: #edf0f3;
+}
+
+.licenseGrid :global(.ag-row-hover) {
+  background: #f8f9fc;
+}
+
+.licenseGrid :global(.ag-paging-panel) {
+  border-top: 1px solid #e8eaee;
+  color: #71798b;
+}
+
+.licenseGrid :global(.license-empty-state) {
+  display: flex;
+  min-width: 230px;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px;
+  color: #9399a8;
+}
+
+.licenseGrid :global(.license-empty-state i) {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 9px;
+  place-items: center;
+  border-radius: 12px;
+  color: #5b5bd6;
+  background: #efefff;
+  font-size: 21px;
+}
+
+.licenseGrid :global(.license-empty-state strong) {
+  margin-bottom: 2px;
+  color: #444b5c;
+  font-size: 13px;
+}
+
+.licenseGrid :global(.license-empty-state span) {
+  font-size: 11px;
+}
+
+.keyAction {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  margin: auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddddf5;
+  border-radius: 8px;
+  color: #5757c9;
+  background: #f4f4ff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: 150ms ease;
+}
+
+.keyAction i {
+  display: block;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.keyAction:hover {
+  border-color: #c8c8ee;
+  background: #eaeafc;
+}
+
+.licensePopover {
+  min-width: 310px;
+  overflow: hidden;
+  border: 1px solid #e1e4e9;
+  border-radius: 12px;
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.15);
+}
+
+.licensePopover :global(.popover-header) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #e8eaf0;
+  color: #313747;
+  background: #f8f9fb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.popoverTitleIcon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 7px;
+  color: #5656c8;
+  background: #eaeafc;
+}
+
+.licenseKeyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.licenseKeyText {
+  overflow-wrap: anywhere;
+  color: #4c5365;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+}
+
+.copyButton {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #ddddf3;
+  border-radius: 8px;
+  color: #5757c9;
+  background: #f3f3ff;
+  font-size: 16px;
+}
+
+.copiedState {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  color: #16805f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 991.98px) {
+  .licenseDialog {
+    width: 100%;
+    margin: 0;
+  }
+
+  .licenseModalContent,
+  .licenseModalBody {
+    min-height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .customerStrip,
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customerDetails,
+  .toolbarActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .licenseGrid {
+    height: 58vh;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .licenseHero {
+    padding: 20px 16px 0;
+  }
+
+  .heroContent p {
+    display: none;
+  }
+
+  .customerStrip {
+    margin-top: 17px;
+    padding: 13px;
+  }
+
+  .customerDetails {
+    gap: 12px;
+  }
+
+  .contactItem {
+    width: 100%;
+  }
+
+  .licenseCount {
+    position: absolute;
+    top: 82px;
+    right: 29px;
+  }
+
+  .customerIdentity {
+    max-width: calc(100% - 95px);
+  }
+
+  .workspaceBody {
+    padding: 18px 16px;
+  }
+
+  .toolbarActions {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+  }
+
+  .searchBox {
+    grid-column: 1 / -1;
+  }
+
+  .exportButton,
+  .createButton {
+    width: 100%;
+  }
+}
+
+:global(body.dark-theme) .licenseModalContent,
+:global(body.dark-theme) .licenseHero,
+:global(body.dark-theme) .workspaceBody {
+  border-color: #2b2e40;
+  color: #f3f4f6;
+  background: #171827;
+}
+
+:global(body.dark-theme) .heroContent h2,
+:global(body.dark-theme) .toolbar h4 {
+  color: #f5f6f8;
+}
+
+:global(body.dark-theme) .eyebrow,
+:global(body.dark-theme) .heroContent p,
+:global(body.dark-theme) .toolbar p {
+  color: #9ca3b5;
+}
+
+:global(body.dark-theme) .heroIcon {
+  color: #aaa8ff;
+  background: #292a49;
+}
+
+:global(body.dark-theme) .closeButton,
+:global(body.dark-theme) .licenseCount,
+:global(body.dark-theme) .searchBox,
+:global(body.dark-theme) .exportButton {
+  border-color: #35384c !important;
+  color: #d6d9e1 !important;
+  background: #202231 !important;
+}
+
+:global(body.dark-theme) .customerStrip {
+  border-color: #303345;
+  background: #1d1f2e;
+}
+
+:global(body.dark-theme) .customerIdentity strong,
+:global(body.dark-theme) .contactItem strong {
+  color: #e5e7ec;
+}
+
+:global(body.dark-theme) .infoLabel {
+  color: #858c9e;
+}
+
+:global(body.dark-theme) .avatarBadge {
+  color: #b8b6ff;
+  background: #303052;
+}
+
+:global(body.dark-theme) .keyAction {
+  border-color: #454862;
+  color: #b9b7ff;
+  background: #292b40;
+}
+
+:global(body.dark-theme) .keyAction:hover {
+  border-color: #5d6080;
+  color: #d3d2ff;
+  background: #34364e;
+}
+
+:global(body.dark-theme) .phoneIcon {
+  color: #69d8b3;
+  background: #1e3a35;
+}
+
+:global(body.dark-theme) .emailIcon {
+  color: #e7c16b;
+  background: #3a3324;
+}
+
+:global(body.dark-theme) .licenseCount span {
+  color: #f0f1f5;
+}
+
+:global(body.dark-theme) .searchBox input {
+  color: #eef0f4;
+}
+
+:global(body.dark-theme) .licenseGrid,
+:global(body.dark-theme) .licenseGrid :global(.ag-root-wrapper),
+:global(body.dark-theme) .licenseGrid :global(.ag-body-viewport),
+:global(body.dark-theme) .licenseGrid :global(.ag-center-cols-viewport),
+:global(body.dark-theme) .licenseGrid :global(.ag-center-cols-container) {
+  border-color: #303345;
+  background: #1b1d2b;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-header) {
+  border-color: #343748;
+  background: #222432;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-header-cell-text) {
+  color: #b4b9c6;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-row),
+:global(body.dark-theme) .licenseGrid :global(.ag-row-even),
+:global(body.dark-theme) .licenseGrid :global(.ag-row-odd) {
+  border-color: #2b2e3d;
+  color: #d8dbe3;
+  background: #1b1d2b;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-row-hover),
+:global(body.dark-theme) .licenseGrid :global(.ag-row-selected) {
+  background: #242638 !important;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-floating-filter-body input) {
+  border-color: #393c50 !important;
+  color: #dfe2e8 !important;
+  background: #252736 !important;
+}
+
+:global(body.dark-theme) .licenseGrid :global(.ag-paging-panel) {
+  border-color: #303345;
+  color: #9fa5b5;
+  background: #1b1d2b;
+}
