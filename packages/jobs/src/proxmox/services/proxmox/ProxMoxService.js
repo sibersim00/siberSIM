@@ -405,14 +405,15 @@ async function logApiRequest({
   }
 
 
-  async function VM_detail(vmid,vmType) {
+async function VM_detail(vmid, vmType, selectedNode = null) {
     if (!accessInfo?.cookie) throw new Error("Access info not initialized.");
-    const cfg = await getProxmoxConfig(); 
-      const type = vmType.toLowerCase();
-  if (!["qemu", "lxc"].includes(type)) {
-    throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
-  }
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${type}/${vmid}/config`;
+    const cfg = await getProxmoxConfig();
+    const type = vmType.toLowerCase();
+    if (!["qemu", "lxc"].includes(type)) {
+      throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
+    }
+    const targetNode = selectedNode || cfg.current_node;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/config`;
     const config = {
       method: "get",
       url,
@@ -453,6 +454,7 @@ async function logApiRequest({
       throw error;
     }
   }
+
   // ----------------------------VM Confugration Functions----------------------------------------);
 
   // async function cloneVM(vmType, newid, name, sourceVMID,selectedNode = null) {
@@ -1303,7 +1305,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     }
   }
 
-  async function getTaskLog(upid) {
+  async function getTaskLog(upid, selectedNode = null) {
     if (!accessInfo?.cookie) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1313,8 +1315,9 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/status`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/tasks/${upid}/status`;
 
     const config = {
       method: "get",
@@ -1548,7 +1551,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     }
   }
 
-  async function cloneLXC(vmid, data) {
+  async function cloneLXC(vmid, data, selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1558,8 +1561,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/clone`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/clone`;
 
     const body = new URLSearchParams({
       newid: data.newid,
@@ -1610,7 +1614,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     }
   }
 
-  async function templateLXC(vmid) {
+  async function templateLXC(vmid, selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1620,8 +1624,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/template`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/template`;
     // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
     const config = {
       method: "post",
@@ -1688,7 +1693,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     // }
   }
 
-  async function cloneQEMU(vmid, newid, name = null) {
+  async function cloneQEMU(vmid, newid, name = null, selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1698,8 +1703,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/clone`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/clone`;
 
     // ADD name ONLY if provided
     const params = new URLSearchParams({ newid });
@@ -1753,7 +1759,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
   }
 
 
-  async function templateQEMU(vmid) {
+  async function templateQEMU(vmid, selectedNode = null) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1763,8 +1769,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/template`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/template`;
 
     const config = {
       method: "post",
@@ -1809,7 +1816,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     }
   }
 
-  async function getConfig(vmid,vmType) {
+  async function getConfig(vmid, vmType, selectedNode) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {
       throw new Error(
         "Access info not initialized. Call generateAccessTicket first.",
@@ -1823,8 +1830,9 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
 
     const start = Date.now();
     const request_datetime = new Date();
+    const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${type}/${vmid}/config`;
+    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/config`;
 
     const config = {
       method: "get",
@@ -1878,6 +1886,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
       };
     }
   }
+
 
   async function deleteVmNetwork(vmid, vmType, netKey,selectedNode) {
     if (!accessInfo?.cookie || !accessInfo?.CSRFPreventionToken) {

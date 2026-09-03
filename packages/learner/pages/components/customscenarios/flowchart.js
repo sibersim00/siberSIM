@@ -18,6 +18,7 @@ import {
   Position,
   useReactFlow,
   ConnectionLineType,
+  useUpdateNodeInternals,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
@@ -57,6 +58,120 @@ const getFlowComponentDetails = (data = {}) => {
     title: separatorIndex > -1 ? label.slice(separatorIndex + 1).trim() : label,
     vmId: data.vmid || (separatorIndex > -1 ? label.slice(0, separatorIndex).trim() : ""),
   };
+};
+
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const PORT_PLACEMENT_OPTIONS = ["Auto", ...PORT_SIDES];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+
+const getNetworkPorts = (networkport) => {
+  const entries = Array.isArray(networkport)
+    ? networkport.flatMap((port) => Object.entries(port || {}))
+    : networkport && typeof networkport === "object"
+      ? Object.entries(networkport)
+      : [];
+
+  return entries
+    .map(([key, value]) => {
+      const tagMatch = String(value).match(/tag=(\d+)/);
+      return { key, label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key };
+    })
+    .sort((first, second) => first.key.localeCompare(second.key));
+};
+
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+        : DEFAULT_PORT_SIDE_ORDER[
+            Math.min(3, Math.floor(index / portsPerSide))
+          ],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
+
+const getPortKeyFromHandle = (handleId = "") =>
+  String(handleId).replace(/-(source|target)$/, "");
+
+const getClosestPortSide = (
+  deltaX,
+  deltaY,
+  halfWidth = 50,
+  halfHeight = 60,
+) => {
+  const distances = {
+    Top: Math.hypot(deltaX, deltaY + halfHeight),
+    Right: Math.hypot(deltaX - halfWidth, deltaY),
+    Bottom: Math.hypot(deltaX, deltaY - halfHeight),
+    Left: Math.hypot(deltaX + halfWidth, deltaY),
+  };
+
+  return PORT_SIDES.reduce((closest, side) =>
+    distances[side] < distances[closest] ? side : closest,
+  );
+};
+
+const PortPlacementModal = ({ show, node, draft, onChange, onClose, onApply }) => {
+  const ports = getNetworkPorts(node?.data?.networkport);
+
+  return (
+    <Modal show={show} onHide={onClose} centered size="sm" dialogClassName="port-placement-modal">
+      <Modal.Header closeButton>
+        <div>
+          <Modal.Title>Port location</Modal.Title>
+          <div className="port-placement-modal-subtitle">
+            Auto follows the nearest side as connected components move.
+          </div>
+        </div>
+      </Modal.Header>
+      <Modal.Body>
+        {ports.length ? (
+          <div className="port-placement-list">
+            {ports.map((port) => (
+              <div className="port-placement-row" key={port.key}>
+                <strong title={port.label}>{port.label}</strong>
+                <div className="port-placement-sides" role="radiogroup" aria-label={`${port.label} location`}>
+                  {PORT_PLACEMENT_OPTIONS.map((side) => (
+                    <button
+                      key={side}
+                      type="button"
+                      className={draft?.[port.key] === side ? "is-selected" : ""}
+                      onClick={() => onChange({ ...draft, [port.key]: side })}
+                    >
+                      {side}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="port-placement-empty">This component has no network ports.</div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button onClick={onApply} disabled={!ports.length}>Apply locations</Button>
+      </Modal.Footer>
+    </Modal>
+  );
 };
 
 const ComponentAnimationModal = ({ show, node, draft, imageUrl, onChange, onClose, onApply, onClear }) => {
@@ -167,6 +282,7 @@ const DnDFlow = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [edgeRouting, setEdgeRouting] = useState("bezier");
   const { screenToFlowPosition } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
@@ -192,6 +308,9 @@ const DnDFlow = ({
 
   const [animationNodeId, setAnimationNodeId] = useState(null);
   const [animationDraft, setAnimationDraft] = useState(DEFAULT_COMPONENT_ANIMATION);
+  const [portNodeId, setPortNodeId] = useState(null);
+  const [portDraft, setPortDraft] = useState({});
+
   const openAnimationModal = useCallback((nodeId, nodeData) => {
     setAnimationNodeId(nodeId);
     setAnimationDraft({
@@ -200,42 +319,30 @@ const DnDFlow = ({
     });
   }, []);
 
+  const openPortModal = useCallback((nodeId, nodeData) => {
+    const ports = getNetworkPorts(nodeData?.networkport);
+    const positions = Object.fromEntries(
+      ports.map((port) => [
+        port.key,
+        PORT_SIDES.includes(nodeData?.portPositions?.[port.key])
+          ? nodeData.portPositions[port.key]
+          : "Auto",
+      ]),
+    );
+    setPortNodeId(nodeId);
+    setPortDraft(positions);
+  }, []);
+
   //   const portKeys = Array.from({ length: 64 }, (_, i) => `net${i}`); // Or based on data
   const ImageNode = ({ id, data, isConnectable, deleteNode }) => {
-    let portKeys = [];
-    if (Array.isArray(data.networkport)) {
-      portKeys = data.networkport
-        .flatMap((obj) =>
-          Object.entries(obj).map(([key, value]) => {
-            const tagMatch = value.match(/tag=(\d+)/);
-            return {
-              key, // net0 / net1
-              label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
-            };
-          }),
-        )
-        .sort((a, b) => a.key.localeCompare(b.key));
-    } else if (
-      typeof data.networkport === "object" &&
-      data.networkport !== null
-    ) {
-      portKeys = Object.entries(data.networkport)
-        .map(([key, value]) => {
-          const tagMatch = value.match(/tag=(\d+)/);
-          return {
-            key,
-            label: tagMatch ? `${key} : VLAN-${tagMatch[1]}` : key,
-          };
-        })
-        .sort((a, b) => a.key.localeCompare(b.key));
-    } else {
-      portKeys = [];
-    }
+    const portKeys = getPortLayouts(
+      getNetworkPorts(data.networkport),
+      data.portPositions,
+      data.autoPortPositions,
+    );
     const totalPorts = portKeys.length;
 
-    const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.ceil(totalPorts / 4);
-    const spacingRatio = 100 / (portsPerSide + 1);
+    const portsPerSide = Math.max(1, Math.ceil(totalPorts / 4));
 
     const baseSize = 90;
     const portSpacing = 15;
@@ -299,19 +406,9 @@ const DnDFlow = ({
           />
 
           {/* Ports */}
-          {portKeys.map((port, index) => {
-            const sideIndex = Math.floor(index / portsPerSide);
-            const side = sides[sideIndex];
-            const positionIndex = index % portsPerSide;
-            let offsetPercent;
-
-            // Reverse position for specific sides
-            if (side === "Right" || side === "Top") {
-              offsetPercent = (positionIndex + 1) * spacingRatio;
-            } else {
-              // Reverse direction for Bottom (right-to-left) and Left (bottom-to-top)
-              offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-            }
+          {portKeys.map((port) => {
+            const side = port.side;
+            const offsetPercent = port.offsetPercent;
 
             const baseHandleStyle = {
               position: "absolute",
@@ -495,6 +592,104 @@ const DnDFlow = ({
       setDraggedComponent(parsedcomponentData);
     }
   }, [selectedScenario]);
+
+  useEffect(() => {
+    if (!nodes.length) return;
+
+    const nodesById = new Map(nodes.map((node) => [node.id, node]));
+    const vectorsByNode = new Map(nodes.map((node) => [node.id, {}]));
+    const getNodeCenter = (node) => {
+      const position = node.positionAbsolute || node.position || { x: 0, y: 0 };
+      return {
+        x: position.x + (node.measured?.width || node.width || 100) / 2,
+        y: position.y + (node.measured?.height || node.height || 120) / 2,
+      };
+    };
+    const addVector = (nodeId, portKey, deltaX, deltaY) => {
+      if (!nodeId || !portKey || !vectorsByNode.has(nodeId)) return;
+      const nodeVectors = vectorsByNode.get(nodeId);
+      nodeVectors[portKey] = nodeVectors[portKey] || [];
+      nodeVectors[portKey].push({ deltaX, deltaY });
+    };
+
+    edges.forEach((edge) => {
+      const sourceNode = nodesById.get(edge.source);
+      const targetNode = nodesById.get(edge.target);
+      if (!sourceNode || !targetNode) return;
+
+      const sourceCenter = getNodeCenter(sourceNode);
+      const targetCenter = getNodeCenter(targetNode);
+      const deltaX = targetCenter.x - sourceCenter.x;
+      const deltaY = targetCenter.y - sourceCenter.y;
+
+      addVector(
+        edge.source,
+        getPortKeyFromHandle(edge.sourceHandle),
+        deltaX,
+        deltaY,
+      );
+      addVector(
+        edge.target,
+        getPortKeyFromHandle(edge.targetHandle),
+        -deltaX,
+        -deltaY,
+      );
+    });
+
+    const nextPositionsByNode = new Map();
+    vectorsByNode.forEach((portVectors, nodeId) => {
+      const positions = {};
+      Object.entries(portVectors).forEach(([portKey, vectors]) => {
+        const totals = vectors.reduce(
+          (result, vector) => ({
+            deltaX: result.deltaX + vector.deltaX,
+            deltaY: result.deltaY + vector.deltaY,
+          }),
+          { deltaX: 0, deltaY: 0 },
+        );
+        const node = nodesById.get(nodeId);
+        const halfWidth = (node?.measured?.width || node?.width || 100) / 2;
+        const halfHeight = (node?.measured?.height || node?.height || 120) / 2;
+
+        positions[portKey] = getClosestPortSide(
+          totals.deltaX / vectors.length,
+          totals.deltaY / vectors.length,
+          halfWidth,
+          halfHeight,
+        );
+      });
+      nextPositionsByNode.set(nodeId, positions);
+    });
+
+    const changedNodeIds = nodes
+      .filter(
+        (node) =>
+          JSON.stringify(node.data?.autoPortPositions || {}) !==
+          JSON.stringify(nextPositionsByNode.get(node.id) || {}),
+      )
+      .map((node) => node.id);
+
+    if (!changedNodeIds.length) return;
+
+    const changedNodeIdSet = new Set(changedNodeIds);
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        changedNodeIdSet.has(node.id)
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                autoPortPositions: nextPositionsByNode.get(node.id) || {},
+              },
+            }
+          : node,
+      ),
+    );
+
+    requestAnimationFrame(() => {
+      changedNodeIds.forEach((nodeId) => updateNodeInternals(nodeId));
+    });
+  }, [nodes, edges, setNodes, updateNodeInternals]);
 
   const onConnect = useCallback((params) => {
       setEdges((eds) =>
@@ -729,6 +924,19 @@ const DnDFlow = ({
     closeAnimationModal();
   };
 
+  const portNode = nodes.find((node) => node.id === portNodeId);
+  const closePortModal = () => setPortNodeId(null);
+  const applyPortPositions = () => {
+    if (!portNodeId) return;
+    setNodes((currentNodes) => currentNodes.map((node) =>
+      node.id === portNodeId
+        ? { ...node, data: { ...node.data, portPositions: portDraft } }
+        : node,
+    ));
+    requestAnimationFrame(() => updateNodeInternals(portNodeId));
+    closePortModal();
+  };
+
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => {
@@ -740,6 +948,7 @@ const DnDFlow = ({
             {...props}
             deleteNode={deleteNode}
             interactive={false}
+            onConfigurePorts={openPortModal}
             onConfigureAnimation={openAnimationModal}
             animationLabel={animationOption?.name}
             animationIcon={animationOption?.icon}
@@ -747,7 +956,7 @@ const DnDFlow = ({
         );
       },
     }),
-    [deleteNode, openAnimationModal]
+    [deleteNode, openAnimationModal, openPortModal]
   );
 
   const handleKeyDown = (event) => {
@@ -880,6 +1089,14 @@ const DnDFlow = ({
         onClose={closeAnimationModal}
         onApply={applyComponentAnimation}
         onClear={clearComponentAnimation}
+      />
+      <PortPlacementModal
+        show={Boolean(portNode)}
+        node={portNode}
+        draft={portDraft}
+        onChange={setPortDraft}
+        onClose={closePortModal}
+        onApply={applyPortPositions}
       />
     </>
   );

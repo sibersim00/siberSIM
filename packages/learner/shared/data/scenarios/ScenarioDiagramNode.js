@@ -45,6 +45,7 @@ const ScenarioDiagramNode = ({
   vncPath = "vnc_view",
   id,
   deleteNode,
+  onConfigurePorts,
   onConfigureAnimation,
   animationLabel,
   animationIcon,
@@ -74,6 +75,20 @@ const ScenarioDiagramNode = ({
       <div className="scenario-node-card">
         {deleteNode && (
           <button type="button" className="scenario-node-delete nodrag" title="Delete component" onClick={(event) => { event.stopPropagation(); deleteNode(id); }}>×</button>
+        )}
+        {onConfigurePorts && (
+          <button
+            type="button"
+            className="scenario-node-ports nodrag"
+            title="Change port locations"
+            aria-label="Change port locations"
+            onClick={(event) => {
+              event.stopPropagation();
+              onConfigurePorts(id, data);
+            }}
+          >
+            P
+          </button>
         )}
         {onConfigureAnimation && (
           <button

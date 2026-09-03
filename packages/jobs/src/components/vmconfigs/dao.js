@@ -2819,6 +2819,22 @@ const save =
           message: "VMID information missing in custom component.",
         };
       }
+
+      const [sourceVmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = :sourceVmid
+           AND vc.status != 'Destroyed'
+         ORDER BY vc.vmconfigurationid DESC
+         LIMIT 1`,
+        {
+          replacements: { sourceVmid },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = sourceVmConfig?.node_name || null;
+
       // Proxmox connection
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -2829,7 +2845,12 @@ const save =
       const cleanupLXCOnCloneFail = async () => {
         try {
           if (snapshotName) {
-            await proxmoxService.deleteLXCSnapshot(sourceVmid, snapshotName);
+            await proxmoxService.deleteSnapshot(
+              sourceVmid,
+              snapshotName,
+              "lxc",
+              selectedNode,
+            );
           }
         } catch (e) {
           console.error("Cleanup LXC clone fail error:", e);
@@ -2841,9 +2862,11 @@ const save =
         try {
           if (snapshotName) {
             await sleep(await getTerminationDelay(db));
-            const snapDelRes = await proxmoxService.deleteLXCSnapshot(
+            const snapDelRes = await proxmoxService.deleteSnapshot(
               sourceVmid,
               snapshotName,
+              "lxc",
+              selectedNode,
             );
             if (snapDelRes?.status !== 200) {
               throw new Error("LXC snapshot delete failed");
@@ -2852,7 +2875,11 @@ const save =
           }
           if (newVmid) {
             await sleep(await getTerminationDelay(db));
-            const destroyRes = await proxmoxService.destroyVM(newVmid, "lxc");
+            const destroyRes = await proxmoxService.destroyVM(
+              newVmid,
+              "lxc",
+              selectedNode,
+            );
             if (destroyRes?.status !== 200) {
               throw new Error("LXC VM destroy failed");
             }
@@ -2873,7 +2900,11 @@ const save =
           if (!newVmid) return true;
 
           await sleep(await getTerminationDelay(db));
-          const destroyRes = await proxmoxService.destroyVM(newVmid, "qemu");
+          const destroyRes = await proxmoxService.destroyVM(
+            newVmid,
+            "qemu",
+            selectedNode,
+          );
           if (destroyRes?.status !== 200) {
             throw new Error("QEMU destroy failed");
           }
@@ -2889,6 +2920,7 @@ const save =
         const snapResult = await proxmoxService.createLXCSnapshot(
           sourceVmid,
           snapshotName,
+          selectedNode,
         );
         if (snapResult?.status !== 200) {
           return await markComponentRejected({
@@ -2904,7 +2936,10 @@ const save =
         const snapshotUpid = snapResult?.data?.data;
         //  WAIT FOR SNAPSHOT TASK
         while (true) {
-          const statusRes = await proxmoxService.getTaskLog(snapshotUpid);
+          const statusRes = await proxmoxService.getTaskLog(
+            snapshotUpid,
+            selectedNode,
+          );
 
           const status = statusRes?.data?.data?.status;
           const exitstatus = statusRes?.data?.data?.exitstatus;
@@ -2922,12 +2957,16 @@ const save =
 
           await sleep(5000);
         }
-        cloneResult = await proxmoxService.cloneLXC(sourceVmid, {
-          newid: newVmid,
-          hostname: payload.componentname,
-          full: 1,
-          snapname: snapshotName,
-        });
+        cloneResult = await proxmoxService.cloneLXC(
+          sourceVmid,
+          {
+            newid: newVmid,
+            hostname: payload.componentname,
+            full: 1,
+            snapname: snapshotName,
+          },
+          selectedNode,
+        );
         if (cloneResult?.status !== 200) {
           await cleanupLXCOnCloneFail();
           return await markComponentRejected({
@@ -2941,7 +2980,10 @@ const save =
         }
         let upid = cloneResult?.data?.data;
         while (true) {
-          const logResponse = await proxmoxService.getTaskLog(upid);
+          const logResponse = await proxmoxService.getTaskLog(
+            upid,
+            selectedNode,
+          );
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }
@@ -2963,7 +3005,10 @@ const save =
           // Still running → wait before next check
           await sleep(5000);
         }
-        templateResult = await proxmoxService.templateLXC(newVmid);
+        templateResult = await proxmoxService.templateLXC(
+          newVmid,
+          selectedNode,
+        );
         if (templateResult?.status !== 200) {
           const cleanupResult = await cleanupLXCOnTemplateFail();
 
@@ -3002,6 +3047,7 @@ const save =
           sourceVmid,
           newVmid,
           proxmoxHostname,
+          selectedNode,
         );
         if (cloneResult?.status !== 200) {
           return await markComponentRejected({
@@ -3015,7 +3061,10 @@ const save =
         }
         let upid = cloneResult?.data?.data;
         while (true) {
-          const logResponse = await proxmoxService.getTaskLog(upid);
+          const logResponse = await proxmoxService.getTaskLog(
+            upid,
+            selectedNode,
+          );
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }
@@ -3037,7 +3086,10 @@ const save =
           // Still running → wait before next check
           await sleep(10000);
         }
-        templateResult = await proxmoxService.templateQEMU(newVmid);
+        templateResult = await proxmoxService.templateQEMU(
+          newVmid,
+          selectedNode,
+        );
         if (templateResult?.status !== 200) {
           await sleep(await getTerminationDelay(db));
           const cleanupSuccess = await cleanupQEMUOnTemplateFail();
@@ -3067,7 +3119,11 @@ const save =
       //   vmDetailResponse = await proxmoxService.QEMU_VM_detail(newVmid);
       // }
 
-        vmDetailResponse = await proxmoxService.VM_detail(newVmid,vmType);
+        vmDetailResponse = await proxmoxService.VM_detail(
+          newVmid,
+          vmType,
+          selectedNode,
+        );
 
 
 
@@ -3284,6 +3340,22 @@ const getVmConfig =
       const approvalMessage = approvalFlag
         ? "Auto approval process"
         : "Admin approval process";
+
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = :vmid
+           AND vc.status != 'Destroyed'
+         ORDER BY vc.vmconfigurationid DESC
+         LIMIT 1`,
+        {
+          replacements: { vmid },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -3301,7 +3373,7 @@ const getVmConfig =
       //   result = await proxmoxService.getLxcConfig(vmid);
       // }
 
-        result = await proxmoxService.getConfig(vmid,vmType);
+        result = await proxmoxService.getConfig(vmid, vmType, selectedNode);
 
 
       if (!result?.success) {

@@ -6298,6 +6298,105 @@ html.dark-theme[data-scenario-shadow="4"] .scenario-diagram-shell {
   color: #0891b2;
 }
 
+.scenario-node-ports {
+  position: absolute;
+  z-index: 12;
+  top: 7px;
+  right: 61px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--diagram-node-border);
+  border-radius: 7px;
+  background: var(--diagram-port-surface);
+  color: var(--diagram-node-text);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.scenario-node-ports:hover {
+  border-color: #22d3ee;
+  background: rgba(34, 211, 238, 0.1);
+  color: #0891b2;
+}
+
+.port-placement-modal .modal-content {
+  overflow: hidden;
+  border: 1px solid #263653;
+  border-radius: 14px;
+  background: #080d18;
+  color: #edf5ff;
+}
+
+.port-placement-modal .modal-header,
+.port-placement-modal .modal-footer {
+  border-color: #1c2940;
+}
+
+.port-placement-modal .btn-close {
+  filter: invert(1) grayscale(1);
+}
+
+.port-placement-modal-subtitle {
+  margin-top: 3px;
+  color: #8090a8;
+  font-size: 11px;
+}
+
+.port-placement-list {
+  display: flex;
+  max-height: 320px;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.port-placement-row {
+  padding: 9px;
+  border: 1px solid #22304a;
+  border-radius: 10px;
+  background: #0d1422;
+}
+
+.port-placement-row > strong {
+  display: block;
+  margin-bottom: 7px;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.port-placement-sides {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.port-placement-sides button {
+  padding: 5px 2px;
+  border: 1px solid #32445f;
+  border-radius: 6px;
+  background: #111c2f;
+  color: #9fb0c7;
+  font-size: 10px;
+}
+
+.port-placement-sides button.is-selected {
+  border-color: #22d3ee;
+  background: rgba(34, 211, 238, 0.13);
+  color: #67e8f9;
+}
+
+.port-placement-empty {
+  padding: 20px;
+  color: #8090a8;
+  text-align: center;
+}
+
 .scenario-node-animation-badge {
   align-self: center;
   max-width: 128px;
