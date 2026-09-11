@@ -87,13 +87,13 @@ async function getWorkerNodeStatuses(nodes) {
   if (!accessInfo?.cookie) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
   }
-
+  const cfg = await getProxmoxConfig();
   const statuses = [];
 
   for (const node of nodes) {
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${node}/status`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${node}/status`;
     const config = {
       method: "get",
       url,
@@ -365,7 +365,7 @@ async function logApiRequest({
 
     const config = {
       method: "post",
-      url: `${constants.endpoint}/access/ticket`,
+      url: `${cfg.endpoint}/api2/json/access/ticket`,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
       data: formData.toString(),
@@ -429,7 +429,7 @@ async function logApiRequest({
       throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
     }
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${type}/${vmid}/config`;
     const config = {
       method: "get",
       url,
@@ -482,7 +482,7 @@ async function logApiRequest({
   //   const start = Date.now();
   //   const request_datetime = new Date();
   //   const targetNode = selectedNode || cfg.current_node;
-  //   const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${sourceVMID}/clone`;
+  //   const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${sourceVMID}/clone`;
 
   //   const params = new URLSearchParams();
   //   params.append("newid", newid);
@@ -548,7 +548,7 @@ async function cloneVM(vmType, newid, name, sourceVMID, selectedNode = null) {
   const request_datetime = new Date();
 
   //  Clone ALWAYS happens on sourceNode — never cross-node here
-  const url = `${constants.endpoint}/nodes/${sourceNode}/${vmType}/${sourceVMID}/clone`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${sourceNode}/${vmType}/${sourceVMID}/clone`;
 
     const params = new URLSearchParams();
     params.append("newid", newid);
@@ -594,6 +594,9 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
   }
 
+  const cfg = await getProxmoxConfig(); 
+
+
   const start            = Date.now();
   const request_datetime = new Date();
   const type             = vmType.toLowerCase();
@@ -602,7 +605,7 @@ async function migrateVM(vmType, vmid, sourceNode, targetNode) {
     throw new Error("Invalid vmType. Must be 'lxc' or 'qemu'.");
   }
 
-  const url = `${constants.endpoint}/nodes/${sourceNode}/${type}/${vmid}/migrate`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${sourceNode}/${type}/${vmid}/migrate`;
 
   const params = new URLSearchParams();
   params.append("target", targetNode);
@@ -653,6 +656,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     throw new Error("Access info not initialized. Call generateAccessTicket first.");
   }
   console.log("upidupidupidupidupidupidupid",upid);
+    const cfg = await getProxmoxConfig(); 
   
 
   const start            = Date.now();
@@ -662,7 +666,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
   const encodedUpid = encodeURIComponent(upid);
   console.log("encodedUpidencodedUpidencodedUpid",encodedUpid);
   
-  const url = `${constants.endpoint}/nodes/${upidNode}/tasks/${encodedUpid}/status`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${upidNode}/tasks/${encodedUpid}/status`;
 
   console.log(`[waitForTask] Polling task on node: ${upidNode}, URL: ${url}`);
 
@@ -737,7 +741,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
     const params = new URLSearchParams();
     for (const [adapterKey, configStr] of Object.entries(networkConfig)) {
@@ -796,7 +800,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/start`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/status/start`;
 
     const config = {
       method: "post",
@@ -849,7 +853,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/stop`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/status/stop`;
 
     const config = {
       method: "post",
@@ -916,7 +920,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}`;
 
     const config = {
       method: "delete",
@@ -976,7 +980,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
 
     const config = {
       method: "get",
-      url: `${constants.endpoint}/nodes/${cfg.current_node}/network`,
+      url: `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/network`,
       headers: {
         Cookie: accessInfo.cookie,
         "Content-Type": "application/json",
@@ -1028,7 +1032,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/snapshot`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/qemu/${vmid}/snapshot`;
 
     const formData = new URLSearchParams();
     formData.append("snapname", snapname);
@@ -1100,7 +1104,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}`;
 
   const config = {
     method: "delete",
@@ -1145,7 +1149,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}/rollback`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${type}/${vmid}/snapshot/${snapname}/rollback`;
 
     const formData = new URLSearchParams();
     formData.append("start", startValue); // must be provided (1 or 0)
@@ -1212,7 +1216,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
     // Suspend URL (QEMU only): /status/suspend
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/suspend`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/status/suspend`;
 
     const config = {
       method: "post",
@@ -1273,7 +1277,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
     // Resume URL: /status/resume
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/status/resume`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/status/resume`;
 
     const config = {
       method: "post",
@@ -1332,7 +1336,7 @@ async function waitForTask(node, upid, timeoutMs = 300000, intervalMs = 5000) {
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/tasks/${upid}/status`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/tasks/${upid}/status`;
 
     const config = {
       method: "get",
@@ -1391,7 +1395,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/vzdump`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/vzdump`;
 
     // Build URL-encoded form-data body
     const params = new URLSearchParams();
@@ -1460,7 +1464,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/log`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/tasks/${upid}/log`;
 
     const config = {
       method: "get",
@@ -1520,7 +1524,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/snapshot`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/lxc/${vmid}/snapshot`;
 
     const config = {
       method: "post",
@@ -1578,7 +1582,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/clone`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/lxc/${vmid}/clone`;
 
     const body = new URLSearchParams({
       newid: data.newid,
@@ -1641,7 +1645,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/lxc/${vmid}/template`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/lxc/${vmid}/template`;
     // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
     const config = {
       method: "post",
@@ -1720,7 +1724,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/clone`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/qemu/${vmid}/clone`;
 
     // ADD name ONLY if provided
     const params = new URLSearchParams({ newid });
@@ -1786,7 +1790,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/qemu/${vmid}/template`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/qemu/${vmid}/template`;
 
     const config = {
       method: "post",
@@ -1847,7 +1851,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/${type}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${type}/${vmid}/config`;
 
     const config = {
       method: "get",
@@ -1914,7 +1918,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
 
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config?delete=${netKey}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config?delete=${netKey}`;
 
     const config = {
       method: "put",
@@ -1971,7 +1975,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
     const start = Date.now();
     const request_datetime = new Date();
     const targetNode = selectedNode || cfg.current_node;
-    const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
     const data = new URLSearchParams();
     data.append(netKey, netValue);
@@ -2032,7 +2036,7 @@ const BACKUP_STORAGE = keys.BACKUP_STORAGE;
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;        
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;        
 
   const data = new URLSearchParams();
 
@@ -2099,7 +2103,7 @@ async function connectVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode =
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   // Build value like curl
   const netValue = `virtio=${mac},bridge=${bridge}`;
@@ -2166,7 +2170,7 @@ async function getVmNetworkInfo(vmid, vmType,selectedNode = null) {
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   const config = {
     method: "get",
@@ -2225,7 +2229,7 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = 
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
   let netValue;
   /* ===================== KEY FIX ===================== */
   if (vmType === "qemu") {
@@ -2300,7 +2304,7 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge,selectedNode = nu
   const start = Date.now();
   const request_datetime = new Date();
   const targetNode = selectedNode || cfg.current_node;
-  const url = `${constants.endpoint}/nodes/${targetNode}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${targetNode}/${vmType}/${vmid}/config`;
 
   let netValue;
 
@@ -2379,7 +2383,7 @@ async function checkVmidStatus(vmid, vmType) {
   const cfg = await getProxmoxConfig();
   const start = Date.now();
   const request_datetime = new Date();
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/current`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/status/current`;
   const config = {
     method: "get",
     url,
@@ -2467,7 +2471,7 @@ async function restoreVM({ vmid, zstFile, vmType,proxmoxPath,storage }) {
   }
   // const volid            = `local:backup/${zstFile}`;
   const volid     = `${storageId}:backup/${zstFile}`;  
-  const url              = `${constants.endpoint}/nodes/${cfg.current_node}/${type}`;
+  const url              = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${type}`;
   // ── Build params based on vmType ──────────────────────────────────
  const params = vmType === "qemu"
     ? {

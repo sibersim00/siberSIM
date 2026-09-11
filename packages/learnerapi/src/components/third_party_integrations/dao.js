@@ -1,12 +1,12 @@
-const getIntegrations = ({ db }) => async (learnerId) =>
+const getIntegrations = ({ db }) => async () =>
   db.sequelize.query(
     `SELECT integration_id, integration_name, integration_url, description, \`order\`,
             status, createdon, modifiedon
-       FROM learner_third_party_integrations
-      WHERE learner_id = :learnerId AND deletedon IS NULL
+       FROM third_party_integrations
+      WHERE learner_id IS NULL AND FIND_IN_SET('SIMUser', target_panel) > 0
+        AND status = 'Active' AND deletedon IS NULL
       ORDER BY \`order\` ASC, integration_name ASC`,
     {
-      replacements: { learnerId },
       type: db.sequelize.QueryTypes.SELECT,
     }
   );
@@ -14,7 +14,7 @@ const getIntegrations = ({ db }) => async (learnerId) =>
 const findDuplicate = ({ db }) => async (learnerId, name, excludedId = null) => {
   const rows = await db.sequelize.query(
     `SELECT integration_id
-       FROM learner_third_party_integrations
+       FROM third_party_integrations
       WHERE learner_id = :learnerId
         AND LOWER(integration_name) = LOWER(:name)
         AND deletedon IS NULL
@@ -33,7 +33,7 @@ const affectedRows = (result, metadata) =>
 
 const saveIntegration = ({ db }) => async (learnerId, body) => {
   const result = await db.sequelize.query(
-    `INSERT INTO learner_third_party_integrations
+    `INSERT INTO third_party_integrations
        (learner_id, integration_name, integration_url, description, \`order\`, status, createdon)
      VALUES
        (:learnerId, :integrationName, :integrationUrl, :description, :orderValue, 'Active', NOW())`,
@@ -52,7 +52,7 @@ const saveIntegration = ({ db }) => async (learnerId, body) => {
 
 const updateIntegration = ({ db }) => async (learnerId, body) => {
   const [result, metadata] = await db.sequelize.query(
-    `UPDATE learner_third_party_integrations
+    `UPDATE third_party_integrations
         SET integration_name = :integrationName,
             integration_url = :integrationUrl,
             description = :description,
@@ -77,7 +77,7 @@ const updateIntegration = ({ db }) => async (learnerId, body) => {
 
 const deleteIntegration = ({ db }) => async (learnerId, integrationId) => {
   const [result, metadata] = await db.sequelize.query(
-    `UPDATE learner_third_party_integrations
+    `UPDATE third_party_integrations
         SET status = 'Inactive', deletedon = NOW(), modifiedon = NOW()
       WHERE integration_id = :integrationId
         AND learner_id = :learnerId
@@ -89,7 +89,7 @@ const deleteIntegration = ({ db }) => async (learnerId, integrationId) => {
 
 const changeStatus = ({ db }) => async (learnerId, integrationId, status) => {
   const [result, metadata] = await db.sequelize.query(
-    `UPDATE learner_third_party_integrations
+    `UPDATE third_party_integrations
         SET status = :status, modifiedon = NOW()
       WHERE integration_id = :integrationId
         AND learner_id = :learnerId

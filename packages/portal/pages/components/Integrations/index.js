@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Button, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import Seo from "../../../shared/layout-components/seo/seo";
 import styles from "./thirdPartyIntegrations.module.scss";
-import { getIntegrations } from "../../../shared/redux/slices/thirdPartyIntegrations/thirdPartyIntegrations";
+import { getThirdPartyIntegrations } from "../../../shared/redux/slices/thirdPartyIntegrations/thirdPartyIntegrations";
 
 const getHostName = (value) => {
   try {
@@ -12,6 +12,7 @@ const getHostName = (value) => {
     return value;
   }
 };
+
 const getInitials = (name = "") =>
   name
     .split(/\s+/)
@@ -21,16 +22,26 @@ const getInitials = (name = "") =>
     .join("")
     .toUpperCase() || "AP";
 
-const ThirdPartyIntegrations = () => {
+const Integrations = () => {
   const dispatch = useDispatch();
-  const { items, isLoading } = useSelector(
-    (state) => state.thirdPartyIntegrations || { items: [], isLoading: false },
-  );
+  const { items, isLoading } = useSelector((state) => ({
+    items:
+      state.thirdPartyIntegrations?.getThirdPartyIntegrationData?.data || [],
+    isLoading: state.thirdPartyIntegrations?.isLoading || false,
+  }));
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState(null);
+
+  const targetPanel = useMemo(() => {
+    if (typeof window === "undefined") return "SIMMaster";
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    return user?.usertype === "Instructor" ? "SIMInstructor" : "SIMMaster";
+  }, []);
+
   useEffect(() => {
-    dispatch(getIntegrations()).catch(() => {});
-  }, [dispatch]);
+    dispatch(getThirdPartyIntegrations(targetPanel));
+  }, [dispatch, targetPanel]);
+
   const visibleItems = useMemo(() => {
     const term = search.trim().toLowerCase();
     return items.filter(
@@ -40,7 +51,6 @@ const ThirdPartyIntegrations = () => {
         item.description?.toLowerCase().includes(term),
     );
   }, [items, search]);
-
   return (
     <>
       <Seo title="Third Party Integration" />
@@ -52,12 +62,11 @@ const ThirdPartyIntegrations = () => {
                 <i className="fa fa-plug" /> Integrations
               </span>
               <h1>Third Party Integrations</h1>
-              <p>
-                Launch the applications made available by your administrator.
-              </p>
+              <p>Launch the applications made available by your administrator.</p>
             </div>
           </div>
         </section>
+
         <section className={styles.workspace}>
           <div className={styles.sectionHeading}>
             <div>
@@ -76,6 +85,7 @@ const ThirdPartyIntegrations = () => {
               </label>
             </div>
           </div>
+
           {isLoading && items.length === 0 ? (
             <div className={styles.cardGrid}>
               {[0, 1, 2].map((item) => (
@@ -102,37 +112,31 @@ const ThirdPartyIntegrations = () => {
                     <div className={styles.appAvatar}>
                       {getInitials(item.integration_name)}
                     </div>
-                    <span
-                      className={`${styles.statusPill} ${styles.activePill}`}
-                    >
+                    <span className={`${styles.statusPill} ${styles.activePill}`}>
                       <span /> Active
                     </span>
                   </div>
                   <div className={styles.cardBody}>
-                    <h3 title={item.integration_name}>
-                      {item.integration_name}
-                    </h3>
+                    <h3 title={item.integration_name}>{item.integration_name}</h3>
                     <a
                       href={item.integration_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.hostLink}
                     >
-                      <i className="fe fe-link" />{" "}
+                      <i className="fe fe-link" />
                       {getHostName(item.integration_url)}
                     </a>
                     <OverlayTrigger
                       placement="top"
                       overlay={
                         <Tooltip id={`description-${item.integration_id}`}>
-                          {item.description ||
-                            "Launch this connected application."}
+                          {item.description || "Launch this connected application."}
                         </Tooltip>
                       }
                     >
                       <p className={styles.cardDescription}>
-                        {item.description ||
-                          "Launch this connected application."}
+                        {item.description || "Launch this connected application."}
                       </p>
                     </OverlayTrigger>
                   </div>
@@ -150,6 +154,7 @@ const ThirdPartyIntegrations = () => {
           )}
         </section>
       </main>
+
       <Modal
         show={Boolean(preview)}
         onHide={() => setPreview(null)}
@@ -173,7 +178,7 @@ const ThirdPartyIntegrations = () => {
             <iframe
               src={preview.integration_url}
               title={preview.integration_name}
-              style={{ width: "100%", height: "70vh", border: 0 }}
+              className={styles.previewFrame}
               sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
             />
           )}
@@ -195,5 +200,6 @@ const ThirdPartyIntegrations = () => {
     </>
   );
 };
-ThirdPartyIntegrations.layout = "Contentlayout";
-export default ThirdPartyIntegrations;
+
+Integrations.layout = "Contentlayout";
+export default Integrations;

@@ -1,5 +1,17 @@
 const masterRequest = require("../masterRequest");
 
+const getScenarios = ({ keys }) => async (req, res, next) => {
+  req.auditAction = "list scenarios";
+  return masterRequest({
+    req,
+    res,
+    next,
+    keys,
+    method: "get",
+    path: "/webhook-scenarios/get",
+  });
+};
+
 const importScenario = ({ keys }) => async (req, res, next) => {
   req.auditAction = "import third-party scenario diagram";
   return masterRequest({
@@ -13,4 +25,4 @@ const importScenario = ({ keys }) => async (req, res, next) => {
   });
 };
 
-module.exports = { importScenario };
+module.exports = { getScenarios, importScenario };

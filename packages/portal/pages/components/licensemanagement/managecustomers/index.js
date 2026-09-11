@@ -152,6 +152,8 @@ const Customers = () => {
       errorData: state && state.customerData && state.customerData.error,
     };
   });
+  console.log("fffffffffffffffffffffdddddddddddddddddd");
+  
 
   useEffect(() => {
     dispatch(getCustomerList());

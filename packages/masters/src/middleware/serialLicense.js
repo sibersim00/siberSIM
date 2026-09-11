@@ -25,7 +25,7 @@ const parseLicense = (licenseKey) => {
   const legacyUserMatch = parts[1].match(/^USL(\d+)$/);
   const hasCapabilities = parts.length === 6;
   const capabilityPart = hasCapabilities ? parts[2] : null;
-  const capabilityMatch = capabilityPart?.match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)$/);
+  const capabilityMatch = capabilityPart?.match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)(?:TP([TF]))?$/);
   const expiryIndex = hasCapabilities ? 3 : 2;
   const expiryMatch = parts[expiryIndex]?.match(/^E(\d{8})$/);
 
@@ -60,6 +60,7 @@ const parseLicense = (licenseKey) => {
     clusterMethod: capabilityMatch ? CLUSTER_NAMES[capabilityMatch[1]] : null,
     webhook: capabilityMatch?.[2] || null,
     learnerLimit: capabilityMatch?.[3] || null,
+    thirdParty: capabilityMatch?.[4] || null,
     expiryStr,
     hostnameStr,
     sentHash,
@@ -100,6 +101,7 @@ const generateLicense = ({
   cluster_method,
   webhook,
   learner_limit,
+  third_party,
 }) => {
   const parsedExp = new Date(expiry_date);
   if (Number.isNaN(parsedExp.getTime())) throw new Error("Invalid expiry date");
@@ -114,7 +116,7 @@ const generateLicense = ({
     .substring(0, 6)
     .toUpperCase();
   const hasCapabilities =
-    cluster_method !== undefined || webhook !== undefined || learner_limit !== undefined;
+    cluster_method !== undefined || webhook !== undefined || learner_limit !== undefined || third_party !== undefined;
   let capabilityPart = "";
 
   if (hasCapabilities) {
@@ -122,7 +124,7 @@ const generateLicense = ({
     const learnerLimit = Number(learner_limit ?? 0);
     if (!clusterCode) throw new Error("Invalid cluster method");
     if (!Number.isInteger(learnerLimit) || learnerLimit < 0) throw new Error("Invalid learner limit");
-    capabilityPart = `CM${clusterCode}W${isEnabled(webhook) ? 1 : 0}LL${learnerLimit}`;
+    capabilityPart = `CM${clusterCode}W${isEnabled(webhook) ? 1 : 0}LL${learnerLimit}TP${isEnabled(third_party) ? "T" : "F"}`;
   }
 
   const raw = capabilityPart
@@ -159,6 +161,7 @@ function validateJWTLicense(hostname, licenseKey) {
       cluster_method_code: result.clusterMethodCode,
       webhook: result.webhook,
       learner_limit: result.learnerLimit,
+      third_party: result.thirdParty,
     };
   } catch (error) {
     return false;
@@ -180,6 +183,7 @@ function checkValidate(hostname, licenseKey) {
       cluster_method_code: result.clusterMethodCode,
       webhook: result.webhook === null ? null : result.webhook === "1",
       learner_limit: result.learnerLimit === null ? null : Number(result.learnerLimit),
+      third_party: result.thirdParty === null ? false : result.thirdParty === "T",
       start_date: result.startDate,
       expiry_date: result.expiryDate,
     };

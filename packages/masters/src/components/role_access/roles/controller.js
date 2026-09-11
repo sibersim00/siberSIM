@@ -120,7 +120,7 @@ const userrolemap = ({ dao, db,validation }) => async(req,res,next) => {
     try {
         const body = req.body;
         const orgid = req.user.orgid;
-        const loginId = req.user.loginid;  
+        const loginId = req.user.userid;  
         const { error, value } = validation.userroleschema.validate(body,{ abortEarly: false,allowUnknown:true  });
         if (error) {
             const errors = error.details.map((err) => err.message);

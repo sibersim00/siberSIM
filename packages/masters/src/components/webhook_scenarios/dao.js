@@ -1,3 +1,16 @@
+const getScenarios =
+  ({ db }) =>
+  async () => {
+    const [scenarios] = await db.sequelize.query(
+      `SELECT scenariotitle, scenarioidentification
+       FROM scenarios
+       WHERE deletedon IS NULL
+       ORDER BY scenariotitle ASC, scenarioidentification ASC`,
+    );
+
+    return scenarios;
+  };
+
 const importScenario =
   ({ db }) =>
   async (body, userId) => {
@@ -43,4 +56,4 @@ const importScenario =
     };
   };
 
-module.exports = { importScenario };
+module.exports = { getScenarios, importScenario };

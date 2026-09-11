@@ -114,6 +114,10 @@ const nextConfig = withTM({
         source: "/scenariotabs",
         destination: "/components/masters/masters/scenariotabs",
       },
+      {
+        source: "/thirdpartyintegrations",
+        destination: "/components/masters/masters/thirdpartyintegrations",
+      },
       { source: "/admin", destination: "/components/admin" },
       { source: "/menus", destination: "/components/admin/menus" },
       { source: "/roles", destination: "/components/admin/roles" },
@@ -152,6 +156,7 @@ const nextConfig = withTM({
       { source: "/adminusers", destination: "/components/users/adminusers" },
       { source: "/instructors", destination: "/components/users/instructors" },
       { source: "/webhookuser", destination: "/components/users/webhookuser" },
+      { source: "/third-party-integrations", destination: "/components/thirdpartyintegrations" },
       { source: "/normalusers", destination: "/components/users/normalusers" },
       {
         source: "/batches_view/:slug*",
@@ -240,8 +245,12 @@ const nextConfig = withTM({
         destination: "/components/usersessions/view/vnc/:slug*",
       },
       {
-        source: "/customers",
-        destination: "/components/customers",
+        source: "/licensemanagement",
+        destination: "/components/licensemanagement/managecustomers",
+      },
+      {
+        source: "/licensemanagement",
+        destination: "/components/licensemanagement",
       },
       {
         source: "/company-configuration",
@@ -257,7 +266,7 @@ const nextConfig = withTM({
       },
       {
         source: "/customer-dashboard",
-        destination: "/components/customers/customerDashboard",
+        destination: "/components/licensemanagement/customerDashboard",
       },
       {
         source: "/scenario-import",
@@ -293,6 +302,10 @@ const nextConfig = withTM({
         source: "/running_components",
         destination: "/components/running_components",
       },
+       {
+      source: "/Integrations",
+      destination: "/components/Integrations",
+    },
     ];
   },
 });

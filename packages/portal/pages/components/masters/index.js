@@ -13,6 +13,31 @@ import ScenarioSubCategory from "./masters/scenariosubcategories";
 import Faqs from "./masters/faqs";
 import Widgets from "./masters/widgets";
 import ScenarioTabs from "./masters/scenariotabs";
+import ThirdPartyIntegrations from "./masters/thirdpartyintegrations";
+
+const THIRD_PARTY_MASTER_SOURCES = [
+  "/thirdpartyintegrations",
+  "/third_party_integrations",
+  "/third-party-integrations",
+];
+
+const isThirdPartyLicenseEnabled = (license = {}) =>
+  license.third_party === true ||
+  license.third_party === "T" ||
+  license.third_party === "1";
+
+const getThirdPartyMasterMenu = (existingMenu = {}) => ({
+  ...existingMenu,
+  menuid: existingMenu.menuid || "third-party-integration-master",
+  parentmenuid: existingMenu.parentmenuid || null,
+  title: "Third Party Integrations",
+  subtitle: "Third Party Integrations",
+  iconname: existingMenu.iconname || "fa fa-plug",
+  source: "/thirdpartyintegrations",
+  type: existingMenu.type || "link",
+  active: false,
+  selected: false,
+});
 
 
 // import Componenets from "../components/index";
@@ -42,9 +67,24 @@ const Master = () => {
       setTabOrNav(checktabnav);
       setSelectedMenu(getSubMenus);
       if (getSubMenus?.children && getSubMenus?.children.length > 0) {
-        setSubmenus(getSubMenus.children);
-        setfilteredSubMenus(getSubMenus.children);
-        setSelectedSubMenu(getSubMenus.children[0]);
+        const settings = JSON.parse(localStorage.getItem("company_settings") || "{}");
+        const license = settings?.data?.licenseStatus || settings?.licenseStatus || {};
+        const thirdPartyEnabled = isThirdPartyLicenseEnabled(license);
+        const existingThirdPartyMenu = getSubMenus.children.find((item) =>
+          THIRD_PARTY_MASTER_SOURCES.includes(item.source),
+        );
+        const childrenWithoutThirdParty = getSubMenus.children.filter(
+          (item) => !THIRD_PARTY_MASTER_SOURCES.includes(item.source),
+        );
+        const children = thirdPartyEnabled
+          ? [
+              ...childrenWithoutThirdParty,
+              getThirdPartyMasterMenu(existingThirdPartyMenu),
+            ]
+          : childrenWithoutThirdParty;
+        setSubmenus(children);
+        setfilteredSubMenus(children);
+        setSelectedSubMenu(children[0] || {});
       }
     }
   }, [getSubMenus]);
@@ -201,6 +241,9 @@ const Master = () => {
                 )}
                 {selectedSubMenu.source === "/scenariotabs" && (
                   <ScenarioTabs />
+                )}
+                {selectedSubMenu.source === "/thirdpartyintegrations" && (
+                  <ThirdPartyIntegrations />
                 )}
 
               </div>

@@ -96,6 +96,7 @@ const CustomerLicenseAdd = (props) => {
     domain_url: "",
     manipulation_flag: false,
     webhook_flag: false,
+    third_party_flag: false,
     cluster_method: "RoundRobin",
     learner_limit: "",
   };
@@ -109,6 +110,7 @@ const CustomerLicenseAdd = (props) => {
       domain_url: data.domain_url.trim(),
       manipulation_flag: data.manipulation_flag ? "True" : "False",
       webhook_flag: data.webhook_flag ? "True" : "False",
+      third_party_flag: data.third_party_flag ? "True" : "False",
       cluster_method: data.cluster_method,
       learner_limit: Number(data.learner_limit),
     };
@@ -332,6 +334,19 @@ const CustomerLicenseAdd = (props) => {
                         checked={values.manipulation_flag}
                         onChange={(e) =>
                           setFieldValue("manipulation_flag", e.target.checked)
+                        }
+                      />
+                    </div>
+                  </Form.Group>
+                  <Form.Group as={Col} md="6">
+                    <div className="license-toggle-card">
+                      <Form.Check
+                        type="switch"
+                        id="third-party-flag"
+                        label="Enable Third Party Integration"
+                        checked={values.third_party_flag}
+                        onChange={(e) =>
+                          setFieldValue("third_party_flag", e.target.checked)
                         }
                       />
                     </div>

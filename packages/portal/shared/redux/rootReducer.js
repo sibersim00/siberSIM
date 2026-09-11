@@ -38,6 +38,8 @@ import eventsManage from "./slices/event/eventsManage";
 import apilogsManage from "./slices/ApiLogs/apilogsManage";
 import faqs from "./slices/common/masters";
 import widgets from "./slices/masters/widgets";
+import thirdPartyIntegrationsMaster from "./slices/masters/thirdPartyIntegrations";
+import thirdPartyIntegrations from "./slices/thirdPartyIntegrations/thirdPartyIntegrations";
 import faq from "./slices/masters/Faqs";
 import dashboarData from "./slices/Dashboard/dashboardManage";
 import eventDashboardData from "./slices/EventDashboard/eventdashboardManage";
@@ -113,6 +115,8 @@ const rootReducer = (state, action) => {
     apilogsManage: apilogsManage,
     faqs: faqs,
     widgets: widgets,
+    thirdPartyIntegrationsMaster: thirdPartyIntegrationsMaster,
+    thirdPartyIntegrations: thirdPartyIntegrations,
     faq: faq,
     dashboarData: dashboarData,
     eventDashboardData: eventDashboardData,

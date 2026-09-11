@@ -10,7 +10,9 @@ const hasWebhookCapability = (hostname, licenseKey, secret) => {
 
   const start = parts[0].match(/^S(\d{8})$/);
   const user = parts[1].match(/^UL(\d+)M([01])$/);
-  const capability = parts[2].match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)$/);
+  const capability = parts[2].match(
+    /^CM(RR|LL|WT|TH)W([01])LL(\d+)(?:TP[TF])?$/,
+  );
   const expiry = parts[3].match(/^E(\d{8})$/);
   const hostnameHash = parts[4];
   const sentHash = parts[5];

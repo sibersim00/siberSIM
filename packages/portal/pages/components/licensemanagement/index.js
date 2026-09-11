@@ -9,6 +9,8 @@ import ManageCustomers from "./managecustomers";
 import CustomerDashboard from "./customerDashboard";
 
 const LicenseManagement = () => {
+  console.log("cominggggggggggggggggggggggg");
+  
   const dispatch = useDispatch();
   const [tabOrNav, setTabOrNav] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState({});
@@ -77,6 +79,8 @@ const LicenseManagement = () => {
     ));
 
   const selectedSource = selectedSubMenu?.source;
+  console.log("selectedSourceselectedSource",selectedSource);
+  
 
   return (
     <>

@@ -230,6 +230,8 @@ const CustomerDashboard = () => {
     },
 
   };
+  console.log("fffffffffffffffffffff");
+  
   return (
     <>
       <Seo title=" Customer Dashboard" />

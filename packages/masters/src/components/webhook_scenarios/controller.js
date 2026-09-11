@@ -1,3 +1,22 @@
+const getScenarios =
+  ({ dao, db }) =>
+  async (_req, res) => {
+    try {
+      const result = await dao.getScenarios({ db })();
+      return res.status(200).send({
+        statusCode: 200,
+        message: "Scenarios fetched successfully.",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Webhook scenario list error:", error);
+      return res.status(500).send({
+        statusCode: 500,
+        message: "Unable to fetch scenarios.",
+      });
+    }
+  };
+
 const importScenario =
   ({ dao, db }) =>
   async (req, res) => {
@@ -17,4 +36,4 @@ const importScenario =
     }
   };
 
-module.exports = { importScenario };
+module.exports = { getScenarios, importScenario };

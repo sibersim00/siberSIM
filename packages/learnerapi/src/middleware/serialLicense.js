@@ -12,7 +12,7 @@ const parseLicense = (licenseKey) => {
   const legacyUser = parts[1]?.match(/^USL(\d+)$/);
   const hasCapabilities = parts.length === 6;
   const capabilityPart = hasCapabilities ? parts[2] : null;
-  const capability = capabilityPart?.match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)$/);
+  const capability = capabilityPart?.match(/^CM(RR|LL|WT|TH)W([01])LL(\d+)(?:TP([TF]))?$/);
   const expiryIndex = hasCapabilities ? 3 : 2;
   const expiry = parts[expiryIndex]?.match(/^E(\d{8})$/);
   const hostnameHash = parts[expiryIndex + 1];
@@ -35,6 +35,7 @@ const parseLicense = (licenseKey) => {
     clusterMethod: capability ? CLUSTER_NAMES[capability[1]] : null,
     webhook: capability?.[2] || null,
     learnerLimit: capability?.[3] || null,
+    thirdParty: capability?.[4] || null,
   };
 };
 
@@ -71,6 +72,7 @@ function validateJWTLicense(hostname, licenseKey) {
       success: true, user_count: value.userCount, manipulation: value.manipulation,
       cluster_method: value.clusterMethod, cluster_method_code: value.clusterMethodCode,
       webhook: value.webhook, learner_limit: value.learnerLimit,
+      third_party: value.thirdParty,
     };
   } catch (error) { return false; }
 }
@@ -86,6 +88,7 @@ function checkValidate(hostname, licenseKey) {
       manipulation: value.manipulation,
       cluster_method: value.clusterMethod, cluster_method_code: value.clusterMethodCode,
       webhook: value.webhook, learner_limit: value.learnerLimit,
+      third_party: value.thirdParty === null ? false : value.thirdParty === "T",
       start_date: value.startDate, expiry_date: value.expiryDate,
     };
   } catch (error) { return false; }

@@ -104,6 +104,10 @@ const licenseAddSchema =  joi.object({
     .alternatives()
     .try(joi.boolean(), joi.string().valid("True", "False"))
     .required(),
+  third_party_flag: joi
+    .alternatives()
+    .try(joi.boolean(), joi.string().valid("True", "False"))
+    .required(),
   manipulation_flag: joi
     .alternatives()
     .try(joi.boolean(), joi.string().valid("True", "False"))

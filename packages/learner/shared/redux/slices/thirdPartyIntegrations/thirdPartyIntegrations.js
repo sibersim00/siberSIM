@@ -52,22 +52,3 @@ export const getIntegrations = () => async (dispatch) => {
     throw error;
   }
 };
-
-const mutate = (url, payload) => async (dispatch) => {
-  dispatch(slice.actions.startLoading());
-  try {
-    const response = await axios.post(url, payload, { suppressErrorToast: true });
-    dispatch(slice.actions.operationSuccess());
-    return response.data;
-  } catch (error) {
-    const payloadError = errorPayload(error);
-    dispatch(slice.actions.hasError(payloadError));
-    throw payloadError;
-  }
-};
-
-export const saveIntegration = (payload) => mutate(api.third_party_integrations_save, payload);
-export const updateIntegration = (payload) => mutate(api.third_party_integrations_update, payload);
-export const deleteIntegration = (payload) => mutate(api.third_party_integrations_delete, payload);
-export const changeIntegrationStatus = (payload) =>
-  mutate(api.third_party_integrations_change_status, payload);

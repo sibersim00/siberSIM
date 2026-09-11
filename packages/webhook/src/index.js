@@ -39,10 +39,10 @@ const ioc = {
   requireWebhookLicense,
   audit,
 };
-app.get("/webhookapi/health", (_req, res) =>
+app.get("/webhooks/health", (_req, res) =>
   res.send({ uptime: process.uptime(), message: "Ok", date: new Date() }),
 );
-app.use("/webhookapi", router(ioc));
+app.use("/webhooks", router(ioc));
 app.use((error, _req, res, _next) => {
   console.error("Webhook service error:", error.message);
   if (!res.headersSent)

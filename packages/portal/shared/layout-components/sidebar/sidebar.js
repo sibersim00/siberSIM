@@ -1,4 +1,6 @@
+
 import React, { Fragment, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { horizontalmenusticky } from "../switcher/switcherdata";
@@ -11,23 +13,65 @@ import iconlight from "../../../public//assets/img/brand/icon-light.png";
 import logo from "../../../public//assets/img/brand/logo.png";
 import icon from "../../../public//assets/img/brand/icon.png";
 import { indexOf } from "lodash";
+import { getThirdPartyIntegrations } from "../../redux/slices/thirdPartyIntegrations/thirdPartyIntegrations";
 
 import defaultLogo from "../../../public/assets/img/brand/logo-light.png";
 import defaultLightLogo from "../../../public/assets/img/brand/logo-light.png";
 import defaultFavicon from "../../../public/assets/img/brand/favicon.png";
 
+// Normalizes a string for comparison: strips spaces/dashes/underscores, lowercases.
+const normalize = (s = "") => s.replace(/[\s_-]/g, "").toLowerCase();
+
+// Matches the real, correctly-routed "Integrations" menu item — by title,
+// or by "integration" appearing in its source/path. This is what should be
+// dynamically shown/hidden based on the license flag.
+const isIntegrationItem = (item = {}) => {
+  const title = normalize(item.title);
+  const source = normalize(item.source);
+  const path = normalize(item.path);
+  return (
+    title === "integrations" ||
+    source.includes("integration") ||
+    path.includes("integration")
+  );
+};
+
+// Matches any legacy duplicate still titled "Third Party ..." (e.g.
+// "Third Party Integrations"). These should never render, regardless of
+// what source/path they point to.
+const isLegacyThirdPartyItem = (item = {}) =>
+  normalize(item.title).includes("thirdparty");
+
+const EMPTY_THIRD_PARTY_INTEGRATIONS = [];
+
 const SideBar = () => {
+  const dispatch = useDispatch();
   let location = useRouter();
   const router = useRouter();
   const currentPath = router.pathname;
 
   const [menuitems, setMenuitems] = useState([]);
   const [menuitems1, setMenuitems1] = useState([]);
+  const [baseMenuitems, setBaseMenuitems] = useState([]);
+  const [thirdPartyEnabled, setThirdPartyEnabled] = useState(false);
+  const [thirdPartyMenuItem, setThirdPartyMenuItem] = useState(null);
+  const thirdPartyIntegrations = useSelector(
+    (state) =>
+      state.thirdPartyIntegrations?.getThirdPartyIntegrationData?.data ||
+      EMPTY_THIRD_PARTY_INTEGRATIONS,
+  );
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const menus = JSON.parse(localStorage.getItem("menus"));
       const user = JSON.parse(localStorage.getItem("user"));
       const isInstructor = user?.usertype === "Instructor";
+      const settings = JSON.parse(localStorage.getItem("company_settings") || "{}");
+      const license = settings?.data?.licenseStatus || settings?.licenseStatus || {};
+      const isThirdPartyEnabled =
+        license.third_party === true ||
+        license.third_party === "T" ||
+        license.third_party === "1";
 
       const removeLabsMenu = (items = []) =>
         items
@@ -42,17 +86,77 @@ const SideBar = () => {
               : {}),
           }));
 
-      const visibleMenus = isInstructor && Array.isArray(menus)
+      let visibleMenus = isInstructor && Array.isArray(menus)
         ? removeLabsMenu(menus)
         : menus;
 
+      // Pull the real "Integrations" item out of the menu tree (instead of
+      // discarding it) so we can conditionally re-insert the exact same
+      // object later, based on the license flag. Any legacy item still
+      // titled "Third Party ..." is dropped permanently — it never comes back.
+      let capturedThirdPartyItem = null;
+      const extractThirdParty = (items = []) =>
+        items
+          .filter((item) => {
+            if (isLegacyThirdPartyItem(item)) {
+              // Stale duplicate — remove for good, regardless of source/path.
+              return false;
+            }
+            if (isIntegrationItem(item)) {
+              // The real, working "Integrations" entry — capture it, remove
+              // it from the base tree, and let the license-gated effect
+              // below decide whether to re-insert it.
+              capturedThirdPartyItem = item;
+              return false;
+            }
+            return true;
+          })
+          .map((item) => ({
+            ...item,
+            ...(Array.isArray(item.Items) ? { Items: extractThirdParty(item.Items) } : {}),
+            ...(Array.isArray(item.children) ? { children: extractThirdParty(item.children) } : {}),
+          }));
+      visibleMenus = Array.isArray(visibleMenus) ? extractThirdParty(visibleMenus) : visibleMenus;
+
+      setBaseMenuitems(visibleMenus || []);
+      setThirdPartyMenuItem(capturedThirdPartyItem);
+      setThirdPartyEnabled(isThirdPartyEnabled);
       setMenuitems(visibleMenus);
       setMenuitems1(visibleMenus);
+      if (isThirdPartyEnabled && Array.isArray(visibleMenus)) {
+        const target = isInstructor ? "SIMInstructor" : "SIMMaster";
+        dispatch(getThirdPartyIntegrations(target));
+      }
       if (menus === null) {
         window.location.href = "/";
       }
     }
-  }, []);
+  }, [dispatch]);
+
+  // Re-insert the captured "Integrations" item into the first menu group,
+  // but only when the license flag is on AND the integrations API actually
+  // returned data. Otherwise fall back to the base menu (no Integrations tab).
+  useEffect(() => {
+    if (!thirdPartyEnabled || !thirdPartyIntegrations.length || !thirdPartyMenuItem) {
+      setMenuitems(baseMenuitems);
+      setMenuitems1(baseMenuitems);
+      return;
+    }
+
+    const nextMenus = baseMenuitems.map((group, index) =>
+      index !== 0
+        ? group
+        : {
+            ...group,
+            Items: [
+              ...(group.Items || []),
+              { ...thirdPartyMenuItem, active: false, selected: false },
+            ],
+          },
+    );
+    setMenuitems(nextMenus);
+    setMenuitems1(nextMenus);
+  }, [baseMenuitems, thirdPartyEnabled, thirdPartyIntegrations, thirdPartyMenuItem]);
 
   // const [menuIcontype, setmenuIcontype] = useState("hor-icon");
   // initial loading
@@ -70,7 +174,10 @@ const SideBar = () => {
     return () => {
       mainContent.removeEventListener("click", mainContentClickFn);
     };
-  }, [location.pathname, mainContentClickFn, setSidemenu]);
+    // The handlers intentionally use the values from this pathname render.
+    // Depending on their recreated function references causes a render loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // location
   useEffect(() => {
@@ -165,9 +272,9 @@ const SideBar = () => {
             return items;
           });
         }
-        setMenuitems((arr) => [...arr]);
         return mainlevel;
       });
+      setMenuitems((arr) => [...arr]);
     }
   }
   function selectedMenu(item) {

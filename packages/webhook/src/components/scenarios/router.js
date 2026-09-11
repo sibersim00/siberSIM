@@ -4,6 +4,8 @@ const validation = require("./validation");
 module.exports = ({ express, validator, ...ioc }) => {
   const router = express.Router();
 
+  router.get("/scenarios", controller.getScenarios(ioc));
+
   router.post(
     "/scenarios/import",
     validator(validation.importSchema, "body"),

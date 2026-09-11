@@ -14,7 +14,10 @@ const getLearnerId = (req) => req.learneruser?.learner_id;
 
 const getIntegrations = ({ dao, db, validation }) => async (req, res) => {
   try {
-    const data = await dao.getIntegrations({ db })(getLearnerId(req));
+    if (req.learneruser?.third_party !== true) {
+      return res.status(403).send({ statusCode: 403, message: "Third party integrations are not enabled by the administrator." });
+    }
+    const data = await dao.getIntegrations({ db })();
     return res.status(200).send({
       statusCode: 200,
       message: validation.messages.fetched,

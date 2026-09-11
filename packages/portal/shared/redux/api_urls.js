@@ -381,6 +381,13 @@ const api = {
   widget_update: "/widgets/update",
   widget_delete: "/widgets/delete",
   widget_change_status: "/widgets/change-status",
+  //----------Third Party Integrations -------------
+  third_party_integration_getall: "/third-party-integrations/get",
+  third_party_integration_save: "/third-party-integrations/save",
+  third_party_integration_update: "/third-party-integrations/update",
+  third_party_integration_change_status: "/third-party-integrations/change-status",
+  third_party_integration_delete: "/third-party-integrations/delete",
+  third_party_integrations_available: "/third-party-integrations/available",
   //----------Reports---------------
 
   admin_logs: "report/loginlogs/admins",

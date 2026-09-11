@@ -120,6 +120,9 @@ axiosInstance.interceptors.response.use(
         });
       }
     } else if (error?.response?.status === 404) {
+      if (error?.config?.skipNotFoundRedirect) {
+        return Promise.reject(error);
+      }
       //Requested Resource Not Found OR Server Side Wrror
       if (Router.pathname !== '/404') {
           Router.push('/404');
