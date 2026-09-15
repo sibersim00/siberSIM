@@ -169,9 +169,6 @@ const getById = ({db, dao, validation }) => async (req, res) => {
 
 const verifyLearnerImport = ({ dao, db, validation }) => async (req, res, next) => {
   try {
-    if (!Array.isArray(req.body) || !req.body.length || req.body.length > 1000) {
-      return res.status(400).send({ statusCode: 400, message: 'Import must contain between 1 and 1000 learner rows.' });
-    }
     const capacity = await checkLearnerCapacity({
       db,
       learnerLimit: req.user.learner_limit,
