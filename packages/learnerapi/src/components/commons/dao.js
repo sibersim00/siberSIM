@@ -38,6 +38,38 @@ const theme =
     }
   };
 
+const getAmbientMotion =
+  ({ db }) =>
+  async (learner_id) => {
+    const rows = await db.sequelize.query(
+      `SELECT ambient_motion FROM learners WHERE learner_id = :learner_id AND deletedon IS NULL LIMIT 1`,
+      {
+        replacements: { learner_id },
+        type: db.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    return rows.length > 0 ? Boolean(Number(rows[0].ambient_motion)) : true;
+  };
+
+const updateAmbientMotion =
+  ({ db }) =>
+  async (learner_id, ambient_motion) => {
+    await db.sequelize.query(
+      `UPDATE learners
+       SET ambient_motion = :ambient_motion, modifiedon = CURRENT_TIMESTAMP
+       WHERE learner_id = :learner_id AND deletedon IS NULL`,
+      {
+        replacements: {
+          learner_id,
+          ambient_motion: ambient_motion ? 1 : 0,
+        },
+      }
+    );
+
+    return ambient_motion;
+  };
+
   const componentcategorylist = ({ db }) => async () => {
     try {
       let [result] = await db.sequelize.query(
@@ -130,6 +162,8 @@ const scenariosubcategorylist = ({ db }) => async (body) => {
 
 module.exports = {
   theme,
+  getAmbientMotion,
+  updateAmbientMotion,
   componentcategorylist,
   componentsubcategorylist,
   scenariocomponentcategorylist,

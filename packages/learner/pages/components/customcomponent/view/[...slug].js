@@ -25,8 +25,6 @@ const CustomComponentView = () => {
         state.customComponent.singleComponent.data,
     };
   });
-
-  console.log("getSingleComponentSucc", getSingleComponentSucc)
   useEffect(() => {
     if (getSingleComponentSucc && getSingleComponentSucc !== "") {
       setRowValues(getSingleComponentSucc);
@@ -39,7 +37,6 @@ const CustomComponentView = () => {
       dispatch(getSingleComponent(query.slug[0]));
     }
   }, [query.slug]);
-  console.log("rowValuesrowValues", rowValues)
   return (
     <>
       <Seo title="Custom Components" />

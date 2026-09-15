@@ -14,4 +14,6 @@ module.exports = {
    INSTRUCTOR_ROLE_ID:process.env.INSTRUCTOR_ROLE_ID || 2,
    WEB_ORIGIN:process.env.WEB_ORIGIN ,
    EVENTLEARNER_API_URL: process.env.EVENTLEARNER_API_URL || "http://localhost:4005/",
+   WEBHOOK_JWT_SECRET: process.env.WEBHOOK_JWT_SECRET,
+   WEBHOOK_INTERNAL_KEY: process.env.WEBHOOK_INTERNAL_KEY,
 };

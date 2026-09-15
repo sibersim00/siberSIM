@@ -125,7 +125,7 @@ const save =
         const checkDuplicateQuery = `
         SELECT COUNT(*) as count 
         FROM components 
-        WHERE vmid = :vmid AND status = 'Active'
+        WHERE vmid = :vmid AND status = 'Active' and deletedon is NULL
       `;
         const [duplicateResult] = await db.sequelize.query(checkDuplicateQuery, {
           replacements: { vmid: body.vmid },

@@ -30,7 +30,6 @@ import {
   dispatchFromLogin,
   clearDispatchFromLogin,
   clearDispatchFromForget,
-  getorgData,
   clearHasError,
 } from "../../shared/redux/slices/authentication/Auth";
 
@@ -69,6 +68,33 @@ const Home = () => {
     dispatch(clearDispatchFromForget());
     dispatch(getCompanyList());
   }, [dispatch]);
+
+   const getFirstMenuPath = (items) => {
+  
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  for (const item of items) {
+    if (item?.type === "link" && item?.source) {
+      return item.source;
+    }
+    if (Array.isArray(item?.children) && item.children.length > 0) {
+      const childPath = getFirstMenuPath(item.children);
+      if (childPath) return childPath;
+    }
+    // fallback: if it's not explicitly a "sub" with children but still has a source, use it
+    if (item?.source && item?.type !== "sub") {
+      return item.source;
+    }
+  }
+  return null;
+};
+
+// Given the full menus array [{ menutitle, Items }], get the landing path
+const getLandingPath = (menus) => {
+  const items = menus?.[0]?.Items;
+  return getFirstMenuPath(items) || "/dashboard"; // fallback if nothing found
+};
+
   
 
   useEffect(() => {
@@ -154,6 +180,39 @@ const Home = () => {
     }
   }, [otpSuccessData]);
 
+  // useEffect(() => {
+  //   if (loginSuccData?.statusCode == 200) {
+  //     let issuper = loginSuccData?.data?.user?.issuper ? loginSuccData?.data?.user?.issuper : false;
+  //     if (!issuper && getCompanySettingsData?.redirect == false && getCompanySettingsData?.data?.licenseStatus.isStart==false) {
+  //       let startDate = d_mmm_y(getCompanySettingsData?.data?.licenseStatus.start_date);
+  //       dispatch(clearDispatchFromLogin());
+  //       navigate.replace(`/503?startDate=${startDate}`);
+  //     }else{
+  //       localStorage.setItem("accessToken",JSON.stringify(loginSuccData?.data?.accessToken));
+  //       localStorage.setItem("menus", JSON.stringify(loginSuccData?.data?.menus));
+  //       localStorage.setItem("user", JSON.stringify(loginSuccData?.data?.user));
+  //       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
+  //       localStorage.setItem("apps", JSON.stringify([]));
+  //       setLicenseExpiryFlag(true);
+  //       dispatch(clearDispatchFromLogin());
+  //       setTimeout(() => {
+  //         if(issuper){
+  //           const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+  //           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+  //           navigate.replace(source, "", { shallow: true });
+  //         }else if (getCompanySettingsData?.redirect == true) {
+  //           navigate.replace("/activate-account");
+  //         } else {
+  //           const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+  //           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+  //           navigate.replace(source, "", { shallow: true });
+  //         }
+  //       }, 1500);
+  //     }
+  //   }
+  // }, [loginSuccData]);
+
+
   useEffect(() => {
     if (loginSuccData?.statusCode == 200) {
       let issuper = loginSuccData?.data?.user?.issuper ? loginSuccData?.data?.user?.issuper : false;
@@ -171,15 +230,13 @@ const Home = () => {
         dispatch(clearDispatchFromLogin());
         setTimeout(() => {
           if(issuper){
-            const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-            navigate.replace(source, "", { shallow: true });
+            const landingPath = getLandingPath(loginSuccData?.data?.menus);
+            navigate.replace(landingPath, "", { shallow: true });
           }else if (getCompanySettingsData?.redirect == true) {
             navigate.replace("/activate-account");
           } else {
-            const allMatches = loginSuccData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-            navigate.replace(source, "", { shallow: true });
+            const landingPath = getLandingPath(loginSuccData?.data?.menus);
+            navigate.replace(landingPath, "", { shallow: true });
           }
         }, 1500);
       }
@@ -278,6 +335,39 @@ const Home = () => {
       }
     }
   };
+  // useEffect(() => {
+  //   if (directLoginData?.statusCode == 200) {
+  //     let issuper = directLoginData?.data?.user?.issuper ? directLoginData?.data?.user?.issuper : false;
+  //     if (!issuper && getCompanySettingsData?.redirect == false && getCompanySettingsData?.data?.licenseStatus.isStart==false) {
+  //       let startDate = d_mmm_y(getCompanySettingsData?.data?.licenseStatus.start_date);
+  //       dispatch(clearDispatchDirectLogin());
+  //       navigate.replace(`/503?startDate=${startDate}`);
+  //     }else{
+  //       localStorage.setItem("accessToken",JSON.stringify(directLoginData?.data?.accessToken));
+  //       localStorage.setItem("menus", JSON.stringify(directLoginData?.data?.menus));
+  //       localStorage.setItem("user", JSON.stringify(directLoginData?.data?.user));
+  //       localStorage.setItem("apps", JSON.stringify([]));
+  //       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
+  //       setLicenseExpiryFlag(true);
+  //       dispatch(clearDispatchDirectLogin());
+  //       setTimeout(() => {
+  //         if(issuper){
+  //           const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+            
+  //           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+  //           navigate.replace(source, "", { shallow: true });
+  //         }else if (getCompanySettingsData?.redirect == true) {
+  //           navigate.replace("/activate-account");
+  //         } else {
+  //           const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
+  //           const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
+  //           navigate.replace(source, "", { shallow: true });
+  //         }
+  //       }, 1500);
+  //     }
+  //   }
+  // }, [directLoginData]);
+
   useEffect(() => {
     if (directLoginData?.statusCode == 200) {
       let issuper = directLoginData?.data?.user?.issuper ? directLoginData?.data?.user?.issuper : false;
@@ -295,16 +385,13 @@ const Home = () => {
         dispatch(clearDispatchDirectLogin());
         setTimeout(() => {
           if(issuper){
-            const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-            
-            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-            navigate.replace(source, "", { shallow: true });
+            const landingPath = getLandingPath(directLoginData?.data?.menus);
+            navigate.replace(landingPath, "", { shallow: true });
           }else if (getCompanySettingsData?.redirect == true) {
             navigate.replace("/activate-account");
           } else {
-            const allMatches = directLoginData?.data?.menus[0]?.Items.filter(i => i.orderno === "1.00");
-            const source = allMatches.length > 0 ? allMatches[0].source : "/dashboard";
-            navigate.replace(source, "", { shallow: true });
+            const landingPath = getLandingPath(directLoginData?.data?.menus);
+            navigate.replace(landingPath, "", { shallow: true });
           }
         }, 1500);
       }

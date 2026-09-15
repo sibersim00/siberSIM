@@ -3,12 +3,6 @@
 require("dotenv").config();
 
 const CONFIG_VALUES = {
-  endpoint: process.env.PROXMOX_ENDPOINT,
-  username: process.env.PROXMOX_USERNAME,
-  password: process.env.PROXMOX_PASSWORD,
-  current_node: process.env.PROXMOX_CURRENT_NODE,
-
-  
   cookie_prefix: process.env.PROXMOX_COOKIE_PREFIX,
   full: "0",
 };
@@ -50,7 +44,8 @@ const VM_PROCESSES = {
   RESTORE_VM:"Restore VM",
   CHECK_VMID_STATUS:"Check vmid status",
   MIGRATE_VM:"Migrate VM",
-  WAIT_FOR_TASK:"Status of VM"
+  WAIT_FOR_TASK:"Status of VM",
+  GET_NODE_NETWORK_INFO:"Get node network information"
 };
 
 module.exports = {

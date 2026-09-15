@@ -9,7 +9,6 @@ import {
   Tab,
   Modal,
   Alert,
-  Badge,
   Form,
   Table,
 } from "react-bootstrap";
@@ -36,8 +35,7 @@ import {
   pausescenario,
   resumescenario,
   canresumescenario,
-  Learnerlistbyinstructor,
-  clearLearnerlistbyinstructor,  
+  Learnerlistbyinstructor, 
   getLearnersByVmRequest,
   cleargetLearnersByVmRequest,    
   DeleteInviteLearnerController,
@@ -57,6 +55,44 @@ const PdfLoader = dynamic(
   { ssr: false, loading: () => <p>Loading PDF viewer...</p> },
 );
 
+const scenarioConfigurationSteps = [
+  {
+    icon: "fa-cogs",
+    accent: "red",
+    label: "Preparing configuration",
+    text: "Validating the scenario settings and resources.",
+    step: "Initializing",
+  },
+  {
+    icon: "fa-clone",
+    accent: "orange",
+    label: "Cloning virtual machines",
+    text: "Creating the virtual machines required for this session.",
+    step: "Cloning",
+  },
+  {
+    icon: "fa-sliders-h",
+    accent: "yellow",
+    label: "Configuring network",
+    text: "Applying resource and network bridge settings.",
+    step: "Bridge Configuration",
+  },
+  {
+    icon: "fab fa-linux",
+    accent: "blue",
+    label: "Starting virtual machines",
+    text: "Powering on the configured virtual machines.",
+    step: "Starting",
+  },
+  {
+    icon: "fa-shield-alt",
+    accent: "green",
+    label: "Launching scenario",
+    text: "Finalizing the environment and making it available.",
+    step: "Running",
+  },
+];
+
 const ScenariosView = () => {
   const dispatch = useDispatch();
   const { query, push } = useRouter();
@@ -70,7 +106,6 @@ const ScenariosView = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const backTo = query?.backView;
   const [showChat, setShowChat] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [isNotified, setIsNotified] = useState(false);
@@ -78,21 +113,23 @@ const ScenariosView = () => {
   const [scenarioStatus, setScenarioStatus] = useState("Pending");
   const [vmStep, setVmStep] = useState("");
   const pollingRef = useRef(null);
+  const configurationCompleteRef = useRef(false);
   const [countdown, setCountdown] = useState(10);
   const [countdownActive, setCountdownActive] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [configurationElapsed, setConfigurationElapsed] = useState(0);
   const [isScenarioError400, setIsScenarioError400] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfNotFound, setPdfNotFound] = useState(false);
   const [dynamicTab, setDynamicTab] = useState("Basic Information");
-  const [isAnyScenarioRunning, setIsAnyScenarioRunning] = useState(false);
   const [learnerDropdown, setLearnerDropdown] = useState([]);
   const [selectedLearners, setSelectedLearners] = useState([]);
+  const [learnerSelectionError, setLearnerSelectionError] = useState("");
   const [showLearnerModal, setShowLearnerModal] = useState(false);
   const [showAssignedModal, setShowAssignedModal] = useState(false);
+  const [returnToInviteeList, setReturnToInviteeList] = useState(false);
   const [showAssignedBtn, setShowAssignedBtn] = useState(false);
-  const [showInviteesBtn, setShowInviteesBtn] = useState(false);
   const { t } = useTranslation();
 
   const [isTerminatingOrCompleting, setIsTerminatingOrCompleting] =
@@ -104,35 +141,6 @@ const ScenariosView = () => {
     "Starting",
     "Running",
   ];
-
-  const statusBadgeMap = {
-    Start: "primary-transparent",
-    Pause: "warning-transparent",
-    Resume: "info-transparent",
-    Terminated: "danger-transparent",
-    Completed: "success-transparent",
-    Failed: "dark-transparent",
-    Initiated: "secondary-transparent",
-  };
-
-  const typeBadgeMap = {
-    Learner: "primary-transparent",
-    Instructor: "success-transparent",
-    Admin: "danger-transparent",
-    System: "secondary-transparent",
-  };
-
-  const badgeTextColorMap = {
-    "primary-transparent": "text-primary",
-    "secondary-transparent": "text-secondary",
-    "success-transparent": "text-success",
-    "danger-transparent": "text-danger",
-    "warning-transparent": "text-warning",
-    "info-transparent": "text-info",
-    "dark-transparent": "text-dark",
-    "light-transparent": "text-dark",
-  };
-
   const {
     getSingleScenariosSucc,
     saveScenariosData,
@@ -141,8 +149,6 @@ const ScenariosView = () => {
     hasUpdateCompletedTerminatedSucc,
     tabListSucc,
     hasdeletescenarioSucc,
-    haspausescenarioSucc,
-    hasresumescenarioSucc,
     hasGetlearnerlistbyinstructorData,
     hasGetLearnersByVmRequestDataData,
     hasdeleteInviteLearnerControllerData,
@@ -158,9 +164,6 @@ const ScenariosView = () => {
       state?.scenarios?.updateCompletedTerminatedData?.data,
     hasdeletescenarioSucc: state?.scenarios?.hasdeletescenarioSuccData?.data,
     tabListSucc: state?.scenarios?.getTabListData?.data,
-    haspausescenarioSucc: state?.scenarios?.pausescenarioData,
-    hasresumescenarioSucc: state?.scenarios?.resumescenarioData,
-
     hasGetlearnerlistbyinstructorData:
       state?.scenarios?.learnerlistbyinstructor?.data,
     hasGetLearnersByVmRequestDataData:
@@ -172,9 +175,6 @@ const ScenariosView = () => {
 
     errorData: state?.scenarios?.error,
   }));
-
-  console.log("hasGetLearnersByVmRequestDataData",hasGetLearnersByVmRequestDataData?.length > 0);
-  
   const getUserDataFromLocal = useSelector(
     (state) => state?.localData?.getLocalData,
   );
@@ -226,7 +226,20 @@ const hasInvitees =
     }
     activeScenarioIdRef.current = scenario.scenariouuid;
     setRowValues(scenario);
-    setScenarioStatus(scenario.status);
+    // The scenario-detail endpoint can briefly return its previous
+    // "Initializing" value after VM configuration has already completed.
+    // Keep the confirmed running UI until the endpoint catches up.
+    if (
+      !(
+        configurationCompleteRef.current &&
+        scenario.status === "Initializing"
+      )
+    ) {
+      setScenarioStatus(scenario.status);
+      if (scenario.status !== "Initializing") {
+        configurationCompleteRef.current = false;
+      }
+    }
     if (scenario.calculated_timer) {
       const [h, m, s] = scenario.calculated_timer.split(":").map(Number);
       const totalSeconds = h * 3600 + m * 60 + s;
@@ -673,12 +686,22 @@ const hasInvitees =
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
+    // A previous scenario may leave the completion countdown and VM step in
+    // state. Reset them before opening a new configuration workflow so stale
+    // UI state cannot close the new modal while cloning is still in progress.
+    setVmStep("Initializing");
+    configurationCompleteRef.current = false;
+    setCountdown(10);
+    setCountdownActive(false);
+    setConfigurationElapsed(0);
+    setShowFailureModal(false);
     setShowCloneModal(true);
+    dispatch(clearGetSessionStatusList());
     dispatch(getSessionStatusList(scenariolearnersessionuuid));
     setTimeout(() => {
       pollingRef.current = setInterval(() => {
         dispatch(getSessionStatusList(scenariolearnersessionuuid));
-      }, 5000);
+      }, 25000);
     }, 100);
   };
 
@@ -692,12 +715,22 @@ const hasInvitees =
   }, [showCloneModal, hasGetSessionStatusListData?.vm_steps]);
 
   useEffect(() => {
+    if (!showCloneModal || vmStep === "Running" || vmStep === "Pause") return;
+    const elapsedTimer = setInterval(() => {
+      setConfigurationElapsed((previous) => previous + 1);
+    }, 1000);
+    return () => clearInterval(elapsedTimer);
+  }, [showCloneModal, vmStep]);
+
+  useEffect(() => {
     const step = hasGetSessionStatusListData?.vm_steps;
     if (!step || !step.trim()) {
       return;
     }
     setVmStep(step);
     if (step === "Running" || step === "Pause") {
+      configurationCompleteRef.current = true;
+      setScenarioStatus(step === "Pause" ? "Pause" : "Start");
       setCountdown(10);
       setCountdownActive(true);
       clearInterval(pollingRef.current);
@@ -707,6 +740,7 @@ const hasInvitees =
     }
 
     if (step === "Failed") {
+      configurationCompleteRef.current = false;
       setVmStep(" ");
       setShowCloneModal(false);
       setShowFailureModal(true);
@@ -721,44 +755,45 @@ const hasInvitees =
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
       }, 1000);
-    } else if (countdown === 0) {
+    } else if (
+      countdownActive &&
+      countdown === 0 &&
+      (vmStep === "Running" || vmStep === "Pause")
+    ) {
       setCountdownActive(false);
       setShowCloneModal(false);
-      setScenarioStatus("Initializing");
+      setScenarioStatus(vmStep === "Pause" ? "Pause" : "Start");
       setTimerActive(true);
       setTimerPaused(false);
       dispatch(getSingleScenarios(query.slug[0]));
     }
 
     return () => clearInterval(timer);
-  }, [countdownActive, countdown]);
+  }, [countdownActive, countdown, vmStep]);
 
-  const getStepClass = (step) => {
-    if (vmStep === "Running") return "text-success";
+  const isConfigurationComplete = vmStep === "Running" || vmStep === "Pause";
+  const currentVmStepIndex = isConfigurationComplete
+    ? vmStepsOrder.length - 1
+    : vmStepsOrder.indexOf(vmStep);
+  const configurationProgress = isConfigurationComplete
+    ? 100
+    : currentVmStepIndex >= 0
+      ? Math.round(((currentVmStepIndex + 1) / vmStepsOrder.length) * 100)
+      : 0;
 
-    const currentIndex = vmStepsOrder.indexOf(vmStep);
+  const getConfigurationStepState = (step) => {
     const stepIndex = vmStepsOrder.indexOf(step);
-    if (stepIndex < currentIndex) return "text-success";
-    if (stepIndex === currentIndex) return "text-warning font-weight-bold";
-
-    return "text-danger";
-  };
-
-  const iconBackground = (step) => {
-    if (vmStep === "Running") return "product-icon-bg-success-transparent";
-
-    const currentIndex = vmStepsOrder.indexOf(vmStep);
-    const stepIndex = vmStepsOrder.indexOf(step);
-    if (stepIndex < currentIndex) return "product-icon-bg-success-transparent";
-    if (stepIndex === currentIndex)
-      return "product-icon-bg-warning-transparent font-weight-bold";
-    return "product-icon-bg-danger-transparent";
+    if (isConfigurationComplete || stepIndex < currentVmStepIndex) {
+      return "complete";
+    }
+    if (stepIndex === currentVmStepIndex) return "active";
+    return "pending";
   };
   const handleOkClick = () => {
     setShowCloneModal(false);
     setTimerActive(true);
     setTimerPaused(false);
-    setScenarioStatus("Initializing");
+    setScenarioStatus(vmStep === "Pause" ? "Pause" : "Start");
     dispatch(getSingleScenarios(query.slug[0]));
     setShowAssignedBtn(true);
   };
@@ -822,7 +857,7 @@ const hasInvitees =
   };
 
   useEffect(() => {
-    if (hasGetlearnerlistbyinstructorData?.length > 0) {
+    if (Array.isArray(hasGetlearnerlistbyinstructorData)) {
       const dropdownData = hasGetlearnerlistbyinstructorData.map((item) => ({
         learner_id: item.learner_id,
         learner_name: item.learner_name,
@@ -843,6 +878,11 @@ const hasInvitees =
   };
 
   const handleAssignSubmit = async () => {
+    if (!selectedLearners?.length) {
+      setLearnerSelectionError("Please select at least one learner.");
+      return;
+    }
+
     const payload = {
       vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
       invited_by_learner_id: getUserDataFromLocal?.learner_id,
@@ -850,6 +890,7 @@ const hasInvitees =
     };
 
     try {
+      const shouldReturnToInviteeList = returnToInviteeList;
       await dispatch(saveInviteLearners(payload));
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
@@ -861,13 +902,19 @@ const hasInvitees =
           theme: "colored",
         },
       );
-      dispatch(
+      await dispatch(
         getLearnersByVmRequest({
           vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
         }),
       );
+      setSelectedLearners([]);
+      setLearnerSelectionError("");
       setShowAssignedModal(false);
       setShowAssignedBtn(false);
+      setReturnToInviteeList(false);
+      if (shouldReturnToInviteeList) {
+        setShowLearnerModal(true);
+      }
       // setShowInviteesBtn(true);
     } catch (err) {
       console.error(err);
@@ -875,12 +922,29 @@ const hasInvitees =
   };
 
   const handleOpenAssignedModal = () => {
+    setReturnToInviteeList(false);
+    setSelectedLearners([]);
+    setLearnerDropdown([]);
     dispatch(
       Learnerlistbyinstructor({
         vmrequestid: getSingleScenariosSucc?.[0]?.vmrequestid,
       }),
     );
+    setLearnerSelectionError("");
     setShowAssignedModal(true);
+  };
+
+  const handleCloseAssignedModal = () => {
+    setSelectedLearners([]);
+    setLearnerSelectionError("");
+    setReturnToInviteeList(false);
+    setShowAssignedModal(false);
+  };
+
+  const handleAddMoreInvitees = () => {
+    setShowLearnerModal(false);
+    handleOpenAssignedModal();
+    setReturnToInviteeList(true);
   };
 
   return (
@@ -1749,99 +1813,88 @@ const hasInvitees =
             show={showCloneModal}
             onHide={() => {}}
             backdrop="static"
+            backdropClassName="scenario-clone-backdrop"
             keyboard={false}
             size="md"
             centered
+            className="scenario-clone-modal-shell"
+            dialogClassName="scenario-clone-modal"
           >
-            <Modal.Header>
-              <Modal.Title>Scenario configuration steps</Modal.Title>
+            <Modal.Header className="scenario-clone-header border-0">
+              <div className="scenario-clone-heading">
+                <div>
+                  <span className="scenario-clone-eyebrow">Live configuration</span>
+                  <Modal.Title>Building your scenario</Modal.Title>
+                  <p className="mb-0">
+                    Allocating resources for your secure lab
+                  </p>
+                </div>
+              </div>
             </Modal.Header>
-            <Modal.Body>
-              <div className="row">
-                <div className="col-12">
-                  <Card className="custom-card">
-                    <div className="product-timeline card-body pt-3 mt-1">
-                      <ul className="timeline-1 mb-0">
-                        {[
-                          {
-                            icon: "fa-cogs",
-                            label: "Initializing Configure",
-                            text: "Preparing settings...",
-                            step: "Initializing",
-                          },
-                          {
-                            icon: "fa-clone",
-                            label: "Starting Cloning VMs",
-                            text: "Duplicating virtual machines...",
-                            step: "Cloning",
-                          },
-                          {
-                            icon: "fa-sliders-h",
-                            label: "VM Configuration",
-                            text: "Configuring resources and network...",
-                            step: "Bridge Configuration",
-                          },
-                          {
-                            icon: "fab fa-linux",
-                            label: "Starting VMs",
-                            text: "Starting VMs...",
-                            step: "Starting",
-                          },
-                          {
-                            icon: "fa-shield-alt",
-                            label: "Launching the scenario",
-                            text: "Launching the scenario...",
-                            step: "Running",
-                          },
-                        ].map((item, idx) => {
-                          return (
-                            <li
-                              key={idx}
-                              className="mt-0 d-flex justify-content-between align-items-start"
-                            >
-                              <div className="d-flex">
-                                <i
-                                  className={`fa ${item.icon} ${iconBackground(
-                                    item.step,
-                                  )} product-icon ${getStepClass(item.step)}`}
-                                ></i>
-                                <div className="ml-2">
-                                  <span
-                                    className={`font-weight-semibold mb-4 tx-14 ${getStepClass(
-                                      item.step,
-                                    )}`}
-                                  >
-                                    {item.label}
-                                  </span>
-                                  <p className="mb-0 text-muted tx-12">
-                                    {item.text}
-                                  </p>
-                                </div>
-                              </div>
-                              {getStepClass(item.step).includes(
-                                "text-warning",
-                              ) && (
-                                <i className="fas fa-spinner fa-spin text-warning ml-3 mt-1" />
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </Card>
+            <Modal.Body className="scenario-clone-body">
+              <div className="scenario-clone-progress-summary">
+                <strong>Overall progress</strong>
+                <strong>{formatTime(configurationElapsed)} elapsed</strong>
+              </div>
+              <div
+                className="scenario-clone-progress"
+                role="progressbar"
+                aria-label="Scenario configuration progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={configurationProgress}
+              >
+                <div style={{ width: `${configurationProgress}%` }} />
+              </div>
+
+              <div className="scenario-clone-workspace">
+                <div
+                  className="scenario-clone-ring"
+                  style={{
+                    "--configuration-progress": `${configurationProgress * 3.6}deg`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <div>
+                    <strong>{configurationProgress}%</strong>
+                    <span>{isConfigurationComplete ? "Ready" : "Initiated"}</span>
+                  </div>
+                </div>
+
+                <div className="scenario-clone-steps">
+                  {scenarioConfigurationSteps.map((item, idx) => {
+                    const stepState = getConfigurationStepState(item.step);
+                    return (
+                      <div
+                        key={item.step}
+                        className={`scenario-clone-step is-${stepState} accent-${item.accent}`}
+                        style={{ "--step-delay": `${idx * 70}ms` }}
+                      >
+                        <div className="scenario-clone-step-marker">
+                          {stepState === "complete" && <i className="fas fa-check" />}
+                          {stepState === "active" && <span />}
+                        </div>
+                        <div className="scenario-clone-step-copy">
+                          <h6>{item.label}</h6>
+                          {stepState === "active" && <p>{item.text}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </Modal.Body>
 
-            <Modal.Footer>
-              {vmStep === "Running" && (
-                <div style={{ display: "flex", alignItems: "center" }}>
+            {isConfigurationComplete && (
+              <Modal.Footer className="scenario-clone-footer border-0">
+                <div className="scenario-clone-ready-action">
+                  <span>Continuing automatically in {countdown}s</span>
                   <Button variant="success" onClick={handleOkClick}>
-                    OK ({countdown})
+                    Enter scenario <i className="fas fa-arrow-right ms-2" />
                   </Button>
                 </div>
-              )}
-            </Modal.Footer>
+              </Modal.Footer>
+            )}
           </Modal>
 
           <Modal
@@ -1896,7 +1949,7 @@ const hasInvitees =
           {/* dropdown modal */}
           <Modal
             show={showAssignedModal}
-            onHide={() => setShowAssignedModal(false)}
+            onHide={handleCloseAssignedModal}
             centered
           >
             <Modal.Header closeButton>
@@ -1912,6 +1965,11 @@ const hasInvitees =
 
                 <Select
                   isMulti
+                  inputId="learner-invitees"
+                  aria-invalid={Boolean(learnerSelectionError)}
+                  aria-describedby={
+                    learnerSelectionError ? "learner-invitees-error" : undefined
+                  }
                   styles={customStyles()}
                   theme={(theme) => ({
                     ...theme,
@@ -1933,10 +1991,15 @@ const hasInvitees =
                   getOptionLabel={(x) => x.learner_name}
                   getOptionValue={(x) => x.learner_id}
                   placeholder="Select Invitees"
+                  noOptionsMessage={() => "No additional learners available"}
                   onChange={(selectedOptions) => {
-                    setSelectedLearners(selectedOptions);
+                    const learners = selectedOptions || [];
+                    setSelectedLearners(learners);
+                    if (learners.length > 0) {
+                      setLearnerSelectionError("");
+                    }
 
-                    const selectedIds = (selectedOptions || []).map(
+                    const selectedIds = learners.map(
                       (item) => item.learner_id,
                     );
 
@@ -1947,13 +2010,22 @@ const hasInvitees =
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {learnerSelectionError && (
+                  <div
+                    id="learner-invitees-error"
+                    className="text-danger mt-1"
+                    role="alert"
+                  >
+                    {learnerSelectionError}
+                  </div>
+                )}
               </Form.Group>
             </Modal.Body>
 
             <Modal.Footer>
               <Button
                 variant="outline-secondary"
-                onClick={() => setShowAssignedModal(false)}
+                onClick={handleCloseAssignedModal}
               >
                 Cancel
               </Button>
@@ -2042,6 +2114,18 @@ const hasInvitees =
                 </tbody>
               </Table>
             </Modal.Body>
+            <Modal.Footer className="border-top">
+              <Button
+                variant="outline-secondary"
+                onClick={() => setShowLearnerModal(false)}
+              >
+                Close
+              </Button>
+              <Button variant="primary" onClick={handleAddMoreInvitees}>
+                <i className="fe fe-user-plus me-2"></i>
+                Add More Invitees
+              </Button>
+            </Modal.Footer>
           </Modal>
         </Col>
       </Row>

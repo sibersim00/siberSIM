@@ -8,44 +8,11 @@ import {
   Button,
 } from "react-bootstrap";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
-import { getScenarioImport } from "../../../shared/redux/slices/scenario/scenarioManage";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useRouter } from "next/router";
 
 export default function ScenarioImportDragDrop() {
-  const dispatch = useDispatch();
   const { query, push } = useRouter();
-  // const [leftItems, setLeftItems] = useState([
-  //   {
-  //     id: 1,
-  //     scenariotitle: "Scenario One",
-  //     scenarioimage: "",
-  //     scenarioidentification: "Basic Level",
-  //     instructor_name: "Instructor A",
-  //   },
-  //   {
-  //     id: 2,
-  //     scenariotitle: "Scenario Two",
-  //     scenarioimage: "",
-  //     scenarioidentification: "Intermediate Level",
-  //     instructor_name: "Instructor B",
-  //   },
-  //   {
-  //     id: 3,
-  //     scenariotitle: "Scenario three",
-  //     scenarioimage: "",
-  //     scenarioidentification: "Basic Level",
-  //     instructor_name: "Instructor A",
-  //   },
-  //   {
-  //     id: 4,
-  //     scenariotitle: "Scenario four",
-  //     scenarioimage: "",
-  //     scenarioidentification: "Intermediate Level",
-  //     instructor_name: "Instructor B",
-  //   },
-
-  // ]);
   const [leftItems, setLeftItems] = useState([]);
   const [rightItems, setRightItems] = useState([]);
   const [draggingItem, setDraggingItem] = useState(null);
@@ -86,13 +53,6 @@ export default function ScenarioImportDragDrop() {
       setLeftItems(formatted);
     }
   }, [scenarioComponents]);
-
-  // useEffect(() => {
-  //   const id = query.slug?.[0] || "a78c117d-7382-11f0-b696-bc241155fec6";
-  //   setRowId(id);
-  //   dispatch(getScenarioImport(id));
-  // }, [query.slug]);
-
   return (
     <>
       <Row className="row-sm">

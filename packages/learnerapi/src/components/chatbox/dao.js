@@ -122,9 +122,6 @@ const sendMessage = ({ db }) => async (body) => {
 const markMessagesSeen = ({ db }) => async ({ scenarioid, learner_id, instructor_id, viewer_type }) => {
   try {
     const oppositeSenderType = viewer_type === "learner" ? "Instructor" : "Learner";
-
-    console.log("Running query with:-----------------------------", { scenarioid, learner_id, instructor_id, oppositeSenderType });
-
     const [result] = await db.sequelize.query(
       `UPDATE scenario_learner_chats
 SET status = 'seen'

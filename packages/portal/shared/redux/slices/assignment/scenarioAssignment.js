@@ -33,7 +33,6 @@ const slice = createSlice({
         state.assignScenarioList = action.payload;
     },
     hasHandleManageSuc(state,action){
-      console.log("action.payloadaction.payload",action.payload)
       state.isLoading = false,
       state.viewNameResp = action.payload;
     },

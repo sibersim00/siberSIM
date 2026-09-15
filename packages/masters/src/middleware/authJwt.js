@@ -93,6 +93,7 @@ const authenticateToken = (routeslug) => {
         }
         const userData = JSON.parse(tokenRow.token_json || "{}");
         userData.user_count_limit  =0;
+        userData.learner_limit = null;
         // License check
         if (!userData.issuper && userData.license_key) {
           const hostname = req.hostname;
@@ -112,6 +113,14 @@ const authenticateToken = (routeslug) => {
           }
           userData.user_count_limit  = Number(licenseStatus.user_count)
           userData.manipulation  = licenseStatus.manipulation
+          userData.learner_limit =
+            licenseStatus.learner_limit === null || licenseStatus.learner_limit === undefined
+              ? null
+              : Number(licenseStatus.learner_limit);
+          userData.third_party =
+            licenseStatus.third_party === true ||
+            licenseStatus.third_party === "T" ||
+            licenseStatus.third_party === "1";
         }
 
 
@@ -193,6 +202,10 @@ const authenticateTokenold = async (req, res, next) => {
           message: userData.usertype =='Admin' ? "Access denied: Your license seems expired or not registered. Please update your license to continue." : "Your access has expired or is not activated. Please contact your administrator for assistance.",
         });
         }
+        userData.third_party =
+          licenseStatus.third_party === true ||
+          licenseStatus.third_party === "T" ||
+          licenseStatus.third_party === "1";
       }
       req.user = userData;
       next();
@@ -394,6 +407,6 @@ module.exports = {
   refreshToken,
   clearToken,
   logout,
-  authenticateTokenold
+  authenticateTokenold,
 };
 

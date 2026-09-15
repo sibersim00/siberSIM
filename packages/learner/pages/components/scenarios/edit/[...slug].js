@@ -20,6 +20,202 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+import { getAmbientMotionPreference } from "../../../../shared/redux/slices/commons/commons";
+
+const COMPONENT_ANIMATION_TYPES = new Set([
+  "circle",
+  "spiral",
+  "leftToRight",
+  "rightToLeft",
+  "diagonalTopLeft",
+  "diagonalTopRight",
+  "diagonalBottomLeft",
+  "diagonalBottomRight",
+]);
+
+const getIconMotion = (value = "") => {
+  const hash = String(value)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+  const durations = [7.5, 9, 10.5];
+
+  return {
+    direction: hash % 2 === 0 ? "normal" : "reverse",
+    duration: durations[hash % durations.length],
+    delay: -((hash % 10) / 10) * durations[hash % durations.length],
+    patrolDuration: [5.8, 6.8, 7.8][hash % 3],
+  };
+};
+
+const getConfiguredAnimationOffset = (
+  elapsedTime,
+  animation,
+  canvasWidth = 900,
+  canvasHeight = 600,
+) => {
+  const type = animation?.type;
+  if (!COMPONENT_ANIMATION_TYPES.has(type)) return null;
+
+  if (type === "circle") {
+    const progress = (elapsedTime % 8000) / 8000;
+    const angle = progress * Math.PI * 2 - Math.PI / 2;
+    return { x: Math.cos(angle) * 58, y: Math.sin(angle) * 58 };
+  }
+
+  if (type === "spiral") {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 0, y: -24 },
+      { x: 32, y: 0 },
+      { x: 0, y: 44 },
+      { x: -56, y: 0 },
+      { x: 0, y: -68 },
+      { x: 82, y: 0 },
+      { x: 0, y: 76 },
+      { x: -82, y: 0 },
+      { x: 0, y: 0 },
+    ];
+    const pathProgress = ((elapsedTime % 9000) / 9000) * (points.length - 1);
+    const segment = Math.min(points.length - 2, Math.floor(pathProgress));
+    const amount = pathProgress - segment;
+    return {
+      x: points[segment].x + (points[segment + 1].x - points[segment].x) * amount,
+      y: points[segment].y + (points[segment + 1].y - points[segment].y) * amount,
+    };
+  }
+
+  const pauseMilliseconds =
+    Math.min(10, Math.max(1, Number(animation.pauseSeconds) || 2)) * 1000;
+  const travelMilliseconds = 3000;
+  const cycleTime = elapsedTime % (travelMilliseconds * 2 + pauseMilliseconds);
+  const horizontalTravel = Math.max(420, canvasWidth * 0.72);
+  const verticalTravel = Math.max(280, canvasHeight * 0.64);
+  let progress;
+
+  if (cycleTime < travelMilliseconds) {
+    progress = -1 + cycleTime / travelMilliseconds;
+  } else if (cycleTime < travelMilliseconds + pauseMilliseconds) {
+    progress = 0;
+  } else {
+    progress = (cycleTime - travelMilliseconds - pauseMilliseconds) / travelMilliseconds;
+  }
+
+  if (type === "leftToRight") return { x: progress * horizontalTravel, y: 0 };
+  if (type === "rightToLeft") return { x: -progress * horizontalTravel, y: 0 };
+  if (type === "diagonalTopLeft") {
+    return { x: progress * horizontalTravel, y: progress * verticalTravel };
+  }
+  if (type === "diagonalBottomLeft") {
+    return { x: progress * horizontalTravel, y: -progress * verticalTravel };
+  }
+  if (type === "diagonalBottomRight") {
+    return { x: -progress * horizontalTravel, y: -progress * verticalTravel };
+  }
+  return { x: -progress * horizontalTravel, y: progress * verticalTravel };
+};
+
+const getCardPatrolOffset = (time, motion) => {
+  const points = [
+    { x: 0, y: -10 },
+    { x: 10, y: 0 },
+    { x: 0, y: 10 },
+    { x: -10, y: 0 },
+    { x: 0, y: -10 },
+  ];
+  const progress =
+    ((time + Math.abs(motion.delay) * 1000) / (motion.patrolDuration * 1000)) % 1;
+  const pathProgress = progress * 4;
+  const segment = Math.floor(pathProgress);
+  const amount = pathProgress - segment;
+  return {
+    x: points[segment].x + (points[segment + 1].x - points[segment].x) * amount,
+    y: points[segment].y + (points[segment + 1].y - points[segment].y) * amount,
+  };
+};
+
+const separateOverlappingNodes = (nodes) => {
+  const separatedNodes = nodes.map((node) => ({
+    ...node,
+    position: { ...node.position },
+  }));
+  const minimumXDistance = 196;
+  const minimumYDistance = 206;
+
+  for (let pass = 0; pass < 12; pass += 1) {
+    let moved = false;
+    for (let first = 0; first < separatedNodes.length; first += 1) {
+      for (let second = first + 1; second < separatedNodes.length; second += 1) {
+        const firstNode = separatedNodes[first];
+        const secondNode = separatedNodes[second];
+        const deltaX = secondNode.position.x - firstNode.position.x;
+        const deltaY = secondNode.position.y - firstNode.position.y;
+        const overlapX = minimumXDistance - Math.abs(deltaX);
+        const overlapY = minimumYDistance - Math.abs(deltaY);
+
+        if (overlapX <= 0 || overlapY <= 0) continue;
+        moved = true;
+        if (overlapX < overlapY) {
+          const direction =
+            deltaX === 0 ? (second % 2 === 0 ? 1 : -1) : Math.sign(deltaX);
+          const shift = overlapX / 2 + 1;
+          firstNode.position.x -= direction * shift;
+          secondNode.position.x += direction * shift;
+        } else {
+          const direction =
+            deltaY === 0 ? (second % 2 === 0 ? 1 : -1) : Math.sign(deltaY);
+          const shift = overlapY / 2 + 1;
+          firstNode.position.y -= direction * shift;
+          secondNode.position.y += direction * shift;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  return separatedNodes;
+};
+
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+        : DEFAULT_PORT_SIDE_ORDER[Math.min(3, Math.floor(index / portsPerSide))],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
+
+const StableEditableEdge = (edgeProps) => {
+  const { getEdges, setEdges } = useReactFlow();
+  return (
+    <EditableEdge
+      {...edgeProps}
+      allEdges={getEdges()}
+      setEdges={setEdges}
+      edgeRouting={edgeProps.data?.edgeRouting}
+    />
+  );
+};
+
+const LEARNER_EDGE_TYPES = { custom: StableEditableEdge };
 
 const NetworkPopover = ({
   nodeId,
@@ -36,19 +232,6 @@ const NetworkPopover = ({
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const popoverRef = useRef(null);
-  // const onAddPort = async (e) => {
-  //   e.stopPropagation();
-  //   if (!pendingNets.length) return;
-
-  //   try {
-  //     setLoading(true);
-  //     await handleAddNetworkPort(nodeId, pendingNets.join(","));
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 useEffect(() => {
   const handleClickOutside = (event) => {
     if (
@@ -59,7 +242,7 @@ useEffect(() => {
     }
   };
 
-  // ✅ USE CAPTURE MODE (3rd param = true)
+  // USE CAPTURE MODE (3rd param = true)
   document.addEventListener("mousedown", handleClickOutside, true);
 
   return () => {
@@ -74,7 +257,7 @@ useEffect(() => {
     setLoading(true);
     await handleAddNetworkPort(nodeId, pendingNets.join(","));
 
-    // ✅ CLOSE POPOVER AFTER SUCCESS
+    // CLOSE POPOVER AFTER SUCCESS
     onClose();
 
   } catch (err) {
@@ -404,39 +587,6 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
           ✕
         </span>
       </div>
-
-      {/* Row 1 */}
-      {/* <div className="mb-2">
-        {!plugged ? (
-          <button
-            className="btn plug"
-            disabled={loading}
-            onPointerUp={(e) => handleAction("plug", actions.plug, e)}
-          >
-            {loading === "plug" ? (
-              <>
-                Plugging... <span className="spinneredit" />
-              </>
-            ) : (
-              "Plug"
-            )}
-          </button>
-        ) : (
-          <button
-            className="btn unplug"
-            disabled={loading}
-            onPointerUp={(e) => handleAction("unplug", actions.unplug, e)}
-          >
-            {loading === "unplug" ? (
-              <>
-                Unpluging... <span className="spinneredit" />
-              </>
-            ) : (
-              "Unplug"
-            )}
-          </button>
-        )}
-      </div> */}
       <div className="mb-2">
   {plugged ? (
     <button
@@ -468,41 +618,6 @@ const PortActionPopover = ({ data, onClose, runtimeState, actions }) => {
     </button>
   )}
 </div>
-
-      {/* Row 2 */}
-      {/* <div className="mb-2">
-        {!connected ? (
-          <button
-            className="btn connect"
-            disabled={loading}
-            onPointerUp={(e) => handleAction("connect", actions.connect, e)}
-          >
-            {loading === "connect" ? (
-              <>
-                Conncting... <span className="spinneredit" />
-              </>
-            ) : (
-              "Connect"
-            )}
-          </button>
-        ) : (
-          <button
-            className="btn disconnect"
-            disabled={loading}
-            onPointerUp={(e) =>
-              handleAction("disconnect", actions.disconnect, e)
-            }
-          >
-            {loading === "disconnect" ? (
-              <>
-                Disconnecting... <span className="spinneredit" />
-              </>
-            ) : (
-              "Disconnect"
-            )}
-          </button>
-        )}
-      </div> */}
 <div className="mb-2">
   {connected ? (
     <button
@@ -648,9 +763,15 @@ const DnDFlow = ({
     const nodesArray = [];
     return nodesArray;
   });
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, applyNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(false);
+  const basePositionsRef = useRef(new Map());
+  const draggingNodesRef = useRef(new Set());
+  const lastCardMotionFrameRef = useRef(0);
+  const componentAnimationStartedAtRef = useRef(0);
+  const deleteNodeRef = useRef(null);
   const [draggedNode, setDraggedNode] = useState(null);
   const [droppedImages, setDroppedImages] = useState([]); // Track dropped images
   const [drggerdComponent, setDraggedComponent] = useState([]);
@@ -676,6 +797,35 @@ const DnDFlow = ({
   const [bridgeLoading, setBridgeLoading] = useState(false);
   const [portRuntimeState, setPortRuntimeState] = useState({});
   const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    dispatch(getAmbientMotionPreference())
+      .then((enabled) => {
+        if (isMounted) setAmbientMotionEnabled(enabled);
+      })
+      .catch(() => {
+        if (isMounted) setAmbientMotionEnabled(true);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch]);
+
+  const onNodesChange = useCallback(
+    (changes) => {
+      changes.forEach((change) => {
+        if (change.type !== "position") return;
+        if (change.dragging) draggingNodesRef.current.add(change.id);
+        else draggingNodesRef.current.delete(change.id);
+        if (change.position) {
+          basePositionsRef.current.set(change.id, { ...change.position });
+        }
+      });
+      applyNodesChange(changes);
+    },
+    [applyNodesChange],
+  );
 
   //loading state
   const [loadingScenario, setLoadingScenario] = useState(false);
@@ -712,6 +862,10 @@ const DnDFlow = ({
     return `${window.location.origin}${url}`;
   };
   const ImageNode = ({ id, data, isConnectable, deleteNode, openPopover }) => {
+    const iconMotion = getIconMotion(data?.componentId || id || data?.label);
+    const imageMotion = ambientMotionEnabled
+      ? data?.visualMotion || "rotate"
+      : null;
     const getPortColor = (portKey) => {
       const state = portRuntimeState?.[`${id}-${portKey}`];
 
@@ -750,13 +904,16 @@ const DnDFlow = ({
       portKeys = [];
     }
 
-    const totalPorts = portKeys.length;
-    const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.ceil(totalPorts / 4);
-    const spacingRatio = 100 / (portsPerSide + 1);
-    const baseSize = 90;
-    const portSpacing = 15;
-    const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const portLayouts = getPortLayouts(
+      portKeys,
+      data.portPositions,
+      data.autoPortPositions,
+    );
+    const nodeSize = 156;
+    const rawLabel = String(data.label || "Unnamed component").trim();
+    const labelSeparator = rawLabel.indexOf("-");
+    const componentTitle = labelSeparator > -1 ? rawLabel.slice(labelSeparator + 1).trim() : rawLabel;
+    const componentVmId = data.vmid || (labelSeparator > -1 ? rawLabel.slice(0, labelSeparator).trim() : "");
     const [showPopover, setShowPopover] = useState(false);
     const existingPorts = Array.isArray(data.networkport)
       ? data.networkport.flatMap((obj) => Object.keys(obj))
@@ -782,6 +939,7 @@ const DnDFlow = ({
     }, [nextNet]);
     return (
       <div
+        className="scenario-node"
         style={{
           position: "relative",
           display: "flex",
@@ -790,16 +948,20 @@ const DnDFlow = ({
         }}
       >
         <div
+          className="scenario-node-card"
           style={{
             width: nodeSize,
-            height: nodeSize,
+            minHeight: 170,
             position: "relative",
-            borderRadius: "8px",
-            border: "2px solid #ccc",
+            borderRadius: 15,
+            border: "1px solid var(--diagram-node-border)",
+            background: "var(--diagram-node-surface)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            justifyContent: "flex-start",
+            flexDirection: "column",
+            padding: "28px 12px 14px",
+            boxShadow: "0 8px 22px var(--diagram-node-shadow)",
           }}
         >
           <OverlayTrigger
@@ -869,29 +1031,37 @@ const DnDFlow = ({
   </button>
 </OverlayTrigger>
           <div
+            className={`scenario-node-icon-frame ${
+              imageMotion ? `scenario-node-icon-${imageMotion}` : ""
+            }`}
             style={{
-              width: nodeSize * 0.6,
-              height: nodeSize * 0.6,
-              backgroundImage: `url("${resolveImageUrl(data.image)}")`,
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              width: 64,
+              height: 64,
+              animationDuration: imageMotion
+                ? `${
+                    imageMotion === "rotate"
+                      ? iconMotion.duration
+                      : iconMotion.patrolDuration
+                  }s`
+                : undefined,
+              animationDirection:
+                imageMotion === "rotate" ? iconMotion.direction : "normal",
+              animationDelay: imageMotion ? `${iconMotion.delay}s` : undefined,
             }}
-          />
-          {portKeys.map((port, index) => {
-            const sideIndex = Math.floor(index / portsPerSide);
-            const side = sides[sideIndex];
-            const positionIndex = index % portsPerSide;
-            let offsetPercent;
-            if (side === "Right" || side === "Top") {
-              offsetPercent = (positionIndex + 1) * spacingRatio;
-            } else {
-              offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-            }
+          >
+            <div
+              className="scenario-node-icon-image"
+              style={{
+                backgroundImage: `url("${resolveImageUrl(data.image)}")`,
+              }}
+            />
+          </div>
+          {portLayouts.map((port) => {
+            const { side, offsetPercent } = port;
             const baseHandleStyle = {
               position: "absolute",
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               borderRadius: "50%",
               background: "#005eff",
               border: "1px solid white",
@@ -901,6 +1071,10 @@ const DnDFlow = ({
               position: "absolute",
               fontSize: 6,
               padding: "1px 3px",
+              border: "1px solid var(--diagram-node-border-selected)",
+              borderRadius: 5,
+              background: "var(--diagram-port-surface)",
+              color: "var(--diagram-node-text)",
               whiteSpace: "nowrap",
               zIndex: 5,
             };
@@ -930,9 +1104,9 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  right: -60,
+                  right: -6,
                   top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
+                  transform: "translate(100%, -50%)",
                 };
                 break;
               case "Bottom":
@@ -958,9 +1132,9 @@ const DnDFlow = ({
                 };
                 labelPosition = {
                   ...labelStyle,
-                  left: -60,
+                  left: -6,
                   top: `${offsetPercent}%`,
-                  transform: "translateY(-10%)",
+                  transform: "translate(-100%, -50%)",
                 };
                 break;
               default:
@@ -994,14 +1168,18 @@ const DnDFlow = ({
           })}
         </div>
         <div
+          className="scenario-node-copy"
           style={{
-            marginTop: 18,
+            position: "absolute",
+            bottom: 17,
+            left: 12,
             fontSize: 10,
             textAlign: "center",
-            width: "100%",
+            width: "calc(100% - 24px)",
           }}
         >
-          {data.label || "Unnamed"}
+          <strong title={componentTitle}>{componentTitle}</strong>
+          <small>{componentVmId ? `VM ID: ${componentVmId}` : "Virtual component"}</small>
         </div>
       </div>
     );
@@ -1074,6 +1252,8 @@ const DnDFlow = ({
     }
   }, [scenario?.scenariodiagram]);
   const scenarioNodes = parsedDiagram?.nodes || [];
+  const parentEdgeRouting =
+    parsedDiagram?.edgeRouting === "smooth" ? "smooth" : "bezier";
   const refreshScenario = async () => {
   setLoadingScenario(true);
   try {
@@ -1098,7 +1278,40 @@ useEffect(() => {
         ? JSON.parse(scenario.scenariodiagram)
         : scenario.scenariodiagram;
 
-    const newNodes = parsedData.nodes || [];
+    const visualMotionPattern = ["rotate", "patrol", "rotate", "patrol", "rotate"];
+    const cardPatrolPattern = [true, false, false, true, false];
+    const preparedNodes = (parsedData.nodes || []).map((node, index) => ({
+      ...node,
+      position: node.position || { x: 0, y: 0 },
+      data: {
+        ...node.data,
+        visualMotion:
+          node.data?.visualMotion ||
+          visualMotionPattern[index % visualMotionPattern.length],
+        cardPatrol: COMPONENT_ANIMATION_TYPES.has(
+          node.data?.componentAnimation?.type,
+        )
+          ? false
+          : node.data?.cardPatrol ??
+            cardPatrolPattern[index % cardPatrolPattern.length],
+      },
+    }));
+    const newNodes = separateOverlappingNodes(preparedNodes);
+    const edgeRouting = parsedData.edgeRouting === "smooth" ? "smooth" : "bezier";
+    const newEdges = (parsedData.edges || []).map((edge) => ({
+      ...edge,
+      type: "custom",
+      data: {
+        ...edge.data,
+        isAttacked: edge.isAttacked ?? edge.data?.isAttacked ?? "No",
+        edgeRouting,
+      },
+    }));
+
+    basePositionsRef.current = new Map(
+      newNodes.map((node) => [node.id, { ...node.position }]),
+    );
+    componentAnimationStartedAtRef.current = performance.now();
 
     setNodes(newNodes);
     setEdges([]);
@@ -1111,12 +1324,115 @@ useEffect(() => {
       });
 
       // then set edges
-      setEdges(parsedData.edges || []);
+      setEdges(newEdges);
     });
   } catch (err) {
     console.error("Invalid scenariodiagram JSON", err);
   }
 }, [scenario]);
+
+  useEffect(() => {
+    if (ambientMotionEnabled) return;
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+        if (COMPONENT_ANIMATION_TYPES.has(node.data?.componentAnimation?.type)) {
+          return node;
+        }
+        const basePosition = basePositionsRef.current.get(node.id);
+        return basePosition ? { ...node, position: { ...basePosition } } : node;
+      }),
+    );
+  }, [ambientMotionEnabled, setNodes]);
+
+  useEffect(() => {
+    if (nodes.length === 0) return undefined;
+    let animationFrameId;
+
+    const animateCards = (time) => {
+      if (time - lastCardMotionFrameRef.current >= 32) {
+        lastCardMotionFrameRef.current = time;
+        const wrapperRect = reactFlowWrapper.current?.getBoundingClientRect();
+        let canvasFlowWidth = reactFlowWrapper.current?.clientWidth || 900;
+        let canvasFlowHeight = reactFlowWrapper.current?.clientHeight || 600;
+        let canvasCentre = null;
+
+        if (wrapperRect && screenToFlowPosition) {
+          const topLeft = screenToFlowPosition({
+            x: wrapperRect.left,
+            y: wrapperRect.top,
+          });
+          const bottomRight = screenToFlowPosition({
+            x: wrapperRect.right,
+            y: wrapperRect.bottom,
+          });
+          canvasCentre = screenToFlowPosition({
+            x: wrapperRect.left + wrapperRect.width / 2,
+            y: wrapperRect.top + wrapperRect.height / 2,
+          });
+          canvasFlowWidth = Math.abs(bottomRight.x - topLeft.x);
+          canvasFlowHeight = Math.abs(bottomRight.y - topLeft.y);
+        }
+
+        setNodes((currentNodes) =>
+          currentNodes.map((node) => {
+            if (draggingNodesRef.current.has(node.id)) return node;
+
+            const configuredAnimation = node.data?.componentAnimation;
+            const hasConfiguredAnimation = COMPONENT_ANIMATION_TYPES.has(
+              configuredAnimation?.type,
+            );
+            if (
+              !hasConfiguredAnimation &&
+              (!ambientMotionEnabled || !node.data?.cardPatrol)
+            ) {
+              return node;
+            }
+
+            const basePosition =
+              basePositionsRef.current.get(node.id) || node.position;
+            const crossesCanvas = [
+              "leftToRight",
+              "rightToLeft",
+              "diagonalTopLeft",
+              "diagonalTopRight",
+              "diagonalBottomLeft",
+              "diagonalBottomRight",
+            ].includes(configuredAnimation?.type);
+            const animationAnchor =
+              crossesCanvas && canvasCentre
+                ? { x: canvasCentre.x - 78, y: canvasCentre.y - 85 }
+                : basePosition;
+            const offset = hasConfiguredAnimation
+              ? getConfiguredAnimationOffset(
+                  Math.max(0, time - componentAnimationStartedAtRef.current),
+                  configuredAnimation,
+                  canvasFlowWidth,
+                  canvasFlowHeight,
+                )
+              : getCardPatrolOffset(
+                  time,
+                  getIconMotion(
+                    node.data?.componentId || node.id || node.data?.label,
+                  ),
+                );
+
+            if (!offset) return node;
+            return {
+              ...node,
+              position: {
+                x: animationAnchor.x + offset.x,
+                y: animationAnchor.y + offset.y,
+              },
+            };
+          }),
+        );
+      }
+      animationFrameId = requestAnimationFrame(animateCards);
+    };
+
+    animationFrameId = requestAnimationFrame(animateCards);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [ambientMotionEnabled, nodes.length, screenToFlowPosition, setNodes]);
   const diagram = useMemo(() => {
     if (!scenario?.scenariodiagram) return null;
     return JSON.parse(scenario.scenariodiagram);
@@ -1319,7 +1635,11 @@ const onHandleMouseDown = (event, portKey, nodeId) => {
     },
     [edges, dragStart],
   );
-const ConnectionPopover = ({ data, onSelect, onClose }) => {
+const ConnectionPopover = useMemo(() => function ConnectionPopoverComponent({
+  data,
+  onSelect,
+  onClose,
+}) {
   const popoverRef = useRef(null);
 
   const [selectedType, setSelectedType] = useState(null);
@@ -1360,11 +1680,6 @@ const ConnectionPopover = ({ data, onSelect, onClose }) => {
     };
   }, [onClose]);
 
-//   const iconMap = {
-//   static: "🔗",
-//   existing: "🔄",
-//   new: "✨",
-// };
 const iconMap = {
   static: <i className="fe fe-link" />,
   existing: <i className="fe fe-refresh-cw" />,
@@ -1496,9 +1811,8 @@ const iconMap = {
   .map((opt) => (
     <div
       key={opt}
-      onClick={() => {
-        onSelect(opt);
-        onClose();
+      onClick={async () => {
+        await onSelect(opt);
       }}
       style={{
         padding: "10px 12px",
@@ -1525,12 +1839,12 @@ const iconMap = {
       {/* SUBMIT BUTTON */}
       {selectedType === "static" && (
         <div
-          onClick={() => {
+          onClick={async () => {
             if (!isValidVmbr(staticInput)) {
               // alert("Enter valid vmbr (700–1000)");
               // toast.error(
               //             <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-              //               Enter valid number (50–999)
+              //               Enter valid a number (50–999)
               //             </p>,
               //             {
               //               position: toast.POSITION.TOP_RIGHT,
@@ -1541,8 +1855,7 @@ const iconMap = {
               return;
             }
 
-            onSelect("static", staticInput);
-            onClose();
+            await onSelect("static", staticInput);
           }}
           style={{
             marginTop: 10,
@@ -1561,7 +1874,7 @@ const iconMap = {
       )}
     </div>
   );
-};
+}, []);
 
   const handleConnectionType = async (type,staticValue = null) => {
     if (!pendingConnection) return;
@@ -1836,6 +2149,10 @@ const onConnectEnd = () => {
     if (ok) {
       setPortRuntimeState((prev) => ({
         ...prev,
+
+
+
+
         [`${nodeId}-${portKey}`]: { plugged: false, connected: false },
       }));
       setPortPopover(null);
@@ -1849,89 +2166,6 @@ const onConnectEnd = () => {
     return () => document.removeEventListener("mousedown", close);
   }, [portPopover]);
 
-  function generateComponentConfig(nodes, edges) {
-    const config = [];
-    const networkIdSet = new Set();
-    nodes.forEach((node, index) => {
-      const { id: nodeId, data } = node;
-      const network_ids = {};
-      edges.forEach((edge) => {
-        const label = edge.data?.label;
-        if (edge.source === nodeId && edge.sourceHandle) {
-          const port = edge.sourceHandle.split("-")[0];
-          network_ids[port] = label;
-          networkIdSet.add(label);
-        }
-
-        if (edge.target === nodeId && edge.targetHandle) {
-          const port = edge.targetHandle.split("-")[0];
-          network_ids[port] = label;
-          networkIdSet.add(label);
-        }
-      });
-      config.push({
-        order: index + 1,
-        componentid: data.componentId,
-        vmid: data.label.split(" - ")[0],
-        componentname: data.label.split(" - ")[1],
-        duration: data.duration,
-        imageurl: data.image,
-        nodeid: nodeId,
-        network_ids,
-      });
-    });
-
-    // Convert to array
-    const network_config = [...networkIdSet];
-    return {
-      component_config: config,
-      network_config,
-    };
-  }
-  const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
-    let componentsData = [];
-
-    const configData = generateComponentConfig(
-      flowchartData.nodes,
-      flowchartData.edges,
-    );
-    if (nodes && nodes.length > 0) {
-      const mapped = nodes
-        .filter((node) => node.data && node.data.componentId)
-        .map((node) => {
-          const data = node.data;
-          return {
-            id: data.componentId,
-            componentid: data.componentId,
-            duration: data.duration,
-            imageUrl: data.image || "",
-            label: data.label || "",
-            networkport: data.networkport || [],
-          };
-        });
-      const uniqueByIdMap = new Map();
-      mapped.forEach((component) => {
-        if (!uniqueByIdMap.has(component.id)) {
-          uniqueByIdMap.set(component.id, component);
-        }
-      });
-      componentsData = Array.from(uniqueByIdMap.values());
-    }
-    const payload = {
-      scenariodiagram: flowchartData,
-      scenarioid: scenarioId,
-      numberoflan: numLans.toString(),
-      components: componentsData,
-      scenariostatus: status === "SaveAsDraft" ? "Draft" : status,
-      component_config: configData.component_config,
-      network_config: configData.network_config,
-      approval_status: status === "SaveAsDraft" ? "Draft" : "Pending",
-    };
-    await dispatch(saveScenarioFlow(payload));
-    setView("list");
-    dispatch(getScenarioList());
-  };
   useEffect(() => {
     if (saveScenarioFlowChart.statusCode === 200) {
       toast.success(
@@ -1947,27 +2181,18 @@ const onConnectEnd = () => {
       dispatch(clearsaveScenarioFlow());
       dispatch(clearSingleScenarios());
       dispatch(getScenarioList());
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [saveScenarioFlowChart]);
   useEffect(() => {
     if (addDraggedCompSucc?.statusCode === 200) {
       dispatch(clearDraggedComponent());
       dispatch(getSingleScenarios(query.slug[0]));
-      // refreshScenario();
-      // dispatch(getScenarioList());
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [addDraggedCompSucc]);
   useEffect(() => {
     if (deleteDraggedCompSucc?.statusCode === 200) {
       dispatch(clearDeleteDraggedComponent());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [deleteDraggedCompSucc]);
   useEffect(() => {
@@ -1983,10 +2208,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearSaveNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [addNetwork]);
   useEffect(() => {
@@ -2003,10 +2225,7 @@ const onConnectEnd = () => {
       );
       dispatch(clearSaveNetworkPort());
       dispatch(cleardeletebridge());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [bridgeremove]);
   useEffect(() => {
@@ -2022,10 +2241,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearDeleteNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [removeNetwork]);
   useEffect(() => {
@@ -2041,19 +2257,14 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearModifyNetworkId());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [addNetwordId]);
-  console.log("addNetwordIdaddNetwordIdaddNetwordIdaddNetwordId",addNetwordId);
-  
   useEffect(() => {
     if (addNetwordId?.statusCode === 400) {
       toast.success(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
-          Ggggggggggggggggggggggg
+          Added Successfully
         </p>,
         {
           position: toast.POSITION.TOP_RIGHT,
@@ -2062,10 +2273,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearModifyNetworkId());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [addNetwordId]);
   useEffect(() => {
@@ -2081,10 +2289,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearPlugNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [plugNetwork]);
   useEffect(() => {
@@ -2100,10 +2305,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearUnplugNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [unplugNetwork]);
   useEffect(() => {
@@ -2119,10 +2321,7 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearConnectNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [connectNetwork]);
   useEffect(() => {
@@ -2138,24 +2337,23 @@ const onConnectEnd = () => {
         },
       );
       dispatch(clearDisconnectNetworkPort());
-      // dispatch(getSingleScenarios(query.slug[0]));
       refreshScenario();
-      // setNodes([]);
-      // setEdges([]);
     }
   }, [disconnectNetwork]);
+
+  deleteNodeRef.current = deleteNode;
 
   const nodeTypes = useMemo(
     () => ({
       imageNode: (props) => (
         <ImageNode
           {...props}
-          deleteNode={deleteNode}
+          deleteNode={(nodeId) => deleteNodeRef.current?.(nodeId)}
           openPopover={(nodeId, anchor) => setActivePopover({ nodeId, anchor })}
         />
       ),
     }),
-    [deleteNode],
+    [ambientMotionEnabled, portRuntimeState],
   );
   const handleKeyDown = (event) => {
     if (event.key === "Backspace" || event.key === "Delete") {
@@ -2176,21 +2374,6 @@ const onConnectEnd = () => {
     style: { stroke: "#000", strokeWidth: 2 },
   };
   const { t } = useTranslation();
-  const EditableEdgeWrapper = (edgeProps) => {
-    const { getEdges, setEdges } = useReactFlow();
-    const edges = getEdges(); // all current edges
-    return (
-      <EditableEdge
-        {...edgeProps}
-        allNodes={nodes}
-        allEdges={edges}
-        setEdges={setEdges}
-      />
-    );
-  };
-  const edgeTypes = {
-    custom: EditableEdgeWrapper,
-  };
   const activeNode = nodes.find((n) => n.id === activePopover?.nodeId);
 
   const existingPorts = useMemo(() => {
@@ -2287,10 +2470,10 @@ const onConnectEnd = () => {
     e.stopPropagation();
     setPendingNets((prev) => prev.filter((n) => n !== net));
   };
-  const closeConnectPopover = () => {
+  const closeConnectPopover = useCallback(() => {
     setConnectPopover(null);
     setPendingConnection(null);
-  };
+  }, []);
   useEffect(() => {
     if (!connectPopover) return;
 
@@ -2478,7 +2661,9 @@ const handleEdgeClick = async (event, edge) => {
         className="dndflow  mb-2"
         style={{ display: "flex", height: "80vh", gap: "20px" }}
       >
-        <div style={{ width: "28%", height: "100%" }}>
+        <div
+          style={{ width: "28%", height: "100%", minHeight: 0, overflow: "hidden" }}
+        >
           <SideBar
             imageNodeData={imageNodeData}
             setDraggedNode={setDraggedNode} // Passing setDraggedNode to Sidebar
@@ -2489,7 +2674,7 @@ const handleEdgeClick = async (event, edge) => {
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper scenario-diagram-shell"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -2520,23 +2705,17 @@ const handleEdgeClick = async (event, edge) => {
             nodeTypes={nodeTypes}
             deleteKeyCode={null}  
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
+            connectionLineType="floating"
             connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
-            edgeTypes={edgeTypes}
+            edgeTypes={LEARNER_EDGE_TYPES}
             onConnectEnd={onConnectEnd}
             onEdgeClick={handleEdgeClick} 
           >
-            <Background />
+            <Background color="var(--diagram-grid)" gap={20} size={1.15} />
           </ReactFlow>
           {activePopover && (
             <div
-              // style={{
-              //   position: "fixed",
-              //   top: activePopover.anchor.y,
-              //   left: activePopover.anchor.x,
-              //   zIndex: 9999,
-              // }}
               style={{
                 position: "fixed",
                 ...getPopoverPosition(activePopover.anchor),
@@ -2560,12 +2739,6 @@ const handleEdgeClick = async (event, edge) => {
           )}
           {connectPopover && (
             <div
-              // style={{
-              //   position: "fixed",
-              //   top: connectPopover.y,
-              //   left: connectPopover.x,
-              //   zIndex: 9999,
-              // }}
               style={{
                 position: "fixed",
                 ...getPopoverConnectionPosition(),

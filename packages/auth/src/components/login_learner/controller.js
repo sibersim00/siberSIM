@@ -171,11 +171,24 @@ const verifyforgot =
     }
   };
 
+const { checkLearnerCapacity } = require("../../utils/learnerLicenseLimit");
+
 const register =
   ({ dao, db, validation, keys }) =>
   async (req, res) => {
     try {
       const body = req.body;
+
+      const capacity = await checkLearnerCapacity({
+        db,
+        hostname: req.hostname,
+      });
+      if (!capacity.allowed) {
+        const message = capacity.invalidLicense
+          ? "The installed license could not be validated."
+          : `You've reached your learner limit. To continue, either remove a learner or reach out to support for assistance.`;
+        return res.status(400).send({ statusCode: 400, message, errors: [] });
+      }
 
       const result = await dao.register({ db, validation, keys })(body);
 

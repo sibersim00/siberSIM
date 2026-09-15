@@ -282,153 +282,6 @@ const getPauselimit = async (db) => {
   }
 };
 
-// const startScenario =
-//   ({ db, validation }) =>
-//   async (body, user_count_limit) => {
-//     try {
-
-//          const accessCheck = await checkLabScenarioAccess({
-//         db,
-//         body,
-//         user_count_limit,
-//       });
-
-//       if (!accessCheck.allow) {
-//         // INSERT rejected user log
-//         await db.sequelize.query(
-//           `INSERT INTO scenario_failure_log 
-//      (scenarioid, learner_id, date_time, createdon)
-//      VALUES (:scenarioid, :learner_id, NOW(), NOW())`,
-//           {
-//             replacements: {
-//               scenarioid: body.scenarioid,
-//               learner_id: body.learner_id,
-//             },
-//           },
-//         );
-
-//         return accessCheck;
-//       }
-//       /* ---------------- ACTIVE USER LIMIT ---------------- */
-//      const activeUsersResult = await db.sequelize.query(
-//   `SELECT COUNT(*) AS activeUsers
-//    FROM vm_request
-//    WHERE status IN ('Start','Resume')
-//    AND vm_steps = 'Running'`,
-//   { type: db.sequelize.QueryTypes.SELECT }
-// );
-
-//       const activeUsers = Number(activeUsersResult?.[0]?.activeUsers || 0);
-// const limit = Number(user_count_limit || 0);
-
-// // respect middleware decision
-// if (!accessCheck.bypassLimit && limit > 0 && activeUsers >= limit) {
-//   return {
-//     statusCode: 500,
-//     message: `The maximum number of concurrent scenario users (${limit}) has been reached.`,
-//   };
-// }
-
-//       /* ---------------- ONE ACTIVE SCENARIO PER LEARNER ---------------- */
-//       const [activeScenario] = await db.sequelize.query(
-//         `SELECT vmrequestid
-//          FROM vm_request
-//          WHERE requestedby_id = :learner_id
-//          AND requestedby_role = 'Learner'
-//          AND status IN ('Initializing','Running','Start','Resume')
-//          LIMIT 1`,
-//         {
-//           replacements: { learner_id: body.learner_id },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if (activeScenario) {
-//         return {
-//           statusCode: 400,
-//           message: validation.messages.ONE_ACTIVE_SCENARIO,
-//         };
-//       }
-
-//       /* ---------------- PAUSE LIMIT ---------------- */
-//       // const pauseLimit = await getPauselimit(db);
-
-//       // const [pausedCountResult] = await db.sequelize.query(
-//       //   `SELECT COUNT(*) AS pausedCount
-//       //    FROM vm_request
-//       //    WHERE requestedby_id = :learner_id
-//       //    AND requestedby_role = 'Learner'
-//       //    AND status = 'Pause'`,
-//       //   {
-//       //     replacements: { learner_id: body.learner_id },
-//       //     type: db.sequelize.QueryTypes.SELECT,
-//       //   },
-//       // );
-
-//       // if ((pausedCountResult?.pausedCount || 0) >= pauseLimit) {
-//       //   return {
-//       //     statusCode: 400,
-//       //     message: `You have reached the maximum pause limit (${pauseLimit}).`,
-//       //   };
-//       // }
-//       let vmrequestid;
-//       await db.sequelize.query(
-//         `INSERT INTO vm_request
-//            (vmrequestuuid,scenarioid, requestedby_id, requestedby_role, status, vm_steps, timer, startedon)
-//            VALUES (UUID(),?, ?, 'Learner', 'Initializing', 'Initializing', ?, CURRENT_TIMESTAMP)`,
-//         {
-//           replacements: [body.scenarioid, body.learner_id, body.timer],
-//           type: db.sequelize.QueryTypes.INSERT,
-//         },
-//       );
-
-//       const [idResult] = await db.sequelize.query(
-//         `SELECT LAST_INSERT_ID() AS vmrequestid`,
-//         { type: db.sequelize.QueryTypes.SELECT },
-//       );
-
-//       vmrequestid = idResult?.vmrequestid;
-
-//       /* ---------------- INVITE LEARNERS ---------------- */
-
-//       if (
-//         Array.isArray(body.invitelearnerids) &&
-//         body.invitelearnerids.length > 0
-//       ) {
-//         const values = body.invitelearnerids
-//           .map(
-//             (id) =>
-//               `(${vmrequestid}, ${id}, ${body.invited_by_learner_id}, CURRENT_TIMESTAMP)`,
-//           )
-//           .join(",");
-
-//         await db.sequelize.query(
-//           `INSERT INTO invite_learner
-//      (vmrequestid, learnerid, invited_by_learner_id, createdon)
-//      VALUES ${values}`,
-//         );
-//       }
-
-//       /* ---------------- LOG ---------------- */
-//       await insertLog(db, {
-//         vmrequestid: vmrequestid,
-//         scenarioid: body.scenarioid,
-//         learner_id: body.learner_id,
-//         status: "Start",
-//         type: "Learner",
-//         remark: "Scenario started by SIMUser",
-//       });
-
-//       return {
-//         statusCode: 200,
-//         message: validation.messages.CONFIGURATION_STARTED,
-//         vmrequestid,
-//       };
-//     } catch (error) {
-//       console.error("startScenario error:", error);
-//       throw error;
-//     }
-//   };
 const startScenario =
   ({ db, validation }) =>
   async (body, user_count_limit) => {
@@ -583,7 +436,7 @@ const updateSessionStatus =
       try {
         const { vmrequestid, scenarioid, learner_id, status, timer } = body;
 
-        // 🧠 STEP 1: Block Resume if another VM is Running / Initializing
+        // STEP 1: Block Resume if another VM is Running / Initializing
         if (status === "Resume") {
           const [activeVM] = await db.sequelize.query(
             `
@@ -610,7 +463,7 @@ const updateSessionStatus =
           }
         }
 
-        // 🧱 STEP 2: Update vm_request (single source of truth)
+        // STEP 2: Update vm_request (single source of truth)
         await db.sequelize.query(
           `
         UPDATE vm_request
@@ -641,7 +494,7 @@ const updateSessionStatus =
           }
         );
 
-        // 🧱 STEP 3: Insert VM log
+        //  STEP 3: Insert VM log
         await insertLog(db, {
           vmrequestid,
           scenarioid,
@@ -651,7 +504,7 @@ const updateSessionStatus =
           remark: `Scenario status changed to ${status} by SIMUser`,
         });
 
-        // 🧠 STEP 4: Update diagram based on state
+        //  STEP 4: Update diagram based on state
         if (status === "Pause") {
           await updateScenarioDiagram(db, vmrequestid);
         }
@@ -1031,41 +884,6 @@ const canResumeScenario =
       }
     };
 
-  //   const changeEditStatus =
-  // ({ db }) =>
-  // async (body) => {
-  //   try {
-  //     const { vmrequestid } = body;
-  //     const [row] = await db.sequelize.query( `SELECT isedit FROM vm_request WHERE vmrequestid=? LIMIT 1`,
-  //       {
-  //         replacements: [vmrequestid],
-  //         type: db.sequelize.QueryTypes.SELECT,
-  //       }
-  //     );
-
-  //     if (!row) { return { statusCode: 404, message: "VM Request not found", }; }
-  //     if (row.isedit === "true") { return { statusCode: 400, message: "Someone is already editing this scenario. You cannot edit now.", data: { locked: true }, }; }
-  //     await db.sequelize.query(
-  //       `UPDATE vm_request 
-  //        SET isedit='true', modifiedon=CURRENT_TIMESTAMP 
-  //        WHERE vmrequestid=?`,
-  //       {
-  //         replacements: [vmrequestid],
-  //         type: db.sequelize.QueryTypes.UPDATE,
-  //       }
-  //     );
-
-  //     return {
-  //       statusCode: 200,
-  //       message: "Edit lock acquired",
-  //       data: { locked: false },
-  //     };
-  //   } catch (error) {
-  //     console.error("DAO changeEditStatus error:", error);
-  //     throw error;
-  //   }
-  // };
-
 const changeEditStatus =
   ({ db }) =>
   async (body, loginId) => {
@@ -1136,55 +954,6 @@ const releaseEditLock =
       message: "Edit lock released",
     };
   };
-
-// const learnerlistbyinstructor =
-// ({ db }) =>
-// async (learner_id) => {
-
-//   const [learner] = await db.sequelize.query(
-//     `SELECT instructor_id
-//      FROM learners
-//      WHERE learner_id = :learner_id
-//      AND deletedon IS NULL`,
-//     {
-//       replacements: { learner_id },
-//       type: db.sequelize.QueryTypes.SELECT,
-//     }
-//   );
-
-//   const learners = await db.sequelize.query(
-//     `SELECT 
-//         learner_id,
-//         CONCAT(firstname,' ',lastname) AS learner_name
-//      FROM learners
-//      WHERE learner_id != :learner_id
-//      AND status='Active'
-//      AND isverified='Yes'
-//      AND deletedon IS NULL
-//      AND (
-//           instructor_id = :instructor_id
-//           OR NOT EXISTS (
-//               SELECT 1
-//               FROM learners
-//               WHERE instructor_id = :instructor_id
-//               AND learner_id != :learner_id
-//               AND status='Active'
-//               AND isverified='Yes'
-//               AND deletedon IS NULL
-//           )
-//         )
-//      ORDER BY learner_name ASC`,
-//     {
-//       replacements: {
-//         instructor_id: learner?.instructor_id || 0,
-//         learner_id
-//       },
-//       type: db.sequelize.QueryTypes.SELECT,
-//     }
-//   );
-
-//   return learners;
-// };
 
 const learnerlistbyinstructor =
   ({ db }) =>
@@ -1263,8 +1032,6 @@ const getLearnersByVmRequest =
           type: db.sequelize.QueryTypes.SELECT,
         }, 
       );
-
-      // If condition not satisfied
       if (!vmRequest) {
         return [];
       }

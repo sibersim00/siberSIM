@@ -3,14 +3,14 @@ const getStudentDashboardData =
   async (learner_id) => {
     try {
 
-      const completedQuery = `SELECT s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel,COUNT( DISTINCT vr.vmrequestid) AS completed_count FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid WHERE vr.status = 'Completed' AND vr.requestedby_role = 'Learner' GROUP BY s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel ORDER BY completed_count DESC LIMIT 5; `;
+      const completedQuery = `SELECT s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel,COUNT(DISTINCT vr.vmrequestid) AS completed_count FROM vm_request vr INNER JOIN scenarios s ON s.scenarioid = vr.scenarioid WHERE vr.status = 'Completed' AND vr.requestedby_id = :learner_id AND vr.requestedby_role = 'Learner' GROUP BY s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenariolevel ORDER BY completed_count DESC LIMIT 5; `;
 
-      const currentScenarioQuery = `SELECT vr.vmrequestid, vr.status AS learner_status, vr.status AS session_status,s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenarioidentification,s.scenariolevel,s.duration, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, s.component_config, CASE WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW())) WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME( TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + IFNULL(TIME_TO_SEC(vr.timer), 0) ) ELSE vr.timer END AS calculated_timer, DATE_FORMAT(vr.createdon, '%Y-%m-%d %H:%i:%s') AS startedon FROM vm_request vr INNER JOIN scenarios s  ON s.scenarioid = vr.scenarioid INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE vr.requestedby_id = :learner_id AND vr.requestedby_role = 'Learner' AND vr.status IN ( 'Running', 'Initializing', 'Terminated', 'Completed', 'Pause', 'Resume', 'Start' ) ORDER BY  CASE vr.status WHEN 'Start' THEN 1 WHEN 'Resume' THEN 2 WHEN 'Running' THEN 3 WHEN 'Pause' THEN 4 ELSE 5 END, vr.modifiedon DESC LIMIT 1;`;
+      const currentScenarioQuery = `SELECT vr.vmrequestid, vr.status AS learner_status, vr.status AS session_status,s.scenarioid,s.scenariouuid,s.scenariotitle,s.scenarioidentification,s.scenariolevel,s.duration, sc.categoryname AS scenariocategory_name, scc.categoryname AS scenariosubcategory_name, s.component_config, CASE WHEN vr.status = 'Start' THEN SEC_TO_TIME(TIMESTAMPDIFF(SECOND, vr.startedon, NOW())) WHEN vr.status = 'Resume' AND vr.resumeon IS NOT NULL THEN SEC_TO_TIME( TIMESTAMPDIFF(SECOND, vr.resumeon, NOW()) + IFNULL(TIME_TO_SEC(vr.timer), 0) ) ELSE vr.timer END AS calculated_timer, DATE_FORMAT(vr.createdon, '%Y-%m-%d %H:%i:%s') AS startedon FROM vm_request vr INNER JOIN scenarios s  ON s.scenarioid = vr.scenarioid INNER JOIN scenario_categories sc  ON sc.scenariocategoryid = s.scenariocategoryid INNER JOIN scenario_categories scc  ON scc.scenariocategoryid = s.scenariosubcategoryid WHERE vr.requestedby_id = :learner_id AND vr.requestedby_role = 'Learner' AND vr.status IN ( 'Running', 'Initializing', 'Pause', 'Resume', 'Start', 'Failed', 'Terminated', 'Completed' ) ORDER BY CASE vr.status WHEN 'Start' THEN 1 WHEN 'Resume' THEN 2 WHEN 'Running' THEN 3 WHEN 'Initializing' THEN 4 WHEN 'Pause' THEN 5 ELSE 6 END, vr.modifiedon DESC LIMIT 1;`;
 
       const [completedStats, quizStats, nonCompletedCountStats] =
         await Promise.all([
           db.sequelize.query(
-            `SELECT SUM(DISTINCT CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed, COUNT(DISTINCT scenarioid) AS total FROM vm_request WHERE requestedby_id = :learner_id AND requestedby_role = 'Learner';`,
+            `SELECT COUNT(DISTINCT CASE WHEN status = 'Completed' THEN scenarioid END) AS completed, COUNT(DISTINCT scenarioid) AS total FROM vm_request WHERE requestedby_id = :learner_id AND requestedby_role = 'Learner';`,
             {
               replacements: { learner_id },
               type: db.sequelize.QueryTypes.SELECT,
@@ -36,11 +36,17 @@ const getStudentDashboardData =
       const completedData = completedStats[0];
       const quizData = quizStats[0];
       const nonCompletedCount = nonCompletedCountStats[0].count;
-      const totalScenarios = completedData.total || 0;
-      const userCompletedCount = completedData.completed || 0;
+      const totalScenarios = Number(completedData.total) || 0;
+      const userCompletedCount = Number(completedData.completed) || 0;
       const completedPercentage = totalScenarios
-        ? ((userCompletedCount / totalScenarios) * 100).toFixed(2)
+        ? Math.round((userCompletedCount / totalScenarios) * 100)
         : 0;
+      const dashboardProgress = {
+        completed: userCompletedCount,
+        total: totalScenarios,
+        remaining: Math.max(totalScenarios - userCompletedCount, 0),
+        percentage: completedPercentage,
+      };
       const totalQuestions = quizData.total_questions || 0;
       const totalCorrect = quizData.total_correct_answers || 0;
       const quizScorePercent = totalQuestions
@@ -50,7 +56,7 @@ const getStudentDashboardData =
         {
           title: "Completed Scenarios",
           value: `${completedPercentage}%`,
-          tooltip: `${userCompletedCount} since last month`,
+          tooltip: `${userCompletedCount} completed in total`,
         },
         {
           title: "Quiz Score",
@@ -190,9 +196,12 @@ GROUP BY d.day_num, d.day_name
 ORDER BY FIELD(d.day_num, 2, 3, 4, 5, 6, 7, 1);
 `;
 
-      const [completedScenarios, currentScenarioResult, webBrowserWidgets, upcomingScenarios,skillProficiency,recentActivity,weeklySessions] =
+      const learnerWelcomeQuery = `SELECT firstname, is_password_reset FROM learners WHERE learner_id = :learner_id AND deletedon IS NULL LIMIT 1;`;
+
+      const [completedScenarios, currentScenarioResult, webBrowserWidgets, upcomingScenarios,skillProficiency,recentActivity,weeklySessions, learnerWelcomeResult] =
         await Promise.all([
           db.sequelize.query(completedQuery, {
+            replacements: { learner_id },
             type: db.sequelize.QueryTypes.SELECT,
           }),
           db.sequelize.query(currentScenarioQuery, {
@@ -210,12 +219,16 @@ ORDER BY FIELD(d.day_num, 2, 3, 4, 5, 6, 7, 1);
             replacements: { learner_id },
             type: db.sequelize.QueryTypes.SELECT,
           }),
-
+ 
           db.sequelize.query(recentActivityQuery, {
             replacements: { learner_id },
             type: db.sequelize.QueryTypes.SELECT,
           }),
           db.sequelize.query(weeklySessionsQuery, {
+            replacements: { learner_id },
+            type: db.sequelize.QueryTypes.SELECT,
+          }),
+          db.sequelize.query(learnerWelcomeQuery, {
             replacements: { learner_id },
             type: db.sequelize.QueryTypes.SELECT,
           }),
@@ -258,24 +271,18 @@ ORDER BY FIELD(d.day_num, 2, 3, 4, 5, 6, 7, 1);
         }
       }
 
-
-
-
-
-
-
-
-
-
       return {
         completedScenarios,
         currentScenario,
+        dashboardProgress,
         widgets,
         webBrowserWidgets,
         upcomingScenarios,
         skillProficiency,
         recentActivity,
         weeklySessions,
+        learner_firstname: learnerWelcomeResult[0]?.firstname || 'Learner',
+        is_password_reset: learnerWelcomeResult[0]?.is_password_reset || 'False',
       };
     } catch (err) {
       console.error("Error fetching dashboard data:", err);

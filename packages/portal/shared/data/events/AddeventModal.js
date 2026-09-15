@@ -38,11 +38,6 @@ const EventModal = (props) => {
     hasSaveeventsSucc: state?.eventsManage?.succsaveEvent,
     hasUpdateeventsSucc: state?.eventsManage?.updateEvent,
   }));
-
-  console.log(
-    "hasGetScenarioListSuccesshasGetScenarioListSuccess",
-    hasSaveeventsSucc
-  );
   const [scenarioDropdown, setscenarioDropdown] = useState([]);
 
   useEffect(() => {
@@ -175,8 +170,6 @@ const EventModal = (props) => {
         );
       }),
   });
-  console.log("rowValues++++++++++++++", rowValues);
-
   function formatDateToISTString(dateObj) {
     if (!dateObj) return null;
 
@@ -219,7 +212,6 @@ const EventModal = (props) => {
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("valuesvalues", values);
 
       const payload = {
         eventid: values.eventid || null,
@@ -239,7 +231,6 @@ const EventModal = (props) => {
       }
     },
   });
-  console.log("formValidationformValidation", formValidation);
   // Update the form values when rowValues changes
   useEffect(() => {
     if (rowValues) {

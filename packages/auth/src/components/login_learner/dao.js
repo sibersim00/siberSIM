@@ -200,8 +200,14 @@ const verifyforgot =
 
 const learnermenu =
   ({ db }) =>
-    async ({ tutor_id }) => {
-      return [
+    async ({ }) => {
+      const [integration] = await db.sequelize.query(
+        `SELECT integration_id FROM third_party_integrations
+          WHERE learner_id IS NULL AND FIND_IN_SET('SIMUser', target_panel) > 0
+            AND status='Active' AND deletedon IS NULL LIMIT 1`,
+        { type: db.sequelize.QueryTypes.SELECT },
+      );
+      const menus = [
         {
           source: "/dashboard",
           path: "/components/dashboard/dashboard",
@@ -243,7 +249,7 @@ const learnermenu =
           title: "Custom Components",
           sub_path: "/components/customcomponent/view/[...slug]"
         },
-        {
+         {
           source: "/invitescenarios",
           path: "/components/invitescenarios",
           icon: "fa fa-cubes",
@@ -252,8 +258,23 @@ const learnermenu =
           selected: false,
           title: "Assigned Scenario",
           sub_path: "/components/invitescenarios/view/[...slug]"
-        },
+          },
+        ...(integration
+          ? [
+              {
+                source: "/third-party-integrations",
+                path: "/components/thirdpartyintegrations",
+                icon: "fa fa-plug",
+                type: "link",
+                active: false,
+                selected: false,
+                title: "Third Party Integration",
+                sub_path: null
+              }
+            ]
+          : [])
       ];
+      return menus.filter(Boolean);
     };
 
 

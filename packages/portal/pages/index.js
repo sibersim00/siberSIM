@@ -74,6 +74,31 @@ const Home = () => {
     dispatch(clearDispatchFromForget());
     dispatch(getCompanyList());
   }, [dispatch]);
+  const getFirstMenuPath = (items) => {
+  
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  for (const item of items) {
+    if (item?.type === "link" && item?.source) {
+      return item.source;
+    }
+    if (Array.isArray(item?.children) && item.children.length > 0) {
+      const childPath = getFirstMenuPath(item.children);
+      if (childPath) return childPath;
+    }
+    // fallback: if it's not explicitly a "sub" with children but still has a source, use it
+    if (item?.source && item?.type !== "sub") {
+      return item.source;
+    }
+  }
+  return null;
+};
+// Given the full menus array [{ menutitle, Items }], get the landing path
+const getLandingPath = (menus) => {
+  const items = menus?.[0]?.Items;
+  return getFirstMenuPath(items) || "/dashboard"; // fallback if nothing found
+};
+
 
   useEffect(() => {
     if (errorData?.statusCode) {
@@ -156,6 +181,8 @@ const Home = () => {
       );
     }
   }, [otpSuccessData]);
+  // Recursively finds the first navigable "source" path in the menu tree.
+// Prefers a direct link; if the first item is a "sub"/tree menu, descends into its children.
 
   useEffect(() => {
     if (loginSuccData?.statusCode == 200) {
@@ -168,11 +195,11 @@ const Home = () => {
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchFromLogin());
-      setTimeout(() => {
-        navigate.replace("/dashboard", "", { shallow: true });
-        //window.location.href = '/dashboard';
-      }, 1500);
+       const landingPath = getLandingPath(loginSuccData?.data?.menus);
 
+    setTimeout(() => {
+      navigate.replace(landingPath, "", { shallow: true });
+    }, 1500);
     }
   }, [loginSuccData]);
 
@@ -292,7 +319,12 @@ const Home = () => {
       localStorage.setItem("company_settings", JSON.stringify(getCompanyListData));
       localStorage.setItem("apps", JSON.stringify([]));
       dispatch(clearDispatchDirectLogin());
-      setTimeout(() => { navigate.replace("/dashboard", "", { shallow: true }); }, 1500);
+      // setTimeout(() => { navigate.replace("/dashboard", "", { shallow: true }); }, 1500);
+        const landingPath = getLandingPath(directLoginData?.data?.menus);
+
+    setTimeout(() => {
+      navigate.replace(landingPath, "", { shallow: true });
+    }, 1500);
     }
   }, [directLoginData]);
 

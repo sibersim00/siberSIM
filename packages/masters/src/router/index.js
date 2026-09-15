@@ -47,10 +47,25 @@ const vmScenarioStart = require("../components/vm_scenario_start");
 const customcomponentRouter = require("../components/custom_component");
 const runningComponnets = require("../components/running_component");
 const licenseDashboardRouter = require("../components/licensedashboard");
+const webhookUsersRouter = require("../components/webhook_users");
+const webhookScenariosRouter = require("../components/webhook_scenarios");
+const thirdPartyIntegrationsRouter = require("../components/third_party_integrations");
 
 module.exports = function (iocContainer) {
   const { express, authJwt } = iocContainer;
   const router = express.Router();
+  const webhookAuth = iocContainer.authWebhook.authenticateWebhook(iocContainer);
+  const authenticatePortalOrWebhook = (permissions) => {
+    const portalAuth = authJwt.authenticateToken(permissions);
+    return (req, res, next) => {
+      const isWebhookRequest = req.get("x-request-source") === "webhook-service" || Boolean(req.get("x-webhook-internal-key"));
+      return isWebhookRequest
+        ? webhookAuth(req, res, next)
+        : portalAuth(req, res, next);
+    };
+  };
+  const authenticateLearnerRequest = authenticatePortalOrWebhook(['/users-management']);
+  const authenticateMasterRequest = authenticatePortalOrWebhook(['/masters']);
   router.use("/auth", authRouter(iocContainer));
   router.use("/vmconfig", [authJwt.authenticateToken(['/scenariotermination'])], vmconfigRouter(iocContainer));
   router.use("/vmstart", [authJwt.authenticateToken([''])], vmstartRouter(iocContainer));
@@ -121,8 +136,23 @@ module.exports = function (iocContainer) {
 
   router.use(
     "/learners",
-    [authJwt.authenticateToken(['/users-management'])],
+    [authenticateLearnerRequest],
     learnersRouter(iocContainer)
+  );
+  router.use(
+    "/webhook-users",
+    [authJwt.authenticateToken(['/users-management'])],
+    webhookUsersRouter(iocContainer)
+  );
+  router.use(
+    "/webhook-scenarios",
+    [webhookAuth],
+    webhookScenariosRouter(iocContainer)
+  );
+  router.use(
+    "/third-party-integrations",
+    [authJwt.authenticateToken(["", "/masters", "/third-party-integrations"])],
+    thirdPartyIntegrationsRouter(iocContainer)
   );
   router.use(
     "/instructors",
@@ -132,17 +162,17 @@ module.exports = function (iocContainer) {
   router.use("/scenario", [authJwt.authenticateToken(['/scenarios'])], scenario(iocContainer));
   router.use(
     "/scenario-categories",
-    [authJwt.authenticateToken(['/masters'])],
+    [authenticateMasterRequest],
     scenarioCategories(iocContainer)
   );
   router.use(
     "/scenario-subcategories",
-    [authJwt.authenticateToken(['/masters'])],
+    [authenticateMasterRequest],
     scenariosubCategories(iocContainer)
   );
   router.use(
     "/component-category",
-    [authJwt.authenticateToken(['/masters'])],
+    [authenticateMasterRequest],
     componentCategory(iocContainer)
   );
   router.use(

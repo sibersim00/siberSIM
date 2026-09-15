@@ -143,34 +143,37 @@ const userAdd = (props) => {
     }
   };
 
-  const handleSubmit = (data) => {
-    if (rowValues?.id == 0 || rowValues?.id == undefined) {
-      handleOneClick(true);
-      const payload = {
-        userid: rowValues?.id,
-        loginid: data.loginid,
-        password: data.password,
-        firstname: data.firstname,
-        lastname: data.lastname,
-        email: data.email,
-        mobile: data.mobile,
-        status: "true",
-      };
-      dispatch(addUserDetails(payload));
-    } else {
-      handleOneClick(true);
-      const Id = rowValues?.id;
-      const payload = {
-        userid: rowValues?.id,
-        loginid: data.loginid,
-        firstname: data.firstname,
-        lastname: data.lastname,
-        email: data.email,
-        mobile: data.mobile,
-        status: "true",
-        id: Id,
-      };
-      dispatch(editUserDetails(payload, Id));
+  const handleSubmit = async (data) => {
+    handleOneClick(true);
+    try {
+      if (rowValues?.id == 0 || rowValues?.id == undefined) {
+        const payload = {
+          userid: rowValues?.id,
+          loginid: data.loginid,
+          password: data.password,
+          firstname: data.firstname,
+          lastname: data.lastname,
+          email: data.email,
+          mobile: data.mobile,
+          status: "true",
+        };
+        await dispatch(addUserDetails(payload));
+      } else {
+        const Id = rowValues?.id;
+        const payload = {
+          userid: rowValues?.id,
+          loginid: data.loginid,
+          firstname: data.firstname,
+          lastname: data.lastname,
+          email: data.email,
+          mobile: data.mobile,
+          status: "true",
+          id: Id,
+        };
+        await dispatch(editUserDetails(payload, Id));
+      }
+    } finally {
+      handleOneClick(false);
     }
   };
 

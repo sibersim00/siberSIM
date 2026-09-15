@@ -301,7 +301,8 @@ useEffect(() => {
         padding: "10px",
         // backgroundColor: '#F4F4F4',
         height: "100%",
-        maxHeight: "560px",
+        minHeight: 0,
+        boxSizing: "border-box",
         overflowY: "auto",
       }}
     >

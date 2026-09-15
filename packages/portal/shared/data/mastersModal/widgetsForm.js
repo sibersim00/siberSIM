@@ -57,7 +57,6 @@ const FormWidgets = (props) => {
       .required("Order is required")
       .min(1, "Order must be at least 1"),
   });
-  console.log("schemaschemaschemaschema", schema)
   const initialValues = {
     widget_name: rowValues?.widget_name || "",
     widget_url: rowValues?.widget_url || "",

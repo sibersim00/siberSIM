@@ -172,9 +172,6 @@ const CustomComponentForm = (props) => {
  const { isSaving } = useSelector((state) => state.customComponent);
 
 const prevIsSavingRef = useRef(isSaving);
-
-
- console.log("saveComponentDatasaveComponentData",isSaving)
   useEffect(() => {
     if (getSingleComponentSucc && getSingleComponentSucc !== "") {
       setRowValues(getSingleComponentSucc);
@@ -280,7 +277,6 @@ useEffect(() => {
 
   useEffect(() => {
     if (rowValues?.vmid) {
-      console.log("insideee this");
       formValidation.setFieldValue("componentname", {
         componentname: rowValues?.vmid,
         subcategoryname: `${rowValues?.vmid} - ${rowValues?.vmid_name}`,
@@ -288,8 +284,6 @@ useEffect(() => {
       setVmidName(rowValues?.vmid_name);
     }
   }, [rowValues?.vmid]);
-
-  console.log("rowValfffffffffues", rowValues)
   const formValidation = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -387,7 +381,6 @@ useEffect(() => {
             ? formValidation.values.componentimage
             : rowValues?.componentimage,
       };
-      console.log("payload", payload)
       // handleOneClick(true);
       dispatch(saveComponent(payload));
 
@@ -401,7 +394,6 @@ useEffect(() => {
       typeof typeObjOrId === "object" ? typeObjOrId.componenttype : typeObjOrId;
     setSubCatDropDownData([]);
     // Only clear the selected VM if NOT in update mode
-    console.log("get-vmsget-vmsget-vms", typeId);
     if (!isUpdate) {
       formValidation.setFieldValue("componentname", null);
     }
@@ -416,7 +408,6 @@ useEffect(() => {
           componentname: item.vmid,
           subcategoryname: `${item.vmid} - ${item.name}`,
         }));
-        console.log("enrichedList", enrichedList);
         setFullVmList(enrichedList);
         setSubCatDropDownData(enrichedList);
       }

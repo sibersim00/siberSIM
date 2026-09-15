@@ -9,10 +9,8 @@ import {
   Tab,
   Modal,
   Alert,
-  Badge,
 } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
-import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import { useRouter } from "next/router";
 import {
   saveEvents,
@@ -416,7 +414,6 @@ useEffect(() => {
       setTimerPaused(false);
     }
   }, [scenarioStatus]);
-  console.log("hasGetEventSucchasGetEventSucchasGetEventSucc", hasGetEventSucc);
 
   const handleConfirmAction = async () => {
     try {
@@ -657,10 +654,6 @@ useEffect(() => {
     ["Terminated", "Completed", "Pending", "Failed", "Initializing"].includes(
       scenarioStatus,
     )
-  );
-  console.log(
-    "scenarioStatusscenarioStatussrrrrrrrrrrrrcenarioStatus",
-    rowValues,
   );
 
   return (

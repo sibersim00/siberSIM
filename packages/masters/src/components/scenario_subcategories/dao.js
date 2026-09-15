@@ -55,39 +55,43 @@ const getscenariosubcategorybyId =
     return res;
   };
 
-const save = ({ db }) => async (body, userid) => {
-  let errors = [];
+const save =
+  ({ db }) =>
+  async (body, userid) => {
+    let errors = [];
 
-  const categoryNameCleaned = body.categoryname.replace(/\s/g, '').toLowerCase();
+    const categoryNameCleaned = body.categoryname
+      .replace(/\s/g, "")
+      .toLowerCase();
 
-  if (body.parentscenariocategoryid && body.parentscenariocategoryid != 0) {
-    const [checkduplicate] = await db.sequelize.query(
-      `SELECT scenariocategoryid
+    if (body.parentscenariocategoryid && body.parentscenariocategoryid != 0) {
+      const [checkduplicate] = await db.sequelize.query(
+        `SELECT scenariocategoryid
        FROM scenario_categories
        WHERE deletedon IS NULL
          AND parentscenariocategoryid = :parentscenariocategoryid
          AND LOWER(REPLACE(categoryname, ' ', '')) = :subcategory`,
-      {
-        replacements: {
-          parentscenariocategoryid: body.parentscenariocategoryid,
-          subcategory: categoryNameCleaned,
+        {
+          replacements: {
+            parentscenariocategoryid: body.parentscenariocategoryid,
+            subcategory: categoryNameCleaned,
+          },
+          type: db.sequelize.QueryTypes.SELECT,
         },
-        type: db.sequelize.QueryTypes.SELECT,
+      );
+
+      if (checkduplicate) {
+        errors.push("Sub category name already exists");
       }
-    );
-
-    if (checkduplicate) {
-      errors.push("Sub category name already exists");
     }
-  }
 
-  if (errors.length > 0) {
-    return { success: false, errors };
-  }
+    if (errors.length > 0) {
+      return { success: false, errors };
+    }
 
-  try {
-    await db.sequelize.query(
-      `INSERT INTO scenario_categories (
+    try {
+      await db.sequelize.query(
+        `INSERT INTO scenario_categories (
         scenariocategoryuuid,
         parentscenariocategoryid,
         categoryname,
@@ -97,23 +101,23 @@ const save = ({ db }) => async (body, userid) => {
       ) VALUES (
         uuid(), ?, ?, ?, ?, CURRENT_TIMESTAMP
       )`,
-      {
-        replacements: [
-          body.parentscenariocategoryid || null,
-          body.categoryname,
-          body.categoryimage,
-          userid,
-        ],
-        type: db.sequelize.QueryTypes.INSERT,
-      }
-    );
+        {
+          replacements: [
+            body.parentscenariocategoryid || null,
+            body.categoryname || null,
+            body.categoryimage || null,
+            userid,
+          ],
+          type: db.sequelize.QueryTypes.INSERT,
+        },
+      );
 
-    return { success: true };
-  } catch (error) {
-    console.error("Error Save Scenario Categories Submit:", error);
-    throw error;
-  }
-};
+      return { success: true };
+    } catch (error) {
+      console.error("Error Save Scenario Categories Submit:", error);
+      throw error;
+    }
+  };
 
 const update = ({ db }) => async (body, userid) => {
   let errors = [];
@@ -159,12 +163,12 @@ const update = ({ db }) => async (body, userid) => {
       {
         replacements: [
           body.parentscenariocategoryid || null,
-          body.categoryname,
-          body.categoryimage,
+          body.categoryname || null,
+          body.categoryimage || null,
           userid,
-          body.scenariocategoryid,
+          body.scenariocategoryid || null,
         ],
-        type: db.sequelize.QueryTypes.UPDATE,
+        type: db.sequelize.QueryTypes.UPDATE, 
       }
     );
 

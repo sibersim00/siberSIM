@@ -17,12 +17,7 @@ module.exports = function (iocContainer) {
     router.post('/reset-password', validator(validation.resetPasswordSchema,'body'),controller.resetPassword(iocContainer));
     router.post('/getmapped-instructorList', validator(validation.instructormappedSchema,'body'),controller.getMappedInstructor(iocContainer));
     router.post('/save-mapped-instructor', validator(validation.saveinstructormappedSchema,'body'),controller.saveMappedInstructor(iocContainer));
-     router.post(
-    "/generate-access-token",
-    controller.generateProxmoxAccessToken(iocContainer)
-  );
-    
-    
+    router.post('/verify-import', controller.verifyLearnerImport(iocContainer));
     router.post('/import', controller.learnerImport(iocContainer));
     router.get('/get/:id', validator(validation.idSchema,'params'),controller.getById(iocContainer));
     router.post('/delete', validator(validation.deleteSchema,'body'),controller.deleteById(iocContainer));

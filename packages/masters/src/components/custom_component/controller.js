@@ -78,6 +78,27 @@ const updateStatus = ({ dao, db, validation }) => async (req, res) => {
   }
 };
 
+const deleteById = ({ dao, db, validation }) => async (req, res) => {
+  try {
+    const session_userid = req.user.userid;
+    const ipAddress = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    const result = await dao.deleteById({ db })(req.body, session_userid, ipAddress);
+
+    return res.status(result.status ? 200 : 400).send({
+      statusCode: result.status ? 200 : 400,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error("Error deleting custom component:", error.message);
+
+    return res.status(500).json({
+      statusCode: 500,
+      message: validation.messages.internal_server_error,
+      error: "An error occurred. Please try again later.",
+    });
+  }
+};
+
 const save = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
@@ -133,6 +154,7 @@ module.exports = {
   getAll,
   getById,
   updateStatus,
+  deleteById,
   save,
   update,
   vmDetails,

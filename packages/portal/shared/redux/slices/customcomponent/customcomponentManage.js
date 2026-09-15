@@ -122,7 +122,7 @@ export function changeStatusComponent(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api?.component_change_status}`, payload);
+      const response = await axios.post(`${api.custom_component_status}`, payload);
       dispatch(slice.actions.hasComponentStatusSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));
@@ -146,7 +146,7 @@ export function deleteComponent(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     try {
-      const response = await axios.post(`${api.component_delete}`, payload);
+      const response = await axios.post(`${api.custom_component_delete}`, payload);
       dispatch(slice.actions.hasGetdeleteComponentSucc(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

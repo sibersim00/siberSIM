@@ -58,6 +58,14 @@ axiosInstance.interceptors.response.use(
   (error) => {
     const requestUrl = error?.config?.url || "";
 
+    const status = error?.response?.status;
+
+    // Some forms render API validation errors inline. Suppress only their
+    // regular error toast while preserving session and authorization handling.
+    if (error?.config?.suppressErrorToast && ![401, 403, 503].includes(status)) {
+      return Promise.reject(error);
+    }
+
     // Special case for 'restart-event-learner' — don't show toast for this
     if (requestUrl.includes("restart-event-learner")) {
       return error.response; // Simply return the response without triggering the toast

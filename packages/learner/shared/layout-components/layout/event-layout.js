@@ -28,7 +28,6 @@ const Eventlayout = ({ children }) => {
     if (typeof window !== "undefined") {
       const accessToken = JSON.parse(localStorage.getItem("accessTokenLearner"));
       const menus =  localStorage.getItem("menusLearner") != "undefined" ? JSON.parse(localStorage.getItem("menusLearner")) : []
-      console.log("currentPath===>",currentPath, menus[0].Items)
         if(accessToken){
           if(menus?.[0].Items?.length > 0){
             if (!isTabAllowed(currentPath, menus[0].Items)) {

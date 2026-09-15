@@ -417,11 +417,6 @@ const onGridReady = useCallback((params) => {
     }
   };
 
-  const handleImportModal = () => {
-    dispatch(clearVerifyComponentCategoryModel());
-    setOpenImportModal(!openImportModal);
-  };
-
   return (
     <>
       <Seo title="Components" />

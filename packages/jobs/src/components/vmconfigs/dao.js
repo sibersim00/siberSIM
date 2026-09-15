@@ -7,7 +7,7 @@ const NotiTemplate = require("../../utils/notiUtility");
 const MailTemplate = require("../../utils/mailUtility");
 
 const setScenarioLearnerConfiguration =
-  ({ db }) =>
+  ({ db,ipAddress }) =>
   async (scenarioid, requestedby_id, vmrequestid) => {
     try {
       const statusVal = "Initializing";
@@ -74,67 +74,110 @@ const setScenarioLearnerConfiguration =
       const baseCloneVmid = parseInt(webSettings?.base_clone_vmid || 1000);
 
       const componentConfig = JSON.parse(scenario.component_config);
-      const networkConfig = JSON.parse(scenario.network_config);
-
-      if (networkConfig.length === 0) {
-        await handleComponentFailure(
-          db,
-          scenarioid,
-          requestedby_id,
-          vmrequestid,
-          statusVal,
-          ERROR_MESSAGES.NETWORK_BRIDGES,
-        );
-        return {
-          success: false,
-          message: ERROR_MESSAGES.NETWORK_BRIDGES,
-        };
-      }
+const networkConfig = JSON.parse(scenario.network_config).filter(
+  (label) => label !== "Network Id",
+);
+      // if (networkConfig.length === 0) {
+      //   await handleComponentFailure(
+      //     db,
+      //     scenarioid,
+      //     requestedby_id,
+      //     vmrequestid,
+      //     statusVal,
+      //     ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   );
+      //   return {
+      //     success: false,
+      //     message: ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   };
+      // }
 
       //Allocate Networks
-      const availableNetworks = await db.sequelize.query(
-        `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
-        {
-          replacements: [networkConfig.length],
-          type: db.sequelize.QueryTypes.SELECT,
-        },
-      );
+      // const availableNetworks = await db.sequelize.query(
+      //   `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
+      //   {
+      //     replacements: [networkConfig.length],
+      //     type: db.sequelize.QueryTypes.SELECT,
+      //   },
+      // );
 
-      if (availableNetworks.length < networkConfig.length) {
-        await handleComponentFailure(
-          db,
-          scenarioid,
-          requestedby_id,
-          vmrequestid,
-          statusVal,
-          ERROR_MESSAGES.NETWORK_BRIDGES,
+      // if (availableNetworks.length < networkConfig.length) {
+      //   await handleComponentFailure(
+      //     db,
+      //     scenarioid,
+      //     requestedby_id,
+      //     vmrequestid,
+      //     statusVal,
+      //     ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   );
+      //   return {
+      //     success: false,
+      //     message: ERROR_MESSAGES.NETWORK_BRIDGES,
+      //   };
+      // }
+
+      // const networkIds = availableNetworks.map((n) => n.networkid);
+      // await db.sequelize.query(
+      //   `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
+      //   {
+      //     replacements: { networkIds },
+      //     type: db.sequelize.QueryTypes.UPDATE,
+      //   },
+      // );
+
+      // const networkArray = networkConfig.reduce((acc, key, index) => {
+      //   availableNetworks[index].networkkey = key;
+      //   acc[key] = availableNetworks[index];
+      //   return acc;
+      // }, {});
+      let availableNetworks = [];
+      let networkArray = {};
+
+      if (networkConfig.length > 0) {
+        //Allocate Networks
+        availableNetworks = await db.sequelize.query(
+          `SELECT networkid, networkname FROM networks WHERE status = 'Available' AND deletedon IS NULL ORDER BY networkid ASC LIMIT ?`,
+          {
+            replacements: [networkConfig.length],
+            type: db.sequelize.QueryTypes.SELECT,
+          },
         );
-        return {
-          success: false,
-          message: ERROR_MESSAGES.NETWORK_BRIDGES,
-        };
+
+        if (availableNetworks.length < networkConfig.length) {
+          await handleComponentFailure(
+            db,
+            scenarioid,
+            requestedby_id,
+            vmrequestid,
+            statusVal,
+            ERROR_MESSAGES.NETWORK_BRIDGES,
+          );
+          return {
+            success: false,
+            message: ERROR_MESSAGES.NETWORK_BRIDGES,
+          };
+        }
+
+        const networkIds = availableNetworks.map((n) => n.networkid);
+        await db.sequelize.query(
+          `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
+          {
+            replacements: { networkIds },
+            type: db.sequelize.QueryTypes.UPDATE,
+          },
+        );
+
+        networkArray = networkConfig.reduce((acc, key, index) => {
+          availableNetworks[index].networkkey = key;
+          acc[key] = availableNetworks[index];
+          return acc;
+        }, {});
       }
-
-      const networkIds = availableNetworks.map((n) => n.networkid);
-      await db.sequelize.query(
-        `UPDATE networks SET status = 'Occupied', modifiedon = NOW() WHERE networkid IN (:networkIds)`,
-        {
-          replacements: { networkIds },
-          type: db.sequelize.QueryTypes.UPDATE,
-        },
-      );
-
-      const networkArray = networkConfig.reduce((acc, key, index) => {
-        availableNetworks[index].networkkey = key;
-        acc[key] = availableNetworks[index];
-        return acc;
-      }, {});
 
       //  Prepare components
       let allFound = true;
       const preparedComponents = [];
-
-      for (const item of componentConfig) {
+      componentLoop: for (const item of componentConfig) {
         const {
           vmid,
           order,
@@ -144,7 +187,6 @@ const setScenarioLearnerConfiguration =
           duration,
           network_ids,
         } = item;
-
         let network_bridge_name = "{}";
         const [componentInfo] = await db.sequelize.query(
           `SELECT componenttype, network_bridge_name, vmid_name,componentname FROM components WHERE componentid = ?`,
@@ -166,8 +208,33 @@ const setScenarioLearnerConfiguration =
         const network_bridge_json = {};
         for (const [netKey, netId] of Object.entries(network_ids)) {
           const prefix = prefixMap[netKey];
-          const bridgeName = bridgeMap[netId]?.networkname;
-          if (prefix && bridgeName) {
+          if (!prefix) continue;
+          let bridgeName;
+          if (netId === "Network Id") {
+            // Reuse the bridge from the connected node/port in the diagram. Prefer the target side first for this learner flow.
+            const proxmoxService = ProxMoxService(db, {}, ipAddress);
+                  const tokenResult = await proxmoxService.generateAccessTicket();
+                  if (!tokenResult || tokenResult.status !== "200") {
+                    return {
+                      success: false,
+                      message:
+                        "Could not connect to the server while destroying components.",
+                    };
+                  }
+
+            const sourceVmInfo = await proxmoxService.getVmNetworkInfo(vmid, componentInfo.componenttype?.toLowerCase());
+            // Response shape: { data: { net0: "virtio=...,bridge=vmbr10", net1: "..." } }
+            const netLine = sourceVmInfo?.data?.[netKey];
+            const match = netLine?.match(/bridge=([^,]+)/);
+            bridgeName = match ? match[1] : null;
+            if (!bridgeName) {
+              allFound = false;
+              break componentLoop;
+            }
+          } else {
+            bridgeName = bridgeMap[netId]?.networkname;
+          }
+          if (bridgeName) {
             network_bridge_json[netKey] = `${prefix},bridge=${bridgeName}`;
           }
         }
@@ -182,7 +249,7 @@ const setScenarioLearnerConfiguration =
           order,
           master_vmid: vmid,
           vmid: null,
-          componentname: componentInfo.componentname,
+          componentname: componentInfo.vmid_name,
           duration,
           network_bridge_json: JSON.stringify(network_bridge_json),
           status: statusVal,
@@ -1888,332 +1955,6 @@ const getPauselimit = async (db) => {
   }
 };
 
-// const pauseScenarioLearner =
-//   ({ db, ipAddress }) =>
-//   async (vmrequestid, learner_id) => {
-//     try {
-//       const pauseLimit = await getPauselimit(db);
-//       const [pausedCountResult] = await db.sequelize.query(
-//         `SELECT COUNT(*) AS pausedCount
-//          FROM vm_request
-//          WHERE requestedby_id = :learner_id
-//          AND requestedby_role = 'Learner'
-//          AND status = 'Pause'`,
-//         {
-//           replacements: { learner_id },
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if ((pausedCountResult?.pausedCount || 0) >= pauseLimit) {
-//         return {
-//           statusCode: 400,
-//           message: `You have reached the maximum pause limit (${pauseLimit}).`,
-//         };
-//       }
-
-//       // ------------------ FETCH COMPONENTS ------------------
-//       const components = await db.sequelize.query(
-//         `SELECT vmid, componenttype, componentname
-//          FROM vm_config
-//          WHERE vmrequestid = ?`,
-//         {
-//           replacements: [vmrequestid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if (!components.length) {
-//         return {
-//           success: false,
-//           message: "No VM components found for this VM request.",
-//         };
-//       }
-
-//       const hibernateDelayMs = await getHibernateDelay(db);
-
-//       let allSuccess = true;
-//       let proxmoxFailed = false;
-//       let results = [];
-//       let pausedVMs = [];
-
-//       // ------------------ PAUSE LOOP ------------------
-//       for (const { vmid, componenttype } of components) {
-//         const vmType = componenttype.toLowerCase();
-//         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-
-//         // -------- Generate Proxmox Ticket --------
-//         const tokenResult = await proxmoxService.generateAccessTicket();
-//         if (!tokenResult || tokenResult.status !== "200") {
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message: `We couldn't authenticate with the server.Please try after some time`,
-//           });
-//           break;
-//         }
-
-//         // -------- Pause / Stop VM --------
-//         let pauseResult;
-//         if (vmType === "qemu") {
-//           pauseResult = await proxmoxService.pauseVM(vmid, vmType);
-//         } else if (vmType === "lxc") {
-//           pauseResult = await proxmoxService.stopVM(vmid, vmType);
-//         } else {
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message: `Invalid VM type ${vmType} for VM ${vmid}`,
-//           });
-//           break;
-//         }
-
-//         // -------- Pause Success --------
-//         if (pauseResult?.status === 200) {
-//           await db.sequelize.query(
-//             `UPDATE vm_config
-//              SET status = 'Hibernate', modifiedon = NOW()
-//              WHERE vmrequestid = ? AND vmid = ?`,
-//             {
-//               replacements: [vmrequestid, vmid],
-//             },
-//           );
-
-//           pausedVMs.push({ vmid, vmType });
-
-//           results.push({
-//             vmid,
-//             status: "success",
-//             message:
-//               vmType === "qemu"
-//                 ? `VM ${vmid} paused successfully`
-//                 : `VM ${vmid} stopped successfully (LXC pause equivalent)`,
-//           });
-//         } else {
-//           // -------- Pause Failed --------
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message:
-//               vmType === "qemu"
-//                 ? `Failed to pause VM ${vmid}`
-//                 : `Failed to stop VM ${vmid}`,
-//           });
-//           break;
-//         }
-
-//         await sleep(hibernateDelayMs);
-//       }
-
-//       // ------------------ ROLLBACK (FALLBACK) ------------------
-//       if (proxmoxFailed && pausedVMs.length > 0) {
-//         console.warn(
-//           `Rollback started for vmrequestid ${vmrequestid}. Restoring ${pausedVMs.length} VMs`,
-//         );
-
-//         for (const { vmid, vmType } of pausedVMs) {
-//           try {
-//             const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-//             await proxmoxService.generateAccessTicket();
-
-//             if (vmType === "qemu") {
-//               await proxmoxService.resumeVM(vmid, vmType);
-//             } else if (vmType === "lxc") {
-//               await proxmoxService.startVM(vmid, vmType);
-//             }
-//             await db.sequelize.query(
-//               `UPDATE vm_config
-//                SET status = 'Running', modifiedon = NOW()
-//                WHERE vmrequestid = ? AND vmid = ?`,
-//               {
-//                 replacements: [vmrequestid, vmid],
-//               },
-//             );
-//           } catch (rollbackErr) {
-//             console.error(
-//               `Rollback failed for VM ${vmid}:`,
-//               rollbackErr.message,
-//             );
-//           }
-//         }
-//       }
-//       // ------------------ FINAL RESPONSE ------------------
-//       return {
-//         success: allSuccess,
-//         message: allSuccess
-//           ? "All VMs paused successfully."
-//           : proxmoxFailed
-//             ? "Pause failed. Rollback executed. Scenario restored to running state."
-//             : "Scenario failed to pause.",
-//         details: results,
-//       };
-//     } catch (err) {
-//       console.error("Error in pauseScenarioLearner:", err);
-//       return {
-//         success: false,
-//         message: "Unexpected error occurred during pause.",
-//       };
-//     }
-//   };
-
-
-// const resumeScenarioLearner =
-//   ({ db, ipAddress }) =>
-//   async (vmrequestid) => {
-//     try {
-//       // ------------------ FETCH COMPONENTS ------------------
-//       const components = await db.sequelize.query(
-//         `SELECT vmid, componenttype, componentname
-//          FROM vm_config
-//          WHERE vmrequestid = ?`,
-//         {
-//           replacements: [vmrequestid],
-//           type: db.sequelize.QueryTypes.SELECT,
-//         },
-//       );
-
-//       if (!components.length) {
-//         return {
-//           success: false,
-//           message: "No VM components found for this VM request.",
-//         };
-//       }
-
-//       const hibernateDelayMs = await getHibernateDelay(db);
-
-//       let allSuccess = true;
-//       let proxmoxFailed = false;
-//       let results = [];
-//       let resumedVMs = [];
-
-//       // ------------------ RESUME LOOP ------------------
-//       for (const { vmid, componenttype } of components) {
-//         const vmType = componenttype.toLowerCase();
-//         const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-
-//         // -------- Generate Proxmox Ticket --------
-//         const tokenResult = await proxmoxService.generateAccessTicket();
-//         if (!tokenResult || tokenResult.status !== "200") {
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message: `We couldn't authenticate with the server.Please try after some time`,
-//           });
-//           break;
-//         }
-//         // -------- Resume / Start VM --------
-//         let resumeResult;
-//         if (vmType === "qemu") {
-//           resumeResult = await proxmoxService.resumeVM(vmid, vmType);
-//         } else if (vmType === "lxc") {
-//           resumeResult = await proxmoxService.startVM(vmid, vmType);
-//         } else {
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message: `Invalid VM type ${vmType} for VM ${vmid}`,
-//           });
-//           break;
-//         }
-//         // -------- Resume Success --------
-//         if (resumeResult?.status === 200) {
-//           await db.sequelize.query(
-//             `UPDATE vm_config
-//              SET status = 'Running', modifiedon = NOW()
-//              WHERE vmrequestid = ? AND vmid = ?`,
-//             {
-//               replacements: [vmrequestid, vmid],
-//             },
-//           );
-//           resumedVMs.push({ vmid, vmType });
-//           results.push({
-//             vmid,
-//             status: "success",
-//             message:
-//               vmType === "qemu"
-//                 ? `VM ${vmid} resumed successfully`
-//                 : `VM ${vmid} started successfully (LXC resume equivalent)`,
-//           });
-//         } else {
-//           allSuccess = false;
-//           proxmoxFailed = true;
-
-//           results.push({
-//             vmid,
-//             status: "failed",
-//             message:
-//               vmType === "qemu"
-//                 ? `Failed to resume VM ${vmid}`
-//                 : `Failed to start VM ${vmid}`,
-//           });
-//           break;
-//         }
-
-//         await sleep(hibernateDelayMs);
-//       }
-//       // ------------------ ROLLBACK (FALLBACK) ------------------
-//       if (proxmoxFailed && resumedVMs.length > 0) {
-//         console.warn(
-//           `Resume rollback started for vmrequestid ${vmrequestid}. Re-hibernating ${resumedVMs.length} VMs`,
-//         );
-//         for (const { vmid, vmType } of resumedVMs) {
-//           try {
-//             const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-//             await proxmoxService.generateAccessTicket();
-
-//             if (vmType === "qemu") {
-//               await proxmoxService.pauseVM(vmid, vmType);
-//             } else if (vmType === "lxc") {
-//               await proxmoxService.stopVM(vmid, vmType);
-//             }
-//             await db.sequelize.query(
-//               `UPDATE vm_config
-//                SET status = 'Hibernate', modifiedon = NOW()
-//                WHERE vmrequestid = ? AND vmid = ?`,
-//               {
-//                 replacements: [vmrequestid, vmid],
-//               },
-//             );
-//           } catch (rollbackErr) {
-//             console.error(
-//               `Resume rollback failed for VM ${vmid}:`,
-//               rollbackErr.message,
-//             );
-//           }
-//         }
-//       }
-//       return {
-//         success: allSuccess,
-//         message: allSuccess
-//           ? "All VMs resumed successfully."
-//           : proxmoxFailed
-//             ? "Resume failed. Rollback executed. Scenario restored to hibernate state."
-//             : "Scenario failed to resume.",
-//         details: results,
-//       };
-//     } catch (err) {
-//       console.error("Error in resumeScenarioLearner:", err);
-//       return {
-//         success: false,
-//         message: "Unexpected error occurred during resume.",
-//       };
-//     }
-//   };
 const pauseScenarioLearner =
   ({ db, ipAddress }) =>
   async (vmrequestid, learner_id) => {
@@ -3078,6 +2819,22 @@ const save =
           message: "VMID information missing in custom component.",
         };
       }
+
+      const [sourceVmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = :sourceVmid
+           AND vc.status != 'Destroyed'
+         ORDER BY vc.vmconfigurationid DESC
+         LIMIT 1`,
+        {
+          replacements: { sourceVmid },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = sourceVmConfig?.node_name || null;
+
       // Proxmox connection
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -3088,7 +2845,12 @@ const save =
       const cleanupLXCOnCloneFail = async () => {
         try {
           if (snapshotName) {
-            await proxmoxService.deleteLXCSnapshot(sourceVmid, snapshotName);
+            await proxmoxService.deleteSnapshot(
+              sourceVmid,
+              snapshotName,
+              "lxc",
+              selectedNode,
+            );
           }
         } catch (e) {
           console.error("Cleanup LXC clone fail error:", e);
@@ -3100,9 +2862,11 @@ const save =
         try {
           if (snapshotName) {
             await sleep(await getTerminationDelay(db));
-            const snapDelRes = await proxmoxService.deleteLXCSnapshot(
+            const snapDelRes = await proxmoxService.deleteSnapshot(
               sourceVmid,
               snapshotName,
+              "lxc",
+              selectedNode,
             );
             if (snapDelRes?.status !== 200) {
               throw new Error("LXC snapshot delete failed");
@@ -3111,7 +2875,11 @@ const save =
           }
           if (newVmid) {
             await sleep(await getTerminationDelay(db));
-            const destroyRes = await proxmoxService.destroyVM(newVmid, "lxc");
+            const destroyRes = await proxmoxService.destroyVM(
+              newVmid,
+              "lxc",
+              selectedNode,
+            );
             if (destroyRes?.status !== 200) {
               throw new Error("LXC VM destroy failed");
             }
@@ -3132,7 +2900,11 @@ const save =
           if (!newVmid) return true;
 
           await sleep(await getTerminationDelay(db));
-          const destroyRes = await proxmoxService.destroyVM(newVmid, "qemu");
+          const destroyRes = await proxmoxService.destroyVM(
+            newVmid,
+            "qemu",
+            selectedNode,
+          );
           if (destroyRes?.status !== 200) {
             throw new Error("QEMU destroy failed");
           }
@@ -3148,6 +2920,7 @@ const save =
         const snapResult = await proxmoxService.createLXCSnapshot(
           sourceVmid,
           snapshotName,
+          selectedNode,
         );
         if (snapResult?.status !== 200) {
           return await markComponentRejected({
@@ -3163,7 +2936,10 @@ const save =
         const snapshotUpid = snapResult?.data?.data;
         //  WAIT FOR SNAPSHOT TASK
         while (true) {
-          const statusRes = await proxmoxService.getTaskLog(snapshotUpid);
+          const statusRes = await proxmoxService.getTaskLog(
+            snapshotUpid,
+            selectedNode,
+          );
 
           const status = statusRes?.data?.data?.status;
           const exitstatus = statusRes?.data?.data?.exitstatus;
@@ -3181,12 +2957,16 @@ const save =
 
           await sleep(5000);
         }
-        cloneResult = await proxmoxService.cloneLXC(sourceVmid, {
-          newid: newVmid,
-          hostname: payload.componentname,
-          full: 1,
-          snapname: snapshotName,
-        });
+        cloneResult = await proxmoxService.cloneLXC(
+          sourceVmid,
+          {
+            newid: newVmid,
+            hostname: payload.componentname,
+            full: 1,
+            snapname: snapshotName,
+          },
+          selectedNode,
+        );
         if (cloneResult?.status !== 200) {
           await cleanupLXCOnCloneFail();
           return await markComponentRejected({
@@ -3200,7 +2980,10 @@ const save =
         }
         let upid = cloneResult?.data?.data;
         while (true) {
-          const logResponse = await proxmoxService.getTaskLog(upid);
+          const logResponse = await proxmoxService.getTaskLog(
+            upid,
+            selectedNode,
+          );
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }
@@ -3222,7 +3005,10 @@ const save =
           // Still running → wait before next check
           await sleep(5000);
         }
-        templateResult = await proxmoxService.templateLXC(newVmid);
+        templateResult = await proxmoxService.templateLXC(
+          newVmid,
+          selectedNode,
+        );
         if (templateResult?.status !== 200) {
           const cleanupResult = await cleanupLXCOnTemplateFail();
 
@@ -3261,6 +3047,7 @@ const save =
           sourceVmid,
           newVmid,
           proxmoxHostname,
+          selectedNode,
         );
         if (cloneResult?.status !== 200) {
           return await markComponentRejected({
@@ -3274,7 +3061,10 @@ const save =
         }
         let upid = cloneResult?.data?.data;
         while (true) {
-          const logResponse = await proxmoxService.getTaskLog(upid);
+          const logResponse = await proxmoxService.getTaskLog(
+            upid,
+            selectedNode,
+          );
           if (!logResponse) {
             throw new Error("Unable to fetch clone task status");
           }
@@ -3296,7 +3086,10 @@ const save =
           // Still running → wait before next check
           await sleep(10000);
         }
-        templateResult = await proxmoxService.templateQEMU(newVmid);
+        templateResult = await proxmoxService.templateQEMU(
+          newVmid,
+          selectedNode,
+        );
         if (templateResult?.status !== 200) {
           await sleep(await getTerminationDelay(db));
           const cleanupSuccess = await cleanupQEMUOnTemplateFail();
@@ -3326,7 +3119,11 @@ const save =
       //   vmDetailResponse = await proxmoxService.QEMU_VM_detail(newVmid);
       // }
 
-        vmDetailResponse = await proxmoxService.VM_detail(newVmid,vmType);
+        vmDetailResponse = await proxmoxService.VM_detail(
+          newVmid,
+          vmType,
+          selectedNode,
+        );
 
 
 
@@ -3543,6 +3340,22 @@ const getVmConfig =
       const approvalMessage = approvalFlag
         ? "Auto approval process"
         : "Admin approval process";
+
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = :vmid
+           AND vc.status != 'Destroyed'
+         ORDER BY vc.vmconfigurationid DESC
+         LIMIT 1`,
+        {
+          replacements: { vmid },
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
 
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -3560,7 +3373,7 @@ const getVmConfig =
       //   result = await proxmoxService.getLxcConfig(vmid);
       // }
 
-        result = await proxmoxService.getConfig(vmid,vmType);
+        result = await proxmoxService.getConfig(vmid, vmType, selectedNode);
 
 
       if (!result?.success) {
@@ -3604,67 +3417,6 @@ const getVmConfig =
       };
     }
   };
-
-// const stopScenarioVM =
-//   ({ ipAddress, db }) =>
-//   async (vmid, vmType) => {
-//     const normalizedVmType = vmType.toLowerCase();
-
-//     try {
-//       const proxmoxService = ProxMoxService(
-//         { vmType: normalizedVmType },
-//         ipAddress,
-//       );
-//       const tokenResult = await proxmoxService.generateAccessTicket();
-
-//       if (!tokenResult || tokenResult.status !== "200") {
-//         return {
-//           success: false,
-//           message: "We couldn't authenticate with the server.Please try after some time",
-//         };
-//       }
-//       const stopRes = await proxmoxService.stopVM(vmid, normalizedVmType);
-//       if (stopRes?.status === 200) {
-//         const [updateResult] = await db.sequelize.query(
-//           `
-//             UPDATE vm_config
-//             SET status = 'Stopped',
-//                 modifiedon = NOW()
-//             WHERE vmid = ?
-//           `,
-//           {
-//             replacements: [vmid],
-//             type: db.sequelize.QueryTypes.UPDATE,
-//           },
-//         );
-
-//         // Optional safety check
-//         if (updateResult === 0) {
-//           return {
-//             success: false,
-//             message: "VM stopped but component record not found.",
-//           };
-//         }
-
-//         return {
-//           success: true,
-//           message: "VM stopped and component status updated to Stop.",
-//         };
-//       }
-
-//       return {
-//         success: false,
-//         message: "Failed to stop VM.",
-//       };
-//     } catch (err) {
-//       console.error("Error in stopScenarioVM DAO:", err);
-
-//       return {
-//         success: false,
-//         message: err?.message || "Unexpected error occurred while stopping VM.",
-//       };
-//     }
-//   };
 
 
 const stopScenarioVM =
@@ -3821,6 +3573,22 @@ const addScenarioVmNetwork =
           message: "We couldn't authenticate with the server.Please try after some time",
         };
       }
+
+      // ★ Fetch node_name from vm_request using vmid
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+         FROM vm_config vc
+         INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+         WHERE vc.vmid = ?
+         LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(`[addScenarioVmNetwork] vmid: ${vmid}, node: ${selectedNode}`);
+
       /* -------------------- FETCH EXISTING BRIDGE JSON -------------------- */
       const configRows = await db.sequelize.query(
         ` SELECT network_bridge_json FROM vm_config WHERE vmid = ? LIMIT 1
@@ -3859,6 +3627,7 @@ const addScenarioVmNetwork =
           normalizedVmType,
           key,
           netValue,
+          selectedNode,  // ★
         );
 
         if (!addNetRes || addNetRes.status !== 200) {
@@ -3988,11 +3757,29 @@ const deleteScenarioVmNetwork =
           message: "We couldn't authenticate with the server.Please try after some time",
         };
       }
+
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+   FROM vm_config vc
+   INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+   WHERE vc.vmid = ?
+   LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(
+        `[deleteScenarioVmNetwork] vmid: ${vmid}, node: ${selectedNode}`,
+      );
+      
       /* -------------------- DELETE NETWORK IN PROXMOX -------------------- */
       const deleteNetRes = await proxmoxService.deleteVmNetwork(
         vmid,
         normalizedVmType,
         netKey,
+        selectedNode
       );
 
       if (deleteNetRes?.status !== 200) {
@@ -4203,6 +3990,18 @@ const ModifyScenarioVmNetwork =
         }
 
         const targetVmType = targetVmRow.componenttype.toLowerCase();
+        const [targetVmConfigNode] = await db.sequelize.query(
+  `SELECT vr.node_name
+   FROM vm_config vc
+   INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+   WHERE vc.vmid = ?
+   LIMIT 1`,
+  {
+    replacements: [Targetvmid],
+    type: db.sequelize.QueryTypes.SELECT,
+  },
+);
+const targetSelectedNode = targetVmConfigNode?.node_name || null;
         const targetNetKey = targetHandle
           .replace("-target", "")
           .replace("-source", "");
@@ -4221,6 +4020,25 @@ const ModifyScenarioVmNetwork =
             message: "We couldn't authenticate with the server. Please try after some time",
           };
         }
+
+
+        
+      const [vmConfig] = await db.sequelize.query(
+        `SELECT vr.node_name
+   FROM vm_config vc
+   INNER JOIN vm_request vr ON vr.vmrequestid = vc.vmrequestid
+   WHERE vc.vmid = ?
+   LIMIT 1`,
+        {
+          replacements: [vmid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmConfig?.node_name || null;
+      console.log(
+        `[deleteScenarioVmNetwork] vmid: ${vmid}, node: ${selectedNode}`,
+      );
+      
 
         // ---------- FETCH EXISTING NET CONFIG & BUILD NET VALUES ----------
         const sourceVmInfo = await proxmoxService.getVmNetworkInfo(vmid, normalizedVmType);
@@ -4265,7 +4083,8 @@ const ModifyScenarioVmNetwork =
           vmid,
           normalizedVmType,
           netKey,
-          netValue
+          netValue,
+          selectedNode
         );
 
         await sleep(3000);
@@ -4274,7 +4093,8 @@ const ModifyScenarioVmNetwork =
           targetVmRow.vmid,
           targetVmType,
           targetNetKey,
-          targetNetValue
+          targetNetValue,
+          targetSelectedNode
         );
 
         if (addNetSource?.status !== 200 || addNetTarget?.status !== 200) {
@@ -4481,7 +4301,7 @@ const addRuntimeComponent =
       const baseCloneVmid = parseInt(webSettings?.base_clone_vmid || 1000);
       /* ---------------- GET VM REQUEST ---------------- */
       const [vmRequest] = await db.sequelize.query(
-        `SELECT scenariodiagram FROM vm_request WHERE vmrequestid=?`,
+        `SELECT scenariodiagram,node_name  FROM vm_request WHERE vmrequestid=?`,
         {
           replacements: [vmrequestid],
           type: db.sequelize.QueryTypes.SELECT,
@@ -4490,6 +4310,9 @@ const addRuntimeComponent =
       if (!vmRequest) {
         return { success: false, message: "VM Request not found" };
       }
+
+const selectedNode = vmRequest?.node_name || null;
+console.log(`[addRuntimeComponent] vmrequestid: ${vmrequestid}, node: ${selectedNode}`);
       const diagram = JSON.parse(vmRequest.scenariodiagram || "{}");
       /* ---------------- COMPONENT INFO ---------------- */
       const componentId = newNode.data.componentId;
@@ -4585,29 +4408,87 @@ const addRuntimeComponent =
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       /* ---------------- CLONE ---------------- */
-      const cloneRes = await proxmoxService.cloneVM(
-        vmType,
-        newVmid,
-        componentInfo.vmid_name,
-        newNode.data.vmid,
+      // const cloneRes = await proxmoxService.cloneVM(
+      //   vmType,
+      //   newVmid,
+      //   componentInfo.vmid_name,
+      //   newNode.data.vmid,
+      //   selectedNode
+      // );
+      // if (!cloneRes || cloneRes.status !== 200) {
+      //   await db.sequelize.query(
+      //     `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
+      //     { replacements: [insertId] },
+      //   );
+      //   return { success: false, message: "Action failed. Please try again." };
+      // }
+      // const delay = await getCloningDelay(db);
+      // await sleep(delay);
+      /* ---------------- CLONE ---------------- */
+const cfg = await proxmoxService.getProxmoxConfig();
+const sourceNode = cfg.current_node;
+
+const cloneRes = await proxmoxService.cloneVM(
+  vmType,
+  newVmid,
+  componentInfo.vmid_name,
+  newNode.data.vmid,
+  selectedNode, // not used for URL, kept for logging/signature
+);
+if (!cloneRes || cloneRes.status !== 200) {
+  await db.sequelize.query(
+    `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
+    { replacements: [insertId] },
+  );
+  return { success: false, message: "Action failed. Please try again." };
+}
+
+const cloneTaskId = cloneRes.data?.data;
+if (cloneTaskId) {
+  const cloneDone = await proxmoxService.waitForTask(sourceNode, cloneTaskId);
+  if (!cloneDone) {
+    await db.sequelize.query(
+      `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
+      { replacements: [insertId] },
+    );
+    return { success: false, message: "Clone task timed out or failed." };
+  }
+}
+
+/* ---------------- MIGRATE (if selectedNode differs from sourceNode) ---------------- */
+if (selectedNode && selectedNode !== sourceNode) {
+  const migrateResult = await proxmoxService.migrateVM(vmType, newVmid, sourceNode, selectedNode);
+  if (!migrateResult || migrateResult.status !== 200) {
+    await db.sequelize.query(
+      `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
+      { replacements: [insertId] },
+    );
+    return { success: false, message: "Migration failed after cloning." };
+  }
+
+  const migrateTaskId = migrateResult.data?.data;
+  if (migrateTaskId) {
+    const migrateDone = await proxmoxService.waitForTask(sourceNode, migrateTaskId);
+    if (!migrateDone) {
+      await db.sequelize.query(
+        `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
+        { replacements: [insertId] },
       );
-      if (!cloneRes || cloneRes.status !== 200) {
-        await db.sequelize.query(
-          `UPDATE vm_config SET status='Failed' WHERE vmconfigurationid=?`,
-          { replacements: [insertId] },
-        );
-        return { success: false, message: "Action failed. Please try again." };
-      }
-      const delay = await getCloningDelay(db);
-      await sleep(delay);
+      return { success: false, message: "Migration task timed out or failed." };
+    }
+  }
+}
+
+const delay = await getCloningDelay(db);
+await sleep(delay);
 
       /* ---------------- START ---------------- */
-      const startVM = await proxmoxService.startVM(newVmid, vmType);
+      const startVM = await proxmoxService.startVM(newVmid, vmType,selectedNode);
       if (!startVM || startVM.status !== 200) {
         let destroySuccess = false;
         try {
           // await proxmoxService.stopVM(newVmid, vmType).catch(() => { });
-          const destroyRes = await proxmoxService.destroyVM(newVmid, vmType);
+          const destroyRes = await proxmoxService.destroyVM(newVmid, vmType,selectedNode);
           if (destroyRes && destroyRes.status === 200) {
             destroySuccess = true;
           }
@@ -4686,6 +4567,16 @@ const stopDestroySingleComponent =
       const { componenttype, network_bridge_json, vmconfigurationid } =
         vmConfig;
       const vmType = componenttype.toLowerCase();
+      // ★ add selectedNode lookup here
+const [vmRequestNode] = await db.sequelize.query(
+  `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+  {
+    replacements: [vmrequestid],
+    type: db.sequelize.QueryTypes.SELECT,
+  },
+);
+const selectedNode = vmRequestNode?.node_name || null;
+console.log(`[stopDestroySingleComponent] vmid: ${vmid}, node: ${selectedNode}`);
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
@@ -4695,7 +4586,7 @@ const stopDestroySingleComponent =
       /* ---------------- STOP ---------------- */
       let stopSuccess = false;
       try {
-        const stopRes = await proxmoxService.stopVM(vmid, vmType);
+        const stopRes = await proxmoxService.stopVM(vmid, vmType,selectedNode);
         if (!stopRes || stopRes.status !== 200) {
           throw new Error("Stop failed");
         }
@@ -4704,7 +4595,7 @@ const stopDestroySingleComponent =
         console.error("Action failed. Please try again.", stopErr);
         /* ---- Rollback: Start again ---- */
         try {
-          await proxmoxService.startVM(vmid, vmType);
+          await proxmoxService.startVM(vmid, vmType,selectedNode);
         } catch (startErr) {
           console.error("Action failed. Please try again.", startErr);
         }
@@ -4726,7 +4617,7 @@ const stopDestroySingleComponent =
       await sleep(await getTerminationDelay(db));
       /* ---------------- DESTROY ---------------- */
       try {
-        const destroyRes = await proxmoxService.destroyVM(vmid, vmType);
+        const destroyRes = await proxmoxService.destroyVM(vmid, vmType,selectedNode);
 
         if (!destroyRes || destroyRes.status !== 200) {
           throw new Error("Destroy failed");
@@ -4885,13 +4776,23 @@ const disconnectRuntimeNetworks =
       }
       const { componenttype, network_bridge_json } = vmConfig;
       const vmType = componenttype.toLowerCase();
+
+      const [vmRequestNode] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestNode?.node_name || null;
+      console.log(`[disconnectRuntimeNetworks] vmid: ${vmid}, node: ${selectedNode}`);
       /* ---------------- PROXMOX AUTH ---------------- */
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
       if (!tokenResult || tokenResult.status !== "200") {
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
-      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
+      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType,selectedNode);
       if (!vmInfo?.data) {
         return { success: false, message: "VM network info not found" };
       }
@@ -4920,6 +4821,7 @@ const disconnectRuntimeNetworks =
         vmType,
         netKey,
         netValue,
+        selectedNode
       );
 
       if (!res || res.status !== 200) {
@@ -5053,6 +4955,15 @@ const connectRuntimeNetwork =
       }
       const { componenttype, network_bridge_json } = vmConfig;
       const vmType = componenttype.toLowerCase();
+      const [vmRequestNode] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestNode?.node_name || null;
+      console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
       /* ---------------- PROXMOX AUTH ---------------- */
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -5060,7 +4971,7 @@ const connectRuntimeNetwork =
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
       /* ---------------- GET LIVE NETWORK INFO ---------------- */
-      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
+      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType,selectedNode);
       if (!vmInfo?.data) {
         return { success: false, message: "VM network info not found" };
       }
@@ -5081,6 +4992,7 @@ const connectRuntimeNetwork =
         vmType,
         netKey,
         netValue,
+        selectedNode
       );
 
       if (!res || res.status !== 200) {
@@ -5225,12 +5137,21 @@ const unplugRuntimeNetwork =
       );
       if (!vmConfig) return { success: false, message: "VM config not found" };
       const vmType = vmConfig.componenttype.toLowerCase();
+      const [vmRequestNode] = await db.sequelize.query(
+      `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+      {
+        replacements: [vmrequestid],
+        type: db.sequelize.QueryTypes.SELECT,
+      },
+    );
+    const selectedNode = vmRequestNode?.node_name || null;
+    console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       /* ---------------- AUTH ---------------- */
       const token = await proxmoxService.generateAccessTicket();
       if (!token || token.status !== "200")
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
+      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType,selectedNode);
       if (!vmInfo?.data?.[netKey])
         return { success: false, message: `${netKey} not found` };
       const netString = vmInfo.data[netKey];
@@ -5268,6 +5189,7 @@ const unplugRuntimeNetwork =
         netKey,
         mac,
         bridge,
+        selectedNode
       );
 
       if (!res || res.status !== 200)
@@ -5362,11 +5284,21 @@ const plugRuntimeNetwork =
       );
       if (!vmConfig) return { success: false, message: "VM config not found" };
       const vmType = vmConfig.componenttype.toLowerCase();
+      const [vmRequestNode] = await db.sequelize.query(
+        `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+        {
+          replacements: [vmrequestid],
+          type: db.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const selectedNode = vmRequestNode?.node_name || null;
+      console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
+
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const token = await proxmoxService.generateAccessTicket();
       if (!token || token.status !== "200")
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
-      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType);
+      const vmInfo = await proxmoxService.getVmNetworkInfo(vmid, vmType,selectedNode);
       if (!vmInfo?.data?.[netKey])
         return { success: false, message: `${netKey} not found` };
 
@@ -5405,6 +5337,7 @@ const plugRuntimeNetwork =
         netKey,
         mac,
         bridge,
+        selectedNode
       );
       if (!res || res.status !== 200)
         return { success: false, message: "Plug API failed" };
@@ -5507,6 +5440,15 @@ const stopComponent =
       const { componenttype, vmconfigurationid } = vmConfig;
 
       const vmType = componenttype.toLowerCase();
+      const [vmRequestNode] = await db.sequelize.query(
+          `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+          {
+            replacements: [vmrequestid],
+            type: db.sequelize.QueryTypes.SELECT,
+          },
+        );
+        const selectedNode = vmRequestNode?.node_name || null;
+        console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
 
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -5517,7 +5459,7 @@ const stopComponent =
 
       /* ---------------- STOP VM ---------------- */
       try {
-        const stopRes = await proxmoxService.stopVM(vmid, vmType);
+        const stopRes = await proxmoxService.stopVM(vmid, vmType,selectedNode);
         if (!stopRes || stopRes.status !== 200) {
           throw new Error("Stop failed");
         }
@@ -5526,7 +5468,7 @@ const stopComponent =
 
         /* ---- Rollback: Start again ---- */
         try {
-          await proxmoxService.startVM(vmid, vmType);
+          await proxmoxService.startVM(vmid, vmType,selectedNode);
         } catch (startErr) {
           console.error("Rollback start also failed", startErr);
         }
@@ -5619,6 +5561,15 @@ const startComponent =
       const { componenttype, vmconfigurationid } = vmConfig;
       const vmType = componenttype.toLowerCase();
 
+      const [vmRequestNode] = await db.sequelize.query(
+  `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+  {
+    replacements: [vmrequestid],
+    type: db.sequelize.QueryTypes.SELECT,
+  },
+);
+const selectedNode = vmRequestNode?.node_name || null;
+console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
 
@@ -5628,7 +5579,7 @@ const startComponent =
 
       /* -------- START VM -------- */
       try {
-        const startRes = await proxmoxService.startVM(vmid, vmType);
+        const startRes = await proxmoxService.startVM(vmid, vmType,selectedNode);
 
         if (!startRes || startRes.status !== 200) {
           throw new Error("Start failed");
@@ -5637,7 +5588,7 @@ const startComponent =
         console.error("START FAILED → Rolling back", startErr);
 
         try {
-          await proxmoxService.stopVM(vmid, vmType);
+          await proxmoxService.stopVM(vmid, vmType,selectedNode);
         } catch (stopErr) {
           console.error("Rollback stop failed", stopErr);
         }
@@ -5726,6 +5677,15 @@ const restartComponent =
 
       const { componenttype } = vmConfig;
       const vmType = componenttype.toLowerCase();
+      const [vmRequestNode] = await db.sequelize.query(
+  `SELECT node_name FROM vm_request WHERE vmrequestid=? LIMIT 1`,
+  {
+    replacements: [vmrequestid],
+    type: db.sequelize.QueryTypes.SELECT,
+  },
+);
+const selectedNode = vmRequestNode?.node_name || null;
+console.log(`[connectRuntimeNetwork] vmid: ${vmid}, node: ${selectedNode}`);
 
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
       const tokenResult = await proxmoxService.generateAccessTicket();
@@ -5736,14 +5696,14 @@ const restartComponent =
 
       /* -------- STOP VM -------- */
       try {
-        await proxmoxService.stopVM(vmid, vmType);
+        await proxmoxService.stopVM(vmid, vmType,selectedNode);
       } catch (stopErr) {
         console.error("Restart stop failed", stopErr);
       }
       await new Promise((resolve) => setTimeout(resolve, 10000));
       /* -------- START VM AGAIN -------- */
       try {
-        const startRes = await proxmoxService.startVM(vmid, vmType);
+        const startRes = await proxmoxService.startVM(vmid, vmType,selectedNode);
         if (!startRes || startRes.status !== 200) {
           throw new Error("Restart start failed");
         }
@@ -5751,7 +5711,7 @@ const restartComponent =
         console.error("Restart failed → fallback start", startErr);
 
         try {
-          await proxmoxService.startVM(vmid, vmType);
+          await proxmoxService.startVM(vmid, vmType,selectedNode);
         } catch (err) {
           console.error("Fallback start also failed", err);
         }
@@ -6624,3 +6584,4 @@ module.exports = {
   markComponentTransferring,
   markComponentFailed
 };
+

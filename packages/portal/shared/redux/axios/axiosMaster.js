@@ -7,6 +7,18 @@ const secretKey = process.env.CRYPTO_SECURITY_KEY;
 let isSwalOpen401 = false;
 let isSwalOpen403 = false;
 
+const getApiErrorMessage = (data) => {
+  const errors = Array.isArray(data?.errors) ? data.errors : [];
+  if (errors.length > 0) {
+    return errors
+      .map((item) => typeof item === "string" ? item : item?.message)
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (Array.isArray(data?.message)) return data.message.filter(Boolean).join(" ");
+  return data?.error || data?.message || "Something went wrong";
+};
+
 const axiosInstance = axios.create({baseURL: process.env.API_URL_MASTERS});
 axiosInstance.interceptors.request.use((request) => {
   const accessToken = JSON.parse(localStorage.getItem('accessToken'));
@@ -108,6 +120,9 @@ axiosInstance.interceptors.response.use(
         });
       }
     } else if (error?.response?.status === 404) {
+      if (error?.config?.skipNotFoundRedirect) {
+        return Promise.reject(error);
+      }
       //Requested Resource Not Found OR Server Side Wrror
       if (Router.pathname !== '/404') {
           Router.push('/404');
@@ -118,7 +133,7 @@ axiosInstance.interceptors.response.use(
         data.text().then((text) => {
           try {
             const parsed = JSON.parse(text);
-            const msg = parsed?.error || parsed?.message || "Something went wrong";
+            const msg = getApiErrorMessage(parsed);
             toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{msg}</p>, {
               position: toast.POSITION.TOP_RIGHT,
               theme: "colored",
@@ -144,8 +159,8 @@ axiosInstance.interceptors.response.use(
         });
         return Promise.reject(error);
       }
-      if(error?.response?.data.error){
-        toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{error?.response?.data.error}</p>, {
+      const message = getApiErrorMessage(error?.response?.data);
+      toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{message}</p>, {
           position: toast.POSITION.TOP_RIGHT,
           theme: "colored",
           autoClose: 5000,
@@ -156,22 +171,7 @@ axiosInstance.interceptors.response.use(
           style: {
             width:'319px',
           }
-        });
-      }
-      else{
-        toast.error(<p className="mx-2 tx-16 d-flex align-items-center mb-0">{error?.response?.data.message}</p>, {
-          position: toast.POSITION.TOP_RIGHT,
-          theme: "colored",
-          autoClose: 5000,
-          closeButton: false,
-          closeOnClick: false,
-          draggable: false,
-          pauseOnHover: false,
-          style: {
-            width:'319px',
-          }
-        });
-      }
+      });
     } else {
       return(
           Promise.reject(

@@ -36,19 +36,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
 
     return () => observer.disconnect();
   }, []);
-
-  // useEffect(() => {
-  //   let scenarioId = rowValues?.scenarioid;
-  //   if (showChat && rowValues?.learner_id || rowValues?.scenarioid) {
-  //     dispatch(
-  //       getChatMessages({
-  //         learner_id: learner_id,
-  //         scenarioid: scenarioId,
-  //       })
-  //     );
-  //   }
-  // }, [showChat, rowValues, dispatch]);
-
     useEffect(() => {
   const scenarioId = rowValues?.scenarioid;
   const learnerId = rowValues?.learner_id;
@@ -86,8 +73,6 @@ const ChatBox = ({ showChat, setShowChat, scenarioTitle, rowValues, learner_id }
       setChatMessages(uniqueArr);
     }
   }, [getRefreshMsg]);
-console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
-
   const handleSend = () => {
     // if (!chatInput.trim()) return;
     if (!chatInput.replace(/\s/g, "")) return;
@@ -113,22 +98,11 @@ console.log("rowValuesrowValuesrowValuesrowValues",rowValues);
       setChatMessages((prev) => [...prev, saveChatMessageData]);
     }
   }, [saveChatMessageData]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-    e.target.value = null;
-  };
-
   const MAX_HEIGHT = 120; // px
 
   const handleRefresh = () => {
     if (chatMessages?.length) {
       const lastchatobject = chatMessages[chatMessages.length - 1];
-      console.log("lastchatobjectlastchatobject", lastchatobject);
-
       const payload = {
         learner_id: lastchatobject.learner_id,
         scenarioid: lastchatobject.scenarioid,

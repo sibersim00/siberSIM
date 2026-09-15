@@ -222,88 +222,6 @@ const ManageScenarios = () => {
     setOneClick(flag);
   };
   //Function to Download Excel file
-  const handleExportExcel = () => {
-    const filteredData = hasGetScenarioListSucc.filter((row) => {
-      if (scenStatus === "") return true; // All
-      return row.status === scenStatus;
-    });
-
-    const exportData = filteredData.map((row) => {
-      const createdDate = row.createdon ? new Date(row.createdon) : null;
-      const modifiedDate = row.modifiedon ? new Date(row.modifiedon) : null;
-
-      const createdDateOnly =
-        createdDate && !isNaN(createdDate)
-          ? createdDate.toLocaleDateString()
-          : "N/A";
-      const createdTime =
-        createdDate && !isNaN(createdDate)
-          ? createdDate.toLocaleTimeString()
-          : "N/A";
-
-      const modifiedDateOnly =
-        modifiedDate && !isNaN(modifiedDate)
-          ? modifiedDate.toLocaleDateString()
-          : " ";
-      const modifiedTime =
-        modifiedDate && !isNaN(modifiedDate)
-          ? modifiedDate.toLocaleTimeString()
-          : " ";
-
-      return [
-        row.scenarioid,
-        row.scenarioidentification,
-        row.scenariotitle,
-        row.scenariodescription,
-        row.scenariocategory,
-        row.scenariosubcategory,
-        row.scenariolevel,
-        row.instructor_name,
-        row.instruction_file,
-        row.duration,
-        row.status === "true" ? "Active" : "Inactive",
-        createdDateOnly,
-        createdTime,
-        modifiedDateOnly,
-        modifiedTime,
-      ];
-    });
-
-    const header = [
-      "Scenario Id",
-      "Identification no",
-      "Title",
-      "Desciption",
-      "Scenario Category",
-      "Scenario Sub Category",
-      "Level",
-      "SIMManager Name",
-      "Instruction File",
-      "Duration",
-      "Status",
-      "Created Date",
-      "Created Time",
-      "Modified Date",
-      "Modified Time",
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet([header, ...exportData]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Scenarios");
-
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[-T:\.]/g, "")
-      .slice(0, 15);
-    const filePrefix =
-      scenStatus === ""
-        ? "Scenarios_All"
-        : scenStatus === "true"
-          ? "Scenarios_Active"
-          : "Scenarios_Inactive";
-
-    XLSX.writeFile(workbook, `${filePrefix}_${timestamp}.xlsx`);
-  };
 
     const gridOptions = {
     headerHeight: HEADER_HEIGHT,
@@ -457,12 +375,6 @@ const onGridReady = useCallback((params) => {
     }
   }, [router.query.filter]);
 
-  const handleReturnView = (props) => {
-    push({
-      pathname: `/scenarios_view/${props?.scenariouuid}`,
-      query: { status: props?.approval_status, tab: approvalFilter },
-    });
-  };
   const handleApprovalFilter = (status) => {
     setApprovalFilter(status);
 
@@ -704,28 +616,6 @@ const onGridReady = useCallback((params) => {
                         type="button"
                         variant="outline-primary"
                         onClick={() => {
-                          // const hasPending = hasGetScenarioListSucc?.some(
-                          //   (item) =>
-                          //     item.approval_status &&
-                          //     item.approval_status.toLowerCase() === "pending"
-                          // );
-
-                          // if (hasPending) {
-                          //   toast.error(
-                          //     "You cannot add a new scenario until the pending one is approved or rejected.",
-                          //     {
-                          //       position: "top-right",
-                          //       autoClose: 3000,
-                          //       hideProgressBar: false,
-                          //       closeOnClick: true,
-                          //       pauseOnHover: true,
-                          //       draggable: true,
-                          //       theme: "colored",
-                          //     }
-                          //   );
-                          //   return;
-                          // }
-
                           setView("Form");
                           dispatch(handleManageView("Form"));
                           setBackView(view);

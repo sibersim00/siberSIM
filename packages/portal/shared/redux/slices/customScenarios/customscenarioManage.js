@@ -165,7 +165,7 @@ export function deleteScenarios(payload) {
     return async (dispatch) => {
       dispatch(slice.actions.startLoading());
       try {
-        const response = await axios.post(`${api.scenario_delete}`,payload);
+        const response = await axios.post(`${api.scenario_custom_delete}`,payload);
         dispatch(slice.actions.hasGetdeleteScenariosSucc(response.data));
       } catch (error) {
         dispatch(slice.actions.hasError(error));

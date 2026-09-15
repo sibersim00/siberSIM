@@ -169,6 +169,7 @@ const api = {
   scenario_save: "/scenario/save",
   scenario_update: "/scenario/update",
   scenario_custom_update: "/custom_scenarios/update",
+  scenario_custom_delete: "/custom_scenarios/delete",
   scenario_delete: "/scenario/delete",
   scenario_single: "/scenario/get",
   // scenario_custom_single: "/scenario/get",
@@ -260,6 +261,13 @@ const api = {
   instructor_verify: "/instructors/send-verification",
   instructor_reset: "/instructors/reset-password",
 
+  //----Webhook Users Manage------
+  webhook_users_get: "/webhook-users/get",
+  webhook_users_save: "/webhook-users/save",
+  webhook_users_update: "/webhook-users/update",
+  webhook_users_change_status: "/webhook-users/change-status",
+  webhook_users_delete: "/webhook-users/delete",
+
   // ---normalusers/ students-manage-----------------
   normalusers_get: "/learners/get",
   normalusers_change_status: "/learners/change-status",
@@ -267,6 +275,8 @@ const api = {
   normalusers_update: "/learners/update",
   normalusers_delete: "/learners/delete",
   normalusers_getbyid: "/learners/get",
+  normalusers_verify_import: '/learners/verify-import',
+  normalusers_import: '/learners/import',
   //---------------------flowchart------------------
   scenario_flowchart_get: "/commons/getactivescenariodiagram",
   scenario_flowchart_save: "/scenario/save_diagram",
@@ -371,6 +381,13 @@ const api = {
   widget_update: "/widgets/update",
   widget_delete: "/widgets/delete",
   widget_change_status: "/widgets/change-status",
+  //----------Third Party Integrations -------------
+  third_party_integration_getall: "/third-party-integrations/get",
+  third_party_integration_save: "/third-party-integrations/save",
+  third_party_integration_update: "/third-party-integrations/update",
+  third_party_integration_change_status: "/third-party-integrations/change-status",
+  third_party_integration_delete: "/third-party-integrations/delete",
+  third_party_integrations_available: "/third-party-integrations/available",
   //----------Reports---------------
 
   admin_logs: "report/loginlogs/admins",
@@ -428,6 +445,7 @@ const api = {
   custom_component_get: "/custom_component/get",
   custom_componentby_id: "/custom_component/getbyid",
   custom_component_status: "/custom_component/status-update",
+  custom_component_delete: "/custom_component/delete",
   // custom_component_save: "/custom_component/save",
   custom_component_save: "/vmconfig/save",
   custon_component_subcategory_list: "/custom_component/get-vms",

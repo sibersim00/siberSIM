@@ -153,8 +153,6 @@ const handleCardClick = async (item) => {
     }
   }, [errorData]);
     const handleDownloadZip = async (row) => {
-    console.log("rowrowrowrowrowrow",row);
-  
   try {
     const blob = await dispatch(
       downloadScenarioZIP({
@@ -190,80 +188,6 @@ const formatBytes = (bytes) => {
   if (bytes < 1024 ** 3)   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 };
-
-// const handleCancelDownload = () => {
-//   if (abortControllerRef.current) {
-//     abortControllerRef.current.abort();
-//     abortControllerRef.current = null;
-//   }
-//   setDownloadingFile(null);
-//   setDownloadProgress(0);
-//   setDownloadedBytes(0);
-//   setTotalBytes(0);
-//     toast.success(
-//     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-//       Download cancelled successfully.
-//     </p>,
-//     { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
-//   );
-// };
-
-// const handleDownloadComponent = async (exportid, file_name) => {
-//   if (downloadingFile) return;
-
-//   const controller = new AbortController();
-//   abortControllerRef.current = controller;
-
-//   setDownloadingFile(file_name);
-//   setDownloadProgress(0);
-//   setDownloadedBytes(0);
-//   setTotalBytes(0);
-
-//   try {
-//     const blob = await dispatch(
-//       downloadScenarioComponent({
-//         exportid,
-//         file_name,
-//         signal: controller.signal,
-//         onProgress: (pct, loaded, total) => {
-//           setDownloadProgress(pct);
-//           setDownloadedBytes(loaded);
-//           setTotalBytes(total);
-//         },
-//       })
-//     );
-
-//     if (!blob) return;
-//     const url  = window.URL.createObjectURL(blob);
-//     const link = document.createElement("a");
-//     link.href  = url;
-//     link.setAttribute("download", file_name.split("/").pop());
-//     document.body.appendChild(link);
-//     link.click();
-//     link.remove();
-//     window.URL.revokeObjectURL(url);
-//   } catch (error) {
-//     console.log("errorerrorerrorerrorerror",error);
-    
-//     // ← don't show error toast on cancel
-//     if (error === "Something went wrong" || error?.name === "AbortError" || error?.code === "ERR_CANCELED") {
-//       return;
-//     }
-//     console.error("Component download failed:", error);
-//     // toast.error(
-//     //   <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-//     //     Download failed: {error.message}
-//     //   </p>,
-//     //   { position: toast.POSITION.TOP_RIGHT, hideProgressBar: true, theme: "colored" },
-//     // );
-//   } finally {
-//     abortControllerRef.current = null;
-//     setDownloadingFile(null);
-//     setDownloadProgress(0);
-//     setDownloadedBytes(0);
-//     setTotalBytes(0);
-//   }
-// };
 
 const handleCancelDownload = () => {
   if (abortControllerRef.current) {

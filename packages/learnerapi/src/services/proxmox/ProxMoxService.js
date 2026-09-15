@@ -106,7 +106,7 @@ async function getProxmoxConfig() {
 
     const config = {
       method: "post",
-      url: `${constants.endpoint}/access/ticket`,
+      url: `${cfg.endpoint}/api2/json/access/ticket`,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
       data: formData.toString(),
@@ -170,7 +170,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu`;
 
     const config = {
       method: "get",
@@ -215,7 +215,7 @@ async function getProxmoxConfig() {
   async function QEMU_VM_detail(vmid) {
     if (!accessInfo?.cookie) throw new Error("Access info not initialized.");
     const cfg = await getProxmoxConfig(); 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/config`;
     const config = {
       method: "get",
       url,
@@ -268,7 +268,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc`;
 
     const config = {
       method: "get",
@@ -318,7 +318,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/config`;
 
     const config = {
       method: "get",
@@ -372,7 +372,7 @@ async function getProxmoxConfig() {
     const cfg = await getProxmoxConfig();
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${sourceVMID}/clone`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${sourceVMID}/clone`;
 
     const params = new URLSearchParams();
     params.append("newid", newid);
@@ -433,7 +433,7 @@ async function getProxmoxConfig() {
     const cfg = await getProxmoxConfig();
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
     const params = new URLSearchParams();
     for (const [adapterKey, configStr] of Object.entries(networkConfig)) {
@@ -491,7 +491,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/start`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/status/start`;
 
     const config = {
       method: "post",
@@ -545,7 +545,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/stop`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/status/stop`;
 
     const config = {
       method: "post",
@@ -611,7 +611,7 @@ async function getProxmoxConfig() {
 
     const start = Date.now();
     const request_datetime = new Date();
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}`;
 
     const config = {
       method: "delete",
@@ -671,7 +671,7 @@ async function getProxmoxConfig() {
 
     const config = {
       method: "get",
-      url: `${constants.endpoint}/nodes/${cfg.current_node}/network`,
+      url: `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/network`,
       headers: {
         Cookie: accessInfo.cookie,
         "Content-Type": "application/json",
@@ -723,7 +723,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/snapshot`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/snapshot`;
 
     const formData = new URLSearchParams();
     formData.append("snapname", snapname);
@@ -789,7 +789,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/snapshot/${snapname}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/snapshot/${snapname}`;
 
     const config = {
       method: "delete",
@@ -850,7 +850,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/snapshot/${snapname}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/snapshot/${snapname}`;
 
     const config = {
       method: "delete",
@@ -911,7 +911,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/snapshot/${snapname}/rollback`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/snapshot/${snapname}/rollback`;
 
     const formData = new URLSearchParams();
     formData.append("start", startValue); // must be passed explicitly (1 or 0)
@@ -976,7 +976,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/snapshot/${snapname}/rollback`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/snapshot/${snapname}/rollback`;
 
     const formData = new URLSearchParams();
     formData.append("start", startValue); // must be provided (1 or 0)
@@ -1038,7 +1038,7 @@ async function getProxmoxConfig() {
     const request_datetime = new Date();
 
     // Suspend URL (QEMU only): /status/suspend
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/suspend`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/status/suspend`;
 
     const config = {
       method: "post",
@@ -1099,7 +1099,7 @@ async function getProxmoxConfig() {
     const request_datetime = new Date();
 
     // Resume URL: /status/resume
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/status/resume`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/status/resume`;
 
     const config = {
       method: "post",
@@ -1157,7 +1157,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/status`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/tasks/${upid}/status`;
 
     const config = {
       method: "get",
@@ -1213,7 +1213,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/vzdump`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/vzdump`;
 
     // Build URL-encoded form-data body
     const params = new URLSearchParams();
@@ -1282,7 +1282,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/tasks/${upid}/log`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/tasks/${upid}/log`;
 
     const config = {
       method: "get",
@@ -1342,7 +1342,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/snapshot`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/snapshot`;
 
     const config = {
       method: "post",
@@ -1400,7 +1400,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/clone`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/clone`;
 
     const body = new URLSearchParams({
       newid: data.newid,
@@ -1468,7 +1468,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/template`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/template`;
     // const url = `https://battlerangers.com:8006/api2/json/nodes/ofisgate/lxc/7580/template`;
 
     console.log("urlurlurl", url);
@@ -1551,7 +1551,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/clone`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/clone`;
 
     // ADD name ONLY if provided
     const params = new URLSearchParams({ newid });
@@ -1616,7 +1616,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/template`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/template`;
 
     const config = {
       method: "post",
@@ -1673,7 +1673,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/qemu/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/qemu/${vmid}/config`;
     console.log("URL:", url);
 
     const config = {
@@ -1746,7 +1746,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/lxc/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/lxc/${vmid}/config`;
     console.log("URL:", url);
 
     const config = {
@@ -1819,7 +1819,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config?delete=${netKey}`;
 
     const config = {
       method: "put",
@@ -1876,7 +1876,7 @@ async function getProxmoxConfig() {
     const start = Date.now();
     const request_datetime = new Date();
 
-    const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+    const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
     const data = new URLSearchParams();
     console.log("NET KEY:", netKey, "NET VALUE:", netValue);
@@ -1938,7 +1938,7 @@ async function getProxmoxConfig() {
   const start = Date.now();
   const request_datetime = new Date();
 
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
   const data = new URLSearchParams();
   console.log("DISCONNECT NET KEY:", netKey, "VALUE:", netValue);
@@ -2006,7 +2006,7 @@ async function connectVmNetwork(vmid, vmType, netKey, mac, bridge) {
   const start = Date.now();
   const request_datetime = new Date();
 
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
   // Build value like curl
   const netValue = `virtio=${mac},bridge=${bridge}`;
@@ -2074,7 +2074,7 @@ async function getVmNetworkInfo(vmid, vmType) {
   const start = Date.now();
   const request_datetime = new Date();
 
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
   const config = {
     method: "get",
@@ -2133,7 +2133,7 @@ async function unplugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   const start = Date.now();
   const request_datetime = new Date();
 
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
   console.log("urlurlurlurl",url)
   let netValue;
    console.log("netValuenetValue",netValue)
@@ -2219,7 +2219,7 @@ async function plugVmNetwork(vmid, vmType, netKey, mac, bridge) {
   const start = Date.now();
   const request_datetime = new Date();
 
-  const url = `${constants.endpoint}/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
+  const url = `${cfg.endpoint}/api2/json/nodes/${cfg.current_node}/${vmType}/${vmid}/config`;
 
   let netValue;
 

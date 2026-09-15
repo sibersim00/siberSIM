@@ -48,6 +48,7 @@ async function componentSetupJob(
   );
 
   const statusVal = "Initializing";
+  let selectedNode = null;
 
   try {
     const componentConfig = await db.sequelize.query(
@@ -93,8 +94,6 @@ async function componentSetupJob(
     );
     const proxmoxService = ProxMoxService(db,{}, ipAddress);
     const tokenResult = await proxmoxService.generateAccessTicket();
-    console.log("tokenResulttokenResulttokenResult",tokenResult);
-    
     if (!tokenResult || tokenResult.status != "200") {
       sendProxmoxDownAlerts(db, requestedby_id);
       await handleComponentFailure(
@@ -112,7 +111,7 @@ async function componentSetupJob(
     }
 
 
-        const selectedNode = await proxmoxService.selectNode();
+    selectedNode = await proxmoxService.selectNode();
     console.log(`[componentSetupJob] Selected node: ${selectedNode}`);
 
     //  Save chosen node before any Proxmox call fires
@@ -136,22 +135,10 @@ async function componentSetupJob(
         vmrequestid,
         selectedNode
       );
-
       if (!cloneResult?.success) {
-        console.log(
-          "cloneComponentVM=======================>",
-          cloneResult.message,
-        );
         throw new Error(cloneResult.message);
       }
-      // if (component.componenttype?.toLowerCase() === "lxc") {
-      //   console.log(
-      //     `Waiting ${
-      //       cloningDelayMs / 1000
-      //     } seconds before cloning next LXC component...`,
-      //   );
         await sleep(cloningDelayMs);
-      // }
     }
 
     await db.sequelize.query(
@@ -212,10 +199,6 @@ async function componentSetupJob(
     });
 
     if (!startResult?.success) {
-      console.log(
-        "startComponentVM=======================>",
-        startResult.message,
-      );
       throw new Error(startResult.message);
     }
 
@@ -243,6 +226,7 @@ async function componentSetupJob(
       scenarioid,
       requestedby_id,
       vmrequestid,
+      selectedNode
     });
 
     console.error(
@@ -251,44 +235,6 @@ async function componentSetupJob(
     );
   }
 }
-
-// async function cloneComponentVM(db, ipAddress, component, vmrequestid,selectedNode) {
-//   const {
-//     vmconfigurationid,
-//     clone_vmid,
-//     name,
-//     componenttype,
-//     source_vmid,
-//     scenarioid,
-//     requestedby_id,
-//   } = component;
-//   const vmType = componenttype.toLowerCase();
-//   const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
-//   const result = await proxmoxService.cloneVM(
-//     vmType,
-//     clone_vmid,
-//     name,
-//     source_vmid,
-//     selectedNode,
-//   );
-//   if (!result || result.status !== 200) {
-//     return {
-//       success: false,
-//       message: `${clone_vmid}-${name} - ${ERROR_MESSAGES.CLONE_FAILED}`,
-//     };
-//   }
-//     console.log(`Clone succeeded for ${clone_vmid}-${name} on ${selectedNode}`);
-
-//   await db.sequelize.query(
-//     `UPDATE vm_config SET status = 'Cloning', modifiedon = NOW() WHERE vmconfigurationid = ?`,
-//     {
-//       replacements: [vmconfigurationid],
-//       type: db.sequelize.QueryTypes.UPDATE,
-//     },
-//   );
-
-//   return { success: true };
-// }
 
 async function cloneComponentVM(db, ipAddress, component, vmrequestid, selectedNode) {
   const { vmconfigurationid, clone_vmid, name, componenttype, source_vmid } = component;
@@ -324,14 +270,11 @@ async function cloneComponentVM(db, ipAddress, component, vmrequestid, selectedN
 
   // Step 2: Migrate to selectedNode if different — disk is on shared 'bank', so this is fast
   if (selectedNode && selectedNode !== sourceNode) {
-    console.log(`[cloneComponentVM] Migrating ${clone_vmid}-${name} from ${sourceNode} → ${selectedNode}`);
-
     const migrateResult = await proxmoxService.migrateVM(vmType, clone_vmid, sourceNode, selectedNode);
 
     if (!migrateResult || migrateResult.status !== 200) {
       return { success: false, message: `${clone_vmid}-${name} - Migration failed after cloning.` };
     }
-
     const migrateTaskId = migrateResult.data?.data;
     if (migrateTaskId) {
       console.log(`[cloneComponentVM] Waiting for migration task ${migrateTaskId}...`);
@@ -340,7 +283,6 @@ async function cloneComponentVM(db, ipAddress, component, vmrequestid, selectedN
         return { success: false, message: `${clone_vmid}-${name} - Migration task timed out or failed.` };
       }
     }
-
     console.log(`Migration complete for ${clone_vmid}-${name} on ${selectedNode}`);
   }
 
@@ -502,32 +444,23 @@ async function startComponentVM(
     );
 
     let diagram = JSON.parse(scenarioData.scenariodiagram);
-
-    // Fetch component details to map vmid and component names
-    // const componentDetails = await db.sequelize.query(
-    //   `SELECT vmid, componentname, nodeid, componenttype
-    //    FROM vm_config
-    //    WHERE vmrequestid = ? AND scenarioid = ? AND requestedby_id = ?`,
-    //   {
-    //     replacements: [vmrequestid, scenarioid, requestedby_id],
-    //     type: db.sequelize.QueryTypes.SELECT,
-    //   }
-    // );
     const componentDetails = await db.sequelize.query(
       `
-  SELECT 
-    vc.vmid,
-    vc.componentname,
-    vc.nodeid,
-    vc.componenttype
-  FROM vm_config vc
-  INNER JOIN vm_request vr
-    ON vr.vmrequestid = vc.vmrequestid
-  WHERE
-    vc.vmrequestid = ?
-    AND vc.scenarioid = ?
-    AND vr.requestedby_id = ?
-
+      SELECT 
+        vc.vmid,
+        c.componentname AS vmid_name,             
+        vc.nodeid,
+        vc.componenttype,
+        vc.network_bridge_json
+      FROM vm_config vc
+      INNER JOIN vm_request vr
+        ON vr.vmrequestid = vc.vmrequestid
+      INNER JOIN components c
+        ON c.vmid = vc.master_vmid       
+      WHERE
+        vc.vmrequestid = ?
+        AND vc.scenarioid = ?
+       AND vr.requestedby_id = ? 
   `,
       {
         replacements: [vmrequestid, scenarioid, requestedby_id],
@@ -536,13 +469,22 @@ async function startComponentVM(
     );
 
     const vmMap = {};
+    const nodeBridgeMap = {};
     componentDetails.forEach((comp) => {
-      vmMap[comp.nodeid] = {
-        vmid: comp.vmid,
-        componenttype: comp.componenttype?.toLowerCase(),
-        componentname: comp.componentname,
-      };
-    });
+  vmMap[comp.nodeid] = {
+    vmid: comp.vmid,
+    componenttype: comp.componenttype?.toLowerCase(),
+    componentname: comp.vmid_name,
+  };
+
+  const bridgeJson = JSON.parse(comp.network_bridge_json || "{}");
+  const resolved = {};
+  for (const [netKey, val] of Object.entries(bridgeJson)) {
+    const match = val?.match(/bridge=([^,"}]+)/);
+    if (match) resolved[netKey] = match[1];
+  }
+  nodeBridgeMap[comp.nodeid] = resolved;
+});
 
     if (Array.isArray(diagram.nodes)) {
       diagram.nodes = diagram.nodes.map((node) => {
@@ -573,20 +515,37 @@ async function startComponentVM(
       const networkBridges = JSON.parse(
         JSON.stringify(request.network_bridges),
       );
+    diagram.edges = diagram.edges.map((edge) => {
+  const currentLabel = edge.data?.label?.toString();
 
-      diagram.edges = diagram.edges.map((edge) => {
-        const currentLabel = edge.data?.label?.toString();
-        const matchedBridge = networkBridges.find(
-          (bridge) => bridge.networkkey?.toString() === currentLabel,
-        );
+    if (currentLabel === "Network Id") {
+    // Resolve from the connected node that owns the matching port.
+    // In this flow the bridge you want is on the target side (e.g. vmbr1).
+    console.log("NETWORK_ID_EDGE_DEBUG", JSON.stringify(edge), "nodeBridgeMap:", JSON.stringify(nodeBridgeMap));
+    const netKey = edge.targetHandle?.replace("-target", "") || edge.sourceHandle?.replace("-source", "");
+    const bridgeName = nodeBridgeMap[edge.target]?.[netKey] || nodeBridgeMap[edge.source]?.[netKey];
 
-        if (matchedBridge) {
-          edge.data.label = matchedBridge.networkname;
-        } else {
-          console.log(`No match found for label ${currentLabel}`);
-        }
-        return edge;
-      });
+    if (bridgeName) {
+      edge.data.label = bridgeName;
+    } else {
+      console.log(`No resolved bridge found for Network Id edge on ${edge.target || edge.source} (${netKey})`);
+    }
+    return edge;
+  }
+
+  // Existing pool-allocated behavior, unchanged
+  const matchedBridge = networkBridges.find(
+    (bridge) => bridge.networkkey?.toString() === currentLabel,
+  );
+
+  if (matchedBridge) {
+    edge.data.label = matchedBridge.networkname;
+  } else {
+    console.log(`No match found for label ${currentLabel}`);
+  }
+  return edge;
+});
+    
     }
 
     if (Array.isArray(diagram.edges)) {
@@ -678,9 +637,8 @@ const getTerminationDelay = async (db) => {
 async function stopAndDestroyComponentVM(
   db,
   ipAddress,
-  { scenarioid, requestedby_id, vmrequestid },
+  { scenarioid, requestedby_id, vmrequestid,selectedNode },
 ) {
-  const OP_FAILED = "Operation Failed";
   let hasFailed = false;
 
   const handleFailureOnce = async (err) => {
@@ -750,7 +708,7 @@ async function stopAndDestroyComponentVM(
           console.log(
             `${vmid}-${name} Components to stop process started. Current Status : ${component.status}`,
           );
-          const stopResult = await proxmoxService.stopVM(vmid, vmType);
+          const stopResult = await proxmoxService.stopVM(vmid, vmType,selectedNode);
           if (stopResult?.status === 200 && stopResult?.data) {
             console.log(`Stopped '${name}' (VMID: ${vmid})`);
             vmConfig[vmid].stop = true;
@@ -796,7 +754,7 @@ async function stopAndDestroyComponentVM(
         //     message: `Could not connect to the siberSIM server while Starting. Please check server status or credentials.`,
         //   };
         // }
-        const destroyResult = await proxmoxService.destroyVM(vmid, vmType);
+        const destroyResult = await proxmoxService.destroyVM(vmid, vmType,selectedNode);
         if (destroyResult?.status === 200 && destroyResult?.data) {
           console.log(`Destroyed '${name}' (VMID: ${vmid})`);
           vmConfig[vmid].destroy = true;
@@ -1008,3 +966,5 @@ module.exports = {
   handleComponentFailure,
   sendProxmoxDownAlerts,
 };
+
+

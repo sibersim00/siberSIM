@@ -1,5 +1,5 @@
 import React, { useState,useEffect  } from 'react';
-import { BaseEdge, getSmoothStepPath, useReactFlow } from '@xyflow/react';
+import { BaseEdge, getBezierPath, getSmoothStepPath, useReactFlow } from '@xyflow/react';
 
 const EditableEdge = ({
   id,
@@ -16,7 +16,8 @@ const EditableEdge = ({
   const { setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const pathFactory = data?.edgeRouting === 'smooth' ? getSmoothStepPath : getBezierPath;
+  const [edgePath, labelX, labelY] = pathFactory({
     sourceX,
     sourceY,
     sourcePosition,
@@ -42,8 +43,6 @@ const EditableEdge = ({
   };
 
   const [label, setLabel] = useState(getInitialLabel);
-console.log('parameter',label)
-
   const saveLabel = () => {
     setIsEditing(false);
     setEdges((eds) =>
@@ -66,8 +65,6 @@ useEffect(() => {
 const shouldAnimate1=
   data?.animationStart === data?.source &&
   data?.animationEnd === data?.target;
-console.log('shouldAnimate',shouldAnimate,data?.source)
-
   return (
     <>
       <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />

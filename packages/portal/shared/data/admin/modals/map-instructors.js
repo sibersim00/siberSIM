@@ -222,7 +222,6 @@ const MapInstructorModal = (props) => {
                     getOptionValue={(x) => x.instructor_id}
                     placeholder="Select SIMManager"
                     onChange={(e) => {
-                      console.log("Selected:", e);
                       formValidation.setFieldValue("instructor_id", [e]); // store as array
                     }}
                     menuPosition="fixed"

@@ -48,6 +48,21 @@ const updateprofileSchema = joi.object({
         "any.required": `Profile image is a required.`,
     }),
 });
+const changePasswordSchema = joi.object({
+  oldPassword: joi.string().min(1).max(255).required().messages({
+    'string.empty': 'Current password is required.',
+    'any.required': 'Current password is required.',
+  }),
+  password: joi.string().min(8).max(100).required()
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/)
+    .messages({
+      'string.empty': 'New password is required.',
+      'any.required': 'New password is required.',
+      'string.min': 'New password must be at least 8 characters long.',
+      'string.max': 'New password cannot exceed 100 characters.',
+      'string.pattern.base': 'New password must include uppercase, lowercase, number, and special character.',
+    }),
+});
 const messages = {
   'update_profile_success':  `Profile updated successfully`,
   'update_profile_image_success':  `Profile image updated successfully`,
@@ -57,5 +72,6 @@ module.exports = {
     schema,
     schemaForm,
     updateprofileSchema,
+    changePasswordSchema,
     messages
 }

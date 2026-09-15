@@ -415,7 +415,6 @@ const Signup = () => {
                                     touched.username && errors.username
                                   }
                                 />
-                                {/* {console.log("errors", errors)} */}
                                 <Form.Control.Feedback type="invalid">
                                   {errors.username}
                                 </Form.Control.Feedback>

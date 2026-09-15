@@ -9,7 +9,8 @@ const schema = joi.object({
   }),   
   system_footer: joi.required().messages({
     "any.required": `System footer is required.`,
-  })
+  }),
+  shadow_config: joi.number().integer().min(0).max(4).default(1)
 });
 
 const updateSchema = joi.object({
@@ -24,7 +25,8 @@ const updateSchema = joi.object({
   }),   
   system_footer: joi.required().messages({
     "any.required": `System footer is required.`,
-  })
+  }),
+  shadow_config: joi.number().integer().min(0).max(4).default(1)
 });
 
 module.exports = {

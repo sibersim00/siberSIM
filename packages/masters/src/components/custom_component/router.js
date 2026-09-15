@@ -7,6 +7,11 @@ module.exports = function (iocContainer) {
   router.get("/getbyid/:uuid", controller.getById(iocContainer));
   router.post("/status-update", controller.updateStatus(iocContainer));
   router.post(
+    "/delete",
+    validator(validation.deleteSchema, "body"),
+    controller.deleteById(iocContainer)
+  );
+  router.post(
     "/save",
     validator(validation.addSchema, "body"),
     controller.save(iocContainer)

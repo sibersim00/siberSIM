@@ -313,7 +313,6 @@ const ComponentForm = (props) => {
 
   useEffect(() => {
     if (rowValues?.vmid) {
-      console.log("insideee this");
       formValidation.setFieldValue("componentname", {
         componentname: rowValues?.vmid,
         subcategoryname: `${rowValues?.vmid} - ${rowValues?.vmid_name}`,
@@ -358,6 +357,14 @@ const ComponentForm = (props) => {
     },
 
     validationSchema: Yup.object().shape({
+      ComponentIdentificationVMName: Yup.string()
+        .required("Required")
+        .max(24, "Name should not exceed 24 characters")
+        .test(
+          "no-leading-trailing-spaces",
+          "No leading or trailing spaces allowed",
+          (value) => value === value?.trim(),
+        ),
       componentidentification: Yup.string()
         // .required("Required")
         .matches(/^[A-Za-z0-9 ]+$/, "No special characters allowed")
@@ -442,8 +449,6 @@ const ComponentForm = (props) => {
     const typeId =
       typeof typeObjOrId === "object" ? typeObjOrId.componenttype : typeObjOrId;
     setSubCatDropDownData([]);
-    // Only clear the selected VM if NOT in update mode
-    console.log("get-vmsget-vmsget-vms", typeId);
     if (!isUpdate) {
       formValidation.setFieldValue("componentname", null);
     }
@@ -464,9 +469,6 @@ const ComponentForm = (props) => {
       }
     });
   };
-
-  console.log("rowValuesrowValuesrowValues", rowValues);
-
   useEffect(() => {
     if (rowValues?.componenttype) {
       handelGetSubCat({
@@ -551,8 +553,6 @@ const ComponentForm = (props) => {
           cores: config.cores || "No cores data",
           memory: config.memory || "No memory data",
         };
-        console.log("vmDetail", vmDetail);
-
         setSelectedVM(vmDetail);
         formValidation.setFieldValue("cores", vmDetail.cores);
         formValidation.setFieldValue("memory", vmDetail.memory);
@@ -594,16 +594,6 @@ const ComponentForm = (props) => {
       setSelectedVM(rowValues);
     }
   }, [mode, rowValues]);
-
-  console.log(
-    "formValidation.values.componentimage",
-    formValidation.values.componentimage,
-  );
-// const memoizedComponentImages = React.useMemo(() => {
-//   const value = formValidation.values.componentimage || "";
-//   if (!value) return [];
-//   return ismulti ? value.split(",") : [value];
-// }, [formValidation.values.componentimage, ismulti]);
   return (
     <>
       <Row className="row-sm mg-t-10">

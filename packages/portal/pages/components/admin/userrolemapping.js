@@ -22,7 +22,7 @@ import { getComponentDetails } from "../../../shared/redux/slices/localstorage/L
 
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 35;
-const PAGINATION_BAR_HEIGHT = 48;
+const PAGINATION_BAR_HEIGHT = 250;
 
 const UserRoleMapping = () => {
   const dispatch = useDispatch();
@@ -351,6 +351,7 @@ const onGridReady = useCallback((params) => {
                         <Select
                           key={refreshKey}
                           styles={selectStyles}
+                          classNamePrefix="user-role-select"
                           theme={(theme) => ({
                             ...theme,
                             colors: {
@@ -369,7 +370,9 @@ const onGridReady = useCallback((params) => {
                           placeholder="Select"
                           values={validation?.values?.userlist}
                           options={userData}
-                          getOptionLabel={(x) => x.name}
+                          getOptionLabel={(x) =>
+                            x.loginid ? `${x.loginid} - ${x.name}` : x.name
+                          }
                           getOptionValue={(x) => x.userid}
                           onChange={(e) => {
                             validation.setFieldValue("userlist", e);
@@ -394,6 +397,7 @@ const onGridReady = useCallback((params) => {
                         <Select
                           key={refreshKey}
                           styles={selectStyles}
+                          classNamePrefix="user-role-select"
                           theme={(theme) => ({
                             ...theme,
                             colors: {

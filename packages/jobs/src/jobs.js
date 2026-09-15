@@ -24,7 +24,6 @@ class initJob {
   async notirun({ db }) {
     const notiJob = new NotiJob(db);
     const notiList = await notiJob.getUnprocessedNotifications();
-    console.log("notiList==========>", notiList);
     for (const noti of notiList) {
       await notiJob.triggerNoti(noti);
       await notiJob.markAsProcessedNotifications(noti.log_id);

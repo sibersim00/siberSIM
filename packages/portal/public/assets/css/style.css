@@ -27473,8 +27473,8 @@ body.rtl {
 
 .main-content .container,
 .main-content .container-fluid {
-    padding-left: 25px;
-    padding-right: 25px;
+    padding-left: 18px;
+    padding-right: 18px;
 }
 
 @media (max-width: 575px) {

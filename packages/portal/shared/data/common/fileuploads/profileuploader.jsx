@@ -165,7 +165,6 @@ const ProfileUploader = ({ ismulti, folderpath, name, acceptedFileTypes, handleU
         },
       };
       const deleteDataAndRefreshUI = async (payload,removeItem) => {
-         console.log('In Remove')
           // Replace 'your-api-endpoint' with your actual API endpoint
           axios.post(process.env.API_URL_FILEMANAGER+'/fm/delete', payload, {
             headers: {
@@ -174,7 +173,6 @@ const ProfileUploader = ({ ismulti, folderpath, name, acceptedFileTypes, handleU
             })
             .then((response) => {  
                 let files = uploadsfiles.filter((f)=>(f.file !== removeItem)); 
-                console.log('Remainig Files',files);
                 setUploadsFiles(files);
                 // Handle the response from the server after successful upload 
                 callbackHandleUpload(name,files,'removed'); // returns uploads files

@@ -54,7 +54,6 @@ const ComponentSubCategoriesForm = (props) => {
         }
       : customStyles;
   };
-  console.log('backViewbackView',backView);
   const customStyles = {
     control: (styles, { isFocused, isDisabled }) => ({
       ...styles,
@@ -111,14 +110,11 @@ const ComponentSubCategoriesForm = (props) => {
       
     };
   });
-
-  console.log("singleSubCatRes",singleSubCatRes);
   useEffect(() => {
     if (singleSubCatRes && singleSubCatRes!=="") { 
       setRowValues(singleSubCatRes);
     }
   }, [singleSubCatRes]); 
-  console.log(rowValues,'rowValues');
     useEffect(() => {
       if (hasgetCatListSucc && hasgetCatListSucc.length > 0) {
         let temp = hasgetCatListSucc.map((cat) => ({
@@ -132,9 +128,7 @@ const ComponentSubCategoriesForm = (props) => {
 
         formValidation.setFieldValue("category_id", selectedcategory);
       }
-    }, [hasgetCatListSucc]); 
-    console.log(catDropDownData,"hasgetCatListSucc",hasgetCatListSucc);
-
+    }, [hasgetCatListSucc]);
   useEffect(() => {
       if (saveSubCategoriesData?.statusCode === 200) {
             toast.success(
@@ -211,7 +205,6 @@ const ComponentSubCategoriesForm = (props) => {
       checklistdata: data?.checklist  
     };
     handleOneClick(true);
-  // console.log(payload,"payload", data) ;return false;
    if (rowValues?.componentsubcategoryid) {
     dispatch(updateSubCategories(payload)); 
   } else {
@@ -219,7 +212,6 @@ const ComponentSubCategoriesForm = (props) => {
   } 
   }
 });
- console.log('formValidation',formValidation);
 // Handle Uploaded files
   const handleUpload = (name='',files='',flag = '') =>{
     
@@ -237,7 +229,6 @@ const ComponentSubCategoriesForm = (props) => {
       setUploadedFile(files && files.length > 0 && files[0]?.file ? files[0]?.file : "")
     }
   }
-console.log("uploadedFile",uploadedFile);
   const handleBrowse = (name='', filepaths="") =>{ 
     if(ismulti){
       if(filepaths){
@@ -283,7 +274,6 @@ console.log("uploadedFile",uploadedFile);
       const handleInputChange = (e, index) => {
         const { name, value } = e.target;
         const updatedFields = [...formFields];
-        console.log(updatedFields,'$$$$$$$$$$$4');
 
        
       };
@@ -291,7 +281,6 @@ console.log("uploadedFile",uploadedFile);
       const handleChecklistToggle  = (e, index) => {
      
         const { name, value } = e.target;
-        console.log('88888',e.target.checked,value)
 
         const updatedFields = [...formFields];
         updatedFields[index][name] = e.target.checked ;  

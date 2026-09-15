@@ -24,6 +24,7 @@ import defaultFavicon from "../../../../../../public/assets/img/brand/favicon.pn
 import snapicon from "../../../../../../public/assets/img/pngs/snap.png";
 
 import Seo from "../../../../../../shared/layout-components/seo/seo";
+import VncConsoleLanding from "../../../../../../shared/data/usersessions/VncConsoleLanding";
 export default function ProxmoxConsole() {
   const dispatch = useDispatch();
   const containerRef = useRef(null);
@@ -803,62 +804,15 @@ export default function ProxmoxConsole() {
             }}
           />
         </div>
-        {/* Main content when not connected */}
         {!connected && !skipConnectUI && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%,-50%)",
-              textAlign: "center",
-            }}
-          >
-            <img
-              alt="SIMMaster Panel Logo Preview"
-              src={`${defaultFavicon.src}`}
-              style={{
-                objectFit: "cover",
-                width: "15%",
-                height: "15%",
-              }}
-            />
-            <h2 style={{ marginBottom: "20px" }}>
-              <span style={{ color: "#0077B6" }}>siber</span>
-              <span style={{ color: "#D21F3C" }}>SIM</span> Console
-            </h2>
-            <button
-              onClick={connect}
-              disabled={loading}
-              style={{
-                padding: "12px 28px",
-                fontSize: "16px",
-                background: "#2a62f2",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                boxShadow: "0px 4px 12px rgba(0,0,0,0.3)",
-              }}
-            >
-              {loading ? "Connecting..." : "Connect"}
-            </button>
-            <p style={{ marginTop: "20px", color: "#aaa" }}>{status}</p>
-            {loading && (
-              <div
-                style={{
-                  marginTop: "20px",
-                  border: "6px solid #ccc",
-                  borderTop: "6px solid #2a62f2",
-                  borderRadius: "50%",
-                  width: "40px",
-                  height: "40px",
-                  animation: "spin 1s linear infinite",
-                  display: "inline-block",
-                }}
-              />
-            )}
-          </div>
+          <VncConsoleLanding
+            vmid={realVmid}
+            vmType={vmType}
+            cleanName={cleanName}
+            loading={loading}
+            status={status}
+            onConnect={() => connect()}
+          />
         )}
 
         {/* Full-screen overlay loader */}

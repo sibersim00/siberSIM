@@ -1,15 +1,28 @@
-import React, { Fragment, useEffect } from "react";
+import React, { Fragment, useEffect, useMemo } from "react";
 import { Modal, Button, Row, Col, Form, Spinner } from "react-bootstrap";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import dynamic from "next/dynamic";
 import { getUserTypeWiseList } from "../../../redux/slices/common/masters";
 import { useDispatch, useSelector } from "react-redux";
 import { getStudentListreport } from "../../../redux/slices/common/masters";
 import { addLabDetails, editLabDetails } from "../../../redux/slices/labs/labs";
 import { toast, ToastContainer } from "react-toastify";
+import dummy_network from "../../../../public/assets/img/dummy.jpg";
+const FileUploader = dynamic(
+  () => {
+    return import("../../common/fileuploads/fileuploader");
+  },
+  { ssr: false },
+);
+
+import { FilePath } from "../../common/fileuploads/filepath";
+const labImagePath = FilePath.labs;
+const ismulti = false;
+
 
 const LabsAdd = ({
   openFlag,
@@ -72,9 +85,6 @@ const LabsAdd = ({
       label: s.Student_name,
       value: s.learner_id,
     })) || [];
-
-  console.log("userOptions==>>", userOptions);
-
   useEffect(() => {
     if (openFlag) handleOneClick(false);
   }, [openFlag]);
@@ -109,6 +119,7 @@ const LabsAdd = ({
     initialValues: {
       lab_id: rowValues?.lab_id ?? "",
       bookingname: rowValues?.bookingname || "",
+      labimage: rowValues?.labimage || "",
       datetime: rowValues?.datetime ? new Date(rowValues?.datetime) : "",
       duration: rowValues?.duration || "",
       accesslevel: rowValues?.accesslevel || "",
@@ -135,6 +146,7 @@ const LabsAdd = ({
       const payload = {
         lab_id: data.lab_id,
         bookingname: data.bookingname,
+        labimage: data.labimage || "",
         datetime: formatToLocal(data.datetime),
         duration: Number(data.duration),
         accesslevel: data.accesslevel,
@@ -156,31 +168,28 @@ const LabsAdd = ({
       }
 
       handleOneClick(false);
-
-      // if (result.meta.requestStatus === "fulfilled") {
-      //   toast.success(
-      //     <p className="mx-2 tx-16 d-flex align-items-center mb-0">
-      //       {rowValues
-      //         ? "Lab session updated successfully!"
-      //         : "Lab session saved successfully!"}
-      //     </p>,
-      //     {
-      //       position: toast.POSITION.TOP_RIGHT,
-      //       hideProgressBar: false,
-      //       theme: "colored",
-      //     }
-      //   );
-
-      //   handleFormModal(false);
-      // } else {
-      //   alert(result.payload?.errors?.[0] || "Failed to save.");
-      // }
     },
   });
-
-  console.log("formikformik", formik);
   const { values, errors, touched, handleChange, handleSubmit, setFieldValue } =
     formik;
+
+  const handleUpload = (name = "", files = "", flag = "") => {
+    formik.setFieldValue("flag", flag);
+    if (ismulti) {
+      const selectedFiles = files.map((file) => file.file);
+      const filesStr = selectedFiles.join(",");
+      formik.setFieldValue(name, filesStr || "");
+      return;
+    }
+
+    const uploadedPath = files?.[0]?.file || "";
+    formik.setFieldValue(name, uploadedPath);
+  };
+
+  const memoizedFetchImageFiles = useMemo(() => {
+    if (!values.labimage) return [];
+    return ismulti ? values.labimage.split(",") : [values.labimage];
+  }, [values.labimage]);
 
   const customStyles = () => {
     return {
@@ -377,6 +386,8 @@ const getSelectStyles = (fieldName) => {
                 </Form.Control.Feedback>
               </Form.Group>
 
+            
+
               {/* Date & Time */}
               <Form.Group as={Col} md="6" className="mb-3">
                 <Form.Label>
@@ -427,14 +438,6 @@ const getSelectStyles = (fieldName) => {
                 </Form.Label>
 
                 <Select
-                  //  theme={(theme) => ({
-                  //     ...theme,
-                  //     colors: {
-                  //       ...theme.colors,
-                  //       primary25: "var(--primary-bg-color)",
-                  //       primary: "var(--primary-bg-color)",
-                  //     },
-                  //   })}
                   name="accesslevel"
                   classNamePrefix="custom-select"
                   styles={getSelectStyles("accesslevel")}
@@ -526,7 +529,7 @@ const getSelectStyles = (fieldName) => {
               </Form.Group>
 
               {/* Allowed Users */}
-              <Form.Group as={Col} md="12" className="mb-3">
+              <Form.Group as={Col} md="6" className="mb-3">
                 <Form.Label>
                   Allowed Users <span className="text-danger">*</span>
                 </Form.Label>
@@ -579,6 +582,38 @@ const getSelectStyles = (fieldName) => {
                   {errors.allowedusers}
                 </Form.Control.Feedback>
               </Form.Group>
+
+                <Form.Group as={Col} md="6" className="mb-3">
+                <Form.Label>Lab Image</Form.Label>
+                <FileUploader
+                  folderpath={labImagePath}
+                  ismulti={ismulti}
+                  name="labimage"
+                  acceptedFileTypes={["image/png", "image/jpeg"]}
+                  handleUpload={handleUpload}
+                  fetchfiles={memoizedFetchImageFiles}
+                />
+                {values.labimage && (
+                  <div className="picture avatar-lg online text-center mt-2">
+                    <div className="pointer overflow-hidden">
+                      <img
+                        alt="Lab Preview"
+                        src={`${process.env.API_URL_FILEMANAGER}${values.labimage}`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = dummy_network.src;
+                        }}
+                        style={{
+                          objectFit: "cover",
+                          width: "100px",
+                          height: "100px",
+                          borderRadius: "10px",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </Form.Group>
             </Row>
           </Modal.Body>
 
@@ -604,3 +639,6 @@ const getSelectStyles = (fieldName) => {
 };
 
 export default LabsAdd;
+
+
+

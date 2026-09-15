@@ -14,11 +14,8 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 //Images
-import logolight from "../../public/assets/img/brand/logo-light.png";
 import logo from "../../public/assets/img/brand/logo.png";
-import tutor_login from "../../public/assets/img/brand/tutor_login.png";
 import defaultLogo from "../../public/assets/img/brand/logo-dark.png";
-import defaultLightLogo from "../../public/assets/img/brand/logo.png";
 import defaultFavicon from "../../public/assets/img/brand/favicon.png";
 import { useTranslation } from "react-i18next";
 import "../../shared/utils/i18n"; // Initialize i18next
@@ -195,10 +192,6 @@ useEffect(() => {
       setUserInfo({});
       setLoginSuccess(false);
     }
-
-    const myString = data.username;
-    const regex = /[a-zA-Z]/;
-
     if (data.username == "") {
       toast.error(
         <p className="mx-2 tx-16 d-flex align-items-center mb-0">
@@ -368,11 +361,6 @@ useEffect(() => {
       setEventKey("");
     }
   }, [eventKey]);
-
-  console.log("handleKeyPress", eventKey);
-
-  // ----------Login function key press enter end------------
-
   useEffect(() => {
     if (isLoginSuccess) {
       settimerval(59);
@@ -415,14 +403,7 @@ useEffect(() => {
       }
     }
   }, []);
-
-  console.log("getCompanyListData===>", companySettings?.admin_panel_logo)
   const baseUrl = process.env.API_URL_FILEMANAGER;
-  console.log("baseUrlbaseUrl", baseUrl)
-  const logoUrl = companySettings?.web_panel_logo
-    ? `${baseUrl}${companySettings.web_panel_logo}`
-    : defaultLogo.src
-    ;
   const adminLogoUrl = getCompanyListData?.admin_panel_logo
     ? `${baseUrl}${getCompanyListData.admin_panel_logo}`
     : defaultLogo.src;
@@ -444,12 +425,6 @@ useEffect(() => {
       document.getElementsByTagName("head")[0].appendChild(faviconLink);
     }
   }, [companySettings]);
-
-
-
-
-
-
   return (
     <div>
       <Head>

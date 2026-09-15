@@ -99,10 +99,61 @@ const updateStatus =
     }
   };
 
+const deleteById =
+  ({ db }) =>
+  async (body, session_userid, ipAddress) => {
+    try {
+      const { customcomponentid } = body;
+
+      const [customComponent] = await db.sequelize.query(
+        `SELECT customcomponentid, customcomponentuuid, vmid, componenttype
+         FROM custom_component
+         WHERE customcomponentid = :customcomponentid
+           AND deletedon IS NULL
+         LIMIT 1`,
+        {
+          replacements: { customcomponentid },
+          type: db.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      if (!customComponent) {
+        return {
+          status: false,
+          message: "Custom component not found or already deleted.",
+        };
+      }
+
+      await db.sequelize.query(
+        `UPDATE custom_component
+         SET deletedon = NOW(), modifiedby = :userid, modifiedon = CURRENT_TIMESTAMP
+         WHERE customcomponentid = :customcomponentid
+           AND deletedon IS NULL`,
+        {
+          replacements: {
+            customcomponentid,
+            userid: session_userid,
+          },
+          type: db.sequelize.QueryTypes.UPDATE,
+        }
+      );
+
+      return {
+        status: true,
+        message: "Custom component deleted successfully.",
+      };
+    } catch (error) {
+      console.error("Error deleting custom component:", error);
+      return {
+        status: false,
+        message: "Delete failed due to DB or Proxmox error.",
+      };
+    }
+  };
+
 const save =
   ({ db, validation }) =>
   async (body, session_userid, ipAddress) => {
-    console.log("vmTypfjdghfjhgfghe:", body);
     try {
       if (body.customcomponentid) {
         // Update custom component table
@@ -125,10 +176,7 @@ const save =
 
         // Fetch VM details
         const vmDetailResponse = await vmDetails({ db })(body, ipAddress);
-
-        console.log("vmDetailResponse", vmDetailResponse);
         const proxmoxData = vmDetailResponse?.data?.data || {};
-        console.log("proxmoxData", proxmoxData);
         const extractStorage = () => {
           const qemuStorageKeys = [
             "sata0",
@@ -500,4 +548,5 @@ module.exports = {
   update,
   vmDetails,
   getVms,
+  deleteById
 };

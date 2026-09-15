@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Card } from "react-bootstrap";
 
 const LicenseExpiryPopup = ({ show, onClose, licenseInfo }) => {
-  console.log("showshowshow",show)
   const [localLicenseInfo, setLocalLicenseInfo] = useState({
     daysLeft: null,
     expiryDate: "",
@@ -51,7 +50,6 @@ const LicenseExpiryPopup = ({ show, onClose, licenseInfo }) => {
             
             const timeDiff = expiryUTC - currentUTC;
             const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-            console.log("daysLeftdaysLeftdaysLeft",daysLeft)
             // Format date to show only date part (not time)
             // Use UTC methods to avoid timezone conversion
             const formatDateDDMMYYYY = (dateObj) => {
@@ -88,8 +86,6 @@ const LicenseExpiryPopup = ({ show, onClose, licenseInfo }) => {
   if (!show || localLicenseInfo.daysLeft === null || localLicenseInfo.daysLeft > 30) {
     return null;
   }
-
-  console.log("daysLeft",localLicenseInfo.daysLeft)
   return (
     <Modal
       show={show}

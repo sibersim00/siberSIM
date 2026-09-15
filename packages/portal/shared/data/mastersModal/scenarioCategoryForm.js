@@ -62,6 +62,7 @@ const FormScenarioCategory = (props) => {
   const schema = Yup.object().shape({
     categoryname: Yup.string()
       .required("required")
+      .test("no-emoji", "Emojis are not allowed", noEmojiTest)
       .max(50, "Scenario Category should not exceed 50 characters")
       .matches(regex?.alphaHyphenSpacesRegex, error?.onlyAlphaHyphenSpace)
       .test(
@@ -106,7 +107,7 @@ const FormScenarioCategory = (props) => {
       categoryimage: Yup.string().required(error?.required),
     }),
 
-    onSubmit: (data) => {
+    onSubmit: async (data) => {
       const payload = {
         ...(rowValues?.scenariocategoryid && {
           scenariocategoryid: rowValues?.scenariocategoryid,
@@ -120,10 +121,14 @@ const FormScenarioCategory = (props) => {
       };
 
       handleOneClick(true);
-      if (rowValues?.scenariocategoryid) {
-        dispatch(updateCategories(payload));
-      } else {
-        dispatch(saveSubCategories(payload));
+      try {
+        if (rowValues?.scenariocategoryid) {
+          await dispatch(updateCategories(payload));
+        } else {
+          await dispatch(saveSubCategories(payload));
+        }
+      } finally {
+        handleOneClick(false);
       }
     },
   });

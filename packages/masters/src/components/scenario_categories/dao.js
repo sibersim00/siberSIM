@@ -85,7 +85,7 @@ const save =
           replacements: [
             body.categoryname,
             body.categorytype || "Public",
-            body.categoryimage,
+            body.categoryimage || null,
             userid,
           ],
           type: db.sequelize.QueryTypes.INSERT,
@@ -148,7 +148,7 @@ const update =
           replacements: [
             body.parentscenariocategoryid || null,
             body.categoryname,
-            body.categoryimage,
+            body.categoryimage || null,
             body.categorytype || 'Public', 
             userid,
             body.scenariocategoryid,

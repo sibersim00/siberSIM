@@ -24,9 +24,16 @@ const SideBar = () => {
   const [menuitems1, setMenuitems1] = useState([]);
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const menus = localStorage.getItem("menusLearner") != "undefined" ? JSON.parse(localStorage.getItem("menusLearner")) : []
-      setMenuitems(menus);
-      setMenuitems1(menus);
+      const menus = localStorage.getItem("menusLearner") != "undefined" ? JSON.parse(localStorage.getItem("menusLearner")) : [];
+      const settings = JSON.parse(localStorage.getItem("company_settings") || "{}");
+      const license = settings?.data?.licenseStatus || settings?.licenseStatus || {};
+      const thirdPartyEnabled = license.third_party === true || license.third_party === "T" || license.third_party === "1";
+      const visibleMenus = Array.isArray(menus) ? menus.map((group) => ({
+        ...group,
+        Items: Array.isArray(group.Items) ? group.Items.filter((item) => item?.source !== "/third-party-integrations" || thirdPartyEnabled) : group.Items,
+      })) : menus;
+      setMenuitems(visibleMenus);
+      setMenuitems1(visibleMenus);
       if (menus === null) {
         window.location.href = "/";
       }
@@ -278,14 +285,8 @@ const SideBar = () => {
           console.error("Error parsing company_settings from localStorage", err);
         }
       }
-      console.log("storedSettingsstoredSettingsstoredSettings", storedSettings)
     }
   }, []);
-
-  console.log("getCompanyListData===>", companySettings?.admin_panel_logo)
-  console.log("getCompanyListData===>++++++", companySettings?.web_panel_logo)
-  const baseUrl = process.env.API_URL_FILEMANAGER;
-  console.log("baseUrlbaseUrl", baseUrl)
 
   const logoUrl = companySettings?.web_panel_logo
     ? `${baseUrl}${companySettings.web_panel_logo}`

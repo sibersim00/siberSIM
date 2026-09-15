@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import {
@@ -13,12 +13,9 @@ import { getScenariosPauseList } from "../../../shared/redux/slices/scenarios/sc
 import Seo from "../../../shared/layout-components/seo/seo";
 import crossEvalicon from "../../../public/assets/img/svgs/crosseval.svg";
 import dummy_network from "../../../public/assets/img/dummy.jpg";
-import { useTranslation } from "react-i18next";
 import { useRouter } from "next/router";
 
 const PauseScenarios = () => {
-  const { t } = useTranslation();
-  const router = useRouter();
   const dispatch = useDispatch();
   const [view, setView] = useState("card");
   const [rowData, setRowData] = useState([]);
@@ -39,8 +36,6 @@ const PauseScenarios = () => {
           state && state.customScenario && state.customScenario.viewNameResp,
       };
     });
-  console.log("hasGetScenariospauseListData", hasGetScenariospauseListData);
-
   useEffect(() => {
     if (hasGetScenariospauseListData) {
       const normalized = hasGetScenariospauseListData.map((item) => ({
@@ -167,7 +162,6 @@ const PauseScenarios = () => {
                   {gridData.map((item, index) => (
 
                     <Col key={index} md={12 / columnsPerRow}>
-                      {console.log("itemitemitemitemitemitem", item)}
                       <Card
                         className={`card custom-card our-team h-100 custom-scenario-card ${item.scenariostatus === "Publish"
                           ? "shadow-publish"
@@ -242,8 +236,6 @@ const PauseScenarios = () => {
                             <div
                               className="btn btn-sm ripple bg-success-transparent text-success rounded-circle"
                               onClick={() => {
-                                console.log("Clicked Item:", item);
-
                                 push({
                                   pathname: `/scenarios_view/${item?.scenariouuid}`,
                                   query: { from: "pause" },

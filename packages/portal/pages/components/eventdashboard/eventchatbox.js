@@ -19,7 +19,6 @@ const EventChatBox = ({
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  console.log("scenarioTitlescenarioTitle", scenarioTitle);
   const MAX_HEIGHT = 120; // px
 
   const chatBodyRef = useRef(null);

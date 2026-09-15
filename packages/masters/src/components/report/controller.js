@@ -35,7 +35,6 @@ const getInstructorLogs = ({ dao, db }) => async (req, res) => {
 const getLearnerLogs = ({ dao, db }) => async (req, res) => {
   try {
     const logs = await dao.getLearnerLogs({ db });
-    console.log("Learner Logs:", logs);
     return res.status(200).send({
       statusCode: 200,
       message: 'Learner login logs fetched successfully',

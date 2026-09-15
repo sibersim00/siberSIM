@@ -80,6 +80,7 @@ const nextConfig = withTM({
       { source: '/vnc_event_view/:slug*', destination: '/components/events/view/vnc_event_view/:slug*' },
       { source: '/customcomponent', destination: '/components/customcomponent' },
       { source: '/invitescenarios', destination: '/components/invitescenarios' },
+      { source: '/third-party-integrations', destination: '/components/thirdpartyintegrations' },
       { source: "/custom_component_view/:slug*", destination: "/components/customcomponent/view/:slug*", },
       { source: '/event-dashboard', destination: '/components/events/dashboard' },
       { source: '/invite_scenarios/:slug*', destination: '/components/invitescenarios/view/:slug*' },

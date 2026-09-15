@@ -21,6 +21,7 @@ const api = {
   scenario_get: "/custom_scenarios/list",
   // dark theme  -
   user_theme: "/commons/theme",
+  ambient_motion: "/commons/ambient-motion",
 
   // dashboard
   dashboard_get: "/dashboard/get",
@@ -30,6 +31,7 @@ const api = {
   get_student_dashboard: "/dashboard/get-student-dashboard",
   scenario_single_custom_get: "/custom_scenarios/get",
   // profile
+  dismiss_password_reset: '/profile/dismiss-password-reset',
   profile_get: "/profile",
   changePassword: "/profile/change-password",
   profile_update: "/profile/save-profile",
@@ -145,5 +147,8 @@ const api = {
   // --------------invite scenario---------------
   running_invite_learners: "/invitescenarios/running-invite-learners",
   invite_scenario:"/invitescenarios/invite-scenario",
+
+  // third party integrations
+  third_party_integrations_get: "/third-party-integrations/get",
 };
 export default api;

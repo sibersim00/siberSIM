@@ -1,3 +1,5 @@
+const { checkLearnerCapacity, learnerLimitMessage } = require("../../utils/learnerLicenseLimit");
+
 const getAll = ({ dao, db, validation }) => async (req, res) => {
   try {
     const params = req.param;
@@ -62,6 +64,14 @@ const update = ({ dao, db, validation }) => async (req, res) => {
 const addParticipants = ({ dao, db, validation }) => async (req, res) => {
   try {
     const body = req.body;
+    const capacity = await checkLearnerCapacity({ db, learnerLimit: req.user.learner_limit });
+    if (!capacity.allowed) {
+      return res.status(400).send({
+        statusCode: 400,
+        message: learnerLimitMessage(capacity),
+        errors: [],
+      });
+    }
     const session_userid = req.user.userid;
     const result = await dao.addParticipants({ db, validation })(body, session_userid);
     return res.status(result.statusCode).send({

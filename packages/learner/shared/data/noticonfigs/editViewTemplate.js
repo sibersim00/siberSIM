@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import * as yup from "yup";
 import { useFormik } from "formik";
-import { regex,error } from '../common/vaidationMessage/formValidationMsg';
+import { regex } from '../common/vaidationMessage/formValidationMsg';
 import "../../utils/i18n";
 import PerfectScrollbar from "react-perfect-scrollbar";
 import { useTranslation } from "react-i18next";

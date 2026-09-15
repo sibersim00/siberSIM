@@ -18,6 +18,7 @@ import eventChatboxManage from "./slices/eventchatbox/eventChatboxManage";
 import noticonfigs from "./slices/noticonfigs/noticonfigs";
 import customComponent from "./slices/customcomponent/customcomponentManage";
 import invitescenarioReducer from "./slices/invitescenario/invitescenario";
+import thirdPartyIntegrations from "./slices/thirdPartyIntegrations/thirdPartyIntegrations";
 
 const rootPersistConfig = {
   key: "root",
@@ -49,6 +50,7 @@ const rootReducer = (state, action) => {
     customScenario: customScenario,
     customComponent:customComponent,
     invitescenarioReducer:invitescenarioReducer,
+    thirdPartyIntegrations: thirdPartyIntegrations,
 
   })(state, action);
 };

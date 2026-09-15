@@ -549,14 +549,11 @@ export function clearGetChatMessages() {
 }
 
 export function saveChatMessage(payload) {
-  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.chat_save}`, payload);
       dispatch(slice.actions.hasGetSaveChatMessageSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -862,20 +859,6 @@ export function getSingleVMDetail(id) {
     }
   };
 }
-
-// export function saveCustomComponent(payload) {
-//   return async (dispatch) => {
-//     dispatch(slice.actions.startLoading());
-//     try {
-//       const response = await axios.post(`${api.save_vmDetails}`, payload);
-//       console.log("responseeeeeeeeeeeeeeeeeeeeeeeeeerrrrrrrrrrrrreee", response)
-//       dispatch(slice.actions.hasGetSaveCustomComponentSucc(response.data));
-//     } catch (error) {
-//       dispatch(slice.actions.hasError(error));
-//     }
-//   };
-// }
-
 export function saveCustomComponent(payload) {
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
@@ -965,14 +948,11 @@ export function rejectStoppedVm(payload) {
   };
 }
 export function addNetworkPort(payload) {
-  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.add_network}`, payload);
       dispatch(slice.actions.hasGetAddNetworkSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -989,14 +969,11 @@ export function clearSaveNetworkPort() {
   };
 }
 export function modifyNetworkPort(payload) {
-  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.modify_network}`, payload);
       dispatch(slice.actions.hasGetModifyNetworkSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -1013,14 +990,11 @@ export function clearModifyNetworkPort() {
   };
 }
 export function deleteNetworkPort(payload) {
-  console.log("-----------------------------------------");
   return async (dispatch) => {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.delete_network}`, payload);
       dispatch(slice.actions.hasGetDeleteNetworkSucc(response.data));
-
-      console.log("response", response);
     } catch (error) {
       dispatch(slice.actions.hasError(error));
     }
@@ -1110,7 +1084,6 @@ export function plugNetworkPort(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(api.plug_networPort, payload);
-      console.log("rrrrrrrrrrrrrrrrrrrrrr", response);
       dispatch(slice.actions.plugNetworkPortSucc(response.data));
       return response;
     } catch (error) {
@@ -1350,7 +1323,6 @@ export function deletebridge(payload) {
     dispatch(slice.actions.startLoading());
     try {
       const response = await axios.post(`${api.delete_bridge}`, payload);
-      console.log("responseresponseresponseresponse",response);
       dispatch(slice.actions.hasdeletebridge(response.data));
     } catch (error) {
       dispatch(slice.actions.hasError(error));

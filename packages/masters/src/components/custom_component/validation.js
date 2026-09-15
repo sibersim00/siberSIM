@@ -1,5 +1,12 @@
 const joi = require("joi");
 
+const deleteSchema = joi.object({
+  customcomponentid: joi.number().integer().required().messages({
+    "any.required": `Custom component id is required.`,
+    "number.base": `Custom component id must be a valid number.`,
+  }),
+});
+
 
 const addSchema = joi.object({
   componentcategoryid: joi.number().integer().required().messages({
@@ -101,6 +108,7 @@ module.exports = {
   addSchema,
   updateSchema,
   vmDetailsSchema,
-  getVmsSchema
+  getVmsSchema,
+  deleteSchema
 
 };

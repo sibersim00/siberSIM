@@ -88,6 +88,10 @@ const authenticateToken = (routeslug) => {
             });
           }
           learnerData.user_count_limit = Number(licenseStatus.user_count);
+          learnerData.third_party =
+            licenseStatus.third_party === true ||
+            licenseStatus.third_party === "T" ||
+            licenseStatus.third_party === "1";
         }
 
         console.log("learnerData.menus==>", learnerData.user_count_limit)
@@ -156,6 +160,10 @@ const authenticateTokenOld = async (req, res, next) => {
             message: "Your access has expired or is not activated. Please contact your administrator for assistance.",
           });
         }
+        learnerData.third_party =
+          licenseStatus.third_party === true ||
+          licenseStatus.third_party === "T" ||
+          licenseStatus.third_party === "1";
       }
       req.learneruser = learnerData;
       console.log("requesting user", req.learneruser)

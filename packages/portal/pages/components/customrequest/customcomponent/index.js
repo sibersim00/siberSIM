@@ -15,6 +15,8 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import {
   getComponentList,
+  deleteComponent,
+  cleardeleteComponent,
   clearHasError,
 } from "../../../../shared/redux/slices/customcomponent/customcomponentManage";
 import CustomToggleButton from "@mui/material/ToggleButton";
@@ -59,6 +61,7 @@ const ManageCustomComponent = () => {
   }, [viewType]);
   const {
     hasGetComponentListSucc,
+    deleteComponentRes,
     errorData,
   } = useSelector((state) => {
     return {
@@ -67,7 +70,8 @@ const ManageCustomComponent = () => {
         state.customComponent &&
         state.customComponent.getComponentListData &&
         state.customComponent.getComponentListData.data,
-
+      deleteComponentRes:
+        state && state.customComponent && state.customComponent.deleteComponent,
       errorData: state && state.customComponent && state.customComponent.error,
     };
   });
@@ -321,6 +325,23 @@ const onGridReady = useCallback((params) => {
   useEffect(() => {
     dispatch(getComponentList());
   }, []);
+
+  useEffect(() => {
+    if (deleteComponentRes?.statusCode === 200) {
+      toast.success(
+        <p className="mx-2 tx-16 d-flex align-items-center mb-0 ">
+          {deleteComponentRes?.message}
+        </p>,
+        {
+          position: toast.POSITION.TOP_RIGHT,
+          hideProgressBar: false,
+          theme: "colored",
+        }
+      );
+      dispatch(getComponentList());
+      dispatch(cleardeleteComponent());
+    }
+  }, [deleteComponentRes]);
   const handleReturnView = (props) => {
     router.push(`/custom_component_view/${props?.customcomponentuuid}?backView=${view}&status=${compStatus}`);
   };
@@ -350,6 +371,29 @@ const onGridReady = useCallback((params) => {
     }
   };
 
+  const handleDeleteCard = (item) => {
+    Swal.fire({
+      title: t("common.swal.title"),
+      text: t("common.swal.text_delete"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: " var(--primary-bg-color)",
+      cancelButtonColor: "var(--secondary)",
+      confirmButtonText: t("common.swal.yes"),
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteComponent({ customcomponentid: item?.customcomponentid }));
+      }
+    });
+  };
+
+  const handleDelete = (props, flag) => {
+    if (flag === true) {
+      dispatch(deleteComponent({ customcomponentid: props?.customcomponentid }));
+    }
+  };
+
   const frameworkComponents = {
     srNoRender: function (props) {
       return props.node.rowIndex + 1;
@@ -361,6 +405,7 @@ const onGridReady = useCallback((params) => {
           handleEditView={handleReturnView}
           handleShowEditView={true}
           handleEdit={handleEdit}
+          handleDelete={handleDelete}
           propsVal={props}
           handleShowEdit={status === "pending"}
         />
@@ -670,6 +715,20 @@ const onGridReady = useCallback((params) => {
                                 </OverlayTrigger>
                               </div>
                               &nbsp;
+                            {["pending", "reject"].includes(item.status?.toLowerCase()) && (
+  <>
+    <div
+      className="btn btn-sm ripple bg-danger-transparent text-danger rounded-circle ml-2"
+      onClick={() => handleDeleteCard(item)}
+      style={{ width: "28px", height: "28px", padding: "2px", fontSize: "14px",marginLeft:"5px" }}
+    >
+      <OverlayTrigger placement="bottom" overlay={<Tooltip>Delete</Tooltip>}>
+        <i className="fe fe-trash" style={{ fontSize: "11px" }}></i>
+      </OverlayTrigger>
+    </div>
+    &nbsp;
+  </>
+)}
 
                             </div>
                           </Card.Body>

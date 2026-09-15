@@ -162,7 +162,7 @@ const instructorAdd = (props) => {
       handleFormModal(false);
     }
   };
-  const handleSubmit = (data) => {
+  const handleSubmit = async (data) => {
     const trimmedData = {
       ...data,
       loginid: data.loginid.trim(),
@@ -188,12 +188,15 @@ const instructorAdd = (props) => {
       status: isChecked ? "Active" : "Inactive",
     };
 
-    if (rowValues?.id === 0 || rowValues?.id === undefined) {
-      handleOneClick(true);
-      dispatch(addinstructorDetails(payload));
-    } else {
-      handleOneClick(true);
-      dispatch(editInstructorDetails(payload));
+    handleOneClick(true);
+    try {
+      if (rowValues?.id === 0 || rowValues?.id === undefined) {
+        await dispatch(addinstructorDetails(payload));
+      } else {
+        await dispatch(editInstructorDetails(payload));
+      }
+    } finally {
+      handleOneClick(false);
     }
   };
   return (

@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   ReactFlow,
   Background,
   Handle,
   Position,
+  applyNodeChanges,
   useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import EditableEdgeAdmin from '../../../../shared/data/scenarios/EditableEdgeAdmin';
+import ScenarioDiagramNode from '../../../../shared/data/scenarios/ScenarioDiagramNode';
 const resolveImageUrl = (url) => {
   if (!url) return '';
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
@@ -198,12 +200,20 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
   const reactFlowWrapper = useRef(null);
   const flowRef = useRef(null);
 
+  const onNodesChange = useCallback((changes) => {
+    setElements((current) => ({
+      ...current,
+      nodes: applyNodeChanges(changes, current.nodes),
+    }));
+  }, []);
+
   useEffect(() => {
     if (!scenariodiagram) return;
 
     try {
       const cleanData = scenariodiagram.replace('flowchartData ', '');
       const parsedData = JSON.parse(cleanData);
+      const edgeRouting = parsedData.edgeRouting === 'smooth' ? 'smooth' : 'bezier';
       const backendBaseUrl = process.env.API_URL_FILEMANAGER;
 
       const updatedNodes = parsedData.nodes.map(node => ({
@@ -218,7 +228,14 @@ const ScenarioDiagram = ({ scenariodiagram, isTimerVisible,scenarioStatus  }) =>
         },
       }));
 
-      setElements({ nodes: updatedNodes, edges: parsedData.edges });
+      setElements({
+        nodes: updatedNodes,
+        edges: (parsedData.edges || []).map(edge => ({
+          ...edge,
+          type: 'custom',
+          data: { ...edge.data, edgeRouting },
+        })),
+      });
     } catch (err) {
       console.error('Failed to parse scenariodiagram:', err);
     }
@@ -242,12 +259,17 @@ useEffect(() => {
   });
 
   return () => cancelAnimationFrame(id);
-}, [elements.nodes]); // Only run when nodes change
+}, [elements.nodes.length]);
 
 
-  const nodeTypes = {
-    imageNode: (props) => <ImageNode {...props} isTimerVisible={isTimerVisible} scenarioStatus={scenarioStatus} />,
-  };
+  const nodeTypes = useMemo(() => ({
+    imageNode: (props) => (
+      <ScenarioDiagramNode
+        {...props}
+        interactive={scenarioStatus !== "Pause" && isTimerVisible}
+      />
+    ),
+  }), [scenarioStatus, isTimerVisible]);
     const EditableEdgeWrapper = (edgeProps) => {
       const { getEdges, setEdges } = useReactFlow();
   
@@ -270,14 +292,16 @@ useEffect(() => {
     >
       {elements.nodes.length > 0 && (
         <ReactFlow
+          className="portal-flow-canvas"
           nodes={elements.nodes}
           edges={elements.edges}
+          onNodesChange={onNodesChange}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           zoomOnDoubleClick={false}
           onInit={(instance) => (flowRef.current = instance)}
         >
-          <Background />
+          <Background color="var(--diagram-grid, #64748b)" />
         </ReactFlow>
       )}
     </div>

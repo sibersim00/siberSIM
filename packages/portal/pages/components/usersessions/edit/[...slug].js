@@ -5,15 +5,15 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { Button, Card, Row, Col, Modal,OverlayTrigger,Tooltip  } from "react-bootstrap";
+import { Button, Card, Row, Col, Modal,OverlayTrigger,Tooltip, Form } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
-import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Background,Handle,Position,useReactFlow,useUpdateNodeInternals,
+import {ReactFlow,ReactFlowProvider,addEdge,useNodesState,useEdgesState,Background,Handle,Position,useReactFlow,useUpdateNodeInternals,ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useDispatch, useSelector } from "react-redux";
 import SideBar from "./sidebarFlow";
-import EditableEdge from "../../../../shared/data/manipulation/EditableEdge";
+import EditableEdge from "../../../../shared/data/usersessions/EditableEdge";
 import {
   saveScenarioFlow,
   clearsaveScenarioFlow,
@@ -27,6 +27,35 @@ import {
   clearSingleScenarios,
   getScenarioList,
 } from "../../../../shared/redux/slices/customScenarios/customscenarioManage";
+
+const PORT_SIDES = ["Top", "Right", "Bottom", "Left"];
+const DEFAULT_PORT_SIDE_ORDER = ["Right", "Bottom", "Left", "Top"];
+
+const getPortLayouts = (ports, savedPositions = {}, autoPositions = {}) => {
+  const portsPerSide = Math.max(1, Math.ceil(ports.length / 4));
+  const assignments = ports.map((port, index) => ({
+    ...port,
+    side: PORT_SIDES.includes(savedPositions?.[port.key])
+      ? savedPositions[port.key]
+      : PORT_SIDES.includes(autoPositions?.[port.key])
+        ? autoPositions[port.key]
+        : DEFAULT_PORT_SIDE_ORDER[Math.min(3, Math.floor(index / portsPerSide))],
+  }));
+  const totals = assignments.reduce((result, port) => {
+    result[port.side] = (result[port.side] || 0) + 1;
+    return result;
+  }, {});
+  const used = {};
+
+  return assignments.map((port) => {
+    const index = used[port.side] || 0;
+    used[port.side] = index + 1;
+    return {
+      ...port,
+      offsetPercent: ((index + 1) * 100) / ((totals[port.side] || 0) + 1),
+    };
+  });
+};
 
 
 const NetworkPopover = ({
@@ -763,13 +792,15 @@ const DnDFlow = ({
       portKeys = [];
     }
 
-    const totalPorts = portKeys.length;
-    const sides = ["Right", "Bottom", "Left", "Top"];
-    const portsPerSide = Math.ceil(totalPorts / 4);
-    const spacingRatio = 100 / (portsPerSide + 1);
-    const baseSize = 90;
-    const portSpacing = 15;
-    const nodeSize = Math.max(baseSize, portsPerSide * portSpacing + 20);
+    const portLayouts = getPortLayouts(
+      portKeys,
+      data.portPositions,
+      data.autoPortPositions,
+    );
+    const rawLabel = String(data.label || "Unnamed component").trim();
+    const labelSeparator = rawLabel.indexOf("-");
+    const componentTitle = labelSeparator > -1 ? rawLabel.slice(labelSeparator + 1).trim() : rawLabel;
+    const componentVmId = data.vmid || (labelSeparator > -1 ? rawLabel.slice(0, labelSeparator).trim() : "");
     const [showPopover, setShowPopover] = useState(false);
     const existingPorts = Array.isArray(data.networkport)
       ? data.networkport.flatMap((obj) => Object.keys(obj))
@@ -788,18 +819,9 @@ const DnDFlow = ({
       }
     }, [nextNet]);
     return (
-       <div
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{width: nodeSize,height: nodeSize,position: "relative",borderRadius: "8px",border: "2px solid #ccc",display: "flex",alignItems: "center",justifyContent: "center",boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                }}
-              >
+      <div className="portal-flow-node">
+        <div className="portal-flow-node-glow" aria-hidden="true" />
+        <div className="portal-flow-node-card">
                 <OverlayTrigger
         placement="top"
         overlay={<Tooltip id={`tooltip-${id}`}>Add/Delete Node</Tooltip>}
@@ -866,86 +888,39 @@ const DnDFlow = ({
                     ×
                   </button>
                 </OverlayTrigger>
-                <div
-                  style={{width: nodeSize * 0.6,height: nodeSize * 0.6,backgroundImage: `url("${resolveImageUrl(data.image)}")`,backgroundSize: "contain",backgroundPosition: "center",backgroundRepeat: "no-repeat",
-                  }}
-                />
-                {portKeys.map((port, index) => {
-                  const sideIndex = Math.floor(index / portsPerSide);
-                  const side = sides[sideIndex];
-                  const positionIndex = index % portsPerSide;
-                  let offsetPercent;
-                  if (side === "Right" || side === "Top") {
-                    offsetPercent = (positionIndex + 1) * spacingRatio;
-                  } else {
-                    offsetPercent = (portsPerSide - positionIndex) * spacingRatio;
-                  }
-                  const baseHandleStyle = {position: "absolute",width: 10,height: 10,borderRadius: "50%",background: "#005eff",border: "1px solid white",zIndex: 2,
+                <div className="portal-flow-node-icon-frame">
+                  <div
+                    className="portal-flow-node-icon"
+                    style={{
+                      backgroundImage: `url("${resolveImageUrl(data.image)}")`,
+                    }}
+                  />
+                </div>
+                <div className="portal-flow-node-copy">
+                  <strong title={componentTitle}>{componentTitle}</strong>
+                  <small>
+                    {componentVmId
+                      ? `VM ID: ${componentVmId}`
+                      : "Virtual component"}
+                  </small>
+                </div>
+                {data?.isOnline != null && (
+                  <div
+                    className={`portal-flow-node-status ${
+                      data.isOnline === "Yes" ? "is-online" : "is-offline"
+                    }`}
+                  >
+                    <span />
+                    {data.isOnline === "Yes" ? "ONLINE" : "OFFLINE"}
+                  </div>
+                )}
+                {portLayouts.map((port) => {
+                  const { side, offsetPercent } = port;
+                  const sideClass = side.toLowerCase();
+                  const portStyle = {
+                    "--portal-port-offset": `${offsetPercent}%`,
+                    "--portal-port-color": getPortColor(port.key),
                   };
-                  const labelStyle = {position: "absolute",fontSize: 6,padding: "1px 3px",whiteSpace: "nowrap",zIndex: 5,
-                  };
-                  let handleStyle = {};
-                  let labelPosition = {};
-                  switch (side) {
-                    case "Top":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        top: -5,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        top: -20,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      break;
-                    case "Right":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        right: -5,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        right: -60,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-10%)",
-                      };
-                      break;
-                    case "Bottom":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        bottom: -5,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        bottom: -20,
-                        left: `${offsetPercent}%`,
-                        transform: "translateX(-50%)",
-                      };
-                      break;
-                    case "Left":
-                      handleStyle = {
-                        ...baseHandleStyle,
-                        left: -5,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-50%)",
-                      };
-                      labelPosition = {
-                        ...labelStyle,
-                        left: -60,
-                        top: `${offsetPercent}%`,
-                        transform: "translateY(-10%)",
-                      };
-                      break;
-                    default:
-                      break;
-                  }
                   return (
                     <React.Fragment key={port.key}>
                       <Handle
@@ -953,37 +928,31 @@ const DnDFlow = ({
                         position={Position[side]}
                         id={`${port.key}-source`}
                         onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-                        // style={handleStyle}
-                        style={{ ...handleStyle, background: getPortColor(port.key) }}
-                        // isConnectable={isConnectable}
+                        className={`portal-flow-port portal-flow-port--${sideClass}`}
+                        style={portStyle}
+                        isConnectable={isConnectable}
                       />
-      
                       <Handle
                         type="target"
                         position={Position[side]}
                         id={`${port.key}-target`}
                         onMouseDown={(e) => onHandleMouseDown(e, port.key, id)}
-                        // style={handleStyle}
-                        style={{ ...handleStyle, background: getPortColor(port.key) }}
-                        // isConnectable={isConnectable}
+                        className={`portal-flow-port portal-flow-port--${sideClass}`}
+                        style={portStyle}
+                        isConnectable={isConnectable}
                       />
-      
-                      <div style={labelPosition}>{port.label}</div>
+                      <div
+                        className={`portal-flow-port-label portal-flow-port-label--${sideClass}`}
+                        style={portStyle}
+                        title={port.label}
+                      >
+                        {port.label}
+                      </div>
                     </React.Fragment>
                   );
                 })}
-              </div>
-              <div
-                style={{
-                  marginTop: 18,
-                  fontSize: 10,
-                  textAlign: "center",
-                  width: "100%",
-                }}
-              >
-                {data.label || "Unnamed"}
-              </div>
-            </div>
+        </div>
+      </div>
     );
   };
   const idRef = useRef(0);
@@ -1056,6 +1025,8 @@ const DnDFlow = ({
     }
   }, [scenario?.scenariodiagram]);
   const scenarioNodes = parsedDiagram?.nodes || [];
+  const parentEdgeRouting =
+    parsedDiagram?.edgeRouting === "smooth" ? "smooth" : "bezier";
   
   useEffect(() => {
     if (query.slug) {
@@ -1076,6 +1047,7 @@ const DnDFlow = ({
         : scenario.scenariodiagram;
 
     const newNodes = parsedData.nodes || [];
+    const routing = parsedData.edgeRouting === "smooth" ? "smooth" : "bezier";
 
     setNodes(newNodes);
     setEdges([]);
@@ -1086,7 +1058,11 @@ const DnDFlow = ({
         updateNodeInternals(node.id);
       });
       // then set edges
-      setEdges(parsedData.edges || []);
+      setEdges((parsedData.edges || []).map((edge) => ({
+        ...edge,
+        type: "custom",
+        data: { ...edge.data, edgeRouting: routing },
+      })));
     });
   } catch (err) {
     console.error("Invalid scenariodiagram JSON", err);
@@ -1507,7 +1483,7 @@ const iconMap = {
           target: connection.target,
           targetHandle: connection.targetHandle,
           type: "custom",
-          data: { label },
+          data: { label, edgeRouting: parentEdgeRouting },
         };
         // setEdges((eds) => addEdge(newEdge, eds));
         setTimeout(() => {
@@ -1817,7 +1793,7 @@ const deleteNode = async (nodeId) => {
     };
   }
   const saveFlowchart = async (status) => {
-    const flowchartData = { nodes, edges };
+    const flowchartData = { nodes, edges, edgeRouting: parentEdgeRouting };
     let componentsData = [];
 
     const configData = generateComponentConfig(
@@ -2102,8 +2078,7 @@ useEffect(() => {
     };
   }, [nodes]);
   const defaultEdgeOptions = {
-    type: "straight",
-    style: { stroke: "#000", strokeWidth: 2 },
+    type: "custom",
   };
   const { t } = useTranslation();
   const EditableEdgeWrapper = (edgeProps) => {
@@ -2115,6 +2090,7 @@ useEffect(() => {
         allNodes={nodes}
         allEdges={edges}
         setEdges={setEdges}
+        editable
       />
     );
   };
@@ -2424,7 +2400,9 @@ const handleEdgeClick = async (event, edge) => {
         className="dndflow  mb-2"
         style={{ display: "flex", height: "80vh", gap: "20px" }}
       >
-        <div style={{ width: "28%", height: "100%" }}>
+        <div
+          style={{ width: "28%", height: "100%", minHeight: 0, overflow: "hidden" }}
+        >
           <SideBar
             imageNodeData={imageNodeData}
             setDraggedNode={setDraggedNode} // Passing setDraggedNode to Sidebar
@@ -2435,7 +2413,7 @@ const handleEdgeClick = async (event, edge) => {
           />
         </div>
         <div
-          className="reactflow-wrapper"
+          className="reactflow-wrapper portal-flow-canvas"
           ref={reactFlowWrapper}
           style={{
             width: "72%",
@@ -2454,6 +2432,7 @@ const handleEdgeClick = async (event, edge) => {
             </div>
           )}
           <ReactFlow
+            className="portal-flow-canvas"
             nodes={nodes}
             edges={edges}
             key={nodes.length} 
@@ -2465,8 +2444,8 @@ const handleEdgeClick = async (event, edge) => {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
-            connectionLineType="floating" //  This makes the connection line float
-            connectionLineStyle={{ stroke: "#000", strokeWidth: 2 }}
+            connectionLineType={parentEdgeRouting === "smooth" ? ConnectionLineType.SmoothStep : ConnectionLineType.Bezier}
+            connectionLineStyle={{ stroke: "var(--diagram-edge-default)", strokeWidth: 1.6 }}
             zoomOnDoubleClick={false} // disables zoom on double-click
             edgeTypes={edgeTypes}
             onConnectEnd={onConnectEnd}
@@ -2474,7 +2453,7 @@ const handleEdgeClick = async (event, edge) => {
 
 
           >
-            <Background />
+            <Background color="var(--diagram-grid, #64748b)" />
           </ReactFlow>
           {activePopover && (
             <div
