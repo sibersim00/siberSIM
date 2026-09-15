@@ -219,9 +219,8 @@ const ScenarioTabs = () => {
           scenariotabid: data[`fixed_id_${i + 1}`] || 0,
           tab_name: data[key],
           tab_status: data[`fixed_toggle_${i + 1}`] ? "True" : "False",
-          // event_status: data[`fixed_event_${i + 1}`] ? "True" : "False",
           event_status:
-            i + 1 === 4
+            i + 1 === 4 || i + 1 === 5
               ? "False"
               : data[`fixed_event_${i + 1}`]
               ? "True"
@@ -320,8 +319,8 @@ const ScenarioTabs = () => {
                       }
                       style={{ width: "90px" }}
                     />
-                    {/* Event Status Checkbox (skip for 4th tab) */}
-                    {i !== 4 && (
+                    {/* Event Status Checkbox (skip Quiz and Logs) */}
+                    {i !== 4 && i !== 5 && (
                       <div className="ms-2 d-flex align-items-center">
                         <input
                           type="checkbox"
