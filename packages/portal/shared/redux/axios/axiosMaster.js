@@ -179,5 +179,8 @@ axiosInstance.interceptors.response.use(
           )
         )
     }
+    if (error?.config?.rejectHandledErrors) {
+      return Promise.reject(error);
+    }
 });
 export default axiosInstance;

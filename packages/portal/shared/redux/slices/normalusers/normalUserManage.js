@@ -226,19 +226,36 @@ export function cleareditUserData() {
   };
 }
 
+const getImportError = (error) => {
+  console.log("errorerrorerrorerror",error);
+  
+  const data = error?.response?.data || (error instanceof Error ? null : error);
+  const messages = Array.isArray(data?.errors) && data.errors.length
+    ? data.errors
+    : Array.isArray(data?.message) ? data.message : [data?.error || data?.message];
+  const message = messages
+    .map((item) => typeof item === "string" ? item : item?.message)
+    .filter((item) => typeof item === "string" && item.trim())
+    .join(" ");
+  return {
+    ...(data && typeof data === "object" ? data : {}),
+    message: message || "Unable to process the learner import. Please try again.",
+  };
+};
+
 export function verifyImportNormaluser(payload) {
   return async () => {
     dispatch(slice.actions.startLoading());
     dispatch(slice.actions.verifyImportNormalusersucc(null));
     dispatch(slice.actions.hasError(null));
     try {
-      const response = await axios.post(api.normalusers_verify_import, payload);
+      const response = await axios.post(api.normalusers_verify_import, payload, { rejectHandledErrors: true });
       dispatch(slice.actions.verifyImportNormalusersucc(response.data));
     } catch (error) {
       if (error?.response?.data?.data) {
         dispatch(slice.actions.verifyImportNormalusersucc({ data: error.response.data.data }));
       }
-      dispatch(slice.actions.hasError(error?.response?.data || error));
+      dispatch(slice.actions.hasError(getImportError(error)));
     }
   };
 }
@@ -252,13 +269,13 @@ export function saveImportNormaluser(payload) {
     dispatch(slice.actions.startLoading());
     dispatch(slice.actions.hasError(null));
     try {
-      const response = await axios.post(api.normalusers_import, payload);
+      const response = await axios.post(api.normalusers_import, payload, { rejectHandledErrors: true });
       dispatch(slice.actions.saveImportNormalusersucc(response.data));
     } catch (error) {
       if (error?.response?.data?.data) {
         dispatch(slice.actions.verifyImportNormalusersucc({ data: error.response.data.data }));
       }
-      dispatch(slice.actions.hasError(error?.response?.data || error));
+      dispatch(slice.actions.hasError(getImportError(error)));
     }
   };
 }

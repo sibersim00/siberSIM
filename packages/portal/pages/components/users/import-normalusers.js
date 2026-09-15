@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Modal, Spinner } from 'react-bootstrap';
+import { Badge, Button, Modal, Spinner } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx';
@@ -212,8 +212,6 @@ const ImportNormalUsers = ({ show, onHide }) => {
             {fileError && <div className='text-danger mt-2'>{fileError}</div>}
           </div>
         )}
-
-        {apiError?.message && <Alert variant='danger' className='mt-3 mb-0'>{apiError.message}</Alert>}
 
         {!processing && verified && (
           <>
