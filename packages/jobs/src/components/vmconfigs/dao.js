@@ -2833,7 +2833,9 @@ const save =
           type: db.sequelize.QueryTypes.SELECT,
         },
       );
-      const selectedNode = sourceVmConfig?.node_name || null;
+      // A component is initially cloned and templated on the source VM's node.
+      // Once templated, private components must live on the primary Proxmox node.
+      let selectedNode = sourceVmConfig?.node_name || null;
 
       // Proxmox connection
       const proxmoxService = ProxMoxService(db, { vmType }, ipAddress);
@@ -2841,6 +2843,65 @@ const save =
       if (!tokenResult || tokenResult.status !== "200") {
         return { success: false, message: "We couldn't authenticate with the server.Please try after some time" };
       }
+      const proxmoxConfig = await proxmoxService.getProxmoxConfig();
+      const primaryNode = proxmoxConfig?.current_node;
+      if (!primaryNode) {
+        throw new Error("Primary Proxmox node is not configured.");
+      }
+
+      const completeTemplateAndMigrate = async (templateResponse) => {
+        if (templateResponse?.status !== 200) return false;
+
+        const templateUpid = templateResponse?.data?.data;
+        if (!templateUpid) {
+          console.error("Template task did not return a UPID.");
+          return false;
+        }
+
+        const templateCompleted = await proxmoxService.waitForTask(
+          selectedNode || primaryNode,
+          templateUpid,
+        );
+        if (!templateCompleted) {
+          console.error(`Template task failed for VM ${newVmid}.`);
+          return false;
+        }
+
+        const sourceNode = selectedNode || primaryNode;
+        if (sourceNode === primaryNode) {
+          selectedNode = primaryNode;
+          return true;
+        }
+
+        const migrationResponse = await proxmoxService.migrateVM(
+          vmType,
+          newVmid,
+          sourceNode,
+          primaryNode,
+        );
+        if (migrationResponse?.status !== 200) {
+          console.error(`Migration could not be started for VM ${newVmid}.`);
+          return false;
+        }
+
+        const migrationUpid = migrationResponse?.data?.data;
+        if (!migrationUpid) {
+          console.error("Migration task did not return a UPID.");
+          return false;
+        }
+
+        const migrationCompleted = await proxmoxService.waitForTask(
+          sourceNode,
+          migrationUpid,
+        );
+        if (!migrationCompleted) {
+          console.error(`Migration failed for VM ${newVmid}.`);
+          return false;
+        }
+
+        selectedNode = primaryNode;
+        return true;
+      };
       let snapshotName, cloneResult, templateResult;
       const cleanupLXCOnCloneFail = async () => {
         try {
@@ -3009,7 +3070,7 @@ const save =
           newVmid,
           selectedNode,
         );
-        if (templateResult?.status !== 200) {
+        if (!(await completeTemplateAndMigrate(templateResult))) {
           const cleanupResult = await cleanupLXCOnTemplateFail();
 
           if (!cleanupResult.success) {
@@ -3090,7 +3151,7 @@ const save =
           newVmid,
           selectedNode,
         );
-        if (templateResult?.status !== 200) {
+        if (!(await completeTemplateAndMigrate(templateResult))) {
           await sleep(await getTerminationDelay(db));
           const cleanupSuccess = await cleanupQEMUOnTemplateFail();
 
